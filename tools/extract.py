@@ -19,12 +19,14 @@ and energies.
 """
 
 from __future__ import print_function
+
 import argparse
-from interface.VASP import VaspParser
-from interface.QE import QEParser
-from interface.xTAPP import XtappParser
-from interface.OpenMX import OpenmxParser
+
 from interface.LAMMPS import LammpsParser
+from interface.OpenMX import OpenmxParser
+from interface.QE import QEParser
+from interface.VASP import VaspParser
+from interface.xTAPP import XtappParser
 
 parser = argparse.ArgumentParser()
 
@@ -90,7 +92,6 @@ parser.add_argument('target_file', metavar='file_to_parse', type=str, nargs='+',
 
 
 def check_options(args):
-
     # Check the calculator option
 
     conditions = [args.VASP is None,
@@ -169,7 +170,6 @@ def check_options(args):
 
 
 def run_parse(args, code, file_original, file_results, output_flags, str_unit):
-
     # Print data
     if code == "VASP":
         handler = VaspParser()
@@ -189,10 +189,10 @@ def run_parse(args, code, file_original, file_results, output_flags, str_unit):
     handler.parse(file_original, file_results, args.offset,
                   str_unit, output_flags, args.emin, args.emax)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     args = parser.parse_args()
     file_results = args.target_file
-    
+
     code, file_original, output_flags, str_unit = check_options(args)
     run_parse(args, code, file_original, file_results, output_flags, str_unit)

@@ -17,14 +17,17 @@ Input structure file generator for displaced configurations.
 """
 
 from __future__ import print_function
+
 import argparse
+
 import numpy as np
-from interface.VASP import VaspParser
-from interface.QE import QEParser
-from interface.xTAPP import XtappParser
-from interface.OpenMX import OpenmxParser
-from interface.LAMMPS import LammpsParser
+
 from GenDisplacement import AlamodeDisplace
+from interface.LAMMPS import LammpsParser
+from interface.OpenMX import OpenmxParser
+from interface.QE import QEParser
+from interface.VASP import VaspParser
+from interface.xTAPP import XtappParser
 
 parser = argparse.ArgumentParser()
 
@@ -172,7 +175,6 @@ def check_code_options(args):
 
 
 def check_displace_options(args, code):
-
     conditions = [args.pattern_file is None,
                   args.load_mddata is None,
                   args.random is False,
@@ -239,7 +241,6 @@ def get_code_object(code):
 
 
 def displace(displacement_mode, codeobj, args):
-
     verbosity = 1
     if args.print_disp_stdout:
         verbosity = 0
@@ -263,7 +264,6 @@ def displace(displacement_mode, codeobj, args):
 
 
 def print_displacement_stdout(disp_list, codeobj):
-
     lavec_transpose = codeobj.lattice_vector.transpose()
 
     for disp in disp_list:

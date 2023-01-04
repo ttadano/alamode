@@ -16,10 +16,10 @@ the C++ analyzer program "analyze_phonons.cpp".
 To execute this script, the above c++ program has to be
 compiled and made executable beforehand.
 """
-import sys
-import os
 import optparse
+import os
 import subprocess
+import sys
 
 parser = optparse.OptionParser()
 parser.add_option('--temp', help="target temperature to analyze")
@@ -76,7 +76,6 @@ analyze_obj = dir_obj + "/analyze_phonons "
 
 
 def print_temperature_dep_lifetime():
-
     if options.kpoint is None or options.mode is None:
         sys.exit("Please specify the temperature by --temp option, \
 or specify both --kpoint and --mode when --calc=tau")
@@ -90,14 +89,13 @@ or specify both --kpoint and --mode when --calc=tau")
         target_s = int(options.mode)
         calc = "tau_temp"
         command = analyze_obj + file_result + " " + calc + " " + avg \
-            + " " + str(target_k) + " " + str(target_s)\
-            + " " + isotope + " " + file_isotope
+                  + " " + str(target_k) + " " + str(target_s) \
+                  + " " + isotope + " " + file_isotope
 
         subprocess.call(command, shell=True)
 
 
 def print_lifetime_at_given_temperature():
-
     if options.kpoint is None:
         beg_k = 1
         end_k = 0
@@ -124,16 +122,15 @@ def print_lifetime_at_given_temperature():
         else:
             sys.exit("Invalid usage of --mode for --calc=tau")
 
-    command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-        + str(beg_k) + " " + str(end_k) + " "\
-        + str(beg_s) + " " + str(end_s) + " " + options.temp\
-        + " " + isotope + " " + file_isotope
+    command = analyze_obj + file_result + " " + calc + " " + avg + " " \
+              + str(beg_k) + " " + str(end_k) + " " \
+              + str(beg_s) + " " + str(end_s) + " " + options.temp \
+              + " " + isotope + " " + file_isotope
 
     subprocess.call(command, shell=True)
 
 
 def print_thermal_conductivity():
-
     if not (options.kpoint is None):
         print("# Warning: --kpoint option is discarded")
 
@@ -150,15 +147,14 @@ def print_thermal_conductivity():
         else:
             sys.exit("Invalid usage of --mode for --calc=kappa")
 
-    command = analyze_obj + file_result + " " + calc + " " + avg\
-        + " " + str(beg_s) + " " + str(end_s)\
-        + " " + isotope + " " + file_isotope
+    command = analyze_obj + file_result + " " + calc + " " + avg \
+              + " " + str(beg_s) + " " + str(end_s) \
+              + " " + isotope + " " + file_isotope
 
     subprocess.call(command, shell=True)
 
 
 def print_thermal_conductivity_with_boundary():
-
     if not (options.kpoint is None):
         print("# Warning: --kpoint option is discarded")
 
@@ -180,16 +176,15 @@ def print_thermal_conductivity_with_boundary():
     else:
         boundary_size = float(options.size)
 
-    command = analyze_obj + file_result + " " + calc + " " + avg\
-        + " " + str(beg_s) + " " + str(end_s)\
-        + " " + isotope + " " + file_isotope\
-        + " " + str(boundary_size)
+    command = analyze_obj + file_result + " " + calc + " " + avg \
+              + " " + str(beg_s) + " " + str(end_s) \
+              + " " + isotope + " " + file_isotope \
+              + " " + str(boundary_size)
 
     subprocess.call(command, shell=True)
 
 
 def print_cumulative_thermal_conductivity(cumulative_mode):
-
     if options.temp is None:
         sys.exit("--temp is necessary when --calc=%s" % cumulative_mode)
 
@@ -219,11 +214,11 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
         sys.exit("Invalid usage of --length option")
 
     if cumulative_mode == "cumulative":
-        command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-            + str(beg_s) + " " + str(end_s)\
-            + " " + isotope + " " + file_isotope\
-            + " " + str(max_len) + " "\
-            + str(d_len) + " " + options.temp
+        command = analyze_obj + file_result + " " + calc + " " + avg + " " \
+                  + str(beg_s) + " " + str(end_s) \
+                  + " " + isotope + " " + file_isotope \
+                  + " " + str(max_len) + " " \
+                  + str(d_len) + " " + options.temp
 
     else:
         size_flag = [0] * 3
@@ -239,12 +234,12 @@ def print_cumulative_thermal_conductivity(cumulative_mode):
             for i in range(len(options.direction.split(':'))):
                 size_flag[int(arr[i]) - 1] = 1
 
-        command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-            + str(beg_s) + " " + str(end_s)\
-            + " " + isotope + " " + file_isotope\
-            + " " + str(max_len) + " " + str(d_len)\
-            + " " + options.temp + " " + str(size_flag[0]) \
-            + " " + str(size_flag[1]) + " " + str(size_flag[2])
+        command = analyze_obj + file_result + " " + calc + " " + avg + " " \
+                  + str(beg_s) + " " + str(end_s) \
+                  + " " + isotope + " " + file_isotope \
+                  + " " + str(max_len) + " " + str(d_len) \
+                  + " " + options.temp + " " + str(size_flag[0]) \
+                  + " " + str(size_flag[1]) + " " + str(size_flag[2])
 
     subprocess.call(command, shell=True)
 

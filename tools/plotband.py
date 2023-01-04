@@ -11,10 +11,12 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 
-import numpy as np
 import optparse
+
 import matplotlib as mpl
+import numpy as np
 from matplotlib.gridspec import GridSpec
+
 try:
     mpl.use("Qt5")
 except:
@@ -28,14 +30,14 @@ parser = optparse.OptionParser(usage=usage)
 parser.add_option("--nokey", action="store_false", dest="print_key", default=True,
                   help="don't print the key in the figure")
 parser.add_option("-u", "--unit", action="store", type="string", dest="unitname", default="kayser",
-                  help="print the band dispersion in units of UNIT. Available options are kayser, meV, and THz", metavar="UNIT")
+                  help="print the band dispersion in units of UNIT. Available options are kayser, meV, and THz",
+                  metavar="UNIT")
 parser.add_option("--emin", action="store", type="float", dest="emin",
                   help="minimum value of the energy axis")
 parser.add_option("--emax", action="store", type="float", dest="emax",
                   help="maximum value of the energy axis")
 parser.add_option("--normalize", action="store_true", dest="normalize_xaxis", default=False,
                   help="normalize the x axis to unity.")
-
 
 # font styles
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
@@ -50,7 +52,6 @@ lsty = ['-', '-', '-', '-', '--', '--', '--', '--']
 
 
 def get_kpath_and_kval(file_in):
-
     ftmp = open(file_in, 'r')
     kpath = ftmp.readline().rstrip('\n').split()
     kval = ftmp.readline().rstrip('\n').split()
@@ -71,7 +72,6 @@ def get_kpath_and_kval(file_in):
 
 
 def change_scale(array, str_scale):
-
     str_tmp = str_scale.lower()
 
     if str_tmp == 'kayser':
@@ -81,7 +81,7 @@ def change_scale(array, str_scale):
     elif str_tmp == 'mev':
         print("Band structure will be shown in units of meV")
         kayser_to_mev = 0.0299792458 * 1.0e+12 * \
-            6.62606896e-34 / 1.602176565e-19 * 1000
+                        6.62606896e-34 / 1.602176565e-19 * 1000
 
         for i in range(len(array)):
             for j in range(len(array[i])):
@@ -108,7 +108,6 @@ def change_scale(array, str_scale):
 
 
 def normalize_to_unity(array, array_axis):
-
     for i in range(len(array)):
         max_val = array[i][-1][0]
 
@@ -127,7 +126,6 @@ def normalize_to_unity(array, array_axis):
 
 
 def get_xy_minmax(array):
-
     xmin, xmax, ymin, ymax = [0, 0, 0, 0]
 
     for i in range(len(array)):
@@ -145,7 +143,6 @@ def get_xy_minmax(array):
 
 
 def gridspec_setup(data_merged, xtickslabels, xticksvars):
-
     xmaxs = []
     xmins = []
 
@@ -159,7 +156,7 @@ def gridspec_setup(data_merged, xtickslabels, xticksvars):
         if i == 0:
             xmins.append(xticksvars[0])
         else:
-            if xticksvars[i] == xticksvars[i-1]:
+            if xticksvars[i] == xticksvars[i - 1]:
                 xmaxs.append(xticksvars[i - 1])
                 xmins.append(xticksvars[i])
 
@@ -202,7 +199,7 @@ def gridspec_setup(data_merged, xtickslabels, xticksvars):
             else:
                 ix_xmax = -2
 
-            data_ax.append(data_merged[j][ix_xmin:(ix_xmax+1), :])
+            data_ax.append(data_merged[j][ix_xmin:(ix_xmax + 1), :])
 
         data_all_axes.append(data_ax)
 
@@ -210,7 +207,6 @@ def gridspec_setup(data_merged, xtickslabels, xticksvars):
 
 
 def preprocess_data(files, unitname, normalize_xaxis):
-
     xtickslabels, xticksvars = get_kpath_and_kval(files[0])
 
     data_merged = []
@@ -242,11 +238,10 @@ def preprocess_data(files, unitname, normalize_xaxis):
         = gridspec_setup(data_merged, xtickslabels, xticksvars)
 
     return naxes, xticks_grids, xticklabels_grids, \
-        xmins, xmaxs, ymin, ymax, data_merged_grids
+           xmins, xmaxs, ymin, ymax, data_merged_grids
 
 
 def run_plot(nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax, data_merged_ax):
-
     fig = plt.figure()
 
     width_ratios = []
@@ -314,8 +309,8 @@ if __name__ == '__main__':
         print("Number of files = %d" % nfiles)
 
     nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax, \
-        data_merged_ax = preprocess_data(
-            files, options.unitname, options.normalize_xaxis)
+    data_merged_ax = preprocess_data(
+        files, options.unitname, options.normalize_xaxis)
 
     run_plot(nax, xticks_ax, xticklabels_ax,
              xmin_ax, xmax_ax, ymin, ymax, data_merged_ax)
