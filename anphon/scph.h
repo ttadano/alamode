@@ -147,9 +147,6 @@ private:
                                                 
     void exec_scph_main(std::complex<double> ****);
 
-    void exec_scph_relax_main(std::complex<double> ****,
-                                std::complex<double> ****);
-
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                           std::complex<double> ****);
 
