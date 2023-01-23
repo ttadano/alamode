@@ -191,7 +191,7 @@ void Scph::exec_scph()
         }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
 
-        qha_scheme = 5; // set alculation scheme of QHA
+        qha_scheme = 0; // set alculation scheme of QHA
         if(relax_coordinate == 0){
             exec_scph_main(delta_dymat_scph);
         }
@@ -3174,6 +3174,14 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     del_logV_delu[i1] += F_tensor[ixyz1][ixyz3]*F_tensor[ixyz2][ixyz4] - F_tensor[ixyz1][ixyz4]*F_tensor[ixyz2][ixyz3];
                 }
 
+                // temporary: calculate a axis
+                for(i1 = 0; i1 < 9; i1++){
+                    del_logV_delu[i1] = 0.0;
+                }
+                // del_logV_delu[8] = 1.0; 
+                del_logV_delu[0] = 1.0; 
+                del_logV_delu[4] = 1.0; 
+
                 // debug
                 std::cout << "del_logV_delu" << std::endl;
                 for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
@@ -3282,6 +3290,17 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     }
                 }
 
+                // temporary herehere fix c axis
+                // del_v0_strain_QHA[0] = 0.0;
+                // del_v0_strain_QHA[4] = 0.0;
+                // u_tensor[0][0] = 0.0;
+                // u_tensor[1][1] = 0.0;
+                del_v0_strain_QHA[8] = 0.0;
+                u_tensor[2][2] = 0.0;
+
+                // temporaray herehere
+                // relax internal coordinates by PES force
+                
 
                 // update structure(is = 0,1,2 are TA modes)
                 for(is = 0; is < ns; is++){
@@ -3350,6 +3369,13 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                             C2_mat_tmp(itmp1, itmp2) = C2_array[itmp1*3+itmp1][itmp2*3+itmp2];
                         }
                     }
+                    // temporary herehere
+                    // set connections between ab plane and c plane
+                    C2_mat_tmp(0,2) = 0.0;
+                    C2_mat_tmp(2,0) = 0.0;
+                    C2_mat_tmp(1,2) = 0.0;
+                    C2_mat_tmp(2,1) = 0.0;
+
                     for(itmp1 = 0; itmp1 < 3; itmp1++){
                         for(itmp2 = 0; itmp2 < 3; itmp2++){
                             itmp3 = (itmp2+1)%3;
@@ -3358,6 +3384,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                             C2_mat_tmp(itmp2+3, itmp1) = C2_array[itmp3*3+itmp4][itmp1*3+itmp1];
                         }
                     }
+
                     for(itmp1 = 0; itmp1 < 3; itmp1++){
                         for(itmp2 = 0; itmp2 < 3; itmp2++){
                             itmp3 = (itmp1+1)%3;
