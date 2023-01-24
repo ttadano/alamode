@@ -94,8 +94,8 @@ public:
     double add_hess_diag;
     double stat_pressure;
 
-    // variables related to QHA
-    int qha_scheme; // temporary
+    // optimization scheme used in QHA
+    int qha_scheme;
 
 private:
 
