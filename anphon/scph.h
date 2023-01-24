@@ -94,6 +94,9 @@ public:
     double add_hess_diag;
     double stat_pressure;
 
+    // optimization scheme used in QHA
+    int qha_scheme;
+
 private:
 
     // Information of kmesh for SCPH calculation
@@ -150,6 +153,10 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                           std::complex<double> ****);
 
+    void exec_QHA_relax_main(std::complex<double> ****);
+
+    void exec_perturbative_QHA();
+
     void read_C1_array(double *);
 
     void read_elastic_constants(double **, 
@@ -176,6 +183,8 @@ private:
 
     // void print_force(std::complex<double> *);
     void calculate_force_in_real_space(std::complex<double> *, double *);
+
+    void transform_to_real_space_at_Gamma(std::complex<double> *, double *);
 
     // void postprocess(std::complex<double> ****delta_dymat_scph,
     //                  std::complex<double> ****delta_dymat_scph_plus_bubble);
@@ -236,6 +245,12 @@ private:
     void read_del_v2_strain_from_cubic_in_kspace(std::complex<double> ***,
                                                  std::complex<double> ***);
     
+    void calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(std::complex<double> ***,
+                                                                              std::complex<double> ***);
+
+    void calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(std::complex<double> **,
+                                                                                 std::complex<double> ***); 
+                                                                
     void make_supercell_mapping_by_symmetry_operations(int **);
 
     void make_inverse_translation_mapping(int **);
@@ -275,6 +290,27 @@ private:
                                                std::complex<double> ****,
                                                double *,
                                                double );
+
+                                            
+    void calculate_del_v1_strain_with_strain_displace(std::complex<double> **, 
+                                               double **,
+                                               std::complex<double> **,
+                                               std::complex<double> **,
+                                               std::complex<double> **,
+                                               std::complex<double> ***,
+                                               std::complex<double> ***,
+                                               std::complex<double> ****,
+                                               double *);
+
+    void calculate_C2_array_with_strain_displace(double **, 
+                                                 double **,
+                                                 double **,
+                                                 double **,
+                                                 double ***,
+                                                 std::complex<double> **,
+                                                 std::complex<double> **,
+                                                 std::complex<double> ***,
+                                                 double *);
 
     void calculate_eta_tensor(double **, 
                                 double **);
@@ -433,6 +469,25 @@ private:
                                                             const std::vector<std::complex<double>> &omegalist);
 
     int get_xyz_string(int, std::string&);
+
+    // QHA
+    void compute_cmat(std::complex<double> ***, 
+                      std::complex<double> ***);
+
+    void compute_QHA_v1_array(std::complex<double> *, 
+                              std::complex<double> ***, 
+                              std::complex<double> ***, 
+                              double ** , 
+                              const double ,
+                              std::complex<double> *);
+
+    void calc_v1_array_vib(std::complex<double> *, 
+                           std::complex<double> ***,
+                           const double);
+
+    void calc_del_v0_strain_vib(std::complex<double> *, 
+                                std::complex<double> ***, 
+                                double);
 
 };
 
