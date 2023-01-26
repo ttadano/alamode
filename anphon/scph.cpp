@@ -1572,8 +1572,8 @@ void Scph::setup_kmesh()
 
     kmesh_coarse = new KpointMeshUniform(kmesh_interpolate);
     kmesh_dense = new KpointMeshUniform(kmesh_scph);
-    kmesh_coarse->setup(symmetry->SymmList, system->rlavec_p);
-    kmesh_dense->setup(symmetry->SymmList, system->rlavec_p);
+    kmesh_coarse->setup(symmetry->SymmList, system->rlavec_p, false);
+    kmesh_dense->setup(symmetry->SymmList, system->rlavec_p, false);
 
     if (mympi->my_rank == 0) {
 //        if (verbosity > 0) {
