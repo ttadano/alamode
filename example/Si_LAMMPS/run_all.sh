@@ -1,11 +1,13 @@
 #!/bin/bash
 
 # Please modify the following paths appropriately
+#export DYLD_LIBRARY_PATH=/Users/tadano/src/spglib/lib/:$DYLD_LIBRARY_PATH
 #export LD_LIBRARY_PATH=/Users/tadano/src/spglib/lib/:$LD_LIBRARY_PATH
+
 # Binaries 
-LAMMPS=${HOME}/src/lammps/cmake/_build/lmp
+LAMMPS=${HOME}/src/lammps/_build/lmp
 #LAMMPS=/usr/local/bin/lmp
-ALAMODE_ROOT=${HOME}/src/alamode/
+ALAMODE_ROOT=${HOME}/src/alamode
 
 # Generate displacement patterns
 
@@ -108,8 +110,8 @@ ${ALAMODE_ROOT}/alm/alm si_alm0.in > alm.log
 # Generate structure files of LAMMPS
 mkdir displace; cd displace/
 
-python ${ALAMODE_ROOT}/tools/displace.py --LAMMPS ../Si222.lammps --prefix harm --mag 0.01 ../si222.pattern_HARMONIC >> run.log
-python ${ALAMODE_ROOT}/tools/displace.py --LAMMPS ../Si222.lammps --prefix cubic --mag 0.04 ../si222.pattern_ANHARM3 >> run.log
+python ${ALAMODE_ROOT}/tools/displace.py --LAMMPS ../Si222.lammps --prefix harm --mag 0.01 -pf ../si222.pattern_HARMONIC >> run.log
+python ${ALAMODE_ROOT}/tools/displace.py --LAMMPS ../Si222.lammps --prefix cubic --mag 0.04 -pf ../si222.pattern_ANHARM3 >> run.log
 
 cp ../Si.sw .
 cp ../in.sw .
@@ -362,7 +364,7 @@ cat << EOF > phband.in
 
 EOF
 
-mpirun -np 1 ${ALAMODE_ROOT}/anphon/anphon phband.in > phband.log
+${ALAMODE_ROOT}/anphon/anphon phband.in > phband.log
 
 # Thermal conductivity
 cat << EOF > RTA.in
@@ -389,4 +391,4 @@ cat << EOF > RTA.in
 
 EOF
 
-mpirun -np 1 ${ALAMODE_ROOT}/anphon/anphon RTA.in > RTA.log
+${ALAMODE_ROOT}/anphon/anphon RTA.in > RTA.log

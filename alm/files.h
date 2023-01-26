@@ -44,9 +44,6 @@ public:
 
     void init();
 
-    bool print_hessian;
-    std::string file_fcs, file_hes;
-
     void set_prefix(const std::string);
 
     std::string get_prefix() const;
@@ -59,14 +56,9 @@ public:
 
     DispForceFile get_datfile_validation() const;
 
-    void set_output_maxorder(const int maxorder);
-
-    int get_output_maxorder() const;
-
 private:
 
     std::string job_title;
     DispForceFile datfile_train, datfile_validation;
-    int output_maxorder;
 };
 }

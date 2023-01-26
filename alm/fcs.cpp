@@ -125,8 +125,8 @@ void Fcs::set_default_variables()
     fc_cart = nullptr;
     store_zeros = true;
 
-    // preferred_basis = "Cartesian";
     preferred_basis = "Lattice";
+    fc_zero_threshold = eps12;
 }
 
 void Fcs::deallocate_variables()
@@ -368,7 +368,6 @@ void Fcs::get_constraint_symmetry(const size_t nat,
     // Necessary for hexagonal systems.
 
     int i;
-    // int j;
     unsigned int isym;
     int ixyz;
     int *index_tmp;
@@ -792,6 +791,8 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
     std::vector<std::vector<std::vector<int>>> coord_list_grp;
     std::vector<std::vector<double>> fc_list_grp;
     std::vector<std::vector<int>> atoms_grp;
+    std::vector<int> elems_permutation;
+    std::vector<FcProperty> fc_table_copy;
 
     int **xyzcomponent;
     double prod_matrix;
@@ -801,135 +802,177 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
     }
     allocate(fc_cart, maxorder);
 
-    std::vector<int> elems_permutation;
-
-    std::vector<FcProperty> fc_table_copy;
-
     nfc_cart_permu.resize(maxorder);
     nfc_cart_nopermu.resize(maxorder);
 
-    for (int i = 0; i < maxorder; ++i) {
+    if (preferred_basis == "Lattice") {
 
-        auto nelems = i + 2;
+        for (int i = 0; i < maxorder; ++i) {
 
-        atoms_old.resize(nelems);
-        atoms_now.resize(nelems);
-        coords_now.resize(nelems);
-        coord_list.clear();
-        fc_list.clear();
+            auto nelems = i + 2;
 
-        const auto nxyz = static_cast<int>(std::pow(3.0, nelems));
-        allocate(xyzcomponent, nxyz, nelems);
-        get_xyzcomponent(nelems, xyzcomponent);
+            atoms_old.resize(nelems);
+            atoms_now.resize(nelems);
+            coords_now.resize(nelems);
+            coord_list.clear();
+            fc_list.clear();
 
-        for (j = 0; j < nelems; ++j) atoms_old[j] = -1;
-        auto icount = 0;
+            const auto nxyz = static_cast<int>(std::pow(3.0, nelems));
+            allocate(xyzcomponent, nxyz, nelems);
+            get_xyzcomponent(nelems, xyzcomponent);
 
-        fc_table_copy.clear();
-        for (const auto &it: fc_table[i]) {
-            elems_permutation = it.elems;
-            do {
-                fc_table_copy.emplace_back(nelems,
-                                           it.sign,
-                                           &elems_permutation[0],
-                                           it.mother);
-            } while (std::next_permutation(elems_permutation.begin() + 1,
-                                           elems_permutation.end()));
-        }
+            for (j = 0; j < nelems; ++j) atoms_old[j] = -1;
+            auto icount = 0;
 
-        // Sort fc_table_copy in ascending order of atomic indices.
-        std::sort(fc_table_copy.begin(),
-                  fc_table_copy.end(),
-                  FcProperty::compare_atom_index);
-
-        coord_list_grp.clear();
-        fc_list_grp.clear();
-        atoms_grp.clear();
-
-        for (const auto &it: fc_table_copy) {
-
-            for (j = 0; j < nelems; ++j) {
-                atoms_now[j] = it.elems[j] / 3;
-                coords_now[j] = it.elems[j] % 3;
+            fc_table_copy.clear();
+            for (const auto &it: fc_table[i]) {
+                elems_permutation = it.elems;
+                do {
+                    fc_table_copy.emplace_back(nelems,
+                                               it.sign,
+                                               &elems_permutation[0],
+                                               it.mother);
+                } while (std::next_permutation(elems_permutation.begin() + 1,
+                                               elems_permutation.end()));
             }
 
-            if (atoms_now == atoms_old) {
+            // Sort fc_table_copy in ascending order of atomic indices.
+            std::sort(fc_table_copy.begin(),
+                      fc_table_copy.end(),
+                      FcProperty::compare_atom_index);
 
-                coord_list.emplace_back(coords_now);
-                fc_list.emplace_back(param_in[it.mother + ishift] * it.sign);
+            coord_list_grp.clear();
+            fc_list_grp.clear();
+            atoms_grp.clear();
 
-                ++icount;
+            for (const auto &it: fc_table_copy) {
 
-            } else {
-
-                if (icount > 0) {
-                    coord_list_grp.emplace_back(coord_list);
-                    fc_list_grp.emplace_back(fc_list);
-                    atoms_grp.emplace_back(atoms_old);
+                for (j = 0; j < nelems; ++j) {
+                    atoms_now[j] = it.elems[j] / 3;
+                    coords_now[j] = it.elems[j] % 3;
                 }
 
-                atoms_old = atoms_now;
-                coord_list.clear();
-                fc_list.clear();
-                coord_list.push_back(coords_now);
-                fc_list.push_back(param_in[it.mother + ishift] * it.sign);
-                icount = 1;
+                if (atoms_now == atoms_old) {
+
+                    coord_list.emplace_back(coords_now);
+                    fc_list.emplace_back(param_in[it.mother + ishift] * it.sign);
+
+                    ++icount;
+
+                } else {
+
+                    if (icount > 0) {
+                        coord_list_grp.emplace_back(coord_list);
+                        fc_list_grp.emplace_back(fc_list);
+                        atoms_grp.emplace_back(atoms_old);
+                    }
+
+                    atoms_old = atoms_now;
+                    coord_list.clear();
+                    fc_list.clear();
+                    coord_list.push_back(coords_now);
+                    fc_list.push_back(param_in[it.mother + ishift] * it.sign);
+                    icount = 1;
+                }
             }
-        }
 
-        if (icount > 0) {
-            coord_list_grp.emplace_back(coord_list);
-            fc_list_grp.emplace_back(fc_list);
-            atoms_grp.emplace_back(atoms_old);
-        }
+            if (icount > 0) {
+                coord_list_grp.emplace_back(coord_list);
+                fc_list_grp.emplace_back(fc_list);
+                atoms_grp.emplace_back(atoms_old);
+            }
 
-        const int ngrp = coord_list_grp.size();
+            const int ngrp = coord_list_grp.size();
 
 #pragma omp parallel
-        {
-            std::vector<ForceConstantTable> fc_cart_omp;
+            {
+                std::vector<ForceConstantTable> fc_cart_omp;
 
-#pragma omp for private(prod_matrix, j), schedule(guided), nowait
-            for (int igrp = 0; igrp < ngrp; ++igrp) {
-                for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
+#pragma omp for private(prod_matrix, j), nowait
+                for (int igrp = 0; igrp < ngrp; ++igrp) {
+                    for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
 
-                    auto fcs_cart = 0.0;
-                    const auto nentry = coord_list_grp[igrp].size();
-                    for (j = 0; j < nentry; ++j) {
-                        prod_matrix = 1.0;
-                        for (auto k = 0; k < nelems; ++k) {
-                            prod_matrix *= basis_conversion_matrix(coord_list_grp[igrp][j][k],
-                                                                   xyzcomponent[ixyz][k]);
+                        auto fcs_cart = 0.0;
+                        const auto nentry = coord_list_grp[igrp].size();
+                        for (j = 0; j < nentry; ++j) {
+                            prod_matrix = 1.0;
+                            for (auto k = 0; k < nelems; ++k) {
+                                prod_matrix *= basis_conversion_matrix(coord_list_grp[igrp][j][k],
+                                                                       xyzcomponent[ixyz][k]);
+                            }
+                            fcs_cart += prod_matrix * fc_list_grp[igrp][j];
                         }
-                        fcs_cart += prod_matrix * fc_list_grp[igrp][j];
-                    }
 
-                    if (std::abs(fcs_cart) > eps12) {
-                        fc_cart_omp.emplace_back(nelems,
-                                                 fcs_cart,
-                                                 &atoms_grp[igrp][0],
-                                                 xyzcomponent[ixyz]);
+                        if (std::abs(fcs_cart) >= fc_zero_threshold) {
+                            fc_cart_omp.emplace_back(nelems,
+                                                     fcs_cart,
+                                                     &atoms_grp[igrp][0],
+                                                     xyzcomponent[ixyz]);
+                        }
                     }
                 }
-            }
 
 #pragma omp critical
-            {
-                for (const auto &it: fc_cart_omp) {
-                    fc_cart[i].emplace_back(it);
+                {
+                    for (const auto &it: fc_cart_omp) {
+                        fc_cart[i].emplace_back(it);
+                    }
                 }
+                fc_cart_omp.clear();
             }
-            fc_cart_omp.clear();
+
+            ishift += nequiv[i].size();
+            deallocate(xyzcomponent);
+
+            nfc_cart_permu[i] = fc_cart[i].size();
+            nfc_cart_nopermu[i] = std::count_if(fc_cart[i].begin(),
+                                                fc_cart[i].end(),
+                                                [](const ForceConstantTable &obj) { return obj.is_ascending_order; });
         }
 
-        ishift += nequiv[i].size();
-        deallocate(xyzcomponent);
+    } else if (preferred_basis == "Cartesian") {
 
-        nfc_cart_permu[i] = fc_cart[i].size();
-        nfc_cart_nopermu[i] = std::count_if(fc_cart[i].begin(),
-                                            fc_cart[i].end(),
-                                            [](const ForceConstantTable &obj) { return obj.is_ascending_order; });
+        for (int i = 0; i < maxorder; ++i) {
+
+            auto nelems = i + 2;
+            atoms_now.resize(nelems);
+            coords_now.resize(nelems);
+
+            for (const auto &it: fc_table[i]) {
+                if (std::abs(param_in[it.mother + ishift]) >= fc_zero_threshold) {
+                    elems_permutation = it.elems;
+                    do {
+                        for (j = 0; j < nelems; ++j) {
+                            atoms_now[j] = elems_permutation[j] / 3;
+                            coords_now[j] = elems_permutation[j] % 3;
+                        }
+                        fc_cart[i].emplace_back(nelems,
+                                                param_in[it.mother + ishift] * it.sign,
+                                                &atoms_now[0],
+                                                &coords_now[0]);
+                    } while (std::next_permutation(elems_permutation.begin() + 1,
+                                                   elems_permutation.end()));
+                }
+            }
+
+            ishift += nequiv[i].size();
+
+            nfc_cart_permu[i] = fc_cart[i].size();
+            nfc_cart_nopermu[i] = std::count_if(fc_cart[i].begin(),
+                                                fc_cart[i].end(),
+                                                [](const ForceConstantTable &obj) { return obj.is_ascending_order; });
+        }
     }
+}
+
+void Fcs::set_fc_zero_threshold(const int threshold_in)
+{
+    fc_zero_threshold = threshold_in;
+}
+
+double Fcs::get_fc_zero_threshold() const
+{
+    return fc_zero_threshold;
 }
 
 std::vector<size_t> Fcs::get_nfc_cart(const int permutation) const
@@ -954,26 +997,6 @@ void Fcs::get_available_symmop(const size_t nat,
 
     // use_compatible == true returns the compatible space group (for creating fc_table)
     // use_compatible == false returnes the incompatible supace group (for creating constraint)
-
-    // int k = 0;
-    // for (const auto &it : symmetry->get_SymmData()) {
-    //     std::cout << "SYMM #" << ++k << '\n';
-    //     std::cout << "compatibility (Cart, Latt): " << it.compatible_with_cartesian << " " << it.compatible_with_lattice << '\n';
-    //     for (auto i = 0; i < 3; ++i) {
-    //         for (auto j = 0; j < 3; ++j) {
-    //             std::cout << std::setw(15) << it.rotation_cart[i][j];
-    //         }
-    //         std::cout << '\n';
-    //     }
-    //     std::cout << '\n';
-    //     for (auto i = 0; i < 3; ++i) {
-    //         for (auto j = 0; j < 3; ++j) {
-    //             std::cout << std::setw(15) << it.rotation[i][j];
-    //         }
-    //         std::cout << '\n';
-    //     }
-    //     std::cout << '\n';
-    // }
 
     int i, j;
     int counter = 0;
@@ -1181,8 +1204,53 @@ void Fcs::set_basis_conversion_matrix(const Cell &supercell)
                     basis_conversion_matrix(i, j) = 1.0;
                 } else {
                     basis_conversion_matrix(i, j) = 0.0;
-
                 }
+            }
+        }
+    }
+}
+
+void Fcs::translate_forceconstant_index_to_centercell(const Symmetry *symmetry,
+                                                      std::vector<std::vector<int>> &index_inout) const
+{
+    const auto map_sym = symmetry->get_map_sym();
+    const auto map_p2s = symmetry->get_map_p2s();
+    const auto symnum_tran = symmetry->get_symnum_tran();
+    const auto nfcs = index_inout.size();
+    const auto nelems = index_inout[0].size();
+    const auto natmin = symmetry->get_nat_prim();
+    std::vector<int> atoms, coords;
+    std::vector<int> atoms_tran;
+    std::vector<int> index_tran;
+
+    atoms.resize(nelems);
+    coords.resize(nelems);
+    atoms_tran.resize(nelems);
+    index_tran.resize(nelems);
+
+    for (size_t i = 0; i < nfcs; ++i) {
+        for (size_t j = 0; j < nelems; ++j) {
+            atoms[j] = index_inout[i][j] / 3;
+            coords[j] = index_inout[i][j] % 3;
+        }
+        int isym = -1;
+        if (!is_inprim(index_inout[i][0],
+                       natmin,
+                       map_p2s)) {
+            for (auto jsym = 0; jsym < symnum_tran.size(); ++jsym) {
+                index_tran[0] = 3 * map_sym[atoms[0]][symnum_tran[jsym]] + coords[0];
+                if (is_inprim(index_tran[0], natmin, map_p2s)) {
+                    isym = jsym;
+                    break;
+                }
+            }
+            if (isym == -1) {
+                exit("translate_forceconstant_index_to_centercell",
+                     "translational mapping to the center cell failed.");
+            }
+
+            for (size_t j = 0; j < nelems; ++j) {
+                index_inout[i][j] = 3 * map_sym[atoms[j]][symnum_tran[isym]] + coords[j];
             }
         }
     }

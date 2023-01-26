@@ -1,3 +1,41 @@
+# Ver. 1.4.2 (2022-09-28)
+
+## Fixes
+
+- Fix a bug in group velocity when NONANALYTIC=3
+
+
+# Ver. 1.4.1 (2022-06-22)
+
+## Fixes
+
+- Fix a bug in xml writer in the previous version
+
+
+# Ver. 1.4.0 (2022-06-21)
+
+## New
+- ``FC_ZERO_THR`` tag (**alm**) for solving #71
+- ``STOP_CRITERION`` tag (**alm**) for stopping the cross-validation calculation when appropriate
+- ``FC3_SHENGBTE`` tag (**alm**) for saving third-order force constants for ShengBTE format
+- ``ZMODE`` tag (**anphon**) for computing mode effective charges
+- ``UCORR`` and ``SHIFT_UCORR`` tags (**anphon**) for computing displacement-displacement correlation function
+- ``extract.py`` can extract data from vaspout.h5 for VASP6
+
+## Changes
+
+- Update the predefined values of atomic weights and isotope factors
+- Add new lines before printing warning/error messages. #61
+- Make non-analytic correction of dynamical matrix to be periodic in G
+- The file suffix for phonon eigenvectors is .evec, .band.evec, or .mesh.evec depending on the input **KPMODE**.
+- ``scph_to_qefc.py`` now accepts ibrav/=0 and .fc files containing the macroscopic field
+
+## Fixes
+
+- Fix minor typos in the documentation pages
+
+
+
 # Ver. 1.3.0 (2021-10-01)
 
 ## Changes

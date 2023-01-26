@@ -15,6 +15,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "dielec.h"
 #include "dynamical.h"
 #include "error.h"
+#include "ewald.h"
 #include "fcs_phonon.h"
 #include "gruneisen.h"
 #include "kpoint.h"
@@ -634,6 +635,10 @@ void Writes::write_phonon_info()
             write_two_phonon_dos();
         }
 
+        if (dos->longitudinal_projected_dos) {
+            write_longitudinal_proj_dos();
+        }
+
         if (dos->scattering_phase_space == 1) {
             write_scattering_phase_space();
         } else if (dos->scattering_phase_space == 2) {
@@ -800,6 +805,7 @@ void Writes::write_phonon_vel() const
                                                              system->lavec_p,
                                                              system->rlavec_p,
                                                              fcs_phonon->fc2_ext,
+                                                             ewald->fc2_without_dipole,
                                                              phvel_bs);
 
     ofs_vel << "# k-axis, |Velocity| [m / sec]" << std::endl;
@@ -855,7 +861,6 @@ void Writes::write_phonon_vel_all() const
 
     phonon_velocity->get_phonon_group_velocity_mesh(*dos->kmesh_dos,
                                                     system->lavec_p,
-                                                    fcs_phonon->fc2_ext,
                                                     false,
                                                     phvel_xyz);
     unsigned int ik, is;
@@ -1040,6 +1045,29 @@ void Writes::write_scattering_phase_space() const
 
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_sps;
     std::cout << " : Three-phonon scattering phase space" << std::endl;
+}
+
+void Writes::write_longitudinal_proj_dos() const
+{
+    int i;
+    std::ofstream ofs_dos;
+    auto file_dos = input->job_title + ".longitudinal_dos";
+
+    ofs_dos.open(file_dos.c_str(), std::ios::out);
+    if (!ofs_dos) exit("write_longitudinal_proj_dos", "cannot open file_dos");
+
+    ofs_dos << "# Energy [cm^-1], LONGITUDINAL-PROJECTED DOS\n";
+    ofs_dos.setf(std::ios::scientific);
+
+    for (i = 0; i < dos->n_energy; ++i) {
+        ofs_dos << std::setw(15) << dos->energy_dos[i];
+        ofs_dos << std::setw(15) << dos->longitude_dos[i];
+        ofs_dos << std::endl;
+    }
+    ofs_dos.close();
+
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dos;
+    std::cout << " : Longitudinal projected DOS" << std::endl;
 }
 
 void Writes::write_scattering_amplitude() const
@@ -1457,8 +1485,17 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
         for (j = 0; j < 3; ++j) xtmp[j] = system->xr_s[system->map_p2s[i][0]][j];
         rotvec(xtmp, xtmp, system->lavec_s);
         rotvec(xtmp, xtmp, system->rlavec_p);
+        for (j = 0; j < 3; ++j) xtmp[j] /= 2.0 * pi;
         for (j = 0; j < 3; ++j) {
-            xfrac_1D[counter++] = xtmp[j] / (2.0 * pi);
+            while (xtmp[j] >= 1.0) {
+                xtmp[j] -= 1.0;
+            }
+            while (xtmp[j] < 0.0) {
+                xtmp[j] += 1.0;
+            }
+        }
+        for (j = 0; j < 3; ++j) {
+            xfrac_1D[counter++] = xtmp[j];
         }
     }
     dataspace = new DataSpace(2, dims);
@@ -2437,7 +2474,7 @@ void Writes::print_normalmode_borncharge() const
 
         const auto ns = dynamical->neval;
 
-        std::string file_zstar = input->job_title + ".Born_mode";
+        std::string file_zstar = input->job_title + ".zmode";
         std::ofstream ofs_zstar;
         ofs_zstar.open(file_zstar.c_str(), std::ios::out);
         if (!ofs_zstar)

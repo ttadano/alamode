@@ -108,7 +108,8 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/system.cpp
             ${PROJECT_SOURCE_DIR}/thermodynamics.cpp
             ${PROJECT_SOURCE_DIR}/timer.cpp
-            ${PROJECT_SOURCE_DIR}/write_phonons.cpp)
+            ${PROJECT_SOURCE_DIR}/write_phonons.cpp
+            ${PROJECT_SOURCE_DIR}/../external/niggli.c)
 
 set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/conductivity.h

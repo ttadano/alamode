@@ -289,7 +289,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     }
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
 
-    if(mirror_image_mode == 0){
+    if (mirror_image_mode == 0) {
         // original implementation
         // calculate IFC renormalization for the same atomic combination in the supercell
         // but with different mirror images at once and assign the average value for each
@@ -354,22 +354,22 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
 
             set_index_uniq.insert(index_with_cell);
 
-            for(i = 0; i < 3; i++){
+            for (i = 0; i < 3; i++) {
                 vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                for(j = 1; j < norder-1; j++){
-                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
-                                    + xshift_s[it.pairs[j].cell_s][i];
+                for (j = 1; j < norder - 1; j++) {
+                    vec_origin[i] +=
+                            system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                            + xshift_s[it.pairs[j].cell_s][i];
                 }
-                vec_origin[i] /= (norder-1);
+                vec_origin[i] /= static_cast<double>(norder - 1);
             }
 
             for (i = 0; i < 3; ++i) {
                 vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                                            1].tran]]
-                        [i]
-                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                        - vec_origin[i]
-                        + xshift_s[it.pairs[norder - 1].cell_s][i];
+                                                                                                             1].tran]][i]
+                         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                         - vec_origin[i]
+                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
             rotvec(vec, vec, system->lavec_s_anharm);
@@ -398,8 +398,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                 delta_fcs.emplace_back(fcs_tmp, pairs_vec);
             }
         }
-    }
-    else{ // if(mirror_image_mode != 0)
+    } else { // if(mirror_image_mode != 0)
         // new implementation
         // calculate IFC renormalization separately for each mirror image combinations.
         index_with_cell_old.clear();
@@ -448,22 +447,22 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                 std::copy(index_with_cell.begin(), index_with_cell.end(), std::back_inserter(index_with_cell_old));
             }
 
-            for(i = 0; i < 3; i++){
+            for (i = 0; i < 3; i++) {
                 vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                for(j = 1; j < norder-1; j++){
-                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
-                                    + xshift_s[it.pairs[j].cell_s][i];
+                for (j = 1; j < norder - 1; j++) {
+                    vec_origin[i] +=
+                            system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                            + xshift_s[it.pairs[j].cell_s][i];
                 }
-                vec_origin[i] /= (norder-1);
+                vec_origin[i] /= static_cast<double>(norder - 1);
             }
 
             for (i = 0; i < 3; ++i) {
                 vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                                            1].tran]]
-                        [i]
-                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                        - vec_origin[i]
-                        + xshift_s[it.pairs[norder - 1].cell_s][i];
+                                                                                                             1].tran]][i]
+                         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                         - vec_origin[i]
+                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
             rotvec(vec, vec, system->lavec_s_anharm);

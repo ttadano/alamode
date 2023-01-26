@@ -11,10 +11,11 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 
-import numpy as np
 import optparse
-import matplotlib.pyplot as plt
+
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
 
 # parser options
 usage = "usage: %prog [options] file1.dos file2.dos ... "
@@ -25,12 +26,12 @@ parser.add_option("--pdos", action="store_true", dest="print_pdos", default=Fals
 parser.add_option("--nokey", action="store_false", dest="print_key", default=True,
                   help="don't print the key in the figure")
 parser.add_option("-u", "--unit", action="store", type="string", dest="unitname", default="kayser",
-                  help="print the band dispersion in units of UNIT. Available options are kayser, meV, and THz", metavar="UNIT")
+                  help="print the band dispersion in units of UNIT. Available options are kayser, meV, and THz",
+                  metavar="UNIT")
 parser.add_option("--emin", action="store", type="float", dest="emin",
                   help="minimum value of the energy axis")
 parser.add_option("--emax", action="store", type="float", dest="emax",
                   help="maximum value of the energy axis")
-
 
 # font styles
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
@@ -42,7 +43,6 @@ lsty = ['-', '-', '-', '-', '--', '--', '--', '--', '-', '-', '-', '-']
 
 
 def get_natoms_and_symbols(file_in):
-
     ftmp = open(file_in, 'r')
     str_symbols = ftmp.readline().rstrip('\n').split()
     str_natoms = ftmp.readline().rstrip('\n').split()
@@ -58,7 +58,6 @@ def get_natoms_and_symbols(file_in):
 
 
 def get_x_minmax(array):
-
     xmin, xmax = [0, 0]
 
     for i in range(len(array)):
@@ -69,7 +68,6 @@ def get_x_minmax(array):
 
 
 def get_y_minmax(array):
-
     ymin, ymax = [0, 0]
 
     for i in range(len(array)):
@@ -81,7 +79,6 @@ def get_y_minmax(array):
 
 
 def change_xscale(array, str_scale):
-
     str_tmp = str_scale.lower()
 
     if str_tmp == 'kayser':
@@ -91,7 +88,7 @@ def change_xscale(array, str_scale):
     elif str_tmp == 'mev':
         print("Phonon DOS will be shown in units of meV")
         kayser_to_mev = 0.0299792458 * 1.0e+12 * \
-            6.62606896e-34 / 1.602176565e-19 * 1000
+                        6.62606896e-34 / 1.602176565e-19 * 1000
 
         for i in range(len(array)):
             array[i] *= kayser_to_mev
@@ -114,7 +111,6 @@ def change_xscale(array, str_scale):
 
 
 def sum_atom_projected_dos(pdos_tmp, natoms_tmp):
-
     nenergy, natom = np.shape(pdos_tmp)
     nkinds = len(natoms_tmp)
 
@@ -179,7 +175,6 @@ if __name__ == '__main__':
                 pdos = sum_atom_projected_dos(dos_merged[i][:, 1:], natoms)
 
                 for j in range(len(pdos[0, :])):
-
                     plt.plot(energy_axis[i][:], pdos[:, j], linestyle=lsty[counter_line],
                              color=color[counter_line], label="File" + str(i + 1) + "." + symbols[j])
 

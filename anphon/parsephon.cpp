@@ -179,13 +179,11 @@ void Input::parse_general_vars()
     auto Tmax = 1000.0;
     auto dT = 10.0;
 
-    auto emin = 0.0;
-    auto emax = 1000.0;
     auto delta_e = 10.0;
 
     unsigned int nonanalytic = 0;
     auto nsym = 0;
-    auto tolerance = 1.0e-6;
+    auto tolerance = 1.0e-3;
     auto printsymmetry = false;
     //auto sym_time_reversal = false;
     auto use_triplet_symmetry = true;
@@ -214,8 +212,19 @@ void Input::parse_general_vars()
     assign_val(Tmax, "TMAX", general_var_dict);
     assign_val(dT, "DT", general_var_dict);
 
-    assign_val(emin, "EMIN", general_var_dict);
-    assign_val(emax, "EMAX", general_var_dict);
+    if (!general_var_dict["EMIN"].empty()) {
+        auto emin = 0.0;
+        assign_val(emin, "EMIN", general_var_dict);
+        dos->emin = emin;
+        dos->auto_set_emin = false;
+    }
+    if (!general_var_dict["EMAX"].empty()) {
+        auto emax = 1000.0;
+        assign_val(emax, "EMAX", general_var_dict);
+        dos->emax = emax;
+        dos->auto_set_emax = false;
+    }
+
     assign_val(delta_e, "DELTA_E", general_var_dict);
 
     assign_val(nsym, "NSYM", general_var_dict);
@@ -307,8 +316,7 @@ void Input::parse_general_vars()
         deallocate(masskd);
     }
 
-    dos->emax = emax;
-    dos->emin = emin;
+
     dos->delta_e = delta_e;
 
     dynamical->nonanalytic = nonanalytic;
@@ -540,7 +548,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
             "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
             "FC2_EWALD", "KAPPA_SPEC", "SELF_W", "UCORR", "SHIFT_UCORR",
             "KAPPA_COHERENT",
-            "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES"
+            "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES",
+            "LONGITUDINAL_DOS"
     };
 
 #ifdef _FE_BUBBLE
@@ -571,6 +580,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     bool compute_dos = true;
     bool projected_dos = false;
     bool two_phonon_dos = false;
+    bool longitudinal_dos = false;
     int scattering_phase_space = 0;
     bool print_gruneisen = false;
     bool print_newfcs = false;
@@ -613,6 +623,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
         assign_val(compute_dos, "DOS", analysis_var_dict);
         assign_val(projected_dos, "PDOS", analysis_var_dict);
         assign_val(two_phonon_dos, "TDOS", analysis_var_dict);
+        assign_val(longitudinal_dos, "LONGITUDINAL_DOS", analysis_var_dict);
+
         assign_val(scattering_phase_space, "SPS", analysis_var_dict);
         assign_val(print_gruneisen, "GRUNEISEN", analysis_var_dict);
         assign_val(print_newfcs, "NEWFCS", analysis_var_dict);
@@ -811,6 +823,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->projected_dos = projected_dos;
     dos->two_phonon_dos = two_phonon_dos;
     dos->scattering_phase_space = scattering_phase_space;
+    dos->longitudinal_projected_dos = longitudinal_dos;
 
     conductivity->calc_kappa_spec = calculate_kappa_spec;
     conductivity->calc_coherent = calc_coherent;

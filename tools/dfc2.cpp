@@ -10,7 +10,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 #include <iostream>
 #include <fstream>
-#include <stdlib.h>
+#include <cstdlib>
 #include <map>
 #include <vector>
 #include <boost/property_tree/xml_parser.hpp>
@@ -117,7 +117,7 @@ void load_fc2_xml(const std::string file_in)
         ss1.clear();
         ss1 << get_value_from_xml(pt,
                                   "Data.Structure.LatticeVector.a"
-                                  + boost::lexical_cast<string>(i + 1));
+                                  + std::to_string(i + 1));
         ss1 >> lavec_s[0][i] >> lavec_s[1][i] >> lavec_s[2][i];
     }
 
@@ -137,7 +137,7 @@ void load_fc2_xml(const std::string file_in)
     BOOST_FOREACH(
             const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
                     const ptree &child = child_.second;
-                    const unsigned int icount_kd = child.get<unsigned int>("<xmlattr>.number");
+                    const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
                     dict_atomic_kind[boost::lexical_cast<string>(child_.second.data())] = icount_kd - 1;
                     kd_symbol[i++] = boost::lexical_cast<string>(child_.second.data());
                 }
@@ -290,7 +290,7 @@ void load_delta_fc2(const std::string file_in, const double temp)
             ss1 << line_tmp;
             ss1 >> sx >> sy >> sz >> atm1 >> xyz1 >> atm2 >> xyz2 >> dfc2_tmp;
 
-            delta_fc2.push_back(DeltaFcs(sx, sy, sz, atm1, xyz1, atm2, xyz2, dfc2_tmp));
+            delta_fc2.emplace_back(DeltaFcs(sx, sy, sz, atm1, xyz1, atm2, xyz2, dfc2_tmp));
         }
 
     }
@@ -299,7 +299,7 @@ void load_delta_fc2(const std::string file_in, const double temp)
 }
 
 
-void calculate_new_fc2(std::vector<FcsClassExtent> fc2_in,
+void calculate_new_fc2(const std::vector<FcsClassExtent> &fc2_in,
                        std::vector<DeltaFcs> delta_fc2,
                        std::vector<FcsClassExtent> &fc2_out)
 {
@@ -342,35 +342,6 @@ void calculate_new_fc2(std::vector<FcsClassExtent> fc2_in,
         }
     }
 
-    //
-    //    cout << "lavec super:" << endl;
-    //    for (i = 0; i < 3; ++i) {
-    //        for (j = 0; j < 3; ++j) {
-    //            cout << setw(15) << lavec_s[i][j];
-    //        }
-    //        cout << endl;
-    //    }
-    //    cout << endl;
-    //
-    //    cout << "lavec primitive:" << endl;
-    //    for (i = 0; i < 3; ++i) {
-    //        for (j = 0; j < 3; ++j) {
-    //            cout << setw(15) << lavec_p[i][j];
-    //        }
-    //        cout << endl;
-    //    }
-    //    cout << endl;
-    //
-    //
-    //    cout << "Mat convert:" << endl;
-    //    for (i = 0; i < 3; ++i) {
-    //        for (j = 0; j < 3; ++j) {
-    //            cout << setw(15) << mat_convert[i][j];
-    //        }
-    //        cout << endl;
-    //    }
-    //    cout << endl;
-
     double vec[3];
 
     int icount = 0;
@@ -380,24 +351,32 @@ void calculate_new_fc2(std::vector<FcsClassExtent> fc2_in,
 
     fc2_data.clear();
 
-    for (auto it = fc2_in.cbegin(); it != fc2_in.cend(); ++it) {
+    for (const auto &it: fc2_in) {
 
         arr_tmp.clear();
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = xr_s[(*it).atm2][i] + xshift_s[(*it).cell_s][i]
-                     - xr_s[map_p2s[map_s2p[(*it).atm2].atom_num][0]][i];
+            vec[i] = xr_s[it.atm2][i] + xshift_s[it.cell_s][i]
+                     - xr_s[map_p2s[map_s2p[it.atm2].atom_num][0]][i];
         }
 
         rotvec(vec, vec, mat_convert);
 
-        arr_tmp.push_back((*it).atm1);
-        arr_tmp.push_back((*it).xyz1);
-        arr_tmp.push_back(map_s2p[(*it).atm2].atom_num);
-        arr_tmp.push_back((*it).xyz2);
+        arr_tmp.push_back(it.atm1);
+        arr_tmp.push_back(it.xyz1);
+        arr_tmp.push_back(map_s2p[it.atm2].atom_num);
+        arr_tmp.push_back(it.xyz2);
         for (i = 0; i < 3; ++i) arr_tmp.push_back(nint(vec[i]));
 
-        fc2_data.push_back(FcsTrans(arr_tmp, icount));
+//        std::cout << std::setw(5) << vec[0];
+//        std::cout << std::setw(5) << vec[1];
+//        std::cout << std::setw(5) << vec[2];
+//
+//        std::cout << std::setw(5) << it.atm1 << std::setw(5) << it.xyz1;
+//        std::cout << std::setw(5) << map_s2p[it.atm2].atom_num << std::setw(5) << it.xyz2;
+//        std::cout << std::setw(15) << it.fcs_val << '\n';
+
+        fc2_data.emplace_back(arr_tmp, icount);
         ++icount;
     }
 
@@ -406,33 +385,55 @@ void calculate_new_fc2(std::vector<FcsClassExtent> fc2_in,
     vector<FcsTrans>::iterator iter_found;
     int index_tmp = 0;
 
+    bool detect_warnings = false;
 
-    for (auto it = delta_fc2.begin(); it != delta_fc2.end(); ++it) {
+    for (auto &it: delta_fc2) {
 
-        if (abs((*it).dfc2) > eps10) {
+        if (abs(it.dfc2) > eps10) {
             arr_tmp.clear();
-            arr_tmp.push_back((*it).atm1);
-            arr_tmp.push_back((*it).xyz1);
-            arr_tmp.push_back((*it).atm2);
-            arr_tmp.push_back((*it).xyz2);
-            arr_tmp.push_back((*it).sx);
-            arr_tmp.push_back((*it).sy);
-            arr_tmp.push_back((*it).sz);
+            arr_tmp.push_back(it.atm1);
+            arr_tmp.push_back(it.xyz1);
+            arr_tmp.push_back(it.atm2);
+            arr_tmp.push_back(it.xyz2);
+            arr_tmp.push_back(it.sx);
+            arr_tmp.push_back(it.sy);
+            arr_tmp.push_back(it.sz);
 
-            iter_found = lower_bound(fc2_data.begin(), fc2_data.end(), FcsTrans(arr_tmp, index_tmp));
+            iter_found = lower_bound(fc2_data.begin(), fc2_data.end(),
+                                     FcsTrans(arr_tmp, index_tmp));
 
             if (iter_found != fc2_data.end() && arr_tmp == (*iter_found).arr) {
-                fc2_new[(*iter_found).fcs_index].fcs_val += (*it).dfc2;
+                fc2_new[(*iter_found).fcs_index].fcs_val += it.dfc2;
             } else {
                 cout << "Warning: The following force constant doesn't exist in the original file:" << endl;
-                cout << setw(5) << (*it).sx << setw(5) << (*it).sy << setw(5) << (*it).sz;
-                cout << setw(5) << (*it).atm1 << setw(5) << (*it).xyz1;
-                cout << setw(5) << (*it).atm2 << setw(5) << (*it).xyz2;
-                cout << setw(15) << (*it).dfc2 << endl;
+                cout << setw(5) << it.sx << setw(5) << it.sy << setw(5) << it.sz;
+                cout << setw(5) << it.atm1 << setw(5) << it.xyz1;
+                cout << setw(5) << it.atm2 << setw(5) << it.xyz2;
+                cout << setw(15) << it.dfc2 << endl;
+                detect_warnings = true;
             }
         }
         ++index_tmp;
+    }
 
+    if (detect_warnings) {
+        cout << "\n";
+        cout << " If you see a warning message above, please check the following points:\n";
+        cout << " 0. If the value in the last column is small enough (e.g., < 1.0e-8), \n"
+                "    the warning message usually does not signify an error of your calculation.\n";
+        cout << " 1. If the value in the last collumn is large enough, please make sure that the q-point grid\n"
+                "    specified by KMESH_INTERPOLATE (e.g., NxMxL) is smaller than or equal to the supercell size\n"
+                "    of the original FC2. If this is not the case, please change KMESH_INTERPOLATE or\n"
+                "    the input XML file containing the original FC2.\n";
+        cout << " 2. If the above condition 1 is satisifed but you still get a warning,\n"
+                "    please check if the ANPHON code detected the space group consistently with ALM.\n"
+                "    If not, please change TOLERANCE value and/or refine the input structure.\n";
+        cout << " 3. If the harmonic force constants are extracted for a model potential where\n"
+                "    the absolute value of force constants become very small (<1.0e-12) beyond\n"
+                "    a certain cutoff radius inside ths supercell, please use a smaller FC_ZERO_THR\n"
+                "    when computing harmonic force constants. This may solve the problem.\n";
+        cout << " 4. If you still see a warning after checking the above points,\n"
+                "    please report it at https://github.com/ttadano/alamode/issues.\n";
     }
 }
 
@@ -532,14 +533,14 @@ void write_new_xml(const std::vector<FcsClassExtent> fc2_in,
     pt.put("Data.ForceConstants", "");
     str_tmp.clear();
 
-    for (auto it = fc2_in.begin(); it != fc2_in.end(); ++it) {
-        ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2", double2string((*it).fcs_val));
+    for (const auto &it: fc2_in) {
+        ptree &child = pt.add("Data.ForceConstants.HARMONIC.FC2", double2string(it.fcs_val));
 
-        child.put("<xmlattr>.pair1", boost::lexical_cast<std::string>((*it).atm1 + 1)
-                                     + " " + boost::lexical_cast<std::string>((*it).xyz1 + 1));
-        child.put("<xmlattr>.pair2", boost::lexical_cast<std::string>((*it).atm2 + 1)
-                                     + " " + boost::lexical_cast<std::string>((*it).xyz2 + 1)
-                                     + " " + boost::lexical_cast<std::string>((*it).cell_s + 1));
+        child.put("<xmlattr>.pair1", std::to_string(it.atm1 + 1)
+                                     + " " + std::to_string(it.xyz1 + 1));
+        child.put("<xmlattr>.pair2", std::to_string(it.atm2 + 1)
+                                     + " " + std::to_string(it.xyz2 + 1)
+                                     + " " + std::to_string(it.cell_s + 1));
     }
 
     using namespace boost::property_tree::xml_parser;

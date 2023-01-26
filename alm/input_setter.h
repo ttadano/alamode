@@ -50,7 +50,10 @@ public:
                           const int is_periodic_in[3],
                           bool trim_dispsign_for_evenfunc,
                           bool lspin_in,
-                          bool print_hessian,
+                          int print_hessian,
+                          int print_fcs_alamode,
+                          int print_fc3_shengbte,
+                          int print_fc2_qefc,
                           int noncollinear_in,
                           int trevsym_in,
                           const std::string *kdname_in,
@@ -58,7 +61,8 @@ public:
                           double tolerance,
                           double tolerance_constraint,
                           const std::string &basis_force_constant,
-                          const int nmaxsave);
+                          const int nmaxsave,
+                          const double fc_zero_threshold);
 
     void set_optimize_vars(ALM *alm,
                            const std::vector<std::vector<double>> &u_train_in,

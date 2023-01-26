@@ -19,11 +19,11 @@ Generator of new QE fc file containing anharmonic correction
 """
 
 import sys
+
 import numpy as np
 
 
 def parse_QEfc(file_QEfc):
-
     header = []
     nx = None
     ny = None
@@ -35,9 +35,24 @@ def parse_QEfc(file_QEfc):
     with open(file_QEfc, 'r') as f:
         line = f.readline()
         header.append(line)
-        nkd, nat = [int(entry) for entry in line.strip().split()[:2]]
-        for i in range(nat + nkd + 4):
+        nkd, nat, ibrav = [int(entry) for entry in line.strip().split()[:3]]
+
+        nskip = 0
+        if ibrav == 0:
+            nskip = nat + nkd + 3
+        else:
+            nskip = nat + nkd
+
+        for i in range(nskip):
             header.append(f.readline())
+
+        line = f.readline()
+        header.append(line)
+        epsil_flag = line.strip()
+
+        if epsil_flag == 'T':
+            for i in range(3 + 4 * nat):
+                header.append(f.readline())
 
         nx, ny, nz = [int(i) for i in f.readline().split()]
         fc2 = np.zeros((3 * nat, 3 * nat, nx, ny, nz))
@@ -58,7 +73,6 @@ def parse_QEfc(file_QEfc):
 
 
 def get_structure_info_dfc2(file_dfc2):
-
     lavec = []
     nat = None
     nkd = None
@@ -75,7 +89,6 @@ def get_structure_info_dfc2(file_dfc2):
 
 
 def get_dfc2(file_dfc2, temp_in):
-
     detect_temp_tag = False
     dfc2 = []
 
@@ -113,7 +126,6 @@ def get_dfc2(file_dfc2, temp_in):
 
 
 def create_newfc2(nx, ny, nz, fc2_orig, dfc2_array):
-
     fc2_new = np.copy(fc2_orig)
 
     for entry in dfc2_array:
@@ -151,7 +163,6 @@ def create_newfc2(nx, ny, nz, fc2_orig, dfc2_array):
 
 
 def print_fc2(header_in, nx, ny, nz, nat, fc2_in):
-
     for line in header_in:
         print(line.rstrip())
     print("%4d %3d %3d" % (nx, ny, nz))

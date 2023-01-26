@@ -3,7 +3,7 @@
 [![License][license-image]][license-url]
 [![Doc status][docs-image]][docs-url]
 
-### Version 1.3.0
+### Version 1.4.2
 ![alt ALAMODE](./docs/img/alamode.png)
 
 
@@ -89,7 +89,7 @@ http://alamode.readthedocs.io
 
 
 ## License
-Copyright (c) 2014–2021 Terumasa Tadano
+Copyright (c) 2014–2022 Terumasa Tadano
 This software is released under the MIT license. 
 For license rights and limitations, see LICENSE.txt file.
 
@@ -98,11 +98,11 @@ Terumasa Tadano (National Institute for Materials Science, Japan)
 
 ## Contributors
 
+* Ryota Masuki (Univ. Tokyo)
 * Tatsuro Nishimoto (Univ. Tokyo)
 * Yusuke Oba (Univ. Tokyo)
 * Yuto Tanaka (Kanazawa Univ.)
 * Atsushi Togo (Kyoto Univ.)
-
 
 
 [license-image]: https://img.shields.io/github/license/ttadano/alamode.svg

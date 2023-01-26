@@ -12,18 +12,14 @@
 
 using namespace ALM_NS;
 
-Files::Files()
-{
-    print_hessian = false;
-    output_maxorder = 5;
-}
+Files::Files() = default;
 
 Files::~Files() = default;
 
 void Files::init()
 {
-    file_fcs = job_title + ".fcs";
-    file_hes = job_title + ".hessian";
+//    file_fcs = job_title + ".fcs";
+//    file_hes = job_title + ".hessian";
 }
 
 void Files::set_prefix(const std::string prefix_in)
@@ -56,12 +52,4 @@ DispForceFile Files::get_datfile_validation() const
     return datfile_validation;
 }
 
-void Files::set_output_maxorder(const int maxorder)
-{
-    output_maxorder = maxorder;
-}
 
-int Files::get_output_maxorder() const
-{
-    return output_maxorder;
-}

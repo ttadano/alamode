@@ -215,10 +215,12 @@ public:
     std::vector<std::vector<KpointList>> kpoint_irred_all;
     std::vector<std::vector<int>> small_group_of_k;
     std::vector<unsigned int> kindex_minus_xk;
+    bool niggli_reduced = false;
 
     void setup(const std::vector<SymmetryOperation> &symmlist,
                const double rlavec_p[3][3],
-               const bool time_reversal_symmetry = true);
+               const bool time_reversal_symmetry = true,
+               const bool niggli_reduce_in = false);
 
     int get_knum(const double xk[3]) const;
 
@@ -241,13 +243,19 @@ public:
 private:
 
     void gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
+                   const double rlavec_p[3][3],
                    const bool usesym,
                    const bool time_reversal_symmetry);
+
+    void gen_kmesh_niggli(const std::vector<SymmetryOperation> &symmlist,
+                          const double rlavec_p[3][3],
+                          const bool usesym,
+                          const bool time_reversal_symmetry);
 
     void reduce_kpoints(const unsigned int nsym,
                         const std::vector<SymmetryOperation> &symmlist,
                         const bool time_reversal_symmetry,
-                        double **xkr);
+                        const double *const *xkr);
 
     void gen_nkminus();
 

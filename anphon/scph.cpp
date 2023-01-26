@@ -8531,26 +8531,13 @@ void Scph::replicate_dymat_for_all_kpoints(std::complex<double> ***dymat_inout) 
 
     std::complex<double> ***dymat_all;
 
-    // debug
-    // std::cout << "allocate dymat_all" << std::endl;
-
     allocate(dymat_all, ns, ns, kmesh_coarse->nk);
-
-    // debug
-    // std::cout << "allocate dymat_all is done" << std::endl;
-    // std::cout << "kmesh_coarse->nk = " << kmesh_coarse->nk << std::endl;
 
     for (i = 0; i < kmesh_coarse->nk; ++i) {
 
         const auto ik_irred = kpoint_map_symmetry[i].knum_irred_orig;
         const auto ik_orig = kpoint_map_symmetry[i].knum_orig;
         const auto isym = kpoint_map_symmetry[i].symmetry_op;
-
-        // debug
-        // std::cout << "i = " << i << std::endl;
-        // std::cout << "ik_irred = " << ik_irred << std::endl;
-        // std::cout << "ik_orig =" << ik_orig << std::endl;
-        // std::cout << "isym =" << isym << std::endl;
 
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
@@ -8560,18 +8547,13 @@ void Scph::replicate_dymat_for_all_kpoints(std::complex<double> ***dymat_inout) 
         }
         dymat_tmp = gamma * dymat * gamma.transpose().conjugate();
 
-       //  std::cout << "dymat_tmp is calculated" << std::endl; // debug
-
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
                 dymat_all[is][js][i] = dymat_tmp(is, js);
             }
         }
-        // std::cout << "dymat_all is calculated" << std::endl; // debug
-
     }
 
-    // std::cout << "substitute to dymat_inout" << std::endl; // debug
     for (is = 0; is < ns; ++is) {
         for (js = 0; js < ns; ++js) {
             for (i = 0; i < kmesh_coarse->nk; ++i) {
@@ -8579,7 +8561,6 @@ void Scph::replicate_dymat_for_all_kpoints(std::complex<double> ***dymat_inout) 
             }
         }
     }
-    // std::cout << "substitute to dymat_inout is done" << std::endl; // debug
     deallocate(dymat_all);
 }
 
@@ -8605,6 +8586,12 @@ void Scph::setup_eigvecs()
                           fcs_phonon->fc2_ext,
                           omega2_harmonic[ik],
                           evec_harmonic[ik], true);
+
+        for (auto is = 0; is < ns; ++is) {
+            if (std::abs(omega2_harmonic[ik][is]) < eps) {
+                omega2_harmonic[ik][is] = 1.0e-30;
+            }
+        }
     }
 
     if (mympi->my_rank == 0) {
@@ -8839,15 +8826,6 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
                 }
             }
         }
-
-        // debug
-        // std::cout << "total dynamical matrix" << std::endl;
-        // for(i = 0; i < ns; i++){
-        //     for(j = 0; j < ns; j++){
-        //         std::cout << mat_tmp[i][j] << " ";
-        //     }std::cout << std::endl;
-        // }std::cout << std::endl;
-
 
         diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
 
@@ -9181,7 +9159,6 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     const auto nk2 = kmesh_interpolate[1];
     const auto nk3 = kmesh_interpolate[2];
     int iloop;
-    int count_zero;
 
     MatrixXd omega_now(nk, ns), omega_old(nk, ns);
     MatrixXd omega2_HA(nk, ns);
@@ -9202,30 +9179,38 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     bool has_negative;
 
     std::complex<double> ctmp;
-    std::complex<double> ***mat_omega2_harmonic;
-    std::complex<double> ***evec_initial;
-    std::complex<double> ***dmat_convert;
-    std::complex<double> ***dmat_convert_old;
     std::complex<double> ***evec_new;
-    std::complex<double> ***dymat_new, ***dymat_harmonic;
-    std::complex<double> ***dymat_q;
-    std::complex<double> ***Fmat0;
+    std::complex<double> ***dymat_r_new;
+    std::complex<double> ***dymat_q, ***dymat_q_HA;
+
+    std::vector<MatrixXcd> dmat_convert, dmat_convert_old;
+    std::vector<MatrixXcd> evec_initial;
+    std::vector<MatrixXcd> Fmat0;
+
+    dmat_convert.resize(nk);
+    dmat_convert_old.resize(nk);
+    evec_initial.resize(nk);
+    Fmat0.resize(nk_irred_interpolate);
+
+    for (ik = 0; ik < nk; ++ik) {
+        dmat_convert[ik].resize(ns,ns);
+        dmat_convert_old[ik].resize(ns,ns);
+        evec_initial[ik].resize(ns,ns);
+    }
+    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
+        Fmat0[ik].resize(ns, ns);
+    }
 
     const auto complex_one = std::complex<double>(1.0, 0.0);
     const auto complex_zero = std::complex<double>(0.0, 0.0);
 
     SelfAdjointEigenSolver<MatrixXcd> saes;
 
-    allocate(mat_omega2_harmonic, nk_interpolate, ns, ns);
     allocate(eval_interpolate, nk, ns);
-    allocate(evec_initial, nk, ns, ns);
     allocate(evec_new, nk, ns, ns);
-    allocate(dmat_convert, nk, ns, ns);
-    allocate(dmat_convert_old, nk, ns, ns);
-    allocate(dymat_new, ns, ns, nk_interpolate);
+    allocate(dymat_r_new, ns, ns, nk_interpolate);
     allocate(dymat_q, ns, ns, nk_interpolate);
-    allocate(dymat_harmonic, nk_interpolate, ns, ns);
-    allocate(Fmat0, nk_irred_interpolate, ns, ns);
+    allocate(dymat_q_HA, ns, ns, nk_interpolate);
 
     const auto T_in = temp;
 
@@ -9257,7 +9242,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             omega2_HA(ik, is) = omega2_harmonic[ik][is];
 
             for (js = 0; js < ns; ++js) {
-                evec_initial[ik][is][js] = evec_harmonic[ik][is][js];
+                // transpose evec so that evec_initial can be used as is.
+                evec_initial[ik](js, is) = evec_harmonic[ik][is][js];
 
                 if (!flag_converged) {
                     // Initialize Cmat with identity matrix
@@ -9267,45 +9253,40 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                         cmat_convert[ik][is][js] = complex_zero;
                     }
                 }
-
             }
         }
     }
 
     // Set initial harmonic dymat and eigenvalues
 
-    for (ik = 0; ik < nk_interpolate; ++ik) {
-        knum = kmap_interpolate_to_scph[ik];
-
-        for (is = 0; is < ns; ++is) {
-            for (js = 0; js < ns; ++js) {
-                mat_omega2_harmonic[ik][is][js] = complex_zero;
-            }
-            mat_omega2_harmonic[ik][is][is] = std::complex<double>(omega2_HA(knum, is), 0.0);
-            eval_interpolate[knum][is] = omega2_HA(knum, is);
-        }
-
-        dynamical->calc_analytic_k(kmesh_coarse->xk[ik],
-                                   fcs_phonon->fc2_ext,
-                                   dymat_harmonic[ik]);
-    }
-
     for (ik = 0; ik < nk_irred_interpolate; ++ik) {
-
         knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
+        knum = kmap_interpolate_to_scph[knum_interpolate];
 
-        // Fmat harmonic
+        Dymat = omega2_HA.row(knum).asDiagonal();
+        evec_tmp = evec_initial[knum];
+
+        // Harmonic dynamical matrix
+        Dymat = evec_tmp * Dymat.eval() * evec_tmp.adjoint();
+
+        symmetrize_dynamical_matrix(ik, Dymat);
+
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
-                if (is == js) {
-                    Fmat0[ik][is][js] = mat_omega2_harmonic[knum_interpolate][is][is];
-                } else {
-                    Fmat0[ik][is][js] = complex_zero;
-                }
-                Fmat0[ik][is][js] += delta_v2_array_renormalize[knum_interpolate][is*ns+js];
+                dymat_q_HA[is][js][knum_interpolate] = Dymat(is, js);
             }
         }
-    }
+
+        // Harmonic Fmat
+        Fmat0[ik] = omega2_HA.row(knum).asDiagonal();
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                Fmat0[ik](is,js) += delta_v2_array_renormalize[knum_interpolate][is*ns+js];
+            }
+        }
+    } // close loop ik
+
+    replicate_dymat_for_all_kpoints(dymat_q_HA);
 
     int icount = 0;
 
@@ -9313,12 +9294,10 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     for (iloop = 0; iloop < maxiter; ++iloop) {
 
         for (ik = 0; ik < nk; ++ik) {
-            count_zero = 0;
             for (is = 0; is < ns; ++is) {
                 auto omega1 = omega_now(ik, is);
                 if (std::abs(omega1) < eps8) {
                     Qmat(is, is) = complex_zero;
-                    count_zero++;
                 } else {
                     // Note that the missing factor 2 in the denominator of Qmat is 
                     // already considered in the v4_array_all.
@@ -9331,14 +9310,6 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                     }
                 }
             }
-            if(ik == 0 && count_zero != 3){
-                std::cout << "Warning in compute_anharmonic_frequency : ";
-                std::cout << count_zero << " acoustic modes are detected in Gamma point." << std::endl << std::endl; 
-            }
-            else if(ik != 0 && count_zero != 0){
-                std::cout << "Warning in compute_anharmonic_frequency : ";
-                std::cout << count_zero << " zero frequencies are detected in non-Gamma point (ik = " << ik << ")." << std::endl << std::endl; 
-            }
 
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
@@ -9347,24 +9318,14 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             }
 
             Dmat = Cmat * Qmat * Cmat.adjoint();
-
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    dmat_convert[ik][is][js] = Dmat(is, js);
-                }
-            }
+            dmat_convert[ik] = Dmat;
         }
 
         // Mixing dmat
         if (iloop > 0) {
-#pragma omp parallel for private(is, js)
+#pragma omp parallel for
             for (ik = 0; ik < nk; ++ik) {
-                for (is = 0; is < ns; ++is) {
-                    for (js = 0; js < ns; ++js) {
-                        dmat_convert[ik][is][js] = alpha * dmat_convert[ik][is][js]
-                                                   + (1.0 - alpha) * dmat_convert_old[ik][is][js];
-                    }
-                }
+                dmat_convert[ik] = alpha * dmat_convert[ik].eval() + (1.0-alpha) * dmat_convert_old[ik];
             }
         }
 
@@ -9374,12 +9335,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             knum = kmap_interpolate_to_scph[knum_interpolate];
 
             // Fmat harmonic
-
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    Fmat(is, js) = Fmat0[ik][is][js];
-                }
-            }
+            Fmat = Fmat0[ik];
 
             // Anharmonic correction to Fmat
 
@@ -9397,7 +9353,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
                         for (ks = 0; ks < ns; ++ks) {
                             ctmp = v4_array_all[kk][i][(ns + 1) * ks]
-                                   * dmat_convert[jk][ks][ks];
+                                   * dmat_convert[jk](ks,ks);
                             re_tmp += ctmp.real();
                             im_tmp += ctmp.imag();
                         }
@@ -9424,7 +9380,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                             for (ks = 0; ks < ns; ++ks) {
                                 for (unsigned int ls = 0; ls < ns; ++ls) {
                                     ctmp = v4_array_all[kk][i][ns * ks + ls]
-                                           * dmat_convert[jk][ks][ls];
+                                           * dmat_convert[jk](ks,ls);
                                     re_tmp += ctmp.real();
                                     im_tmp += ctmp.imag();
                                 }
@@ -9474,21 +9430,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                 }
             }
 
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    evec_tmp(is, js) = evec_initial[knum][is][js];
-
-                    if (is == js) {
-                        Dymat(is, js) = std::complex<double>(eval_tmp(is), 0.0);
-                    } else {
-                        Dymat(is, js) = complex_zero;
-                    }
-                }
-            }
-
             // New eigenvector matrix E_{new}= E_{old} * C
-            mat_tmp = evec_tmp.transpose() * saes.eigenvectors();
-            Dymat = mat_tmp * Dymat * mat_tmp.adjoint();
+            mat_tmp = evec_initial[knum] * saes.eigenvectors();
+            Dymat = mat_tmp * eval_tmp.asDiagonal() * mat_tmp.adjoint();
 
 #ifdef _DEBUG2
             Dymat_sym = Dymat;
@@ -9508,7 +9452,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             }
             std::cout << "Dymat_exact" << std::endl;
             std::cout << Dymat_sym << std::endl;
-            deallocate(dymat_exact);
+            deallocate(dymat_exact);jjj
 
 #endif
             symmetrize_dynamical_matrix(ik, Dymat);
@@ -9557,7 +9501,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         for (ik = 0; ik < nk_interpolate; ++ik) {
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
-                    dymat_q[is][js][ik] -= dymat_harmonic[ik][is][js];
+                    dymat_q[is][js][ik] -= dymat_q_HA[is][js][ik];
                 }
             }
         }
@@ -9566,33 +9510,31 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             for (js = 0; js < ns; ++js) {
                 fftw_plan plan = fftw_plan_dft_3d(nk1, nk2, nk3,
                                                   reinterpret_cast<fftw_complex *>(dymat_q[is][js]),
-                                                  reinterpret_cast<fftw_complex *>(dymat_new[is][js]),
+                                                  reinterpret_cast<fftw_complex *>(dymat_r_new[is][js]),
                                                   FFTW_FORWARD, FFTW_ESTIMATE);
                 fftw_execute(plan);
                 fftw_destroy_plan(plan);
 
                 for (ik = 0; ik < nk_interpolate; ++ik)
-                    dymat_new[is][js][ik] /= static_cast<double>(nk_interpolate);
+                    dymat_r_new[is][js][ik] /= static_cast<double>(nk_interpolate);
             }
         }
 
         exec_interpolation(kmesh_interpolate,
-                           dymat_new,
+                           dymat_r_new,
                            nk,
                            kmesh_dense->xk,
                            kmesh_dense->kvec_na,
                            eval_interpolate, evec_new);
 
         for (ik = 0; ik < nk; ++ik) {
-
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
-                    mat_tmp(is, js) = evec_initial[ik][js][is];
                     evec_tmp(is, js) = evec_new[ik][js][is];
                 }
             }
 
-            Cmat = mat_tmp.adjoint() * evec_tmp;
+            Cmat = evec_initial[ik].adjoint() * evec_tmp;
 
             for (is = 0; is < ns; ++is) {
                 omega_now(ik, is) = eval_interpolate[ik][is];
@@ -9607,11 +9549,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                 std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " :  DIFF = N/A" << std::endl;
             }
 
-            for (ik = 0; ik < nk; ++ik) {
-                for (is = 0; is < ns; ++is) {
-                    omega_old(ik, is) = omega_now(ik, is);
-                }
-            }
+            omega_old = omega_now;
 
         } else {
 
@@ -9628,11 +9566,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                 std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " : ";
                 std::cout << " DIFF = " << std::setw(15) << std::sqrt(diff) << std::endl;
             }
-            for (ik = 0; ik < nk; ++ik) {
-                for (is = 0; is < ns; ++is) {
-                    omega_old(ik, is) = omega_now(ik, is);
-                }
-            }
+
+            omega_old = omega_now;
+
             if (std::sqrt(diff) < conv_tol) {
                 has_negative = false;
 
@@ -9654,11 +9590,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         }
 
         for (ik = 0; ik < nk; ++ik) {
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    dmat_convert_old[ik][is][js] = dmat_convert[ik][is][js];
-                }
-            }
+            dmat_convert_old[ik] = dmat_convert[ik];
         }
     } // end loop iteration
 
@@ -9707,18 +9639,12 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         }
     }
 
-    deallocate(mat_omega2_harmonic);
     deallocate(eval_interpolate);
-    deallocate(evec_initial);
-    deallocate(dmat_convert);
-    deallocate(dmat_convert_old);
     deallocate(evec_new);
-    deallocate(dymat_new);
+    deallocate(dymat_r_new);
     deallocate(dymat_q);
-    deallocate(dymat_harmonic);
-    deallocate(Fmat0);
+    deallocate(dymat_q_HA);
 }
-
 
 void Scph::compute_renormalized_harmonic_frequency(double **omega2_out,
                                         std::complex<double> ***evec_harm_renormalized,

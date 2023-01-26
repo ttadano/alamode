@@ -20,6 +20,7 @@
 #include "files.h"
 #include "patterndisp.h"
 #include "timer.h"
+#include "writer.h"
 
 namespace ALM_NS {
 class ALM {
@@ -31,6 +32,8 @@ public:
     class Cluster *cluster{};
 
     class Fcs *fcs{};
+
+    class System *system{};
 
     class Symmetry *symmetry{};
 
@@ -44,13 +47,13 @@ public:
 
     class Timer *timer{};
 
+    class Writer *writer{};
+
     void set_verbosity(int verbosity_in);
 
     int get_verbosity() const;
 
     void set_output_filename_prefix(std::string prefix) const;
-
-    void set_print_hessian(bool print_hessian) const;
 
     void set_print_symmetry(int printsymmetry) const;
 
@@ -90,6 +93,8 @@ public:
 
     void set_constraint_mode(const int constraint_flag) const;
 
+    void set_algebraic_constraint(const int use_algebraic_flag) const;
+
     void set_tolerance_constraint(const double tolerance_constraint) const;
 
     void set_rotation_axis(const std::string rotation_axis) const;
@@ -97,6 +102,11 @@ public:
     void set_fc_file(const int order, const std::string fc_file) const;
 
     void set_fc_fix(const int order, const bool fc_fix) const;
+
+    bool ready_all_constraints() const;
+
+    void set_forceconstants_to_fix(const std::vector<std::vector<int>> &intpair_fix,
+                                   const std::vector<double> &values_fix) const;
 
     void set_sparse_mode(const int sparse_mode) const;
 
@@ -178,8 +188,12 @@ public:
 
     void set_fc(double *fc_in) const;
 
+    void set_fc_zero_threshold(const double threshold_in);
+
+    double get_fc_zero_threshold() const;
+
     void get_matrix_elements(double *amat,
-                             double *bvec) const;
+                             double *bvec);
 
     int run_optimize();
 
@@ -187,12 +201,19 @@ public:
 
     void init_fc_table();
 
+    void save_fc(const std::string filename,
+                 const std::string fc_format,
+                 const int maxorder_to_save) const;
+
+    void set_fcs_save_flag(const std::string fcs_format, const int val) const;
+
+    int get_fcs_save_flag(const std::string fcs_format) const;
+
 private:
-    class System *system{};
 
     int verbosity;
     bool structure_initialized;
-    bool ready_to_fit;
+    bool initialized_constraint_class;
     std::ofstream *ofs_alm;
     std::streambuf *coutbuf;
 

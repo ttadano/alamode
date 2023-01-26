@@ -46,6 +46,9 @@ public:
     int num_l1_alpha;
     double l1_ratio; // l1_ratio = 1 for LASSO; 0 < l1_ratio < 1 for Elastic net
     int save_solution_path;
+    int stop_criterion; // If stop_criterion > 0,
+    // the solution path calculation stops when the validation error
+    // increases for `stop_criterion` times consecutively.
 
     // convention to assign IFCs to mirror images
     int mirror_image_conv;
@@ -69,8 +72,8 @@ public:
         l1_ratio = 1.0;
         num_l1_alpha = 50;
         save_solution_path = 0;
-
-        mirror_image_conv = 1;
+        stop_criterion = 5;
+        mirror_image_conv = 0;
     }
 
     ~OptimizerControl() = default;

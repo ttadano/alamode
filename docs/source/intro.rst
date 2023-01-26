@@ -106,8 +106,9 @@ In either case, please search the previous questions and read FAQ page of this d
 Acknowledgment
 --------------
 
-This project was partially supported by the following projects:
+This project is/was partially supported by the following projects:
 
+* Grant-in-Aid for Scientific Research (C) (21K03424)
 * Grant-in-Aid for Young Scientists (B) (16K17724) 
 * Grant-in-Aid for Scientific Research on Innovative Areas 'Materials Design through Computics: Complex Correlation and Non-Equilibrium Dynamics'. (http://computics-material.jp)
 
