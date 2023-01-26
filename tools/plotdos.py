@@ -17,9 +17,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-# parser options
-
-
 # font styles
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
 
@@ -116,7 +113,7 @@ def sum_atom_projected_dos(pdos_tmp, natoms_tmp):
     return pdos_sum
 
 
-def run_plot(files,  unitname='kayser', print_pdos=False, print_key=False, emin=None, emax=None, show=True):
+def run_plot(files, unitname='kayser', print_pdos=False, print_key=False, emin=None, emax=None, show=True):
     energy_axis = []
     dos_merged = []
 
@@ -201,7 +198,9 @@ if __name__ == '__main__':
     parser.add_option("--nokey", action="store_false", dest="print_key", default=True,
                       help="don't print the key in the figure")
     parser.add_option("-u", "--unit", action="store", type="string", dest="unitname", default="kayser",
-                      help="print the band dispersion in units of UNIT. Available options are kayser, meV, and THz", metavar="UNIT")
+                      help="print the band dispersion in units of UNIT. "
+                           "Available options are kayser, meV, and THz",
+                      metavar="UNIT")
     parser.add_option("--emin", action="store", type="float", dest="emin",
                       help="minimum value of the energy axis")
     parser.add_option("--emax", action="store", type="float", dest="emax",
@@ -218,5 +217,5 @@ if __name__ == '__main__':
     else:
         print("Number of files = %d" % nfiles)
 
-    run_plot(files,  options.unitname, 
+    run_plot(files, options.unitname,
              options.print_pdos, options.print_key, options.emin, options.emax)

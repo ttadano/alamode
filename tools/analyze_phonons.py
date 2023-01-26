@@ -16,9 +16,8 @@ the C++ analyzer program "analyze_phonons.cpp".
 To execute this script, the above c++ program has to be
 compiled and made executable beforehand.
 """
-import sys
-import os
 import optparse
+import os
 import subprocess
 import sys
 
@@ -40,7 +39,7 @@ def set_average(options):
     return avg, isotope, file_isotope
 
 
-def print_temperature_dep_lifetime(analyze_obj, calc, file_result,  options, return_cmd=_RETURN_CMD_DEFAULT):
+def print_temperature_dep_lifetime(analyze_obj, calc, file_result, options, return_cmd=_RETURN_CMD_DEFAULT):
     """print_temperature_dep_lifetime
 
     Args:
@@ -76,8 +75,8 @@ or specify both --kpoint and --mode when --calc=tau")
         else:
 
             command = analyze_obj + file_result + " " + calc + " " + avg \
-                + " " + str(target_k) + " " + str(target_s)\
-                + " " + isotope + " " + file_isotope
+                      + " " + str(target_k) + " " + str(target_s) \
+                      + " " + isotope + " " + file_isotope
 
             subprocess.call(command, shell=True)
 
@@ -124,17 +123,16 @@ def print_lifetime_at_given_temperature(analyze_obj, calc, file_result, options,
             sys.exit("Invalid usage of --mode for --calc=tau")
     if return_cmd:
         command = [file_result, calc, avg,
-                   str(beg_k),  str(end_k),
+                   str(beg_k), str(end_k),
                    str(beg_s), str(end_s), options.temp,
                    isotope, file_isotope]
         return command
 
     else:
-
-        command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-            + str(beg_k) + " " + str(end_k) + " "\
-            + str(beg_s) + " " + str(end_s) + " " + options.temp\
-            + " " + isotope + " " + file_isotope
+        command = analyze_obj + file_result + " " + calc + " " + avg + " " \
+                  + str(beg_k) + " " + str(end_k) + " " \
+                  + str(beg_s) + " " + str(end_s) + " " + options.temp \
+                  + " " + isotope + " " + file_isotope
 
         subprocess.call(command, shell=True)
 
@@ -178,9 +176,9 @@ def print_thermal_conductivity(analyze_obj, calc, file_result, options, return_c
                    isotope, file_isotope]
         return command
     else:
-        command = analyze_obj + file_result + " " + calc + " " + avg\
-            + " " + str(beg_s) + " " + str(end_s)\
-            + " " + isotope + " " + file_isotope
+        command = analyze_obj + file_result + " " + calc + " " + avg \
+                  + " " + str(beg_s) + " " + str(end_s) \
+                  + " " + isotope + " " + file_isotope
 
         subprocess.call(command, shell=True)
 
@@ -229,15 +227,16 @@ def print_thermal_conductivity_with_boundary(analyze_obj, calc, file_result, opt
                    str(boundary_size)]
         return command
     else:
-        command = analyze_obj + file_result + " " + calc + " " + avg\
-            + " " + str(beg_s) + " " + str(end_s)\
-            + " " + isotope + " " + file_isotope\
-            + " " + str(boundary_size)
+        command = analyze_obj + file_result + " " + calc + " " + avg \
+                  + " " + str(beg_s) + " " + str(end_s) \
+                  + " " + isotope + " " + file_isotope \
+                  + " " + str(boundary_size)
 
         subprocess.call(command, shell=True)
 
 
-def print_cumulative_thermal_conductivity(analyze_obj,  cumulative_mode,  file_result, options,  return_cmd=_RETURN_CMD_DEFAULT):
+def print_cumulative_thermal_conductivity(analyze_obj, cumulative_mode, file_result, options,
+                                          return_cmd=_RETURN_CMD_DEFAULT):
     """print_cumulative_thermal_conductivity
 
     Args:
@@ -291,11 +290,11 @@ def print_cumulative_thermal_conductivity(analyze_obj,  cumulative_mode,  file_r
                        str(d_len), options.temp]
 
         else:
-            command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-                + str(beg_s) + " " + str(end_s)\
-                + " " + isotope + " " + file_isotope\
-                + " " + str(max_len) + " "\
-                + str(d_len) + " " + options.temp
+            command = analyze_obj + file_result + " " + calc + " " + avg + " " \
+                      + str(beg_s) + " " + str(end_s) \
+                      + " " + isotope + " " + file_isotope \
+                      + " " + str(max_len) + " " \
+                      + str(d_len) + " " + options.temp
 
     else:
         size_flag = [0] * 3
@@ -319,12 +318,12 @@ def print_cumulative_thermal_conductivity(analyze_obj,  cumulative_mode,  file_r
                        options.temp, str(size_flag[0]),
                        str(size_flag[1]), str(size_flag[2])]
         else:
-            command = analyze_obj + file_result + " " + calc + " " + avg + " "\
-                + str(beg_s) + " " + str(end_s)\
-                + " " + isotope + " " + file_isotope\
-                + " " + str(max_len) + " " + str(d_len)\
-                + " " + options.temp + " " + str(size_flag[0]) \
-                + " " + str(size_flag[1]) + " " + str(size_flag[2])
+            command = analyze_obj + file_result + " " + calc + " " + avg + " " \
+                      + str(beg_s) + " " + str(end_s) \
+                      + " " + isotope + " " + file_isotope \
+                      + " " + str(max_len) + " " + str(d_len) \
+                      + " " + options.temp + " " + str(size_flag[0]) \
+                      + " " + str(size_flag[1]) + " " + str(size_flag[2])
 
     if return_cmd:
         return command
@@ -354,33 +353,34 @@ if __name__ == '__main__':
                                 'please specify the --size option.'))
 
         parser.add_option('--isotope', metavar="PREFIX.self_isotope",
-                          help="specify the file PREFIX.self_isotope to include the \
-        effect of phonon-isotope scatterings. When given, the phonon scattering rates will be \
-        updated as 1/tau_{new} = 1/tau_{phonon-phonon} + 1/tau_{phonon-isotope}. \
-        The PREFIX.self_isotope can be generated using 'anphon' with ISOTOPE=2 option.")
+                          help="specify the file PREFIX.self_isotope to include the effect of "
+                               "phonon-isotope scatterings. When given, the phonon scattering rates will be"
+                               "updated as 1/tau_{new} = 1/tau_{phonon-phonon} + 1/tau_{phonon-isotope}."
+                               "The PREFIX.self_isotope can be generated using 'anphon' with ISOTOPE=2 option.")
 
         parser.add_option('--noavg', action="store_false", dest="average_gamma",
-                          default=True, help="do not average the damping function \
-        at degenerate points")
+                          default=True,
+                          help="do not average the damping function"
+                               "at degenerate points")
 
-        parser.add_option('--size', help="specify the grain boundary size in units of \
-        nm. The default value is 1000 nm.")
+        parser.add_option('--size',
+                          help="specify the grain boundary size in units of nm"
+                               "The default value is 1000 nm.")
 
         parser.add_option('--length', metavar="Lmax:dL",
-                          help="specify the maximum value of system size L and its \
-        step dL in units of nm. \
-        The default value is --length=1000:10 .")
+                          help="specify the maximum value of system size L and its"
+                               "step dL in units of nm."
+                               "The default value is --length=1000:10 .")
 
         group = optparse.OptionGroup(parser,
-                                     "The following options are available/necessary \
-        when --calc=cumulative2 ")
+                                     "The following options are available/necessary "
+                                     "when --calc=cumulative2")
 
-        group.add_option('--direction', metavar="1|2|3", help="specify which \
-        direction (xyz) to consider the size effect. \
-        When --direction=1 (2, 3), phonon mean-free-paths (ell) \
-        along x (y, z) are compared with the system size L. Then, \
-        the cumulative thermal conductivity is calculated by considering \
-        phonon modes satisfying ell <= L.")
+        group.add_option('--direction', metavar="1|2|3",
+                         help="specify which direction (xyz) to consider the size effect. "
+                              "When --direction=1 (2, 3), phonon mean-free-paths (ell) along x (y, z) are "
+                              "compared with the system size L. Then, the cumulative thermal conductivity is "
+                              "calculated by considering phonon modes satisfying ell <= L.")
 
         parser.add_option_group(group)
 
@@ -426,5 +426,6 @@ if __name__ == '__main__':
 
         else:
             sys.exit("Invalid --calc option given")
+
 
     main()

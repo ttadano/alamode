@@ -225,7 +225,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--random_normalcoord', action="store_true", dest="random_normalcoord", default=False,
                         help="Generate randomly-displaced structures in normal coordinate basis. "
-                        "Please give the --temp option as well.")
+                             "Please give the --temp option as well.")
 
     parser.add_argument('--temp', type=float, default=100,
                         help="Target temperature of the random distribution of \
@@ -233,14 +233,14 @@ if __name__ == '__main__':
 
     parser.add_argument('--ignore_imag', action="store_true", dest="ignore_imag", default=False,
                         help="Ignore imaginary modes when generating random displacements by"
-                        "--random_normalcoord option. By default, imaginary frequency"
-                        "will be replaced with its absolute value.")
+                             "--random_normalcoord option. By default, imaginary frequency"
+                             "will be replaced with its absolute value.")
 
     parser.add_argument('-e', '--every', type=str, default="50", metavar='start:end:interval',
                         help="Specify the range and interval of data sampling. "
-                        "--every=1:1000:10 means sampling one structure for every 10 snapshots"
-                        "from the 1st step to the 1000th step. Used if --MD is given."
-                        "(default: 50)")
+                             "--every=1:1000:10 means sampling one structure for every 10 snapshots"
+                             "from the 1st step to the 1000th step. Used if --MD is given."
+                             "(default: 50)")
 
     parser.add_argument('-md', '--load_mddata', type=str, nargs='+', default=None,
                         help="Specify the file(s) containing displacements of MD trajectories.")
@@ -262,18 +262,18 @@ if __name__ == '__main__':
 
     parser.add_argument('--pes', type=str, default=None, metavar='"q_index branch_index"',
                         help="Specify the target mode to displace atoms for calculating "
-                        "the potential energy surface. --pes='5 10' will generate displacements"
-                        "that correspond to the phonon mode at the 5th q point and the 10th branch."
-                        "Only the real part of the phonon eigenvector is used by default."
-                        "To use the imaginary part instead, please add --imag-evec option.")
+                             "the potential energy surface. --pes='5 10' will generate displacements"
+                             "that correspond to the phonon mode at the 5th q point and the 10th branch."
+                             "Only the real part of the phonon eigenvector is used by default."
+                             "To use the imaginary part instead, please add --imag-evec option.")
 
     parser.add_argument('--imag_evec', action="store_true", dest="imag_evec", default=False,
                         help="In the --pes mode, the imaginary part of the phonon eigenvectors"
-                        "will be used when --imag_evec option is given. By default, the"
-                        "real part of the eigenvectors are used. Please be noted that "
-                        "adding this option generates zero displacements for the phonon modes"
-                        "at the Brillouin zone center and boundaries because the eigenvectors"
-                        "at these points are purely real.")
+                             "will be used when --imag_evec option is given. By default, the"
+                             "real part of the eigenvectors are used. Please be noted that "
+                             "adding this option generates zero displacements for the phonon modes"
+                             "at the Brillouin zone center and boundaries because the eigenvectors"
+                             "at these points are purely real.")
 
     parser.add_argument('--Qrange', type=str, default=None, metavar='"Qmin Qmax"',
                         help='Range of normal coordinate amplitude Q in units of amu^{1/2}*Angstrom')

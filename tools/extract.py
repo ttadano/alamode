@@ -21,6 +21,7 @@ and energies.
 from __future__ import print_function
 
 import argparse
+
 try:
     from interface.VASP import VaspParser
     from interface.QE import QEParser
@@ -28,17 +29,15 @@ try:
     from interface.OpenMX import OpenmxParser
     from interface.LAMMPS import LammpsParser
 
-except ModuleNotFoundError: # occurs when it is called as a library
-    from .interface.VASP import VaspParser    
+except ModuleNotFoundError:  # occurs when it is called as a library
+    from .interface.VASP import VaspParser
     from .interface.QE import QEParser
     from .interface.xTAPP import XtappParser
     from .interface.OpenMX import OpenmxParser
     from .interface.LAMMPS import LammpsParser
 
 
-
 def check_options(args):
-
     # Check the calculator option
 
     conditions = [args.VASP is None,
@@ -140,7 +139,6 @@ def run_parse(args, code, file_original, file_results, output_flags, str_unit):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--VASP',

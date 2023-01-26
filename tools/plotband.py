@@ -230,12 +230,11 @@ def preprocess_data(files, unitname, normalize_xaxis, emin=None, emax=None):
         = gridspec_setup(data_merged, xtickslabels, xticksvars)
 
     return naxes, xticks_grids, xticklabels_grids, \
-        xmin, xmax, ymin, ymax, data_merged_grids
+           xmin, xmax, ymin, ymax, data_merged_grids
 
 
 def run_plot(files, nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax,
              data_merged_ax, unitname, print_key, show=True):
-
     # fig = plt.figure()
     width_ratios = []
     for xmin, xmax in zip(xmin_ax, xmax_ax):
@@ -297,7 +296,9 @@ if __name__ == '__main__':
     parser.add_option("--nokey", action="store_false", dest="print_key", default=True,
                       help="don't print the key in the figure")
     parser.add_option("-u", "--unit", action="store", type="string", dest="unitname", default="kayser",
-                      help="print the band dispersion in units of UNIT. Available options are kayser, meV, and THz", metavar="UNIT")
+                      help="print the band dispersion in units of UNIT. "
+                           "Available options are kayser, meV, and THz",
+                      metavar="UNIT")
     parser.add_option("--emin", action="store", type="float", dest="emin",
                       help="minimum value of the energy axis")
     parser.add_option("--emax", action="store", type="float", dest="emax",
@@ -317,8 +318,8 @@ if __name__ == '__main__':
         print("Number of files = %d" % nfiles)
 
     nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax, \
-        data_merged_ax = preprocess_data(
-            files, options.unitname, options.normalize_xaxis, options.emin, options.emax)
+    data_merged_ax = preprocess_data(
+        files, options.unitname, options.normalize_xaxis, options.emin, options.emax)
 
     run_plot(files, nax, xticks_ax, xticklabels_ax,
-             xmin_ax, xmax_ax, ymin, ymax, data_merged_ax, options.unitname, options.printkey)
+             xmin_ax, xmax_ax, ymin, ymax, data_merged_ax, options.unitname, options.print_key)
