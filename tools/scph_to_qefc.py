@@ -19,11 +19,11 @@ Generator of new QE fc file containing anharmonic correction
 """
 
 import sys
+
 import numpy as np
 
 
 def parse_QEfc(file_QEfc):
-
     header = []
     nx = None
     ny = None
@@ -73,7 +73,6 @@ def parse_QEfc(file_QEfc):
 
 
 def get_structure_info_dfc2(file_dfc2):
-
     lavec = []
     nat = None
     nkd = None
@@ -90,7 +89,6 @@ def get_structure_info_dfc2(file_dfc2):
 
 
 def get_dfc2(file_dfc2, temp_in):
-
     detect_temp_tag = False
     dfc2 = []
 
@@ -128,7 +126,6 @@ def get_dfc2(file_dfc2, temp_in):
 
 
 def create_newfc2(nx, ny, nz, fc2_orig, dfc2_array):
-
     fc2_new = np.copy(fc2_orig)
 
     for entry in dfc2_array:
@@ -166,7 +163,6 @@ def create_newfc2(nx, ny, nz, fc2_orig, dfc2_array):
 
 
 def print_fc2(header_in, nx, ny, nz, nat, fc2_in):
-
     for line in header_in:
         print(line.rstrip())
     print("%4d %3d %3d" % (nx, ny, nz))

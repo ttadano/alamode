@@ -1,8 +1,9 @@
-import sys
-import os
-import collections
-import numpy as np
 import argparse
+import collections
+import os
+
+import numpy as np
+
 try:
     from pymatgen.core import Structure
 except:
@@ -39,9 +40,7 @@ parser.add_argument('--dfset',
                     help="The displacement-force datasets for harmonic phonon calculation.")
 
 
-
 def gen_kpoints_file(structure):
-
     kmesh = inputs.Kpoints.automatic_density_by_vol(structure, 450)
     kmesh_dict = kmesh.as_dict()
 
@@ -49,7 +48,6 @@ def gen_kpoints_file(structure):
 
 
 def gen_species_dictionary(atomic_number_uniq):
-
     species_dict = {}
     counter = 1
     for num in atomic_number_uniq:
@@ -60,7 +58,6 @@ def gen_species_dictionary(atomic_number_uniq):
 
 def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
                   ndata=0, dfset='DFSET'):
-
     Bohr = 0.52917721067
 
     if (mode != "suggest" and mode != "optimize"):
@@ -89,7 +86,7 @@ def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
         f.write(" %s\n" % str_cutoff)
         f.write("/\n\n")
         f.write("&cell\n")
-        f.write("%20.14f\n" % (1.0/Bohr))
+        f.write("%20.14f\n" % (1.0 / Bohr))
         for i in range(3):
             for j in range(3):
                 f.write("%20.13f" % structure.lattice.matrix[i][j])
@@ -112,7 +109,6 @@ def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
 
 def gen_anphon_input(filename, prefix,
                      mode, structure, path_info, npoints=51):
-
     Bohr = 0.52917721067
 
     if mode != "phonons":
@@ -135,7 +131,7 @@ def gen_anphon_input(filename, prefix,
         f.write(" FCSXML = %s.xml\n" % prefix)
         f.write("/\n\n")
         f.write("&cell\n")
-        f.write("%20.14f\n" % (1.0/Bohr))
+        f.write("%20.14f\n" % (1.0 / Bohr))
         for i in range(3):
             for j in range(3):
                 f.write("%20.13f" % structure.lattice.matrix[i][j])
@@ -162,7 +158,6 @@ def gen_anphon_input(filename, prefix,
 
 
 def process_args(args):
-
     if args.dim is None:
         scaling_matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
     else:
@@ -187,7 +182,6 @@ def process_args(args):
 
 
 def update_qeobj(qeparse_in, structure_in):
-
     kmesh, kshift = gen_kpoints_file(structure_in)
 
     # Update nat entry
@@ -232,7 +226,6 @@ def update_qeobj(qeparse_in, structure_in):
 
 
 def run_displacement(file_primitive, prefix, scaling_matrix, disp_magnitude_angstrom):
-
     qeobj = QEParser()
     qeobj.load_initial_structure(file_primitive)
 
@@ -273,7 +266,6 @@ def run_displacement(file_primitive, prefix, scaling_matrix, disp_magnitude_angs
 
 
 def run_optimize(file_primitive, file_dfset, scaling_matrix):
-
     qeobj = QEParser()
     qeobj.load_initial_structure(file_primitive)
 
@@ -296,7 +288,6 @@ def run_optimize(file_primitive, file_dfset, scaling_matrix):
 
 
 def gen_bzpath(structure):
-
     cell = (structure.lattice.matrix,
             structure.frac_coords,
             structure.atomic_numbers)
@@ -307,7 +298,6 @@ def gen_bzpath(structure):
 
 
 def gen_phband(file_primitive):
-
     qeobj = QEParser()
     qeobj.load_initial_structure(file_primitive)
 
@@ -341,7 +331,3 @@ if __name__ == '__main__':
                      scaling_matrix)
 
         gen_phband(args.file_primitive)
-
-
-
-
