@@ -2075,6 +2075,15 @@ void ModeAnalysis::print_Phi4_elements() const
             ofs_V4 << std::endl;
             ofs_V4 << "# mode = " << snum + 1 << std::endl;
             ofs_V4 << "# Frequency = " << writes->in_kayser(omega) << std::endl;
+            ofs_V4 << "# List of k-point coordinates" << std::endl;
+            for (j = 0; j < dos->kmesh_dos->nk; ++j) {
+                ofs_V4 << "# ik = " << std::setw(4) << j + 1;
+                ofs_V4 << ": xk = ";
+                for (auto k = 0; k < 3; ++k) {
+                    ofs_V4 << std::setw(15) << dos->kmesh_dos->xk[j][k];
+                }
+                ofs_V4 << '\n';
+            }
             ofs_V4 << "## Matrix elements Phi4 for given mode" << std::endl;
             ofs_V4 << "## q1, j1, omega(q1j1) (cm^-1), "
                       "q2, j2, omega(q2j2) (cm^-1), "
