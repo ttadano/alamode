@@ -1132,19 +1132,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     for(is = 0; is < ns; is++){
         v1_array_original[is] = 0.0;
     }
-
-    // debug
-    if(mympi->my_rank == 0){
-        std::cout << "harmonic polarization vectors at Gamma point" << std::endl;
-        for(is1 = 0; is1 < ns; is1++){
-            std::cout << "mode: " << is1 << std::endl;
-            std::cout << "frequency : " << omega2_harmonic[0][is1] << std::endl;
-            for(is2 = 0; is2 < ns; is2++){
-                std::cout << evec_harmonic[0][is1][is2] << std::endl;
-            }std::cout << std::endl;
-        }std::cout << std::endl;
-    }
-
     // compute IFC renormalization by lattice relaxation
     std::cout << " RELAX_COORDINATE = " << relax_coordinate << ": ";
     std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl;
@@ -1269,13 +1256,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     }
     
     
-    if(mympi->my_rank == 0){
-        std::cout << "mode indices of optical modes: " << std::endl;
-        for(is = 0; is < ns-3; is++){
-            std::cout << harm_optical_modes[is] << " ";
-        }std::cout << std::endl;
-    }
-
     if (mympi->my_rank == 0) {
 
         std::complex<double> ***cmat_convert;
@@ -1594,7 +1574,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             for(i_str_loop = 0; i_str_loop < max_str_iter; i_str_loop++){
 
                 std::cout << std::endl << std::endl << " Structure loop :" << std::setw(5) << i_str_loop+1 << std::endl;
-                std::cout << " IFC renormalization ... ";
 
                 // get eta tensor
                 calculate_eta_tensor(eta_tensor, u_tensor);
@@ -1663,9 +1642,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     }
                 }
 
-                std::cout << "done!" << std::endl << std::endl;
-                std::cout << " SCPH calculation." << std::endl << std::endl;
-
                 // solve SCP equation
                 compute_anharmonic_frequency(v4_array_renormalized,
                                          omega2_anharm[iT],
@@ -1676,19 +1652,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                          selfenergy_offdiagonal,
                                          delta_v2_array_renormalize, 
                                          writes->getVerbosity());
-
-                // temporary
-                // std::cout << "anharmonic frequencies" << std::endl;
-                // for(is1 = 0; is1 < ns; is1++){
-                //     std::cout << omega2_anharm[iT][0][is1] << std::endl;
-                // }
-
-
-                // debug
-                /* compute_renormalized_harmonic_frequency(omega2_anharm[iT],
-                                        evec_anharm_tmp,
-                                        delta_v2_array_renormalize,
-                                        writes->getVerbosity());*/
 
                 calc_new_dymat_with_evec(dymat_anharm[iT],
                                         omega2_anharm[iT],
@@ -1750,7 +1713,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                     for(is = 0; is < ns-3; is++){
                         for(js = 0; js < ns-3; js++){
-                            //v2_mat_optical(is, js) = v2_mat_full(is+3, js+3);
                             v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
                         }
                         v2_mat_optical(is, is) += add_hess_diag_omega2;
@@ -1766,7 +1728,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     dq0 = 0.0;
                     for(is = 0; is < ns-3; is++){
                         delta_q0[harm_optical_modes[is]] = - mixbeta_coord * dq0_vec(is).real();
-                        // delta_q0[harm_optical_modes[is]] = 0.0;
                         q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
                     }
 
@@ -1813,13 +1774,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                             }
                         }
 
-                        // solve linear equation
                         du_tensor_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_v0_strain_vec);
 
                         // update u tensor
                         for(is = 0; is < 6; is++){
                             delta_u_tensor[is] = - mixbeta_cell * du_tensor_vec(is).real();
-                            // delta_u_tensor[is] = 0.0;
                             if(is < 3){
                                 u_tensor[is][is] += delta_u_tensor[is];
                             }
@@ -7830,7 +7789,6 @@ void Scph::renormalize_v2_array(std::complex<double> **delta_v2_array_renormaliz
         // std::cout << "substitute to delta_v2_array_renormalize is done" << std::endl; // debug
     }
     
-    std::cout << "add to original array " << std::endl; // debug
 
     // add original delta_v2_array
     // This is important when cell relaxation is performed
@@ -7839,7 +7797,6 @@ void Scph::renormalize_v2_array(std::complex<double> **delta_v2_array_renormaliz
             delta_v2_array_renormalize[ik][is1] += delta_v2_array_original[ik][is1];
         }
     }
-    std::cout << "add to original array done " << std::endl; // debug
 
     deallocate(dymat_q);
     
