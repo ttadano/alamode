@@ -175,6 +175,16 @@ class LammpsParser(object):
 
                 for idata in range(ndata):
                     disp = x[idata, :, :] - self._x_cartesian - disp_offset
+                    if True:
+                        # force disp vector the small magnitude assuming that the displacement is small.
+                        # change displacemeent to the fractional coordinate
+                        _disp_fracx = self._get_fractional_coordinate(disp, self._inverse_lattice_vector)
+                        # make _fracx in [-0.5,0.5).
+                        _disp_fracx += 0.5
+                        _disp_fracx %= 1  # returns positive fractional part.. [0,1).
+                        _disp_fracx -= 0.5  # adjust the center again
+                        # convert to the cartedian coordinate again
+                        disp = np.dot(_disp_fracx, self._lattice_vector.transpose())
                     disp *= self._disp_conversion_factor
                     f = force[idata, :, :] - force_offset
                     f *= self._force_conversion_factor
@@ -343,7 +353,7 @@ class LammpsParser(object):
 
     def _set_output_flags(self, output_flags):
         self._print_disp, self._print_force, \
-        self._print_energy, self._print_born = output_flags
+            self._print_energy, self._print_born = output_flags
 
     def _set_number_of_zerofill(self, npattern):
 
@@ -380,25 +390,37 @@ class LammpsParser(object):
     @staticmethod
     def _get_coordinate_and_force_lammps(lammps_dump_file):
 
-        add_flag = False
+        add_flag = None
         ret = []
 
         with open(lammps_dump_file) as f:
             for line in f:
-                if "ITEM:" in line and "ITEM: ATOMS id xu yu zu fx fy fz" not in line:
-                    add_flag = False
+                # if "ITEM:" in line and "ITEM: ATOMS id xu yu zu fx fy fz" not in line:
+                #    add_flag = False
+                #    continue
+                if "ITEM: ATOMS id xu yu zu fx fy fz" in line:
+                    add_flag = "id.xu"
                     continue
-                elif "ITEM: ATOMS id xu yu zu fx fy fz" in line:
-                    add_flag = True
+                elif "ITEM: ATOMS element xu yu zu fx fy fz" in line:
+                    add_flag = "element.xu"
+                    id_ = 0
                     continue
 
-                if add_flag:
-                    if line.strip():
-                        entries = line.strip().split()
-                        data_atom = [int(entries[0]),
-                                     [float(t) for t in entries[1:4]],
-                                     [float(t) for t in entries[4:]]]
-
+                if add_flag is not None:
+                    if add_flag == "id.xu":
+                        if line.strip():
+                            entries = line.strip().split()
+                            data_atom = [int(entries[0]),
+                                         [float(t) for t in entries[1:4]],
+                                         [float(t) for t in entries[4:]]]
+                        ret.append(data_atom)
+                    elif add_flag == "element.xu":
+                        if line.strip():
+                            entries = line.strip().split()
+                            id_ += 1
+                            data_atom = [int(id_),
+                                         [float(t) for t in entries[1:4]],
+                                         [float(t) for t in entries[4:]]]
                         ret.append(data_atom)
 
         # This sort is necessary since the order atoms of LAMMPS dump files
