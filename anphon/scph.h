@@ -494,14 +494,33 @@ private:
                                 std::complex<double> ***, 
                                 double);
 
-    void compute_del_v_strain(std::complex<double> **del_v1_strain_from_harmonic,
-                                std::complex<double> **del_v1_strain_from_cubic,
-                                std::complex<double> **del_v1_strain_from_quartic,
-                                std::complex<double> ***del_v2_strain_from_cubic,
-                                std::complex<double> ***del_v2_strain_from_quartic,
-                                std::complex<double> ****del_v3_strain_from_quartic,
-                                std::complex<double> ***evec_harmonic,
-                                int relax_coordinate);
+    void compute_del_v_strain(std::complex<double> **,
+                              std::complex<double> **,
+                              std::complex<double> **,
+                              std::complex<double> ***,
+                              std::complex<double> ***,
+                              std::complex<double> ****,
+                              std::complex<double> ***,
+                              int );
+
+    void set_elastic_constants(double *C1_array,
+                               double **C2_array,
+                               double ***C3_array);
+
+    void write_stropt_file_header(std::ofstream &fout_step_q0,
+                                  std::ofstream &fout_step_u0,
+                                  std::ofstream &fout_q0,
+                                  std::ofstream &fout_u0,
+                                  std::ofstream &fout_v0,
+                                  std::ofstream &fout_step_u_tensor,
+                                  std::ofstream &fout_u_tensor);
+
+    void set_init_structure_atT(double *q0,
+                                double **u_tensor,
+                                double *u0,
+                                bool &converged_prev,
+                                int set_init_str,
+                                int i_temp_loop);
 
 };
 

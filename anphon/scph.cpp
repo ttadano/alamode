@@ -1201,7 +1201,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
         auto converged_prev = false;
 
-        // if the unit cell is fixed,
+        set_elastic_constants(C1_array,
+                              C2_array,
+                              C3_array);
+
+/*        // if the unit cell is fixed,
         // dummy values are set in the elastic constants
         if(relax_coordinate == 1){
             for(i1 = 0; i1 < 9; i1++){
@@ -1224,13 +1228,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     }
                 }
             }
-
-            // debug
-            for(i1 = 0; i1 < 9; i1++){
-                for(i2 = 0; i2 < 9; i2++){
-                    std::cout << C2_array[i1][i2] << " ";
-                }std::cout << std::endl;
-            }std::cout << std::endl;
             
             for(i1 = 0; i1 < 9; i1++){
                 for(i2 = 0; i2 < 9; i2++){
@@ -1244,7 +1241,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             read_C1_array(C1_array);
             read_elastic_constants(C2_array, C3_array);
         }
-
+*/
         // Output files of structural optimization
         std::ofstream fout_step_q0;
         std::ofstream fout_step_u0;
@@ -1268,7 +1265,15 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             fout_u_tensor.open("u_tensor.txt");
         }
 
-        // q0.txt
+        write_stropt_file_header(fout_step_q0,
+                                 fout_step_u0,
+                                 fout_q0,
+                                 fout_u0,
+                                 fout_v0,
+                                 fout_step_u_tensor,
+                                 fout_u_tensor);
+
+/*        // q0.txt
         fout_q0 << "#";
         fout_q0 << std::setw(14) << "temp [K]";
         for(is1 = 0; is1 < ns; is1++){
@@ -1304,7 +1309,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             }fout_u_tensor << std::endl;
         
         }
-
+*/
         i_temp_loop = -1;
 
         std::cout << "Start structural optimization." << std::endl;
@@ -1350,7 +1355,14 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }
             }
 
-            std::cout << " SET_INIT_STR = " << set_init_str << std::endl;
+            set_init_structure_atT(q0,
+                                   u_tensor,
+                                   u0,
+                                   converged_prev,
+                                   set_init_str,
+                                   i_temp_loop);
+
+/*            std::cout << " SET_INIT_STR = " << set_init_str << std::endl;
             if(set_init_str == 1){
                 std::cout << " read initial structure from input files." << std::endl << std::endl;
                 // read initial structure at each temperature
@@ -1424,7 +1436,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     std::cout << " start from the structure at the previous temperature." << std::endl << std::endl;
                 }
             }
-
+*/
             std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
             for(iat1 = 0; iat1 < system->natmin; iat1++){
                 std::cout << " ";
@@ -2221,11 +2233,15 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             }
         }
 
-        //auto converged_prev = false;
+        auto converged_prev = false;
 
         // read elastic constants
-        read_C1_array(C1_array);
+/*        read_C1_array(C1_array);
         read_elastic_constants(C2_array, C3_array);
+*/
+        set_elastic_constants(C1_array,
+                              C2_array,
+                              C3_array);
 
         // Output files of structural optimization
         std::ofstream fout_step_q0;
@@ -2245,7 +2261,15 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
         std::ofstream fout_u_tensor;
         fout_u_tensor.open("u_tensor.txt");
 
-        // q0.txt
+        write_stropt_file_header(fout_step_q0,
+                                 fout_step_u0,
+                                 fout_q0,
+                                 fout_u0,
+                                 fout_v0,
+                                 fout_step_u_tensor,
+                                 fout_u_tensor);
+
+/*        // q0.txt
         fout_q0 << "#";
         fout_q0 << std::setw(14) << "temp [K]";
         for(is1 = 0; is1 < ns; is1++){
@@ -2278,7 +2302,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
         fout_v0 << std::setw(14) << "temp [K]";
         fout_v0 << std::setw(15) << "U_0 [Ry]";
         fout_v0 << std::endl;
-
+*/
         i_temp_loop = -1;
 
         std::cout << "Start structural optimization." << std::endl;
@@ -2318,6 +2342,14 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             //     }
             // }
 
+            set_init_structure_atT(q0,
+                                   u_tensor,
+                                   u0,
+                                   converged_prev,
+                                   set_init_str,
+                                   i_temp_loop);
+
+/*
             std::cout << " SET_INIT_STR = " << set_init_str << std::endl;
             if(set_init_str == 1){
                 std::cout << " read initial structure from input files." << std::endl << std::endl;
@@ -2365,7 +2397,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     std::cout << " start from the structure at the previous temperature." << std::endl << std::endl;
                 }
             }
-
+*/
             std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
             for(iat1 = 0; iat1 < system->natmin; iat1++){
                 std::cout << " ";
@@ -3390,6 +3422,53 @@ void Scph::exec_perturbative_QHA()
 
 }
 
+void Scph::set_elastic_constants(double *C1_array,
+                                 double **C2_array,
+                                 double ***C3_array)
+{
+    int i1, i2, i3, i4;
+    
+    // if the shape of the unit cell is relaxed,
+    // read elastic constants from file
+    if(relax_coordinate == 2 || relax_coordinate == -1){
+        read_C1_array(C1_array);
+        read_elastic_constants(C2_array, C3_array);
+    }
+    // if the unit cell is fixed,
+    // dummy values are set in the elastic constants
+    else if(relax_coordinate == 1){
+        for(i1 = 0; i1 < 9; i1++){
+            C1_array[i1] = 0.0;
+        }
+
+        // The elastic constant should be positive-definite
+        // except for the rotational degrees of freedom
+        for(i1 = 0; i1 < 3; i1++){
+            for(i2 = 0; i2 < 3; i2++){
+                for(i3 = 0; i3 < 3; i3++){
+                    for(i4 = 0; i4 < 3; i4++){
+                        if((i1 == i3 && i2 == i4) || (i1 == i4 && i2 == i3)){
+                            C2_array[i1*3+i2][i3*3+i4] = 10.0;
+                        }
+                        else{
+                            C2_array[i1*3+i2][i3*3+i4] = 0.0;
+                        }
+                    }
+                }
+            }
+        }
+        
+        for(i1 = 0; i1 < 9; i1++){
+            for(i2 = 0; i2 < 9; i2++){
+                for(i3 = 0; i3 < 9; i3++){
+                    C3_array[i1][i2][i3] = 0.0;
+                }
+            }
+        }
+    }
+         
+}
+
 void Scph::read_C1_array(double *C1_array)
 {
     std::fstream fin_C1_array;
@@ -3461,6 +3540,95 @@ void Scph::read_elastic_constants(double **C2_array,
             for(i3 = 0; i3 < 9; i3++){
                 fin_elastic_constants >> C3_array[i1][i2][i3];
             }
+        }
+    }
+}
+
+void Scph::set_init_structure_atT(double *q0,
+                                double **u_tensor,
+                                double *u0,
+                                bool &converged_prev,
+                                int set_init_str,
+                                int i_temp_loop)
+{
+
+    int i1, i2;
+
+    std::cout << " SET_INIT_STR = " << set_init_str << std::endl;
+
+    if(set_init_str == 1){
+        std::cout << " read initial structure from input files." << std::endl << std::endl;
+
+        // read initial structure at each temperature
+        read_initial_q0(q0);
+        calculate_u0(q0, u0);
+
+        // read strain.in
+        if(relax_coordinate == 1){
+            for(i1 = 0; i1 < 3; i1++){
+                for(i2 = 0; i2 < 3; i2++){
+                    u_tensor[i1][i2] = 0.0;
+                }
+            }
+        }
+        else{
+            read_initial_strain(u_tensor);
+        }
+        converged_prev = false;
+    }
+    else if(set_init_str == 2){
+        // read initial structure at initial temperature
+        if(i_temp_loop == 0){
+            std::cout << " read initial structure from input files." << std::endl << std::endl;
+
+            read_initial_q0(q0);
+            calculate_u0(q0, u0);
+            if(relax_coordinate == 1){
+                for(i1 = 0; i1 < 3; i1++){
+                    for(i2 = 0; i2 < 3; i2++){
+                        u_tensor[i1][i2] = 0.0;
+                    }
+                }
+            }
+            else{
+                read_initial_strain(u_tensor);
+            }
+        }
+        else{
+            std::cout << " start from structure from the previous temperature." << std::endl << std::endl;
+        }
+    }
+    else if(set_init_str == 3){
+        // read initial structure at initial temperature
+        if(i_temp_loop == 0){
+            std::cout << " read initial structure from input files." << std::endl << std::endl;
+
+            read_initial_q0(q0);
+            calculate_u0(q0, u0);
+            if(relax_coordinate == 1){
+                for(i1 = 0; i1 < 3; i1++){
+                    for(i2 = 0; i2 < 3; i2++){
+                        u_tensor[i1][i2] = 0.0;
+                    }
+                }
+            }
+            else{
+                read_initial_strain(u_tensor);
+            }
+        }
+        // read initial DISPLACEMENT if the structure converges
+        // to the high-symmetry one.
+        else if(std::fabs(u0[cooling_u0_index]) < cooling_u0_thr){
+            std::cout << " u0[" << cooling_u0_index << "] < " << std::setw(15) << std::setprecision(6) << cooling_u0_thr << " is satisfied." << std::endl;
+            std::cout << " the structure is back to the high-symmetry phase." << std::endl;
+            std::cout << " read again initial displacement from input file." << std::endl << std::endl;
+
+            read_initial_q0(q0);
+            calculate_u0(q0, u0);
+            converged_prev = false;
+        }
+        else{
+            std::cout << " start from the structure at the previous temperature." << std::endl << std::endl;
         }
     }
 }
@@ -10735,4 +10903,54 @@ void Scph::calc_del_v0_strain_vib(std::complex<double> *del_v0_strain_vib,
             }
         }
     }
+}
+
+void Scph::write_stropt_file_header(std::ofstream &fout_step_q0,
+                                    std::ofstream &fout_step_u0,
+                                    std::ofstream &fout_q0,
+                                    std::ofstream &fout_u0,
+                                    std::ofstream &fout_v0,
+                                    std::ofstream &fout_step_u_tensor,
+                                    std::ofstream &fout_u_tensor)
+{
+    int is1, iat1, ixyz1, ixyz2;
+    std::string str_tmp, str_tmp2;
+    const auto ns = dynamical->neval;
+    
+    // q0.txt
+    fout_q0 << "#";
+    fout_q0 << std::setw(14) << "temp [K]";
+    for(is1 = 0; is1 < ns; is1++){
+        fout_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
+    }fout_q0 << std::endl;
+
+    // u0.txt
+    fout_u0 << "#";
+    fout_u0 << std::setw(14) << "temp [K]";
+    for(iat1 = 0; iat1 < system->natmin; iat1++){
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            get_xyz_string(ixyz1, str_tmp);
+            fout_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
+        }
+    }fout_u0 << std::endl;
+
+    // v0.txt
+    fout_v0 << "#";
+    fout_v0 << std::setw(14) << "temp [K]";
+    fout_v0 << std::setw(15) << "U_0 [Ry]";
+    fout_v0 << std::endl;
+
+    // if the cell shape is relaxed
+    if(fout_u_tensor){
+        fout_u_tensor << "#";
+        fout_u_tensor << std::setw(14) << "temp [K]";
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                get_xyz_string(ixyz1, str_tmp);
+                get_xyz_string(ixyz2, str_tmp2);
+                fout_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 + "}");
+            }
+        }fout_u_tensor << std::endl;
+    }
+
 }
