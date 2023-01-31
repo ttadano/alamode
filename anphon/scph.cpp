@@ -89,6 +89,10 @@ void Scph::set_default_variables()
 
     qha_scheme = 0;
 
+    renorm_3to2nd = 1;
+    renorm_2to1st = 1;
+    renorm_anharmto1st = 1;
+
     kmap_interpolate_to_scph = nullptr;
     evec_harmonic = nullptr;
     omega2_harmonic = nullptr;
@@ -1143,92 +1147,14 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     allocate(del_v2_strain_from_quartic, 81, nk, ns*ns);
     allocate(del_v3_strain_from_quartic, 9, nk, ns, ns*ns);
 
-    // keep the unit cell fixed and relax internal coordinates
-    if(relax_coordinate == 1){
-        for(i1 = 0; i1 < 9; i1++){
-            for(is1 = 0; is1 < ns; is1++){
-                del_v1_strain_from_harmonic[i1][is1] = 0.0;
-            }
-        }
-
-        for(i1 = 0; i1 < 81; i1++){
-            for(is1 = 0; is1 < ns; is1++){
-                del_v1_strain_from_cubic[i1][is1] = 0.0;
-            }
-        }
-
-        for(i1 = 0; i1 < 729; i1++){
-            for(is1 = 0; is1 < ns; is1++){
-                del_v1_strain_from_quartic[i1][is1] = 0.0;
-            }
-        }
-
-        for(i1 = 0; i1 < 9; i1++){
-            for(ik1 = 0; ik1 < nk; ik1++){
-                for(is1 = 0; is1 < ns*ns; is1++){
-                    del_v2_strain_from_cubic[i1][ik1][is1] = 0.0;
-                }
-            }
-        }
-
-        for(i1 = 0; i1 < 81; i1++){
-            for(ik1 = 0; ik1 < nk; ik1++){
-                for(is1 = 0; is1 < ns*ns; is1++){
-                    del_v2_strain_from_quartic[i1][ik1][is1] = 0.0;
-                }
-            }
-        }
-
-        for(i1 = 0; i1 < 9; i1++){
-            for(ik1 = 0; ik1 < nk; ik1++){
-                for(is1 = 0; is1 < ns; is1++){
-                    for(is2 = 0; is2 < ns*ns; is2++){
-                        del_v3_strain_from_quartic[i1][ik1][is1][is2] = 0.0;
-                    }
-                }
-            }
-        }
-    }
-    // relax both the unit cell and the internal coordinates
-    else if(relax_coordinate == 2){
-        std::cout << "  1st order derivatives of 1st-order IFCs (from harmonic IFCs) ... ";
-        compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
-        std::cout << "done!" << std::endl;
-        timer->print_elapsed();
-
-        std::cout << "  2nd order derivatives of 1st-order IFCs (from cubic IFCs) ... ";
-        compute_del_v1_strain_from_cubic(del_v1_strain_from_cubic, evec_harmonic);
-        std::cout << "done!" << std::endl;
-        timer->print_elapsed();
-
-        std::cout << "  3rd order derivatives of 1st-order IFCs (from quartic IFCs) ... ";
-        compute_del_v1_strain_from_quartic(del_v1_strain_from_quartic, evec_harmonic);
-        std::cout << "done!" << std::endl;
-        timer->print_elapsed();
-
-        //std::cout << "  from cubic to harmonic IFCs ... ";
-        std::cout << "  1st order derivatives of harmonic IFCs (finite displacement method) ... ";
-        // allocate(del_v2_strain_from_cubic_tmp, 9, nk, ns*ns);
-        
-        // compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
-        // calculate del_v2_strain_from_cubic by finite difference method in terms of strain
-        calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
-                                                                del_v2_strain_from_cubic);
-
-        // read_del_v2_strain_from_cubic_in_kspace(evec_harmonic, del_v2_strain_from_cubic);
-        std::cout << "done!" << std::endl;
-        timer->print_elapsed();
-
-        std::cout << "  2nd order derivatives of harmonic IFCs (from quartic IFCs) ... ";
-        compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
-        std::cout << "done!" << std::endl;
-        timer->print_elapsed();
-
-        std::cout << "  1st order derivatives of cubic IFCs (from quartic IFCs) ... ";
-        compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
-        std::cout << "done!" << std::endl; 
-        timer->print_elapsed();
-    }
+    compute_del_v_strain(del_v1_strain_from_harmonic,
+                         del_v1_strain_from_cubic,
+                         del_v1_strain_from_quartic,
+                         del_v2_strain_from_cubic,
+                         del_v2_strain_from_quartic,
+                         del_v3_strain_from_quartic,
+                         evec_harmonic,
+                         relax_coordinate);
 
     // add correction from B_array to del_v2_strain_from_cubic
     // add_strain_mode_coupling_to_del_v2_strain(del_v2_strain_from_cubic, evec_harmonic, B_array);
@@ -2168,12 +2094,29 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
         v1_array_original[is] = 0.0;
     }
 
-    // compute IFC renormalization by lattice relaxation
+    allocate(del_v1_strain_from_harmonic, 9, ns);
+    allocate(del_v1_strain_from_cubic, 81, ns);
+    allocate(del_v1_strain_from_quartic, 729, ns);
+    allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
+    allocate(del_v2_strain_from_quartic, 81, nk, ns*ns);
+    allocate(del_v3_strain_from_quartic, 9, nk, ns, ns*ns);
+
+
+    compute_del_v_strain(del_v1_strain_from_harmonic,
+                         del_v1_strain_from_cubic,
+                         del_v1_strain_from_quartic,
+                         del_v2_strain_from_cubic,
+                         del_v2_strain_from_quartic,
+                         del_v3_strain_from_quartic,
+                         evec_harmonic,
+                         relax_coordinate);
+
+/*    // compute IFC renormalization by lattice relaxation
     // std::cout << " RELAX_COORDINATE = " << relax_coordinate << ": ";
     std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl;
 
     std::cout << "  1st order derivatives of 1st-order IFCs (from harmonic IFCs) ... ";
-    allocate(del_v1_strain_from_harmonic, 9, ns);
+    
     // compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
     // finite difference method
     calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(del_v1_strain_from_harmonic, evec_harmonic);
@@ -2181,7 +2124,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     timer->print_elapsed();
 
     std::cout << "  2nd order derivatives of 1st-order IFCs (from cubic IFCs) ... ";
-    allocate(del_v1_strain_from_cubic, 81, ns);
     compute_del_v1_strain_from_cubic(del_v1_strain_from_cubic, evec_harmonic);
     // set zero (temporary) from here
     std::cout << "  set zero ..." << std::endl;
@@ -2195,7 +2137,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     timer->print_elapsed();
 
     std::cout << "  3rd order derivatives of 1st-order IFCs (from quartic IFCs) ... ";
-    allocate(del_v1_strain_from_quartic, 729, ns);
     compute_del_v1_strain_from_quartic(del_v1_strain_from_quartic, evec_harmonic);
     // set zero (temporary) from here
     std::cout << "  set zero ..." << std::endl;
@@ -2211,7 +2152,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
 
     std::cout << "  1st order derivatives of harmonic IFCs (from cubic IFCs) ... ";
     // std::cout << "  1st order derivatives of harmonic IFCs (finite displacement method) ... ";
-    allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
+    
     // compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic); // temporary
     calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
 
@@ -2222,17 +2163,15 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     timer->print_elapsed();
 
     std::cout << "  2nd order derivatives of harmonic IFCs (from quartic IFCs) ... ";
-    allocate(del_v2_strain_from_quartic, 81, nk, ns*ns);
     compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
     std::cout << "done!" << std::endl;
     timer->print_elapsed();
 
     std::cout << "  1st order derivatives of cubic IFCs (from quartic IFCs) ... ";
-    allocate(del_v3_strain_from_quartic, 9, nk, ns, ns*ns);
     compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
     std::cout << "done!" << std::endl; 
     timer->print_elapsed();
-
+*/
     // for lattice relaxation
     allocate(del_v0_strain_with_strain_displace, 9);
     allocate(del_v0_strain_QHA, 9);
@@ -4554,6 +4493,167 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
 
     deallocate(is_acoustic);
 }
+
+void Scph::compute_del_v_strain(std::complex<double> **del_v1_strain_from_harmonic,
+                            std::complex<double> **del_v1_strain_from_cubic,
+                            std::complex<double> **del_v1_strain_from_quartic,
+                            std::complex<double> ***del_v2_strain_from_cubic,
+                            std::complex<double> ***del_v2_strain_from_quartic,
+                            std::complex<double> ****del_v3_strain_from_quartic,
+                            std::complex<double> ***evec_harmonic,
+                            int relax_coordinate)
+{
+    int ns = dynamical->neval;
+    const auto nk = kmesh_dense->nk;
+
+    const auto complex_zero = std::complex<double>(0.0, 0.0);
+
+    int i1;
+    int is1, is2;
+    int ik1;
+    
+    // relax_coordinate == 1 : keep the unit cell fixed and relax internal coordinates
+    // set renormalization from strain as zero
+    if(relax_coordinate == 1){
+        for(i1 = 0; i1 < 9; i1++){
+            for(is1 = 0; is1 < ns; is1++){
+                del_v1_strain_from_harmonic[i1][is1] = complex_zero;
+            }
+        }
+
+        for(i1 = 0; i1 < 81; i1++){
+            for(is1 = 0; is1 < ns; is1++){
+                del_v1_strain_from_cubic[i1][is1] = complex_zero;
+            }
+        }
+
+        for(i1 = 0; i1 < 729; i1++){
+            for(is1 = 0; is1 < ns; is1++){
+                del_v1_strain_from_quartic[i1][is1] = complex_zero;
+            }
+        }
+
+        for(i1 = 0; i1 < 9; i1++){
+            for(ik1 = 0; ik1 < nk; ik1++){
+                for(is1 = 0; is1 < ns*ns; is1++){
+                    del_v2_strain_from_cubic[i1][ik1][is1] = complex_zero;
+                }
+            }
+        }
+
+        for(i1 = 0; i1 < 81; i1++){
+            for(ik1 = 0; ik1 < nk; ik1++){
+                for(is1 = 0; is1 < ns*ns; is1++){
+                    del_v2_strain_from_quartic[i1][ik1][is1] = complex_zero;
+                }
+            }
+        }
+
+        for(i1 = 0; i1 < 9; i1++){
+            for(ik1 = 0; ik1 < nk; ik1++){
+                for(is1 = 0; is1 < ns; is1++){
+                    for(is2 = 0; is2 < ns*ns; is2++){
+                        del_v3_strain_from_quartic[i1][ik1][is1][is2] = complex_zero;
+                    }
+                }
+            }
+        }
+    }
+    // relax_coordinate == 2 : relax both the cell shape and the internal coordinate using SCP.
+    // relax_coordinate == -1 : relax both the cell shape and the internal coordinate using QHA.
+    else if(relax_coordinate == 2 || relax_coordinate == -1){
+        std::cout << "Calculate derivatives of k-space IFCs by strain." << std::endl;
+
+        // 1st-order derivative of 1st-order IFCs
+        if(renorm_2to1st == 0){
+            std::cout << "  first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
+            compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
+        }
+        else if(renorm_2to1st == 1){
+            std::cout << "  first-order derivatives of first-order IFCs (finite difference method) ... ";
+            calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(del_v1_strain_from_harmonic, evec_harmonic);
+        }
+        else if(renorm_2to1st == 2){
+            std::cout << "  first-order derivatives of first-order IFCs (set as zero) ... ";
+            for(i1 = 0; i1 < 9; i1++){
+                for(is1 = 0; is1 < ns; is1++){
+                    del_v1_strain_from_harmonic[i1][is1] = complex_zero;
+                }
+            }
+        }
+        std::cout << "  done!" << std::endl;
+        timer->print_elapsed();
+
+        // 2nd and 3rd-order derivatives of 1st order IFCs
+        if(renorm_anharmto1st == 0){
+            std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
+            compute_del_v1_strain_from_cubic(del_v1_strain_from_cubic, evec_harmonic);
+            std::cout << "  done!" << std::endl;
+            timer->print_elapsed();
+
+            std::cout << "  third-order derivatives of first-order IFCs (from quartic IFCs) ... ";
+            compute_del_v1_strain_from_quartic(del_v1_strain_from_quartic, evec_harmonic);
+            std::cout << "  done!" << std::endl;
+            timer->print_elapsed();
+        }
+        else if(renorm_anharmto1st == 1){
+            std::cout << "  second-order derivatives of first-order IFCs (set zero) ... ";
+            for(i1 = 0; i1 < 81; i1++){
+                for(is1 = 0; is1 < ns; is1++){
+                    del_v1_strain_from_cubic[i1][is1] = complex_zero;
+                }
+            }
+            std::cout << "  done!" << std::endl;
+            timer->print_elapsed();
+
+            std::cout << "  third-order derivatives of first-order IFCs (set zero) ... ";
+            for(i1 = 0; i1 < 729; i1++){
+                for(is1 = 0; is1 < ns; is1++){
+                    del_v1_strain_from_quartic[i1][is1] = complex_zero;
+                }
+            }
+            std::cout << "  done!" << std::endl;
+            timer->print_elapsed();
+        }
+
+        // 1st-order derivatives of harmonic IFCs
+        if(renorm_3to2nd == 0){
+            std::cout << "  first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
+            compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
+        }
+        else if(renorm_3to2nd == 1){
+            std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method) ... ";
+            calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
+        }
+        else if(renorm_3to2nd == 2){
+            std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
+            std::cout << "  (finite displacement method for cubic material with O_h point group) ... ";
+            calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
+                                                                del_v2_strain_from_cubic);
+        }
+        else if(renorm_3to2nd == 3){
+            std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
+            std::cout << "  (read from file in k-space representation) ... ";
+            read_del_v2_strain_from_cubic_in_kspace(evec_harmonic, del_v2_strain_from_cubic);
+        }
+        std::cout << "  done!" << std::endl;
+        timer->print_elapsed();
+
+        // 2nd order derivatives of harmonic IFCs
+        std::cout << "  second-order derivatives of harmonic IFCs (from quartic IFCs) ... ";
+        compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
+        std::cout << "  done!" << std::endl;
+        timer->print_elapsed();
+
+        // 1st order derivatives of cubic IFCs
+        std::cout << "  first-order derivatives of cubic IFCs (from quartic IFCs) ... ";
+        compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
+        std::cout << "  done!" << std::endl; 
+        timer->print_elapsed();
+    }
+
+}
+
 
 void Scph::compute_del_v1_strain_from_harmonic(std::complex<double> **del_v1_strain_from_harmonic,
                                                std::complex<double> ***evec_harmonic)

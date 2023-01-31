@@ -173,6 +173,15 @@ void Writes::write_input_vars()
             std::cout << "  ADD_HESS_DIAG = " << scph->add_hess_diag << std::endl;
             std::cout << "  STAT_PRESSURE = " << scph->stat_pressure << std::endl;
 
+            if(scph->relax_coordinate == -1){
+                std::cout << "  QHA_SCHEME = " << scph->qha_scheme << std::endl;
+            }
+            if(scph->relax_coordinate != 0){
+                std::cout << "  RENORM_3TO2ND = " << scph->renorm_3to2nd << std::endl;
+                std::cout << "  RENORM_2TO1ST = " << scph->renorm_2to1st << std::endl;
+                std::cout << "  RENORM_ANHARMTO1ST = " << scph->renorm_anharmto1st << std::endl;
+            }
+
         }
     }
     std::cout << std::endl;

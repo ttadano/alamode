@@ -349,7 +349,8 @@ void Input::parse_scph_vars()
           "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STEEPEST_DECENT",
           "CELL_CONV_TOL", "MIXBETA_CELL",
           "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
-          "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME"
+          "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
+          "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_ANHARMTO1ST"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -405,6 +406,10 @@ void Input::parse_scph_vars()
 
     int qha_scheme = 0;
 
+    int renorm_3to2nd = 1;
+    int renorm_2to1st = 1;
+    int renorm_anharmto1st = 1;
+
     // if file_dymat exists in the current directory,
     // restart mode will be automatically turned on for SCPH calculations.
 
@@ -445,6 +450,10 @@ void Input::parse_scph_vars()
     assign_val(add_hess_diag, "ADD_HESS_DIAG", scph_var_dict);
     assign_val(stat_pressure, "STAT_PRESSURE", scph_var_dict);
     assign_val(qha_scheme, "QHA_SCHEME", scph_var_dict);
+
+    assign_val(renorm_3to2nd, "RENORM_3TO2ND", scph_var_dict);
+    assign_val(renorm_2to1st, "RENORM_2TO1ST", scph_var_dict);
+    assign_val(renorm_anharmto1st, "RENORM_ANHARMTO1ST", scph_var_dict);          
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
@@ -528,6 +537,10 @@ void Input::parse_scph_vars()
     scph->stat_pressure = stat_pressure;
 
     scph->qha_scheme = qha_scheme;
+
+    scph->renorm_3to2nd = renorm_3to2nd;
+    scph->renorm_2to1st = renorm_2to1st;
+    scph->renorm_anharmto1st = renorm_anharmto1st;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();

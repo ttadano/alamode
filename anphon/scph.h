@@ -96,6 +96,11 @@ public:
 
     // optimization scheme used in QHA
     int qha_scheme;
+    
+    // options of IFC renormalization
+    int renorm_3to2nd;
+    int renorm_2to1st;
+    int renorm_anharmto1st;
 
 private:
 
@@ -488,6 +493,15 @@ private:
     void calc_del_v0_strain_vib(std::complex<double> *, 
                                 std::complex<double> ***, 
                                 double);
+
+    void compute_del_v_strain(std::complex<double> **del_v1_strain_from_harmonic,
+                                std::complex<double> **del_v1_strain_from_cubic,
+                                std::complex<double> **del_v1_strain_from_quartic,
+                                std::complex<double> ***del_v2_strain_from_cubic,
+                                std::complex<double> ***del_v2_strain_from_quartic,
+                                std::complex<double> ****del_v3_strain_from_quartic,
+                                std::complex<double> ***evec_harmonic,
+                                int relax_coordinate);
 
 };
 
