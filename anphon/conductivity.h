@@ -133,7 +133,7 @@ public:
     void write_result_gamma(unsigned int,
                             unsigned int,
                             double ***,
-                            double **) const;
+                            double **);
 
     void write_result_gamma(unsigned int,
                             unsigned int,

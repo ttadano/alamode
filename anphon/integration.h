@@ -133,6 +133,7 @@ public:
     ~Integration();
 
     int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
+    int ismear_4ph;
     double epsilon;
     double epsilon_4ph;
     double adaptive_factor;

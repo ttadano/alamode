@@ -109,7 +109,7 @@ void Iterativebte::setup_iterative()
     allocate(vel, nk_3ph, ns, 3);            // velocity of the full grid
     phonon_velocity->get_phonon_group_velocity_mesh_mpi(*dos->kmesh_dos,
                                                         system->lavec_p,
-                                                        fcs_phonon->fc2_ext,
+                                                       // fcs_phonon->fc2_ext,
                                                         vel); //this will gather to rank0 process
 
     MPI_Bcast(&vel[0][0][0], nk_3ph * ns * 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);

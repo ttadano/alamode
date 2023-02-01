@@ -298,7 +298,6 @@ void Conductivity::setup_kappa_4ph()
     }
     phonon_velocity->get_phonon_group_velocity_mesh_mpi(*kmesh_4ph,
                                                          system->lavec_p,
-                                                         fcs_phonon->fc2_ext,
                                                          vel_4ph);
     const auto factor = Bohr_in_Angstrom * 1.0e-10 / time_ry;
 
@@ -902,7 +901,7 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 void Conductivity::write_result_gamma(const unsigned int ik,
                                       const unsigned int nshift,
                                       double ***vel_in,
-                                      double **damp_in)
+                                      double **damp_in) 
 {
     const unsigned int np = mympi->nprocs;
     unsigned int k;

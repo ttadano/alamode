@@ -424,7 +424,7 @@ void AdaptiveSmearingSigma::setup(const PhononVelocity *phvel_class,
 {
     phvel_class->get_phonon_group_velocity_mesh(*kmesh_in,
                                                 lavec_p_in,
-                                                fc2_ext_in,
+                                               // fc2_ext_in,
                                                 false,
                                                 vel);
 
