@@ -58,7 +58,7 @@ ANPHON: Output files
  Magnitude of group velocity :math:`|\boldsymbol{v}|` of all phonon modes at the uniform :math:`k` grid. 
  Created when ``MODE = phonons`` with **KPMODE** = 2 and ``PRINTVEL = 1``.
 
-* ``PREFIX``.evec
+* ``PREFIX``.evec, ``PREFIX``.band.evec, ``PREFIX``.mesh.evec
 
  Eigenvalues and eigenvectors of dynamical matrices.
  Eigenvalues are printed in Rydberg atomic units.
@@ -74,6 +74,12 @@ ANPHON: Output files
 
  Gr\ |umulaut_u|\ neisen parameters of all phonon modes at the uniform :math:`k` grid.
  Created when ``MODE = phonons`` with **KPMODE** = 2 and ``GRUNEISEN = 1``.
+
+
+* ``PREFIX``.zmode
+
+ Mode effective charges of zone-center phonon modes.
+ Created when ``MODE = phonons`` with ``ZMODE = 1``.
 
 * ``PREFIX``.axsf
 

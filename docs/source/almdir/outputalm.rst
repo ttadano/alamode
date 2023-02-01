@@ -24,6 +24,12 @@ ALM: Output files
  Created when ``MODE = optimize``. 
  When ``LMODEL = enet | adaptive-lasso``, the file is created only when the cross-validation mode is off (``CV = 0``).
 
+* ``PREFIX``.FORCE_CONSTANT_3RD
+
+ Third-order force constants in the FORCE_CONSTANT_3RD format of the ShengBTE code.
+ Created when ``MODE = optimize`` and ``FC3_SHENGBTE = 1``. 
+ When ``LMODEL = enet | adaptive-lasso``, the file is created only when the cross-validation mode is off (``CV = 0``).
+
 * ``PREFIX``.cvset 
  
  This file contains training and validation errors of cross-validation performed with the *manually* given ``DFSET`` (training dataset) and ``DFSET_CV`` (validation dataset). Created when the manual cross-validation mode is selected by setting ``CV = -1``.

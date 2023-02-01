@@ -24,7 +24,7 @@
 
 namespace PHON_NS {
 class Timer : protected Pointers {
- public:
+public:
     Timer(class PHON *);
 
     ~Timer();
@@ -37,7 +37,7 @@ class Timer : protected Pointers {
 
     std::string DateAndTime() const;
 
- private:
+private:
 #if defined(WIN32) || defined(_WIN32)
     LARGE_INTEGER time_ref;
     LARGE_INTEGER frequency;

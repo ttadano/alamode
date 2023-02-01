@@ -15,7 +15,7 @@ Format of input files
 Each input file should consist of entry fields.
 Available entry fields are 
 
-**&general**, **&interaction**, **&cutoff**, **&cell**, **&position**, and **&optimize** (**&fitting**).
+**&general**, **&interaction**, **&cutoff**, **&cell**, **&position**, and **&optimize**.
 
 
 Each entry field starts from the key label **&field** and ends at the terminate character "/". (This is equivalent to Fortran namelist.) 
@@ -48,9 +48,10 @@ List of supported input variables
    :widths: 20, 20, 20, 20, 20
 
    **&general**
-   :ref:`HESSIAN <alm_hessian>`, :ref:`FCSYM_BASIS <alm_fcsym_basis>`, :ref:`KD <alm_kd>`, :ref:`MAGMOM <alm_magmom>`, :ref:`MODE <alm_mode>`
-   :ref:`NAT <alm_nat>`, :ref:`NKD <alm_nkd>`, :ref:`NMAXSAVE <alm_nmaxsave>`, :ref:`NONCOLLINEAR <alm_noncollinear>`, :ref:`PERIODIC <alm_periodic>` 
-   :ref:`PREFIX <alm_prefix>`, :ref:`PRINTSYM <alm_printsym>`, :ref:`TOLERANCE <alm_tolerance>`
+   :ref:`HESSIAN <alm_hessian>`, :ref:`FC3_SHENGBTE <alm_fc3_shengbte>`, :ref:`FCSYM_BASIS <alm_fcsym_basis>`, :ref:`FC_ZERO_THR <alm_fc_zero_thr>`
+   :ref:`KD <alm_kd>`, :ref:`MAGMOM <alm_magmom>`, :ref:`MODE <alm_mode>`, :ref:`NAT <alm_nat>`, :ref:`NKD <alm_nkd>`
+   :ref:`NMAXSAVE <alm_nmaxsave>`, :ref:`NONCOLLINEAR <alm_noncollinear>`, :ref:`PERIODIC <alm_periodic>`, :ref:`PREFIX <alm_prefix>`, :ref:`PRINTSYM <alm_printsym>`
+   :ref:`TOLERANCE <alm_tolerance>`
    **&interaction**
    :ref:`NBODY <alm_nbody>`, :ref:`NORDER <alm_norder>`
    **&optimize**
@@ -59,7 +60,7 @@ List of supported input variables
    :ref:`ICONST <alm_iconst>`, :ref:`L1_ALPHA <alm_l1_alpha>`, :ref:`L1_RATIO <alm_l1_ratio>`, :ref:`LMODEL <alm_lmodel>`
    :ref:`MAXITER <alm_maxiter>`, :ref:`NDATA <alm_ndata>`, :ref:`NDATA_CV <alm_ndata_cv>`, :ref:`NSTART NEND <alm_nstart>`, :ref:`NSTART_CV NEND_CV <alm_nstart_cv>`
    :ref:`ROTAXIS <alm_rotaxis>`, :ref:`SKIP <alm_skip>`, :ref:`SOLUTION_PATH <alm_solution_path>`, :ref:`SPARSE <alm_sparse>`, :ref:`SPARSESOLVER <alm_sparsesolver>`
-   :ref:`STANDARDIZE <alm_standardize>`
+   :ref:`STANDARDIZE <alm_standardize>`, :ref:`STOP_CRITERION <alm_stop_criterion>`
 
 
 Description of input variables
@@ -79,7 +80,7 @@ Description of input variables
 
 .. _alm_mode:
 
-* **MODE**-tag = optimize | suggest | fitting
+* **MODE**-tag = optimize | suggest 
 
  =================================== ====================================================================
   optimize (:red:`>= 1.1.0`)         | Estimate harmonic and anharmonic IFCs. 
@@ -241,6 +242,48 @@ Description of input variables
 
 ````
 
+.. .. _alm_fc2_qefc:
+
+.. * FC2_QEFC-tag = 0 | 1
+
+..  ===== =====================================================================
+..    0   | Do not save the second-order force constants in .fc format
+..    1   | Save the second-order force constants in the Quantum ESPRESSO
+..          .fc format in PREFIX.fc.
+..  ===== =====================================================================
+
+..  :Default: 0
+..  :type: Integer
+
+.. ````
+
+.. _alm_fc3_shengbte:
+
+* FC3_SHENGBTE-tag = 0 | 1
+
+ ===== ==========================================================================================
+   0   | Do not save the third-order force constants for ShengBTE code
+   1   | Save the third-order force constants for the ShengBTE code in PREFIX.FORCE_CONSTANT_3RD.
+ ===== ==========================================================================================
+
+ :Default: 0
+ :type: Integer
+
+````
+
+.. _alm_fc_zero_thr:
+
+* FC_ZERO_THR-tag : Threshold value used when trimming force constants when creating PREFIX.xml
+  
+ :Default: 1.0e-12
+ :Type: Double
+ :Description: ``FC_ZERO_THR`` defines the threshold of force constants to be saved in an XML file. If the absolute value of force constant is smaller than ``FC_ZERO_THR``, it will NOT be printed out. 
+
+ .. note::
+    If the harmonic force constants are calculated using a model potential (e.g., classical FF) where the interaction becomes zero beyond a certain cutoff raius, the default value of ``FC_ZERO_THR`` may raise a warning when creating a renormalize harmonic FCSXML using ``tools/dfc2``. This issue may be resolved by using a smaller ``FC_ZERO_THR``, say ``FC_ZERO_THR = 1.0e-15``. The force constants that become exactly zero due to symmetry and acoustic sum rule constraints will not be printed even when setting ``FC_ZERO_THR = 0``.
+
+````
+
 "&interaction"-field
 ++++++++++++++++++++
 
@@ -375,8 +418,8 @@ fractional coordinate of an atom. There should be ``NAT`` such lines in the &pos
 
 ````
 
-"&optimize"-field ("&fitting"-field)
-++++++++++++++++++++++++++++++++++++
+"&optimize"-field 
+++++++++++++++++++
 
 This field is necessary when ``MODE = optimize``.
 
@@ -394,7 +437,7 @@ This field is necessary when ``MODE = optimize``.
  :Type: String
  :Description: When ``LMODEL = ols``, the force constants are estimated from the displacement-force datasets via the ordinary least-squares (OLS), which is usually sufficient to calculate harmonic and third-order force constants. 
 
-               The elastic net (``LMODEL = enet``) or adaptive LASSO (``LMODEL = adaptive-lasso``) are useful for calculating fourth-order (and higher-order) force constants. When the elastic net or adaptive LASSO is selected, the users have to set the following related tags: ``CV``, ``L1_RATIO``, ``L1_ALPHA``, ``CV_MAXALPHA``, ``CV_MINALPHA``, ``CV_NALPHA``, ``STANDARDIZE``, ``ENET_DNORM``, ``MAXITER``, ``CONV_TOL``, ``NWRITE``, ``SOLUTION_PATH``, ``DEBIAS_OLS``. Please be noted that ``STANDARDIZE`` will be effective only for the elastic net.
+               The elastic net (``LMODEL = enet``) or adaptive LASSO (``LMODEL = adaptive-lasso``) are useful for calculating fourth-order (and higher-order) force constants. When the elastic net or adaptive LASSO is selected, the users have to set the following related tags: ``CV``, ``L1_RATIO``, ``L1_ALPHA``, ``CV_MAXALPHA``, ``CV_MINALPHA``, ``CV_NALPHA``, ``STANDARDIZE``, ``ENET_DNORM``, ``MAXITER``, ``CONV_TOL``, ``NWRITE``, ``SOLUTION_PATH``, ``DEBIAS_OLS``, ``STOP_CRITERION``. Please be noted that ``STANDARDIZE`` will be effective only for the elastic net.
 
 ````
 
@@ -422,7 +465,7 @@ This field is necessary when ``MODE = optimize``.
 
 .. _alm_nstart:
 
-* NSTART, NEND-tags : Specifies the range of data to be used for fitting
+* NSTART, NEND-tags : Specifies the range of data to be used for training
 
  :Default: ``NSTART = 1``, ``NEND = NDATA``
  :Type: Integer
@@ -476,7 +519,7 @@ This field is necessary when ``MODE = optimize``.
 
 .. _alm_fc2xml:
 
-* FC2XML-tag : XML file to which the harmonic terms are fixed upon fitting
+* FC2XML-tag : XML file to which the harmonic terms are fixed upon training
 
  :Default: None
  :Type: String
@@ -490,7 +533,7 @@ This field is necessary when ``MODE = optimize``.
 
 .. _alm_fc3xml:
 
-* FC3XML-tag : XML file to which the cubic terms are fixed upon fitting
+* FC3XML-tag : XML file to which the cubic terms are fixed upon training
 
  :Default: None
  :Type: String
@@ -717,6 +760,17 @@ This field is necessary when ``MODE = optimize``.
 
 ````
 
+.. _alm_stop_criterion:
+
+* STOP_CRITERION-tag : The scan over ``L1_ALPHA`` stops when the cross-validation score keeps increasing in ``STOP_CRITERION`` consecutive steps
+
+ :Default: 5
+ :Type: Integer
+ :Description: Effective when ``LMODEL = enet | adaptive-lasso`` and the cross-validation mode is turned on (``CV > 0`` or ``CV = -1``).
+
+
+````
+
 
 How to make a DFSET file
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -733,7 +787,7 @@ The *DFSET* file must contain the atomic displacements and corresponding forces 
 in the following format: 
 
 .. math::
-    :nowrap:
+  :nowrap:
 
     # Structure number 1 (this is just a comment line)
     \begin{eqnarray*}
@@ -742,7 +796,7 @@ in the following format:
               & \vdots   &          &          & \vdots   &          \\
      u_{x}(\mathrm{NAT}) & u_{y}(\mathrm{NAT}) & u_{z}(\mathrm{NAT}) & f_{x}(\mathrm{NAT}) & f_{y}(\mathrm{NAT}) & f_{z}(\mathrm{NAT})
     \end{eqnarray*}
-    # Structure number 2 
+    # Structure number 2
     \begin{eqnarray*}
      u_{x}(1) & u_{y}(1) & u_{z}(1) & f_{x}(1) & f_{y}(1) & f_{z}(1) \\
               & \vdots   &          &          & \vdots   &          

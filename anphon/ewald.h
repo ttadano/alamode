@@ -19,7 +19,7 @@
 
 namespace PHON_NS {
 class Gvecs {
- public:
+public:
     double vec[3];
 
     Gvecs();
@@ -33,7 +33,7 @@ class Gvecs {
 };
 
 class DistInfo {
- public:
+public:
     int cell;
     double dist;
 
@@ -51,7 +51,7 @@ class DistInfo {
 };
 
 class Ewald : protected Pointers {
- public:
+public:
     Ewald(class PHON *);
 
     ~Ewald();
@@ -74,7 +74,7 @@ class Ewald : protected Pointers {
                               const double *,
                               std::complex<double> **);
 
- private:
+private:
 
     std::vector<Gvecs> G_vector_sub;
     double lambda_sub;

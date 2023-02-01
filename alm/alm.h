@@ -20,182 +20,203 @@
 #include "files.h"
 #include "patterndisp.h"
 #include "timer.h"
+#include "writer.h"
 
 namespace ALM_NS {
-    class ALM {
-    public:
-        ALM();
+class ALM {
+public:
+    ALM();
 
-        ~ALM();
+    ~ALM();
 
-        class Cluster *cluster{};
+    class Cluster *cluster{};
 
-        class Fcs *fcs{};
+    class Fcs *fcs{};
 
-        class Symmetry *symmetry{};
+    class System *system{};
 
-        class Optimize *optimize{};
+    class Symmetry *symmetry{};
 
-        class Constraint *constraint{};
+    class Optimize *optimize{};
 
-        class Files *files{};
+    class Constraint *constraint{};
 
-        class Displace *displace{};
+    class Files *files{};
 
-        class Timer *timer{};
+    class Displace *displace{};
 
-        void set_verbosity(int verbosity_in);
+    class Timer *timer{};
 
-        int get_verbosity() const;
+    class Writer *writer{};
 
-        void set_output_filename_prefix(std::string prefix) const;
+    void set_verbosity(int verbosity_in);
 
-        void set_print_hessian(bool print_hessian) const;
+    int get_verbosity() const;
 
-        void set_print_symmetry(int printsymmetry) const;
+    void set_output_filename_prefix(std::string prefix) const;
 
-        void set_datfile_train(const DispForceFile &dat_in) const;
+    void set_print_symmetry(int printsymmetry) const;
 
-        void set_datfile_validation(const DispForceFile &dat_in) const;
+    void set_datfile_train(const DispForceFile &dat_in) const;
 
-        void set_symmetry_tolerance(double tolerance) const;
+    void set_datfile_validation(const DispForceFile &dat_in) const;
 
-        void set_displacement_param(bool trim_dispsign_for_evenfunc) const;
+    void set_symmetry_tolerance(double tolerance) const;
 
-        void set_displacement_basis(std::string str_disp_basis) const;
+    void set_displacement_param(bool trim_dispsign_for_evenfunc) const;
 
-        void set_periodicity(const int is_periodic[3]) const;
+    void set_displacement_basis(std::string str_disp_basis) const;
 
-        void set_cell(size_t nat,
-                      const double lavec[3][3],
-                      const double xcoord[][3],
-                      const int kind[],
-                      const std::string kdname[]) const;
+    void set_periodicity(const int is_periodic[3]) const;
 
-        void set_magnetic_params(const size_t nat,
-                                 const double (*magmom)[3],
-                                 const bool lspin,
-                                 const int noncollinear,
-                                 const int trev_sym_mag,
-                                 const std::string str_magmom) const;
+    void set_cell(size_t nat,
+                  const double lavec[3][3],
+                  const double xcoord[][3],
+                  const int kind[],
+                  const std::string kdname[]) const;
 
-        void set_u_train(const std::vector<std::vector<double>> &u) const;
+    void set_magnetic_params(const size_t nat,
+                             const double (*magmom)[3],
+                             const bool lspin,
+                             const int noncollinear,
+                             const int trev_sym_mag,
+                             const std::string str_magmom) const;
 
-        void set_f_train(const std::vector<std::vector<double>> &f) const;
+    void set_u_train(const std::vector<std::vector<double>> &u) const;
 
-        void set_validation_data(const std::vector<std::vector<double>> &u,
-                                 const std::vector<std::vector<double>> &f) const;
+    void set_f_train(const std::vector<std::vector<double>> &f) const;
 
-        void set_optimizer_control(const OptimizerControl &optcontrol_in) const;
+    void set_validation_data(const std::vector<std::vector<double>> &u,
+                             const std::vector<std::vector<double>> &f) const;
 
-        void set_constraint_mode(const int constraint_flag) const;
+    void set_optimizer_control(const OptimizerControl &optcontrol_in) const;
 
-        void set_tolerance_constraint(const double tolerance_constraint) const;
+    void set_constraint_mode(const int constraint_flag) const;
 
-        void set_rotation_axis(const std::string rotation_axis) const;
+    void set_algebraic_constraint(const int use_algebraic_flag) const;
 
-        void set_fc_file(const int order, const std::string fc_file) const;
+    void set_tolerance_constraint(const double tolerance_constraint) const;
 
-        void set_fc_fix(const int order, const bool fc_fix) const;
+    void set_rotation_axis(const std::string rotation_axis) const;
 
-        void set_sparse_mode(const int sparse_mode) const;
+    void set_fc_file(const int order, const std::string fc_file) const;
 
-        void set_forceconstant_basis(const std::string preferred_basis) const;
+    void set_fc_fix(const int order, const bool fc_fix) const;
 
-        std::string get_forceconstant_basis() const;
+    bool ready_all_constraints() const;
 
-        void set_nmaxsave(const int nmaxsave) const; // NMAXSAVE
+    void set_forceconstants_to_fix(const std::vector<std::vector<int>> &intpair_fix,
+                                   const std::vector<double> &values_fix) const;
 
-        int get_nmaxsave() const;
+    void set_sparse_mode(const int sparse_mode) const;
 
-        //void set_fitting_filenames(std::string dfile,
-        //                           std::string ffile) const;
-        void define(const int maxorder,
-                    const size_t nkd,
-                    const int *nbody_include,
-                    const double *cutoff_radii) const;
+    void set_forceconstant_basis(const std::string preferred_basis) const;
 
-        //int get_ndata_used() const;
-        OptimizerControl get_optimizer_control() const;
+    std::string get_forceconstant_basis() const;
 
-        std::vector<std::vector<double>> get_u_train() const;
+    void set_nmaxsave(const int nmaxsave) const; // NMAXSAVE
 
-        std::vector<std::vector<double>> get_f_train() const;
+    int get_nmaxsave() const;
 
-        size_t get_number_of_data() const;
+    //void set_fitting_filenames(std::string dfile,
+    //                           std::string ffile) const;
+    void define(const int maxorder,
+                const size_t nkd,
+                const int *nbody_include,
+                const double *cutoff_radii) const;
 
-        size_t get_nrows_sensing_matrix() const;
+    //int get_ndata_used() const;
+    OptimizerControl get_optimizer_control() const;
 
-        double get_cv_l1_alpha() const;
+    std::vector<std::vector<double>> get_u_train() const;
 
-        Cell get_supercell() const;
+    std::vector<std::vector<double>> get_f_train() const;
 
-        std::string *get_kdname() const;
+    size_t get_number_of_data() const;
 
-        Spin get_spin() const;
+    size_t get_nrows_sensing_matrix() const;
 
-        void set_str_magmom(std::string);
+    double get_cv_l1_alpha() const;
 
-        std::string get_str_magmom() const;
+    Cell get_supercell() const;
 
-        double ***get_x_image() const;
+    std::string *get_kdname() const;
 
-        int *get_periodicity() const;
+    Spin get_spin() const;
 
-        const std::vector<std::vector<int>> &get_atom_mapping_by_pure_translations() const;
+    void set_str_magmom(std::string);
 
-        int get_maxorder() const;
+    std::string get_str_magmom() const;
 
-        int *get_nbody_include() const;
+    double ***get_x_image() const;
 
-        size_t get_number_of_displacement_patterns(const int fc_order) const; // harmonic=1, ...
-        void get_number_of_displaced_atoms(int *numbers,
-                                           int fc_order) const; // harmonic=1, ...
-        int get_displacement_patterns(int *atom_indices,
-                                      double *disp_patterns,
-                                      int fc_order) const;          // harmonic=1, ...
-        size_t get_number_of_fc_elements(const int fc_order) const; // harmonic=1, ...
-        size_t get_number_of_irred_fc_elements(const int fc_order); // harmonic=1, ...
+    int *get_periodicity() const;
 
-        size_t get_number_of_fc_origin(const int fc_order, // harmonic = 1
-                                       const int permutation) const;
+    const std::vector<std::vector<int>> &get_atom_mapping_by_pure_translations() const;
 
-        void get_fc_origin(double *fc_values,
-                           int *elem_indices, // (len(fc_value), fc_order) is flatten.
-                           int fc_order, // harmonic=1, ...
-                           int permutation = 1) const;
+    int get_maxorder() const;
 
+    int *get_nbody_include() const;
 
-        void get_fc_irreducible(double *fc_values,
-                                int *elem_indices, // (len(fc_value), fc_order) is flatten.
-                                int fc_order); // harmonic=1, ...
+    size_t get_number_of_displacement_patterns(const int fc_order) const; // harmonic=1, ...
+    void get_number_of_displaced_atoms(int *numbers,
+                                       int fc_order) const; // harmonic=1, ...
+    int get_displacement_patterns(int *atom_indices,
+                                  double *disp_patterns,
+                                  int fc_order) const;          // harmonic=1, ...
+    size_t get_number_of_fc_elements(const int fc_order) const; // harmonic=1, ...
+    size_t get_number_of_irred_fc_elements(const int fc_order); // harmonic=1, ...
 
+    size_t get_number_of_fc_origin(const int fc_order, // harmonic = 1
+                                   const int permutation) const;
 
-        void get_fc_all(double *fc_values,
-                        int *elem_indices, // (len(fc_value), fc_order) is flatten.
-                        int fc_order, // harmonic=1, ...
-                        int permutation = 1) const;
+    void get_fc_origin(double *fc_values,
+                       int *elem_indices, // (len(fc_value), fc_order) is flatten.
+                       int fc_order, // harmonic=1, ...
+                       int permutation = 1) const;
 
-        void set_fc(double *fc_in) const;
 
-        void get_matrix_elements(double *amat,
-                                 double *bvec) const;
+    void get_fc_irreducible(double *fc_values,
+                            int *elem_indices, // (len(fc_value), fc_order) is flatten.
+                            int fc_order); // harmonic=1, ...
 
-        int run_optimize();
 
-        void run_suggest();
+    void get_fc_all(double *fc_values,
+                    int *elem_indices, // (len(fc_value), fc_order) is flatten.
+                    int fc_order, // harmonic=1, ...
+                    int permutation = 1) const;
 
-        void init_fc_table();
+    void set_fc(double *fc_in) const;
 
-    private:
-        class System *system{};
+    void set_fc_zero_threshold(const double threshold_in);
 
-        int verbosity;
-        bool structure_initialized;
-        bool ready_to_fit;
-        std::ofstream *ofs_alm;
-        std::streambuf *coutbuf;
+    double get_fc_zero_threshold() const;
 
-        void init_instances();
-    };
+    void get_matrix_elements(double *amat,
+                             double *bvec);
+
+    int run_optimize();
+
+    void run_suggest();
+
+    void init_fc_table();
+
+    void save_fc(const std::string filename,
+                 const std::string fc_format,
+                 const int maxorder_to_save) const;
+
+    void set_fcs_save_flag(const std::string fcs_format, const int val) const;
+
+    int get_fcs_save_flag(const std::string fcs_format) const;
+
+private:
+
+    int verbosity;
+    bool structure_initialized;
+    bool initialized_constraint_class;
+    std::ofstream *ofs_alm;
+    std::streambuf *coutbuf;
+
+    void init_instances();
+};
 }

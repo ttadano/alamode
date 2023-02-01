@@ -43,7 +43,7 @@ void Ewald::set_default_variables()
     is_longrange = false;
     print_fc2_ewald = false;
     file_longrange = "";
-    prec_ewald = 1.0e-12;
+    prec_ewald = 1.0e-15;
     rate_ab = 1.0;
     multiplicity = nullptr;
     Born_charge = nullptr;
@@ -908,7 +908,13 @@ void Ewald::add_longrange_matrix(const double *xk_in,
     allocate(dymat_tmp_l, 3, 3);
     allocate(dymat_tmp_g, 3, 3);
 
-    rotvec(xk, xk_in, system->rlavec_p, 'T');
+    // Move input xk back to the -0.5 <= xk < 0.5 range to avoid zero division.
+    // Also, this is necessary to make the phonon dispersion periodic in the reciprocal lattice.
+    for (auto i = 0; i < 3; ++i) {
+        xk[i] = xk_in[i] - static_cast<double>(nint(xk_in[i]));
+    }
+
+    rotvec(xk, xk, system->rlavec_p, 'T');
 
     for (int i = 0; i < neval; ++i) {
         for (int j = 0; j < neval; ++j) {
@@ -931,25 +937,6 @@ void Ewald::add_longrange_matrix(const double *xk_in,
     }
     deallocate(dymat_tmp_l);
     deallocate(dymat_tmp_g);
-
-
-//    for (iat = 0; iat < natmin; ++iat) {
-//        for (icrd = 0; icrd < 3; ++icrd) {
-//            for (jat = 0; jat < natmin; ++jat) {
-//                for (jcrd = 0; jcrd < 3; ++jcrd) {
-//
-//                    // Hermiticity
-//                    std::complex<double> check = dymat_k_out[3 * iat + icrd][3 * jat + jcrd]
-//                                                 - std::conj(dymat_k_out[3 * jat + jcrd][3 * iat + icrd]);
-//                    if (std::abs(check) > eps10) {
-//                        std::cout << std::endl;
-//                        exit("add_longrange_matrix",
-//                                    "Hermiticity of Dynamical matrix is broken.");
-//                    }
-//                }
-//            }
-//        }
-//    }
 }
 
 void Ewald::calc_short_term_dynamical_matrix(const int iat,
@@ -1142,7 +1129,7 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
                                             const double *kvec_in,
                                             std::complex<double> **mat_out)
 {
-    // Real lattice sum part for a dynamical matrix
+    // Reciprocal lattice sum part for a dynamical matrix
 
     int i, j;
     int icrd, jcrd, acrd, bcrd;

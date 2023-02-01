@@ -24,7 +24,7 @@ class Conductivity : protected Pointers {
 
  friend class Iterativebte;
  
- public:
+public:
     Conductivity(class PHON *);
 
     ~Conductivity();
@@ -133,7 +133,7 @@ class Conductivity : protected Pointers {
     void write_result_gamma(unsigned int,
                             unsigned int,
                             double ***,
-                            double **);
+                            double **) const;
 
     void write_result_gamma(unsigned int,
                             unsigned int,

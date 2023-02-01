@@ -46,8 +46,6 @@ VMD may be more useful to make an animation, but it may be replaced by any other
 Install using conda (recommended for non-experts)
 -------------------------------------------------
 
-.. highlight:: bash
-
 This option is recommended for all users who want to build working binaries. 
 If you want to build highly-optimized binaries using the Intel compiler and other optimized libraries, 
 you will need to change the cmake settings below. 
@@ -59,27 +57,19 @@ Step 1. Preparing build tools by conda
 At first, it is recommended `to prepare a conda environment
 <https://conda.io/docs/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands>`_ by::
 
-   % conda create --name alamode -c conda-forge python=3.7
+   % conda create --name alamode -c conda-forge python=3
    % conda activate alamode
 
 Here the name of the conda environment is chosen ``alamode``. The detailed
 instruction about the conda environment is found `here
 <https://conda.io/docs/user-guide/tasks/manage-environments.html>`_.
-For linux and macOS, compilers provided by conda are `different
+For linux and macOS, we recommend using the conda `compiler tools
 <https://conda.io/docs/user-guide/tasks/build-packages/compiler-tools.html>`_.
-Then to build binaries on linux or macOS, the conda packages need to be installed by
+To build binaries on linux or macOS, the conda packages need to be installed by
 
-For linux
-+++++++++
 ::
 
-   % conda install -c conda-forge gcc_linux-64 gxx_linux-64 openmpi h5py scipy numpy boost eigen cmake spglib ipython fftw
-
-For macOS
-+++++++++
-::
-
-   % conda install -c conda-forge clang_osx-64 clangxx_osx-64 openmpi llvm-openmp cmake boost eigen numpy scipy h5py spglib ipython fftw
+   % conda install -c conda-forge compilers openmpi boost eigen cmake spglib fftw scipy numpy h5py ipython
 
 
 Step 2. Download source 
@@ -157,6 +147,7 @@ You can specify the binary to build, for example, as
     ::
       
       % cmake -DUSE_MKL_FFT=no -DSPGLIB_ROOT=$CONDA_PREFIX ..
+
     Also, when using the binaries, it may be necessary to set ``$LD_LIBRARY_PATH`` as
     ::
 
@@ -335,6 +326,7 @@ You can specify the binary to build, for example, as
 
     When using the binaries, it may be necessary to set ``$LD_LIBRARY_PATH`` as
     ::
+
       % export SPGLIB_ROOT=/path/to/spglib/installdir
       % export LD_LIBRARY_PATH=$SPGLIB_ROOT/lib:$LD_LIBRARY_PATH
 
@@ -378,5 +370,6 @@ The default options are expected to work with modern Intel compilers.
 
     When using the binaries, it may be necessary to set ``$LD_LIBRARY_PATH`` as
     ::
+
       % export SPGLIB_ROOT=/path/to/spglib/installdir
       % export LD_LIBRARY_PATH=$SPGLIB_ROOT/lib:$LD_LIBRARY_PATH

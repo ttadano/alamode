@@ -69,7 +69,7 @@ License
 
 .. |copy|   unicode:: U+000A9 
 
-Copyright |copy| 2014, 2015, 2016 Terumasa Tadano
+Copyright |copy| 2014–2021 Terumasa Tadano
 
 This software is distributed under the MIT license.
 See the LICENSE.txt file for license rights and limitations. 
@@ -94,11 +94,21 @@ please cite the following paper as well:
   Y\. Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**\, 033601 (2019). 
   [`Link <https://journals.aps.org/prmaterials/abstract/10.1103/PhysRevMaterials.3.033601>`__]
 
+
+Issues & Bug report
+-------------------
+
+* If you find a bug or issue related to ALAMODE, please report it at `GitHub issues <https://github.com/ttadano/alamode/issues/>`_. 
+* Other questions and suggestions can be posted on the `GitHub discussion page. <https://github.com/ttadano/alamode/discussions>`_
+
+In either case, please search the previous questions and read FAQ page of this document before asking.
+
 Acknowledgment
 --------------
 
 This project is/was partially supported by the following projects:
 
+* Grant-in-Aid for Scientific Research (C) (21K03424)
 * Grant-in-Aid for Young Scientists (B) (16K17724) 
 * Grant-in-Aid for Scientific Research on Innovative Areas 'Materials Design through Computics: Complex Correlation and Non-Equilibrium Dynamics'. (http://computics-material.jp)
 

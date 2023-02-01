@@ -16,6 +16,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "dielec.h"
 #include "dynamical.h"
 #include "error.h"
+#include "ewald.h"
 #include "fcs_phonon.h"
 #include "gruneisen.h"
 #include "kpoint.h"
@@ -34,7 +35,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "scph.h"
 
 #ifdef _HDF5
+
 #include "H5Cpp.h"
+
 #endif
 
 using namespace PHON_NS;
@@ -429,6 +432,10 @@ void Writes::write_phonon_info()
             write_two_phonon_dos();
         }
 
+        if (dos->longitudinal_projected_dos) {
+            write_longitudinal_proj_dos();
+        }
+
         if (dos->scattering_phase_space == 1) {
             write_scattering_phase_space();
         } else if (dos->scattering_phase_space == 2) {
@@ -595,6 +602,7 @@ void Writes::write_phonon_vel() const
                                                              system->lavec_p,
                                                              system->rlavec_p,
                                                              fcs_phonon->fc2_ext,
+                                                             ewald->fc2_without_dipole,
                                                              phvel_bs);
 
     ofs_vel << "# k-axis, |Velocity| [m / sec]" << std::endl;
@@ -650,7 +658,6 @@ void Writes::write_phonon_vel_all() const
 
     phonon_velocity->get_phonon_group_velocity_mesh(*dos->kmesh_dos,
                                                     system->lavec_p,
-                                                    fcs_phonon->fc2_ext,
                                                     false,
                                                     phvel_xyz);
     unsigned int ik, is;
@@ -660,8 +667,8 @@ void Writes::write_phonon_vel_all() const
     for (ik = 0; ik < nk; ++ik) {
         for (is = 0; is < ns; ++is) {
             phvel[ik][is] = std::sqrt(std::pow(phvel_xyz[ik][is][0], 2)
-                                            + std::pow(phvel_xyz[ik][is][1], 2)
-                                            + std::pow(phvel_xyz[ik][is][2], 2));
+                                      + std::pow(phvel_xyz[ik][is][1], 2)
+                                      + std::pow(phvel_xyz[ik][is][2], 2));
         }
     }
 
@@ -837,6 +844,29 @@ void Writes::write_scattering_phase_space() const
     std::cout << " : Three-phonon scattering phase space" << std::endl;
 }
 
+void Writes::write_longitudinal_proj_dos() const
+{
+    int i;
+    std::ofstream ofs_dos;
+    auto file_dos = input->job_title + ".longitudinal_dos";
+
+    ofs_dos.open(file_dos.c_str(), std::ios::out);
+    if (!ofs_dos) exit("write_longitudinal_proj_dos", "cannot open file_dos");
+
+    ofs_dos << "# Energy [cm^-1], LONGITUDINAL-PROJECTED DOS\n";
+    ofs_dos.setf(std::ios::scientific);
+
+    for (i = 0; i < dos->n_energy; ++i) {
+        ofs_dos << std::setw(15) << dos->energy_dos[i];
+        ofs_dos << std::setw(15) << dos->longitude_dos[i];
+        ofs_dos << std::endl;
+    }
+    ofs_dos.close();
+
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dos;
+    std::cout << " : Longitudinal projected DOS" << std::endl;
+}
+
 void Writes::write_scattering_amplitude() const
 {
     int i, j;
@@ -991,7 +1021,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
                 for (k = 0; k < 3; ++k) {
                     ofs_anime << std::setw(15)
                               << evec_in[ik][imode][3 * j + k].real()
-                                    / (std::sqrt(system->mass[m]) * norm);
+                                 / (std::sqrt(system->mass[m]) * norm);
                 }
                 ofs_anime << std::endl;
             }
@@ -1138,6 +1168,7 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
 }
 
 #ifdef _HDF5
+
 void Writes::write_eigenvectors_HDF5() const
 {
     std::string fname_evec;
@@ -1251,8 +1282,17 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
         for (j = 0; j < 3; ++j) xtmp[j] = system->xr_s[system->map_p2s[i][0]][j];
         rotvec(xtmp, xtmp, system->lavec_s);
         rotvec(xtmp, xtmp, system->rlavec_p);
+        for (j = 0; j < 3; ++j) xtmp[j] /= 2.0 * pi;
         for (j = 0; j < 3; ++j) {
-            xfrac_1D[counter++] = xtmp[j] / (2.0 * pi);
+            while (xtmp[j] >= 1.0) {
+                xtmp[j] -= 1.0;
+            }
+            while (xtmp[j] < 0.0) {
+                xtmp[j] += 1.0;
+            }
+        }
+        for (j = 0; j < 3; ++j) {
+            xfrac_1D[counter++] = xtmp[j];
         }
     }
     dataspace = new DataSpace(2, dims);
@@ -1397,6 +1437,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
 
     group_kpoint.close();
 }
+
 #endif
 
 double Writes::in_kayser(const double x) const
@@ -1897,7 +1938,7 @@ void Writes::write_kappa() const
             ofs_kl.open(file_kappa_coherent.c_str(), std::ios::out);
             if (!ofs_kl) exit("write_kappa", "Could not open file_kappa_coherent");
 
-            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK * cm]" <<
+            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK]" <<
                    std::endl;
 
             if (isotope->include_isotope) {
@@ -1908,10 +1949,8 @@ void Writes::write_kappa() const
                 ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
                        << conductivity->temperature[i];
                 for (j = 0; j < 3; ++j) {
-                    for (k = 0; k < 3; ++k) {
-                        ofs_kl << std::setw(15) << std::fixed
-                            << std::setprecision(4) << conductivity->kappa_coherent[i][j][k];
-                    }
+                    ofs_kl << std::setw(15) << std::fixed
+                           << std::setprecision(4) << conductivity->kappa_coherent[i][j][j];
                 }
                 ofs_kl << std::endl;
             }
@@ -2077,8 +2116,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
             for (unsigned int iz = 0; iz < ncell[2]; ++iz) {
 
                 phase_cell[icell] = 2.0 * pi * (xk_in[0] * static_cast<double>(ix)
-                      + xk_in[1] * static_cast<double>(iy)
-                      + xk_in[2] * static_cast<double>(iz));
+                                                + xk_in[1] * static_cast<double>(iy)
+                                                + xk_in[2] * static_cast<double>(iz));
 
                 for (i = 0; i < natmin; ++i) {
                     xmod[icell][i][0] = (xtmp[i][0] + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
@@ -2191,8 +2230,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                            + disp_mag[iband][3 * j + k]
-                                                  * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                         + disp_mag[iband][3 * j + k]
+                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -2245,8 +2284,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                         for (k = 0; k < 3; ++k) {
                             ofs_anime << std::setw(15)
                                       << xmod[i][j][k]
-                                            + disp_mag[iband][3 * j + k]
-                                                  * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
+                                         + disp_mag[iband][3 * j + k]
+                                           * std::sin(phase_cell[i] + evec_theta[iband][3 * j + k] + phase_time);
                         }
                         ofs_anime << std::endl;
                     }
@@ -2276,7 +2315,7 @@ void Writes::print_normalmode_borncharge() const
 
         const auto ns = dynamical->neval;
 
-        std::string file_zstar = input->job_title + ".Born_mode";
+        std::string file_zstar = input->job_title + ".zmode";
         std::ofstream ofs_zstar;
         ofs_zstar.open(file_zstar.c_str(), std::ios::out);
         if (!ofs_zstar)
@@ -2573,8 +2612,8 @@ void Writes::write_scph_energy(const unsigned int nk_in,
     if (!ofs_energy) exit("write_scph_energy", "cannot open file_energy");
 
     ofs_energy << "# K point, mode, Temperature [K], Eigenvalues [cm^-1]" << std::endl;
-    for (unsigned int ik = 0; ik < nk_in; ++ik) {
 
+    for (unsigned int ik = 0; ik < nk_in; ++ik) {
         for (unsigned int is = 0; is < ns; ++is) {
             for (unsigned int iT = 0; iT < NT; ++iT) {
                 const auto temp = Tmin + static_cast<double>(iT) * dT;

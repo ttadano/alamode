@@ -1,13 +1,8 @@
 &general
   PREFIX = si222
-  MODE = opt
+  MODE = suggest
   NAT = 64; NKD = 1
   KD = Si
-  STRUCTURE = POSCAR
-/
-
-&optimize
- DFSET = reference/DFSET_harmonic
 /
 
 &interaction

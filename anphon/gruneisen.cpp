@@ -94,11 +94,13 @@ void Gruneisen::setup()
     }
 
     if (print_gruneisen || print_newfcs) {
-        prepare_delta_fcs(fcs_phonon->force_constant_with_cell[1], delta_fc2);
+        prepare_delta_fcs(fcs_phonon->force_constant_with_cell[1], delta_fc2, 1);
+
+        // impose_ASR_on_harmonic_IFC(delta_fc2, 0);
     }
 
     if (print_newfcs && anharmonic_core->quartic_mode > 0) {
-        prepare_delta_fcs(fcs_phonon->force_constant_with_cell[2], delta_fc3);
+        prepare_delta_fcs(fcs_phonon->force_constant_with_cell[2], delta_fc3, 1);
     }
     if (print_gruneisen) {
         if (kpoint->kpoint_bs) {
@@ -262,16 +264,17 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 }
 
 void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
-                                  std::vector<FcsArrayWithCell> &delta_fcs) const
+                                  std::vector<FcsArrayWithCell> &delta_fcs,
+                                  const int mirror_image_mode) const
 {
-    unsigned int i;
-    double vec[3];
+    unsigned int i, j;
+    double vec[3], vec_origin[3];
     double fcs_tmp = 0.0;
 
     std::vector<FcsAlignedForGruneisen> fcs_aligned;
     std::vector<AtomCellSuper> pairs_vec;
     std::vector<int> index_old, index_now;
-    std::vector<int> index_with_cell;
+    std::vector<int> index_with_cell, index_with_cell_old;
     std::set<std::vector<int>> set_index_uniq;
     AtomCellSuper pairs_tmp;
 
@@ -286,95 +289,199 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     }
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
 
-    index_old.clear();
-    const auto nelems = 2 * (norder - 2) + 1;
-    for (i = 0; i < nelems; ++i) index_old.push_back(-1);
+    if (mirror_image_mode == 0) {
+        // original implementation
+        // calculate IFC renormalization for the same atomic combination in the supercell
+        // but with different mirror images at once and assign the average value for each
+        // mirror images.
+        index_old.clear();
+        const auto nelems = 2 * (norder - 2) + 1;
+        for (i = 0; i < nelems; ++i) index_old.push_back(-1);
 
-    index_with_cell.clear();
-    set_index_uniq.clear();
-
-    for (const auto &it: fcs_aligned) {
-
-        index_now.clear();
         index_with_cell.clear();
+        set_index_uniq.clear();
 
-        index_now.push_back(it.pairs[0].index);
-        index_with_cell.push_back(it.pairs[0].index);
+        for (const auto &it: fcs_aligned) {
 
-        for (i = 1; i < norder - 1; ++i) {
-            index_now.push_back(it.pairs[i].index);
-            index_now.push_back(it.pairs[i].tran);
+            index_now.clear();
+            index_with_cell.clear();
 
-            index_with_cell.push_back(it.pairs[i].index);
-            index_with_cell.push_back(it.pairs[i].tran);
-            index_with_cell.push_back(it.pairs[i].cell_s);
+            index_now.push_back(it.pairs[0].index);
+            index_with_cell.push_back(it.pairs[0].index);
+
+            for (i = 1; i < norder - 1; ++i) {
+                index_now.push_back(it.pairs[i].index);
+                index_now.push_back(it.pairs[i].tran);
+
+                index_with_cell.push_back(it.pairs[i].index);
+                index_with_cell.push_back(it.pairs[i].tran);
+                index_with_cell.push_back(it.pairs[i].cell_s);
+            }
+
+            if (index_now != index_old) {
+
+                if (index_old[0] != -1) {
+
+                    nmulti = set_index_uniq.size();
+                    fcs_tmp /= static_cast<double>(nmulti);
+
+                    if (std::abs(fcs_tmp) > eps15) {
+                        for (const auto &it2: set_index_uniq) {
+
+                            pairs_vec.clear();
+
+                            pairs_tmp.index = it2[0];
+                            pairs_tmp.tran = 0;
+                            pairs_tmp.cell_s = 0;
+                            pairs_vec.push_back(pairs_tmp);
+                            for (i = 1; i < norder - 1; ++i) {
+                                pairs_tmp.index = it2[3 * i - 2];
+                                pairs_tmp.tran = it2[3 * i - 1];
+                                pairs_tmp.cell_s = it2[3 * i];
+                                pairs_vec.push_back(pairs_tmp);
+                            }
+                            delta_fcs.emplace_back(fcs_tmp, pairs_vec);
+                        }
+                    }
+                    set_index_uniq.clear();
+                }
+
+                fcs_tmp = 0.0;
+                index_old.clear();
+                index_old.reserve(index_now.size());
+                std::copy(index_now.begin(), index_now.end(), std::back_inserter(index_old));
+            }
+
+            set_index_uniq.insert(index_with_cell);
+
+            for (i = 0; i < 3; i++) {
+                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                for (j = 1; j < norder - 1; j++) {
+                    vec_origin[i] +=
+                            system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                            + xshift_s[it.pairs[j].cell_s][i];
+                }
+                vec_origin[i] /= static_cast<double>(norder - 1);
+            }
+
+            for (i = 0; i < 3; ++i) {
+                vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                                                                                                             1].tran]][i]
+                         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                         - vec_origin[i]
+                         + xshift_s[it.pairs[norder - 1].cell_s][i];
+            }
+
+            rotvec(vec, vec, system->lavec_s_anharm);
+
+            fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
         }
 
-        if (index_now != index_old) {
+        nmulti = set_index_uniq.size();
+        fcs_tmp /= static_cast<double>(nmulti);
 
-            if (index_old[0] != -1) {
+        if (std::abs(fcs_tmp) > eps15) {
+            for (const auto &it2: set_index_uniq) {
 
-                nmulti = set_index_uniq.size();
-                fcs_tmp /= static_cast<double>(nmulti);
+                pairs_vec.clear();
 
-                if (std::abs(fcs_tmp) > eps15) {
-                    for (const auto &it2: set_index_uniq) {
+                pairs_tmp.index = it2[0];
+                pairs_tmp.tran = 0;
+                pairs_tmp.cell_s = 0;
+                pairs_vec.push_back(pairs_tmp);
+                for (i = 1; i < norder - 1; ++i) {
+                    pairs_tmp.index = it2[3 * i - 2];
+                    pairs_tmp.tran = it2[3 * i - 1];
+                    pairs_tmp.cell_s = it2[3 * i];
+                    pairs_vec.push_back(pairs_tmp);
+                }
+                delta_fcs.emplace_back(fcs_tmp, pairs_vec);
+            }
+        }
+    } else { // if(mirror_image_mode != 0)
+        // new implementation
+        // calculate IFC renormalization separately for each mirror image combinations.
+        index_with_cell_old.clear();
+        const auto nelems = 3 * (norder - 2) + 1;
+        for (i = 0; i < nelems; ++i) index_with_cell_old.push_back(-1);
+
+        index_with_cell.clear();
+
+        for (const auto &it: fcs_aligned) {
+
+            index_with_cell.clear();
+
+            index_with_cell.push_back(it.pairs[0].index);
+
+            for (i = 1; i < norder - 1; ++i) {
+                index_with_cell.push_back(it.pairs[i].index);
+                index_with_cell.push_back(it.pairs[i].tran);
+                index_with_cell.push_back(it.pairs[i].cell_s);
+            }
+
+            if (index_with_cell != index_with_cell_old) {
+
+                if (index_with_cell_old[0] != -1) {
+
+                    if (std::abs(fcs_tmp) > eps15) {
 
                         pairs_vec.clear();
 
-                        pairs_tmp.index = it2[0];
+                        pairs_tmp.index = index_with_cell_old[0];
                         pairs_tmp.tran = 0;
                         pairs_tmp.cell_s = 0;
                         pairs_vec.push_back(pairs_tmp);
                         for (i = 1; i < norder - 1; ++i) {
-                            pairs_tmp.index = it2[3 * i - 2];
-                            pairs_tmp.tran = it2[3 * i - 1];
-                            pairs_tmp.cell_s = it2[3 * i];
+                            pairs_tmp.index = index_with_cell_old[3 * i - 2];
+                            pairs_tmp.tran = index_with_cell_old[3 * i - 1];
+                            pairs_tmp.cell_s = index_with_cell_old[3 * i];
                             pairs_vec.push_back(pairs_tmp);
                         }
                         delta_fcs.emplace_back(fcs_tmp, pairs_vec);
                     }
                 }
-                set_index_uniq.clear();
+
+                fcs_tmp = 0.0;
+                index_with_cell_old.clear();
+                index_with_cell_old.reserve(index_with_cell.size());
+                std::copy(index_with_cell.begin(), index_with_cell.end(), std::back_inserter(index_with_cell_old));
             }
 
-            fcs_tmp = 0.0;
-            index_old.clear();
-            index_old.reserve(index_now.size());
-            std::copy(index_now.begin(), index_now.end(), std::back_inserter(index_old));
+            for (i = 0; i < 3; i++) {
+                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                for (j = 1; j < norder - 1; j++) {
+                    vec_origin[i] +=
+                            system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                            + xshift_s[it.pairs[j].cell_s][i];
+                }
+                vec_origin[i] /= static_cast<double>(norder - 1);
+            }
+
+            for (i = 0; i < 3; ++i) {
+                vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                                                                                                             1].tran]][i]
+                         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                         - vec_origin[i]
+                         + xshift_s[it.pairs[norder - 1].cell_s][i];
+            }
+
+            rotvec(vec, vec, system->lavec_s_anharm);
+
+            fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
         }
 
-        set_index_uniq.insert(index_with_cell);
-
-        for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                  1].tran]]
-            [i]
-                  - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                  + xshift_s[it.pairs[norder - 1].cell_s][i];
-        }
-
-        rotvec(vec, vec, system->lavec_s_anharm);
-
-        fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
-    }
-
-    nmulti = set_index_uniq.size();
-    fcs_tmp /= static_cast<double>(nmulti);
-
-    if (std::abs(fcs_tmp) > eps15) {
-        for (const auto &it2: set_index_uniq) {
+        if (std::abs(fcs_tmp) > eps15) {
 
             pairs_vec.clear();
 
-            pairs_tmp.index = it2[0];
+            pairs_tmp.index = index_with_cell[0];
             pairs_tmp.tran = 0;
             pairs_tmp.cell_s = 0;
             pairs_vec.push_back(pairs_tmp);
             for (i = 1; i < norder - 1; ++i) {
-                pairs_tmp.index = it2[3 * i - 2];
-                pairs_tmp.tran = it2[3 * i - 1];
-                pairs_tmp.cell_s = it2[3 * i];
+                pairs_tmp.index = index_with_cell[3 * i - 2];
+                pairs_tmp.tran = index_with_cell[3 * i - 1];
+                pairs_tmp.cell_s = index_with_cell[3 * i];
                 pairs_vec.push_back(pairs_tmp);
             }
             delta_fcs.emplace_back(fcs_tmp, pairs_vec);
@@ -384,6 +491,55 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     fcs_aligned.clear();
     set_index_uniq.clear();
 }
+
+// only mode == 0 is implemented
+// This process breaks the permutation symmetry of the IFC.
+// void Gruneisen::impose_ASR_on_harmonic_IFC(std::vector<FcsArrayWithCell> &delta_fcs,
+//                            int mode)
+// {
+//     // should check if delta_fcs consists of harmonic IFCs?
+// 
+//     // change self-interaction
+//     if(mode == 0){
+// 
+//         int nat = system->nat;
+// 
+//         int i_ind1, i_tran1, i_ind2, i_tran2, iat1, xyz1, xyz2;
+//         double **phi;
+//         allocate(phi, nat, 9);
+// 
+//         // calculate correction
+//         for(auto &it: delta_fcs){
+//             i_ind1 = it.pairs[0].index;
+//             i_tran1 = it.pairs[0].tran;
+//             i_ind2 = it.pairs[1].index;
+//             iat1 = system->map_p2s_anharm[i_ind1/3][i_tran1];
+//             xyz1 = i_ind1%3;
+//             xyz2 = i_ind2%3;
+// 
+//             phi[iat1][xyz1*3 + xyz2] += it.fcs_val;
+//         }
+// 
+//         // apply correction
+//         for(auto &it: delta_fcs){
+//             // if self-interaction
+//             if((it.pairs[0].index/3 == it.pairs[1].index/3) && 
+//                (it.pairs[0].tran == it.pairs[1].tran))
+//             {
+//                 i_ind1 = it.pairs[0].index;
+//                 i_tran1 = it.pairs[0].tran;
+//                 iat1 = system->map_p2s_anharm[i_ind1/3][i_tran1];
+//                 xyz1 = i_ind1%3;
+//                 xyz2 = i_ind2%3;
+//                 it.fcs_val -= phi[iat1][xyz1*3 + xyz2];
+//             }
+//         }
+// 
+//     }
+// 
+//     return;
+// }
+
 
 void Gruneisen::write_new_fcsxml_all()
 {

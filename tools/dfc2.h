@@ -103,13 +103,13 @@ void load_fc2_xml(const std::string);
 
 void load_delta_fc2(const std::string, const double);
 
-void calculate_new_fc2(std::vector <FcsClassExtent>,
-                       std::vector <DeltaFcs>,
-                       std::vector <FcsClassExtent> &);
+void calculate_new_fc2(const std::vector<FcsClassExtent> &,
+                       std::vector<DeltaFcs>,
+                       std::vector<FcsClassExtent> &);
 
 void recips(double [3][3], double [3][3]);
 
-void write_new_xml(const std::vector <FcsClassExtent>,
+void write_new_xml(const std::vector<FcsClassExtent>,
                    const std::string);
 
 std::string double2string(const double, const int nprec = 15);
@@ -118,5 +118,5 @@ std::string double2string(const double, const int nprec = 15);
 unsigned int **map_p2s;
 Maps *map_s2p;
 
-std::vector <FcsClassExtent> fc2_orig, fc2_new;
-std::vector <DeltaFcs> delta_fc2;
+std::vector<FcsClassExtent> fc2_orig, fc2_new;
+std::vector<DeltaFcs> delta_fc2;

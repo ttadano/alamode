@@ -39,7 +39,7 @@ Change directory to **example/Si** and open file :red:`si_alm.in`.
 This file is an input for the code **alm** which estimate interatomic force constants (**IFC**) by least square fitting.
 In the file, the crystal structure of a 2x2x2 conventional supercell of Si is specified in the **&cell** and the **&position** fields as the following:
 
-.. literalinclude:: ../../example/Si/si_alm.in
+.. literalinclude:: ../../example/Si/reference/si_alm1.in
    :lines: 1-30
 
 Replace the lattice constant of the supercell (20.406 Bohr) by your own value.
@@ -156,7 +156,7 @@ Change the ``MODE = suggest`` to ``MODE = optimize`` as follows::
 
 Also, add the **&optimize** field as::
 
-    &fitting
+    &optimize
       DFSET = DFSET_harmonic
     /
 
@@ -196,7 +196,7 @@ The other file :red:`si222.xml` contains crystal structure, symmetry, IFCs, and 
 
 Open the file :red:`si_phband.in` and edit it for your system.
 
-.. literalinclude:: ../../example/Si/si_phband.in
+.. literalinclude:: ../../example/Si/reference/si_phband.in
 
 Please specify the XML file you obtained in step 3 by the ``FCSXML``-tag as above. 
 In the **&cell**-field, you need to define the lattice vector of a **primitive cell**.
@@ -330,9 +330,9 @@ which creates files :red:`si222_cubic.fcs` and :red:`si222_cubic.xml`. This time
 
         $ cat DFSET_harmonic DFSET_cubic > DFSET_merged
 
-    and change the **&fitting** field as the following::
+    and change the **&optimize** field as the following::
 
-        &fitting
+        &optimize
           DFSET = DFSET_merged
         /
 
