@@ -97,7 +97,7 @@ void Input::parce_input(int narg,
         //if (!locate_tag("&kappa"))
         //    exit("parse_input",
         //         "&kappa entry not found in the input file");
-        
+
         parse_kappa_vars(use_defaults_for_kappa);
     }
 
@@ -120,15 +120,15 @@ void Input::parse_general_vars()
     struct stat st;
     std::string str_tmp;
     const std::vector<std::string> input_list{
-          "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
-          "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
-          "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART",  // "TREVSYM",
-          "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
-          "VERBOSITY", "RESTART_4PH"
-          //"KMESH_COARSE", "EPSILON_4PH", "ISMEAR_4PH", // TODO: move to &kappa field
-          //"INTERPOLATOR", "LEN_BOUNDARY" // this should be moved to &kappa
-          // field in near
-          // future
+            "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+            "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
+            "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART",  // "TREVSYM",
+            "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
+            "VERBOSITY", "RESTART_4PH"
+            //"KMESH_COARSE", "EPSILON_4PH", "ISMEAR_4PH", // TODO: move to &kappa field
+            //"INTERPOLATOR", "LEN_BOUNDARY" // this should be moved to &kappa
+            // field in near
+            // future
     };
     // added ismear_4ph to include separate choose of 3ph and 4ph
 
@@ -414,13 +414,13 @@ void Input::parse_kappa_vars(const bool use_default_values)
 {
     std::string str_tmp;
     const std::vector<std::string> input_list{
-          "KMESH_COARSE", "EPSILON_4PH", "ISMEAR_4PH", 
-          "INTERPOLATOR", "LEN_BOUNDARY",
-          "ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC",
-          "WRITE_INTERPOL", "ADAPTIVE_FACTOR", 
-          "ITERATIVE", "MAX_CYCLE", "MIN_CYCLE", "ITER_THRESHOLD", "IBTE_MIXING"
+            "KMESH_COARSE", "EPSILON_4PH", "ISMEAR_4PH",
+            "INTERPOLATOR", "LEN_BOUNDARY",
+            "ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC",
+            "WRITE_INTERPOL", "ADAPTIVE_FACTOR",
+            "ITERATIVE", "MAX_CYCLE", "MIN_CYCLE", "ITER_THRESHOLD", "IBTE_MIXING"
     };
-    
+
     double *isotope_factor = nullptr;
     std::map<std::string, std::string> kappa_var_dict;
     std::vector<std::string> isofact_v;
@@ -434,7 +434,7 @@ void Input::parse_kappa_vars(const bool use_default_values)
     get_var_dict(input_list, kappa_var_dict);
 
     // Default values
-    auto ismear_4ph = 1; 
+    auto ismear_4ph = 1;
     auto epsilon_4ph = 10.0;
     std::string interpolator = "log-linear";
     double len_boundary = 0.0;
@@ -448,11 +448,11 @@ void Input::parse_kappa_vars(const bool use_default_values)
     auto iterative = false;
     int max_cycle = 20;
     int min_cycle = 5;
-    auto iter_threshold = 0.02; 
+    auto iter_threshold = 0.02;
     auto iterative_mixing = 0.9;
 
     // Assign given values
-    if (! use_default_values) {
+    if (!use_default_values) {
         assign_val(ismear_4ph, "ISMEAR_4PH", kappa_var_dict);
         assign_val(epsilon_4ph, "EPSILON_4PH", kappa_var_dict);
         assign_val(interpolator, "INTERPOLATOR", kappa_var_dict);
@@ -467,7 +467,7 @@ void Input::parse_kappa_vars(const bool use_default_values)
         assign_val(max_cycle, "MAX_CYCLE", kappa_var_dict);
         assign_val(min_cycle, "MIN_CYCLE", kappa_var_dict);
         assign_val(iterative_mixing, "IBTE_MIXING", kappa_var_dict);
-        assign_val(iter_threshold, "ITER_THRESHOLD", kappa_var_dict); 
+        assign_val(iter_threshold, "ITER_THRESHOLD", kappa_var_dict);
     }
 
     integration->epsilon_4ph = epsilon_4ph;
@@ -511,12 +511,12 @@ void Input::parse_kappa_vars(const bool use_default_values)
 
     boost::to_lower(interpolator);
     std::vector<std::string> supported_interpolator{"linear", "log-linear", "modified-log-linear"};
-    if (std::find(std::begin(supported_interpolator), std::end(supported_interpolator), interpolator) 
-        == std::end(supported_interpolator)){
+    if (std::find(std::begin(supported_interpolator), std::end(supported_interpolator), interpolator)
+        == std::end(supported_interpolator)) {
         exit("parse_kappa_vars",
              "INTERPOLATOR is not supported.");
     }
-    
+
     conductivity->set_interpolator(interpolator);
     conductivity->set_kmesh_coarse(&kmesh_v[0]);
 
@@ -548,7 +548,7 @@ void Input::parse_kappa_vars(const bool use_default_values)
     if (isotope_factor) {
         deallocate(isotope_factor);
     }
-    
+
     isotope->include_isotope = include_isotope;
 
     kappa_var_dict.clear();
@@ -689,14 +689,14 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int i;
 
     std::vector<std::string> input_list{
-          "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
-          "REALPART", 
-          "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
-          "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
-          "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
-          "FC2_EWALD", "SELF_W", "UCORR", "SHIFT_UCORR",
-          "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES",
-          //"ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC"
+            "PRINTEVEC", "PRINTXSF", "PRINTVEL", "QUARTIC", "KS_INPUT",
+            "REALPART",
+            "FSTATE_W", "FSTATE_K", "PRINTMSD", "DOS", "PDOS", "TDOS",
+            "GRUNEISEN", "NEWFCS", "DELTA_A", "ANIME", "ANIME_CELLSIZE",
+            "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
+            "FC2_EWALD", "SELF_W", "UCORR", "SHIFT_UCORR",
+            "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES",
+            //"ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC"
     };
 
 #ifdef _FE_BUBBLE

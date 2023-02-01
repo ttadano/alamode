@@ -43,7 +43,7 @@ Improvement:
 
 namespace PHON_NS {
 class Iterativebte : protected Pointers {
- public:
+public:
     Iterativebte(class PHON *);
 
     ~Iterativebte();
@@ -69,7 +69,7 @@ class Iterativebte : protected Pointers {
 
     std::fstream fs_result;
 
- private:
+private:
 
     void set_default_variables();
 
@@ -90,6 +90,7 @@ class Iterativebte : protected Pointers {
 
     double ***damping4; // four phonon selfenergy
     void calc_anharmonic_imagself4();
+
     void calc_damping4();
 
     std::vector<std::vector<KsListGroup>> localnk_triplets_emitt;
@@ -108,8 +109,9 @@ class Iterativebte : protected Pointers {
     void calc_kappa(int, double ***&, double **&);   // calculate kappa with off equilibrium part
 
     void get_triplets();        // set up all triplets
-    
+
     void setup_L_smear();
+
     void setup_L_tetra();
 
     void calc_Q_from_L(double **&, double **&);  // calculate Q
@@ -117,6 +119,7 @@ class Iterativebte : protected Pointers {
     void calc_Q_directly(double **&, double **&);
 
     void average_vector_degenerate_at_k(int, double **&);
+
     void average_scalar_degenerate_at_k(int, double *&);
 
     void calc_boson(int, double **&, double **&);
@@ -126,7 +129,9 @@ class Iterativebte : protected Pointers {
 
     //void write_result_gamma(unsigned int,unsigned int,double ***,double **) const;
     void write_result();
+
     void write_Q_dF(int, double **&, double ***&);
+
     void write_kappa_iterative();
 
 };

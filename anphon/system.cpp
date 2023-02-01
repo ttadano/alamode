@@ -870,16 +870,16 @@ void System::check_consistency_primitive_lattice() const
         if (iloc == -1) {
             // print some information why structures are not matched, maybe helpful
             std::cout << " Error !" << std::endl;
-            std::cout << " Primitive cell positions (fractional)" << std::endl << 
-                         " for harmonic (FC2XML) and anharmonic primitive cell" << std::endl;
+            std::cout << " Primitive cell positions (fractional)" << std::endl <<
+                      " for harmonic (FC2XML) and anharmonic primitive cell" << std::endl;
             for (i = 0; i < natmin; ++i) {
-                std::cout << std::setw(5) << i+1 << " : [";
-                for (j = 0; j < 3; ++j) { 
-                    std::cout << std::scientific << std::setw(15) << x_harm[i][j] << " "; 
+                std::cout << std::setw(5) << i + 1 << " : [";
+                for (j = 0; j < 3; ++j) {
+                    std::cout << std::scientific << std::setw(15) << x_harm[i][j] << " ";
                 }
                 std::cout << "], [";
-                for (j = 0; j < 3; ++j) { 
-                    std::cout << std::scientific << std::setw(15) << x_anharm[i][j] << " "; 
+                for (j = 0; j < 3; ++j) {
+                    std::cout << std::scientific << std::setw(15) << x_anharm[i][j] << " ";
                 }
                 std::cout << "]" << std::endl;
             }

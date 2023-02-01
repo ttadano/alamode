@@ -22,16 +22,14 @@
 namespace PHON_NS {
 class Conductivity : protected Pointers {
 
- friend class Iterativebte;
- 
+    friend class Iterativebte;
+
 public:
     Conductivity(class PHON *);
 
     ~Conductivity();
 
     void setup_kappa();
-
-    // void prepare_restart();
 
     void calc_anharmonic_imagself();
 
@@ -53,13 +51,16 @@ public:
     double len_boundary;
 
     void set_kmesh_coarse(const unsigned int nk_in[3]);
+
     KpointMeshUniform *get_kmesh_coarse() const;
 
     void set_conductivity_params(const std::string &file_result3_in,
                                  const std::string &file_result4_in,
                                  const bool restart_3ph_in,
                                  const bool restart_4ph_in);
+
     bool get_restart_conductivity(const int order) const;
+
     std::string get_filename_results(const int order) const;
 
     void set_interpolator(const std::string interpolator_in)
@@ -67,7 +68,7 @@ public:
         interpolator = interpolator_in;
     };
 
- private:
+private:
     void set_default_variables();
 
     void deallocate_variables();
@@ -125,15 +126,12 @@ public:
                              const std::string &file_fcs_in);
 
     void calc_anharmonic_imagself3();
+
     void calc_anharmonic_imagself4();
+
     void setup_kappa_4ph();
 
     void lifetime_from_gamma(double **&, double **&);
-
-    void write_result_gamma(unsigned int,
-                            unsigned int,
-                            double ***,
-                            double **);
 
     void write_result_gamma(unsigned int,
                             unsigned int,

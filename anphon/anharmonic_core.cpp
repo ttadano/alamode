@@ -180,7 +180,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
             for (i = 0; i < N - 1; ++i) {
                 for (k = 0; k < 3; ++k) {
                     vecs[i][k] = system->xr_s_anharm[atm_super[i + 1]][k] + xshift_s[cells[i + 1]][k]
-                          - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][k];
+                                 - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][k];
                 }
                 rotvec(vecs[i], vecs[i], mat_convert);
             }
@@ -371,7 +371,7 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
     }
 
     return std::complex<double>(ret_re, ret_im)
-          / std::sqrt(omega[0] * omega[1] * omega[2]);
+           / std::sqrt(omega[0] * omega[1] * omega[2]);
 }
 
 std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
@@ -440,11 +440,11 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
 
             for (j = 0; j < nsize_group; ++j) {
                 phase = relvec_v3[i][j].vecs[0][0] * xk1[0]
-                      + relvec_v3[i][j].vecs[0][1] * xk1[1]
-                      + relvec_v3[i][j].vecs[0][2] * xk1[2]
-                      + relvec_v3[i][j].vecs[1][0] * xk2[0]
-                      + relvec_v3[i][j].vecs[1][1] * xk2[1]
-                      + relvec_v3[i][j].vecs[1][2] * xk2[2];
+                        + relvec_v3[i][j].vecs[0][1] * xk1[1]
+                        + relvec_v3[i][j].vecs[0][2] * xk1[2]
+                        + relvec_v3[i][j].vecs[1][0] * xk2[0]
+                        + relvec_v3[i][j].vecs[1][1] * xk2[1]
+                        + relvec_v3[i][j].vecs[1][2] * xk2[2];
 
                 ret_in += fcs_group_v3[i][j] * phase_storage_in->get_exp_type1(phase);
             }
@@ -466,8 +466,8 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
             for (j = 0; j < nsize_group; ++j) {
                 for (auto ii = 0; ii < 3; ++ii) {
                     phase3[ii]
-                          = relvec_v3[i][j].vecs[0][ii] * xk1[ii]
-                          + relvec_v3[i][j].vecs[1][ii] * xk2[ii];
+                            = relvec_v3[i][j].vecs[0][ii] * xk1[ii]
+                              + relvec_v3[i][j].vecs[1][ii] * xk2[ii];
                 }
                 ret_in += fcs_group_v3[i][j] * phase_storage_in->get_exp_type2(phase3);
             }
@@ -483,11 +483,11 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
 
             for (j = 0; j < nsize_group; ++j) {
                 phase = relvec_v3[i][j].vecs[0][0] * xk1[0]
-                      + relvec_v3[i][j].vecs[0][1] * xk1[1]
-                      + relvec_v3[i][j].vecs[0][2] * xk1[2]
-                      + relvec_v3[i][j].vecs[1][0] * xk2[0]
-                      + relvec_v3[i][j].vecs[1][1] * xk2[1]
-                      + relvec_v3[i][j].vecs[1][2] * xk2[2];
+                        + relvec_v3[i][j].vecs[0][1] * xk1[1]
+                        + relvec_v3[i][j].vecs[0][2] * xk1[2]
+                        + relvec_v3[i][j].vecs[1][0] * xk2[0]
+                        + relvec_v3[i][j].vecs[1][1] * xk2[1]
+                        + relvec_v3[i][j].vecs[1][2] * xk2[2];
                 ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
             }
             ret[i] = ret_in;
@@ -518,8 +518,8 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
     if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8 || omega[3] < eps8) return 0.0;
 
     if (kn[1] != kindex_phi4_stored[0]
-          || kn[2] != kindex_phi4_stored[1]
-          || kn[3] != kindex_phi4_stored[2]) {
+        || kn[2] != kindex_phi4_stored[1]
+        || kn[3] != kindex_phi4_stored[2]) {
 
         calc_phi4_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
@@ -546,7 +546,7 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
     }
 
     return std::complex<double>(ret_re, ret_im)
-          / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
+           / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
 }
 
 std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
@@ -570,8 +570,8 @@ std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
     }
 
     if (kn[1] != kindex_phi4_stored[0]
-          || kn[2] != kindex_phi4_stored[1]
-          || kn[3] != kindex_phi4_stored[2]) {
+        || kn[2] != kindex_phi4_stored[1]
+        || kn[3] != kindex_phi4_stored[2]) {
 
         calc_phi4_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
@@ -623,14 +623,14 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
 
             for (j = 0; j < nsize_group; ++j) {
                 phase = relvec_v4[i][j].vecs[0][0] * xk1[0]
-                      + relvec_v4[i][j].vecs[0][1] * xk1[1]
-                      + relvec_v4[i][j].vecs[0][2] * xk1[2]
-                      + relvec_v4[i][j].vecs[1][0] * xk2[0]
-                      + relvec_v4[i][j].vecs[1][1] * xk2[1]
-                      + relvec_v4[i][j].vecs[1][2] * xk2[2]
-                      + relvec_v4[i][j].vecs[2][0] * xk3[0]
-                      + relvec_v4[i][j].vecs[2][1] * xk3[1]
-                      + relvec_v4[i][j].vecs[2][2] * xk3[2];
+                        + relvec_v4[i][j].vecs[0][1] * xk1[1]
+                        + relvec_v4[i][j].vecs[0][2] * xk1[2]
+                        + relvec_v4[i][j].vecs[1][0] * xk2[0]
+                        + relvec_v4[i][j].vecs[1][1] * xk2[1]
+                        + relvec_v4[i][j].vecs[1][2] * xk2[2]
+                        + relvec_v4[i][j].vecs[2][0] * xk3[0]
+                        + relvec_v4[i][j].vecs[2][1] * xk3[1]
+                        + relvec_v4[i][j].vecs[2][2] * xk3[2];
 
                 ret_in += fcs_group_v4[i][j] * phase_storage_in->get_exp_type1(phase);
             }
@@ -652,9 +652,9 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
             for (j = 0; j < nsize_group; ++j) {
                 for (auto ii = 0; ii < 3; ++ii) {
                     phase3[ii]
-                          = relvec_v4[i][j].vecs[0][ii] * xk1[ii]
-                          + relvec_v4[i][j].vecs[1][ii] * xk2[ii]
-                          + relvec_v4[i][j].vecs[2][ii] * xk3[ii];
+                            = relvec_v4[i][j].vecs[0][ii] * xk1[ii]
+                              + relvec_v4[i][j].vecs[1][ii] * xk2[ii]
+                              + relvec_v4[i][j].vecs[2][ii] * xk3[ii];
                 }
                 ret_in += fcs_group_v4[i][j] * phase_storage_in->get_exp_type2(phase3);
             }
@@ -670,14 +670,14 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
 
             for (j = 0; j < nsize_group; ++j) {
                 phase = relvec_v4[i][j].vecs[0][0] * xk1[0]
-                      + relvec_v4[i][j].vecs[0][1] * xk1[1]
-                      + relvec_v4[i][j].vecs[0][2] * xk1[2]
-                      + relvec_v4[i][j].vecs[1][0] * xk2[0]
-                      + relvec_v4[i][j].vecs[1][1] * xk2[1]
-                      + relvec_v4[i][j].vecs[1][2] * xk2[2]
-                      + relvec_v4[i][j].vecs[2][0] * xk3[0]
-                      + relvec_v4[i][j].vecs[2][1] * xk3[1]
-                      + relvec_v4[i][j].vecs[2][2] * xk3[2];
+                        + relvec_v4[i][j].vecs[0][1] * xk1[1]
+                        + relvec_v4[i][j].vecs[0][2] * xk1[2]
+                        + relvec_v4[i][j].vecs[1][0] * xk2[0]
+                        + relvec_v4[i][j].vecs[1][1] * xk2[1]
+                        + relvec_v4[i][j].vecs[1][2] * xk2[2]
+                        + relvec_v4[i][j].vecs[2][0] * xk3[0]
+                        + relvec_v4[i][j].vecs[2][1] * xk3[1]
+                        + relvec_v4[i][j].vecs[2][2] * xk3[2];
 
                 ret_in += fcs_group_v4[i][j] * std::exp(im * phase);
             }
@@ -704,9 +704,9 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
     for (int i = 0; i < ngroup_v3; ++i) {
 
         auto vec_tmp = evec[0][mode][evec_index_v3[i][0]]
-              * evec[1][is][evec_index_v3[i][1]]
-              * evec[2][js][evec_index_v3[i][2]]
-              * invmass_v3[i];
+                       * evec[1][is][evec_index_v3[i][1]]
+                       * evec[2][js][evec_index_v3[i][2]]
+                       * invmass_v3[i];
 
         auto ret_in = std::complex<double>(0.0, 0.0);
 
@@ -715,11 +715,11 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
         for (auto j = 0; j < nsize_group; ++j) {
 
             auto phase = relvec_v3[i][j].vecs[0][0] * xk2[0]
-                  + relvec_v3[i][j].vecs[0][1] * xk2[1]
-                  + relvec_v3[i][j].vecs[0][2] * xk2[2]
-                  + relvec_v3[i][j].vecs[1][0] * xk3[0]
-                  + relvec_v3[i][j].vecs[1][1] * xk3[1]
-                  + relvec_v3[i][j].vecs[1][2] * xk3[2];
+                         + relvec_v3[i][j].vecs[0][1] * xk2[1]
+                         + relvec_v3[i][j].vecs[0][2] * xk2[2]
+                         + relvec_v3[i][j].vecs[1][0] * xk3[0]
+                         + relvec_v3[i][j].vecs[1][1] * xk3[1]
+                         + relvec_v3[i][j].vecs[1][2] * xk3[2];
 
             ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
 
@@ -811,29 +811,29 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
 
                 if (integration->ismear == 0) {
                     delta_arr[ik][ns * is + js][0]
-                          = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1], epsilon)
-                          - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1], epsilon);
+                            = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1], epsilon)
+                              - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1], epsilon);
                     delta_arr[ik][ns * is + js][1]
-                          = delta_lorentz(omega_in - omega_inner[0] + omega_inner[1], epsilon)
-                          - delta_lorentz(omega_in + omega_inner[0] - omega_inner[1], epsilon);
+                            = delta_lorentz(omega_in - omega_inner[0] + omega_inner[1], epsilon)
+                              - delta_lorentz(omega_in + omega_inner[0] - omega_inner[1], epsilon);
                 } else if (integration->ismear == 1) {
                     delta_arr[ik][ns * is + js][0]
-                          = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon)
-                          - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon);
+                            = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon)
+                              - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon);
                     delta_arr[ik][ns * is + js][1]
-                          = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon)
-                          - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon);
+                            = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon)
+                              - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon);
                 } else if (integration->ismear == 2) {
                     //double epsilon2[2];
                     integration->adaptive_sigma->get_sigma(k1, is, k2, js, epsilon2);
                     //integration->adaptive_smearing(k1, is, k2, js, epsilon2);
                     //sum_smear += epsilon2[0] + epsilon2[1];
                     delta_arr[ik][ns * is + js][0]
-                          = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon2[0])
-                          - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon2[0]);
+                            = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon2[0])
+                              - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon2[0]);
                     delta_arr[ik][ns * is + js][1]
-                          = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon2[1])
-                          - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon2[1]);
+                            = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon2[1])
+                              - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon2[1]);
                 }
             }
         }
@@ -898,8 +898,8 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
                     }
 
                     ret_tmp += v3_arr[ik][ns * is + js]
-                          * (n1 * delta_arr[ik][ns * is + js][0]
-                                - n2 * delta_arr[ik][ns * is + js][1]);
+                               * (n1 * delta_arr[ik][ns * is + js][0]
+                                  - n2 * delta_arr[ik][ns * is + js][1]);
                 }
             }
         }
@@ -1088,8 +1088,8 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
                     }
 
                     ret_tmp += v3_arr[ik][ns * is + js]
-                          * (n1 * delta_arr[ik][ns * is + js][0]
-                                - n2 * delta_arr[ik][ns * is + js][1]);
+                               * (n1 * delta_arr[ik][ns * is + js][0]
+                                  - n2 * delta_arr[ik][ns * is + js][1]);
                 }
             }
         }
@@ -1132,15 +1132,15 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
 
 
 void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
-                                            const double *temp_in,
-                                            const double omega_in,
-                                            const unsigned int ik_in,
-                                            const unsigned int is_in,
-                                            const KpointMeshUniform *kmesh_in,
-                                            const double *const *eval_in,
-                                            const std::complex<double> *const *const *evec_in,
-                                            const PhaseFactorStorage *phase_storage_in,
-                                            double *ret)
+                                                  const double *temp_in,
+                                                  const double omega_in,
+                                                  const unsigned int ik_in,
+                                                  const unsigned int is_in,
+                                                  const KpointMeshUniform *kmesh_in,
+                                                  const double *const *eval_in,
+                                                  const std::complex<double> *const *const *evec_in,
+                                                  const PhaseFactorStorage *phase_storage_in,
+                                                  double *ret)
 {
 
     const int nk = kmesh_in->nk;
@@ -1178,7 +1178,7 @@ void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
                                    sym_permutation,
                                    quartet);
 
-    unsigned int batchsize = 1e9 / (ns3 * 16); 
+    unsigned int batchsize = 1e9 / (ns3 * 16);
     // 1e9 B ~ 1GB, the batch size will be choosen so that delta_arr will be approximately 1 GB
     // batchsize * ns3 * 2 * 8B ~ 1GB
 
@@ -1196,7 +1196,7 @@ void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
     for (auto ibatch = 0; ibatch < num_batch; ++ibatch) {
         unsigned int start_k = ibatch * batchsize;
         unsigned int end_k = start_k + batchsize;
-        end_k = std::min( end_k, npair_uniq );
+        end_k = std::min(end_k, npair_uniq);
         auto nk_batch = end_k - start_k;
 
         unsigned int ik0;
@@ -1229,10 +1229,13 @@ void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
 
                         if (integration->ismear_4ph == 0) {
                             delta_arr[ik0][jb][0]
-                                = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2], epsilon);
+                                    = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2],
+                                                    epsilon);
                             delta_arr[ik0][jb][1]
-                                = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
-                                - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
+                                    =
+                                    delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
+                                    -
+                                    delta_lorentz(omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
                         } else if (integration->ismear_4ph == 1) {
                             delta_arr[ik0][jb][0] = 0.0;
                             delta_arr[ik0][jb][1] = 0.0;
@@ -1297,10 +1300,10 @@ void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
                     arr[3] = ns * k3 + ks;
 
                     v4_arr[ik0][ib] = std::norm(V4(arr,
-                                                kmesh_in->xk,
-                                                eval_in,
-                                                evec_in,
-                                                phase_storage_in)) * multi;
+                                                   kmesh_in->xk,
+                                                   eval_in,
+                                                   evec_in,
+                                                   phase_storage_in)) * multi;
                     //std::cout << v4_arr[ik][ib] << std::endl;
                 } else {
                     v4_arr[ik0][ib] = 0.0;
@@ -1308,7 +1311,7 @@ void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
             }
         }
 
-        for (i = 0; i < ntemp; ++i) { 
+        for (i = 0; i < ntemp; ++i) {
             T_tmp = temp_in[i];
             ret_tmp = 0.0;
 #ifdef _OPENMP
@@ -1351,8 +1354,8 @@ void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
                             }
 
                             ret_tmp += v4_arr[ik0][ns2 * is + ns * js + ks]
-                                * (n1 * delta_arr[ik0][ns2 * is + ns * js + ks][0]
-                                        + n2 * delta_arr[ik0][ns2 * is + ns * js + ks][1]);
+                                       * (n1 * delta_arr[ik0][ns2 * is + ns * js + ks][0]
+                                          + n2 * delta_arr[ik0][ns2 * is + ns * js + ks][1]);
 
                         }
                     }
@@ -1371,7 +1374,7 @@ void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
     // std::pow(0.5, 5)
     for (i = 0; i < ntemp; ++i)
         ret[i] *= pi * std::pow(0.5, 5)
-              / (3.0 * static_cast<double>(nk * nk)); 
+                  / (3.0 * static_cast<double>(nk * nk));
 }
 
 void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
@@ -1471,10 +1474,10 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
 
                     if (integration->ismear_4ph == 0) {
                         delta_arr[ik][jb][0]
-                              = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2], epsilon);
+                                = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2], epsilon);
                         delta_arr[ik][jb][1]
-                              = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
-                              - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
+                                = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
+                                  - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
                     } else if (integration->ismear_4ph == 1) {
                         delta_arr[ik][jb][0] = 0.0;
                         delta_arr[ik][jb][1] = 0.0;
@@ -1590,8 +1593,8 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
                         }
 
                         ret_tmp += v4_arr[ik][ns2 * is + ns * js + ks]
-                              * (n1 * delta_arr[ik][ns2 * is + ns * js + ks][0]
-                                    + n2 * delta_arr[ik][ns2 * is + ns * js + ks][1]);
+                                   * (n1 * delta_arr[ik][ns2 * is + ns * js + ks][0]
+                                      + n2 * delta_arr[ik][ns2 * is + ns * js + ks][1]);
 
                     }
                 }
@@ -1606,7 +1609,7 @@ void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
     // std::pow(0.5, 5)
     for (i = 0; i < ntemp; ++i)
         ret[i] *= pi * std::pow(0.5, 5)
-              / (3.0 * static_cast<double>(nk * nk)); // should we have 1/6
+                  / (3.0 * static_cast<double>(nk * nk)); // should we have 1/6
 }
 
 std::vector<std::vector<QuartS>> AnharmonicCore::reduce_pair(const int k_in,
@@ -1829,9 +1832,9 @@ void AnharmonicCore::setup_cubic()
             evec_index_v3[i][j] = fcs_phonon->force_constant_with_cell[1][k].pairs[j].index;
         }
         invmass_v3[i]
-              = invsqrt_mass_p[evec_index_v3[i][0] / 3]
-              * invsqrt_mass_p[evec_index_v3[i][1] / 3]
-              * invsqrt_mass_p[evec_index_v3[i][2] / 3];
+                = invsqrt_mass_p[evec_index_v3[i][0] / 3]
+                  * invsqrt_mass_p[evec_index_v3[i][1] / 3]
+                  * invsqrt_mass_p[evec_index_v3[i][2] / 3];
         k += fcs_group_v3[i].size();
     }
 
@@ -1870,10 +1873,10 @@ void AnharmonicCore::setup_quartic()
             evec_index_v4[i][j] = fcs_phonon->force_constant_with_cell[2][k].pairs[j].index;
         }
         invmass_v4[i]
-              = invsqrt_mass_p[evec_index_v4[i][0] / 3]
-              * invsqrt_mass_p[evec_index_v4[i][1] / 3]
-              * invsqrt_mass_p[evec_index_v4[i][2] / 3]
-              * invsqrt_mass_p[evec_index_v4[i][3] / 3];
+                = invsqrt_mass_p[evec_index_v4[i][0] / 3]
+                  * invsqrt_mass_p[evec_index_v4[i][1] / 3]
+                  * invsqrt_mass_p[evec_index_v4[i][2] / 3]
+                  * invsqrt_mass_p[evec_index_v4[i][3] / 3];
         k += fcs_group_v4[i].size();
     }
 
@@ -2178,7 +2181,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
 
                         //#pragma omp critical
                         ret_private[nomega * ithread + iomega]
-                              += v3_arr[ik][ib] * (n1 * weight_tetra[0][ik] - 2.0 * n2 * weight_tetra[1][ik]);
+                                += v3_arr[ik][ib] * (n1 * weight_tetra[0][ik] - 2.0 * n2 * weight_tetra[1][ik]);
                     }
                 }
             }

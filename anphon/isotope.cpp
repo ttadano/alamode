@@ -116,7 +116,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
-                          * evec_in[knum][snum][3 * iat + icrd];
+                             * evec_in[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }
@@ -175,7 +175,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
                 auto dprod = std::complex<double>(0.0, 0.0);
                 for (auto icrd = 0; icrd < 3; ++icrd) {
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
-                          * evec_in[knum][snum][3 * iat + icrd];
+                             * evec_in[knum][snum][3 * iat + icrd];
                 }
                 prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
             }

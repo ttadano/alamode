@@ -268,7 +268,7 @@ void PHON::execute_RTA() const
         mode_analysis->run_mode_analysis();
 
     } else if (iterativebte->do_iterative) {
-        
+
         iterativebte->setup_iterative();
         iterativebte->do_iterativebte();
 

@@ -110,15 +110,15 @@ private:
                                                     double **ret) const;
 
     void calc_longitudinal_projected_dos(const unsigned int nk,
-                                 const double *const *xk_in,
-                                 const double rlavec_p[3][3],
-                                 double *const *eval,
-                                 const unsigned int n,
-                                 const double *energy,
-                                 double *ret,
-                                 const unsigned int neval,
-                                 const unsigned int natmin,
-                                 const int smearing_method,
-                                 std::complex<double> ***evec) const;
+                                         const double *const *xk_in,
+                                         const double rlavec_p[3][3],
+                                         double *const *eval,
+                                         const unsigned int n,
+                                         const double *energy,
+                                         double *ret,
+                                         const unsigned int neval,
+                                         const unsigned int natmin,
+                                         const int smearing_method,
+                                         std::complex<double> ***evec) const;
 };
 }

@@ -20,24 +20,25 @@ or http://opensource.org/licenses/mit-license.php for information.
 namespace PHON_NS {
 
 struct QuartS {
-  // for an (k,s)
-  // we store for a single k quartic pair and {s1,s2,s3}, with the smearing result,
-  // only for smearing method
+    // for an (k,s)
+    // we store for a single k quartic pair and {s1,s2,s3}, with the smearing result,
+    // only for smearing method
 
-  int s1, s2, s3;
+    int s1, s2, s3;
 
-  double delta1;
-  double delta2;
+    double delta1;
+    double delta2;
 
-  QuartS();
-  QuartS(int in1, int in2, int in3) :
-        s1(in1), s2(in2), s3(in3) {}
+    QuartS();
 
-  QuartS(int in1, int in2, int in3,
-         double d1, double d2) :
-        s1(in1), s2(in2), s3(in3),
-        delta1(d1),
-        delta2(d2) {}
+    QuartS(int in1, int in2, int in3) :
+            s1(in1), s2(in2), s3(in3) {}
+
+    QuartS(int in1, int in2, int in3,
+           double d1, double d2) :
+            s1(in1), s2(in2), s3(in3),
+            delta1(d1),
+            delta2(d2) {}
 };
 
 class RelativeVector {
@@ -160,15 +161,15 @@ public:
                                 double *ret);
 
     void calc_damping4_smearing_batch(const unsigned int ntemp,
-                                const double *temp_in,
-                                const double omega_in,
-                                const unsigned int ik_in,
-                                const unsigned int is_in,
-                                const KpointMeshUniform *kmesh_in,
-                                const double *const *eval_in,
-                                const std::complex<double> *const *const *evec_in,
-                                const PhaseFactorStorage *phase_storage_in,
-                                double *ret);
+                                      const double *temp_in,
+                                      const double omega_in,
+                                      const unsigned int ik_in,
+                                      const unsigned int is_in,
+                                      const KpointMeshUniform *kmesh_in,
+                                      const double *const *eval_in,
+                                      const std::complex<double> *const *const *evec_in,
+                                      const PhaseFactorStorage *phase_storage_in,
+                                      double *ret);
 
     // a wrapper to return v3
     //std::complex<double> get_v3(const unsigned int [3],
