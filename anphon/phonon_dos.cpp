@@ -85,9 +85,18 @@ void Dos::deallocate_variables()
         deallocate(sps3_with_bose);
     }
 
-    if (tetra_nodes_dos) delete tetra_nodes_dos;
-    if (kmesh_dos) delete kmesh_dos;
-    if (dymat_dos) delete dymat_dos;
+    if (tetra_nodes_dos) {
+        delete tetra_nodes_dos;
+        tetra_nodes_dos = nullptr;
+    }
+    if (kmesh_dos) {
+        delete kmesh_dos;
+        kmesh_dos = nullptr;
+    }
+    if (dymat_dos) {
+        delete dymat_dos;
+        dymat_dos = nullptr;
+    }
 }
 
 void Dos::setup()

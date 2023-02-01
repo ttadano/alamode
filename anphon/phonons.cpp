@@ -30,6 +30,7 @@
 #include "anharmonic_core.h"
 #include "mode_analysis.h"
 #include "conductivity.h"
+#include "iterativebte.h"
 #include "isotope.h"
 #include "selfenergy.h"
 #include "version.h"
@@ -129,6 +130,7 @@ void PHON::create_pointers()
     scph = new Scph(this);
     ewald = new Ewald(this);
     dielec = new Dielec(this);
+    iterativebte = new Iterativebte(this);
 }
 
 void PHON::destroy_pointers() const
@@ -153,6 +155,7 @@ void PHON::destroy_pointers() const
     delete scph;
     delete ewald;
     delete dielec;
+    delete iterativebte;
 }
 
 void PHON::setup_base() const
@@ -163,8 +166,8 @@ void PHON::setup_base() const
     fcs_phonon->setup(mode);
     dynamical->setup_dynamical();
     phonon_velocity->setup_velocity();
-    integration->setup_integration();
     dos->setup();
+    integration->setup_integration();
     thermodynamics->setup();
     ewald->init();
     anharmonic_core->setup();
@@ -235,15 +238,15 @@ void PHON::execute_RTA() const
         std::cout << "      (relaxation time approximation).                       " << std::endl;
         std::cout << "      Harmonic and anharmonic force constants will be used.  " << std::endl;
         std::cout << std::endl;
-
-        if (restart_flag) {
-            std::cout << std::endl;
-            std::cout << "      Restart mode is switched on!                                  " << std::endl;
-            std::cout << "      The calculation will be restart from the existing result file." << std::endl;
-            std::cout << "      If you want to start a calculation from scratch,              " << std::endl;
-            std::cout << "      please set RESTART = 0 in the input file                      " << std::endl;
-            std::cout << std::endl;
-        }
+//
+//        if (restart_flag) {
+//            std::cout << std::endl;
+//            std::cout << "      Restart mode is switched on!                                  " << std::endl;
+//            std::cout << "      The calculation will be restart from the existing result file." << std::endl;
+//            std::cout << "      If you want to start a calculation from scratch,              " << std::endl;
+//            std::cout << "      please set RESTART = 0 in the input file                      " << std::endl;
+//            std::cout << std::endl;
+//        }
     }
 
     setup_base();
@@ -258,15 +261,31 @@ void PHON::execute_RTA() const
     mode_analysis->setup_mode_analysis();
     selfenergy->setup_selfenergy();
 
+    MPI_Bcast(&iterativebte->do_iterative, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&conductivity->fph_rta, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     if (mode_analysis->ks_analyze_mode) {
         mode_analysis->run_mode_analysis();
+
+    } else if (iterativebte->do_iterative) {
+        
+        iterativebte->setup_iterative();
+        iterativebte->do_iterativebte();
+
     } else {
-        writes->setup_result_io();
+        //writes->setup_result_io();
         conductivity->setup_kappa();
-        conductivity->prepare_restart();
         conductivity->calc_anharmonic_imagself();
+        // if (conductivity->fph_rta < 2) {
         conductivity->compute_kappa();
         writes->write_kappa();
+        // this can be deleted
+        //} else {
+        //    if (mympi->my_rank == 0) {
+        //        std::cout << " [fph_RTA == 2], only 4ph scattering is calculated, kappa is not calculated !"
+        //                  << std::endl;
+        //    }
+        //}
         writes->write_selfenergy_isotope();
     }
 }

@@ -12,6 +12,7 @@
 
 #include "pointers.h"
 #include "constants.h"
+#include "fcs_phonon.h"
 #include "kpoint.h"
 #include "memory.h"
 #include <vector>
@@ -78,6 +79,53 @@ private:
     unsigned int **tetras;
 };
 
+class AdaptiveSmearingSigma {
+ public:
+    AdaptiveSmearingSigma(){};
+
+    AdaptiveSmearingSigma(const unsigned int nk_in,
+                          const unsigned int ns_in,
+                          const double factor) {
+
+        allocate(vel, nk_in, ns_in, 3);
+        adaptive_factor = factor;
+    };
+
+    ~AdaptiveSmearingSigma() {
+        if (vel) deallocate(vel);
+    };
+
+    void setup(const PhononVelocity *phvel_class,
+               const KpointMeshUniform *kmesh_in,
+               const double lavec_p_in[3][3],
+               const double rlavec_p_in[3][3],
+               const std::vector<FcsClassExtent> &fc2_ext_in);
+
+    // overload for 3ph or 4ph
+    void get_sigma(const unsigned int k1,
+                   const unsigned int s1,
+                   double &sigma_out);
+
+    void get_sigma(const unsigned int k1,
+                   const unsigned int s1,
+                   const unsigned int k2,
+                   const unsigned int s2,
+                   double sigma_out[2]);
+
+    void get_sigma(const unsigned int k1,
+                   const unsigned int s1,
+                   const unsigned int k2,
+                   const unsigned int s2,
+                   const unsigned int k3,
+                   const unsigned int s3,
+                   double sigma_out[2]);
+
+ private:
+    double adaptive_factor;
+    double ***vel = nullptr;
+    double dq[3][3];
+};
+
 class Integration : protected Pointers {
 public:
     Integration(class PHON *);
@@ -85,7 +133,13 @@ public:
     ~Integration();
 
     int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
+    int ismear_4ph;
     double epsilon;
+    double epsilon_4ph;
+    double adaptive_factor;
+
+    AdaptiveSmearingSigma *adaptive_sigma = nullptr;
+    AdaptiveSmearingSigma *adaptive_sigma4 = nullptr;
 
     void setup_integration();
 
@@ -111,10 +165,25 @@ public:
                               const int smearing_method,
                               double *weight) const;
 
+    // overload for 3ph or 4ph
+    //void adaptive_smearing(int, int, double &);
+
+//    void adaptive_smearing(int, int, int, int,
+//                           double *);
+
+//    void adaptive_smearing(int, int, int, int,
+//                           int, int, double *);
+
 private:
     void set_default_variables();
 
     void deallocate_variables();
+
+    // for adaptive smearing
+//    double ***vel;
+//    double **dq;
+
+    void prepare_adaptivesmearing();
 
     inline double fij(double,
                       double,

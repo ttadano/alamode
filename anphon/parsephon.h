@@ -45,6 +45,8 @@ private:
 
     void parse_scph_vars();
 
+    void parse_kappa_vars(const bool);
+
     void parse_cell_parameter();
 
     void parse_kpoints();

@@ -11,13 +11,19 @@
 #pragma once
 
 #include "pointers.h"
+#include "anharmonic_core.h"
 #include "kpoint.h"
+#include "dynamical.h"
 #include <vector>
 #include <set>
 #include <complex>
+#include <fstream>
 
 namespace PHON_NS {
 class Conductivity : protected Pointers {
+
+ friend class Iterativebte;
+ 
 public:
     Conductivity(class PHON *);
 
@@ -25,7 +31,7 @@ public:
 
     void setup_kappa();
 
-    void prepare_restart();
+    // void prepare_restart();
 
     void calc_anharmonic_imagself();
 
@@ -34,29 +40,106 @@ public:
     int calc_kappa_spec;
     unsigned int ntemp;
     double **damping3;
+    double **damping4;
     double ***kappa;
+    double ***kappa_3only;
     double ***kappa_spec;
     double ***kappa_coherent;
     double *temperature;
     int calc_coherent;
+    int write_interpolation;
 
-private:
+    int fph_rta;
+    double len_boundary;
+
+    void set_kmesh_coarse(const unsigned int nk_in[3]);
+    KpointMeshUniform *get_kmesh_coarse() const;
+
+    void set_conductivity_params(const std::string &file_result3_in,
+                                 const std::string &file_result4_in,
+                                 const bool restart_3ph_in,
+                                 const bool restart_4ph_in);
+    bool get_restart_conductivity(const int order) const;
+    std::string get_filename_results(const int order) const;
+
+    void set_interpolator(const std::string interpolator_in)
+    {
+        interpolator = interpolator_in;
+    };
+
+ private:
     void set_default_variables();
 
     void deallocate_variables();
 
-    double ***vel;
+    double ***vel, ***vel_4ph;
     std::complex<double> ****velmat;
-    unsigned int nk, ns;
-    int nshift_restart;
-    std::vector<int> vks_l, vks_done;
-    std::set<int> vks_job;
+    unsigned int nk_3ph, ns;
+    int nshift_restart, nshift_restart4;
+    std::vector<int> vks_l, vks_done, vks_done4;
+    std::set<int> vks_job, vks_job4;
     std::string file_coherent_elems;
+
+    unsigned int nk_coarse[3] = {};
+    KpointMeshUniform *kmesh_4ph = nullptr;
+    DymatEigenValue *dymat_4ph = nullptr;
+    PhaseFactorStorage *phase_storage_4ph = nullptr;
+
+    std::fstream fs_result3, fs_result4;
+    std::string file_result3, file_result4;
+    bool restart_flag_3ph;
+    bool restart_flag_4ph;
+
+    std::string interpolator{};
+
+    void setup_result_io(const int mode);
+
+    void prepare_restart(const int mode);
+
+    void check_consistency_restart(std::fstream &fs_result,
+                                   const std::string &file_result_in,
+                                   const unsigned int nk_in[3],
+                                   const unsigned int nk_irred_in,
+                                   const unsigned int natmin_in,
+                                   const unsigned int nkd_in,
+                                   const bool classical_in,
+                                   const int ismear_in,
+                                   const double epsilon_in,
+                                   const double tmin_in,
+                                   const double tmax_in,
+                                   const double delta_t_in,
+                                   const std::string &file_fcs_in);
+
+    void write_header_result(std::fstream &fs_result,
+                             const std::string &file_result,
+                             const KpointMeshUniform *kmesh_in,
+                             const unsigned int natmin_in,
+                             const unsigned int nkd_in,
+                             const double volume_prim_in,
+                             const bool classical_in,
+                             const int ismear_in,
+                             const double epsilon_in,
+                             const double tmin_in,
+                             const double tmax_in,
+                             const double delta_t_in,
+                             const std::string &file_fcs_in);
+
+    void calc_anharmonic_imagself3();
+    void calc_anharmonic_imagself4();
+    void setup_kappa_4ph();
+
+    void lifetime_from_gamma(double **&, double **&);
 
     void write_result_gamma(unsigned int,
                             unsigned int,
                             double ***,
-                            double **) const;
+                            double **);
+
+    void write_result_gamma(unsigned int,
+                            unsigned int,
+                            double ***,
+                            double **,
+                            int);
 
     void average_self_energy_at_degenerate_point(const int n,
                                                  const int m,
@@ -81,5 +164,10 @@ private:
                                 const double *const *eval_in,
                                 const double *const *gamma_total,
                                 double ***kappa_coherent_out) const;
+
+    void interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
+                          const KpointMeshUniform *kmesh_dense_in,
+                          const double *const *val_coarse_in,
+                          double **val_dense_out) const;
 };
 }

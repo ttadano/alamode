@@ -56,12 +56,13 @@ public:
     class ModeAnalysis *mode_analysis;
 
     class Selfenergy *selfenergy;
-
     class Conductivity *conductivity;
 
     class Writes *writes;
 
     class Dos *dos;
+
+    class Iterativebte *iterativebte;
 
     class Gruneisen *gruneisen;
 
@@ -76,16 +77,14 @@ public:
     class Dielec *dielec;
 
     void create_pointers();
-
     void destroy_pointers() const;
 
     std::string mode;
-    bool restart_flag;
+    //bool restart_flag;
 
     void execute_phonons() const;
 
     void execute_RTA() const;
-
     void execute_self_consistent_phonon() const;
 
     void setup_base() const;

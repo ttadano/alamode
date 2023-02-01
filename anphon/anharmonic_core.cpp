@@ -180,7 +180,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
             for (i = 0; i < N - 1; ++i) {
                 for (k = 0; k < 3; ++k) {
                     vecs[i][k] = system->xr_s_anharm[atm_super[i + 1]][k] + xshift_s[cells[i + 1]][k]
-                                 - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][k];
+                          - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][k];
                 }
                 rotvec(vecs[i], vecs[i], mat_convert);
             }
@@ -257,6 +257,13 @@ void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArray
         fcs_group_out[igroup].push_back(it.fcs_val);
     }
 }
+
+//std::complex<double> AnharmonicCore::get_v3(const unsigned int ks[3],
+//                                            double **eval_phonon,
+//                                            std::complex<double> ***evec_phonon)
+//{
+//    return V3(ks,eval_phonon,evec_phonon);
+//}
 
 std::complex<double> AnharmonicCore::V3(const unsigned int ks[3])
 {
@@ -364,7 +371,7 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
     }
 
     return std::complex<double>(ret_re, ret_im)
-           / std::sqrt(omega[0] * omega[1] * omega[2]);
+          / std::sqrt(omega[0] * omega[1] * omega[2]);
 }
 
 std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
@@ -433,11 +440,11 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
 
             for (j = 0; j < nsize_group; ++j) {
                 phase = relvec_v3[i][j].vecs[0][0] * xk1[0]
-                        + relvec_v3[i][j].vecs[0][1] * xk1[1]
-                        + relvec_v3[i][j].vecs[0][2] * xk1[2]
-                        + relvec_v3[i][j].vecs[1][0] * xk2[0]
-                        + relvec_v3[i][j].vecs[1][1] * xk2[1]
-                        + relvec_v3[i][j].vecs[1][2] * xk2[2];
+                      + relvec_v3[i][j].vecs[0][1] * xk1[1]
+                      + relvec_v3[i][j].vecs[0][2] * xk1[2]
+                      + relvec_v3[i][j].vecs[1][0] * xk2[0]
+                      + relvec_v3[i][j].vecs[1][1] * xk2[1]
+                      + relvec_v3[i][j].vecs[1][2] * xk2[2];
 
                 ret_in += fcs_group_v3[i][j] * phase_storage_in->get_exp_type1(phase);
             }
@@ -459,8 +466,8 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
             for (j = 0; j < nsize_group; ++j) {
                 for (auto ii = 0; ii < 3; ++ii) {
                     phase3[ii]
-                            = relvec_v3[i][j].vecs[0][ii] * xk1[ii]
-                              + relvec_v3[i][j].vecs[1][ii] * xk2[ii];
+                          = relvec_v3[i][j].vecs[0][ii] * xk1[ii]
+                          + relvec_v3[i][j].vecs[1][ii] * xk2[ii];
                 }
                 ret_in += fcs_group_v3[i][j] * phase_storage_in->get_exp_type2(phase3);
             }
@@ -475,13 +482,12 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
             nsize_group = fcs_group_v3[i].size();
 
             for (j = 0; j < nsize_group; ++j) {
-                phase
-                        = relvec_v3[i][j].vecs[0][0] * xk1[0]
-                          + relvec_v3[i][j].vecs[0][1] * xk1[1]
-                          + relvec_v3[i][j].vecs[0][2] * xk1[2]
-                          + relvec_v3[i][j].vecs[1][0] * xk2[0]
-                          + relvec_v3[i][j].vecs[1][1] * xk2[1]
-                          + relvec_v3[i][j].vecs[1][2] * xk2[2];
+                phase = relvec_v3[i][j].vecs[0][0] * xk1[0]
+                      + relvec_v3[i][j].vecs[0][1] * xk1[1]
+                      + relvec_v3[i][j].vecs[0][2] * xk1[2]
+                      + relvec_v3[i][j].vecs[1][0] * xk2[0]
+                      + relvec_v3[i][j].vecs[1][1] * xk2[1]
+                      + relvec_v3[i][j].vecs[1][2] * xk2[2];
                 ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
             }
             ret[i] = ret_in;
@@ -512,8 +518,8 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
     if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8 || omega[3] < eps8) return 0.0;
 
     if (kn[1] != kindex_phi4_stored[0]
-        || kn[2] != kindex_phi4_stored[1]
-        || kn[3] != kindex_phi4_stored[2]) {
+          || kn[2] != kindex_phi4_stored[1]
+          || kn[3] != kindex_phi4_stored[2]) {
 
         calc_phi4_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
@@ -540,7 +546,7 @@ std::complex<double> AnharmonicCore::V4(const unsigned int ks[4],
     }
 
     return std::complex<double>(ret_re, ret_im)
-           / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
+          / std::sqrt(omega[0] * omega[1] * omega[2] * omega[3]);
 }
 
 std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
@@ -564,8 +570,8 @@ std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
     }
 
     if (kn[1] != kindex_phi4_stored[0]
-        || kn[2] != kindex_phi4_stored[1]
-        || kn[3] != kindex_phi4_stored[2]) {
+          || kn[2] != kindex_phi4_stored[1]
+          || kn[3] != kindex_phi4_stored[2]) {
 
         calc_phi4_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
@@ -617,14 +623,14 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
 
             for (j = 0; j < nsize_group; ++j) {
                 phase = relvec_v4[i][j].vecs[0][0] * xk1[0]
-                        + relvec_v4[i][j].vecs[0][1] * xk1[1]
-                        + relvec_v4[i][j].vecs[0][2] * xk1[2]
-                        + relvec_v4[i][j].vecs[1][0] * xk2[0]
-                        + relvec_v4[i][j].vecs[1][1] * xk2[1]
-                        + relvec_v4[i][j].vecs[1][2] * xk2[2]
-                        + relvec_v4[i][j].vecs[2][0] * xk3[0]
-                        + relvec_v4[i][j].vecs[2][1] * xk3[1]
-                        + relvec_v4[i][j].vecs[2][2] * xk3[2];
+                      + relvec_v4[i][j].vecs[0][1] * xk1[1]
+                      + relvec_v4[i][j].vecs[0][2] * xk1[2]
+                      + relvec_v4[i][j].vecs[1][0] * xk2[0]
+                      + relvec_v4[i][j].vecs[1][1] * xk2[1]
+                      + relvec_v4[i][j].vecs[1][2] * xk2[2]
+                      + relvec_v4[i][j].vecs[2][0] * xk3[0]
+                      + relvec_v4[i][j].vecs[2][1] * xk3[1]
+                      + relvec_v4[i][j].vecs[2][2] * xk3[2];
 
                 ret_in += fcs_group_v4[i][j] * phase_storage_in->get_exp_type1(phase);
             }
@@ -646,9 +652,9 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
             for (j = 0; j < nsize_group; ++j) {
                 for (auto ii = 0; ii < 3; ++ii) {
                     phase3[ii]
-                            = relvec_v4[i][j].vecs[0][ii] * xk1[ii]
-                              + relvec_v4[i][j].vecs[1][ii] * xk2[ii]
-                              + relvec_v4[i][j].vecs[2][ii] * xk3[ii];
+                          = relvec_v4[i][j].vecs[0][ii] * xk1[ii]
+                          + relvec_v4[i][j].vecs[1][ii] * xk2[ii]
+                          + relvec_v4[i][j].vecs[2][ii] * xk3[ii];
                 }
                 ret_in += fcs_group_v4[i][j] * phase_storage_in->get_exp_type2(phase3);
             }
@@ -664,14 +670,14 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
 
             for (j = 0; j < nsize_group; ++j) {
                 phase = relvec_v4[i][j].vecs[0][0] * xk1[0]
-                        + relvec_v4[i][j].vecs[0][1] * xk1[1]
-                        + relvec_v4[i][j].vecs[0][2] * xk1[2]
-                        + relvec_v4[i][j].vecs[1][0] * xk2[0]
-                        + relvec_v4[i][j].vecs[1][1] * xk2[1]
-                        + relvec_v4[i][j].vecs[1][2] * xk2[2]
-                        + relvec_v4[i][j].vecs[2][0] * xk3[0]
-                        + relvec_v4[i][j].vecs[2][1] * xk3[1]
-                        + relvec_v4[i][j].vecs[2][2] * xk3[2];
+                      + relvec_v4[i][j].vecs[0][1] * xk1[1]
+                      + relvec_v4[i][j].vecs[0][2] * xk1[2]
+                      + relvec_v4[i][j].vecs[1][0] * xk2[0]
+                      + relvec_v4[i][j].vecs[1][1] * xk2[1]
+                      + relvec_v4[i][j].vecs[1][2] * xk2[2]
+                      + relvec_v4[i][j].vecs[2][0] * xk3[0]
+                      + relvec_v4[i][j].vecs[2][1] * xk3[1]
+                      + relvec_v4[i][j].vecs[2][2] * xk3[2];
 
                 ret_in += fcs_group_v4[i][j] * std::exp(im * phase);
             }
@@ -698,9 +704,9 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
     for (int i = 0; i < ngroup_v3; ++i) {
 
         auto vec_tmp = evec[0][mode][evec_index_v3[i][0]]
-                       * evec[1][is][evec_index_v3[i][1]]
-                       * evec[2][js][evec_index_v3[i][2]]
-                       * invmass_v3[i];
+              * evec[1][is][evec_index_v3[i][1]]
+              * evec[2][js][evec_index_v3[i][2]]
+              * invmass_v3[i];
 
         auto ret_in = std::complex<double>(0.0, 0.0);
 
@@ -709,11 +715,11 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
         for (auto j = 0; j < nsize_group; ++j) {
 
             auto phase = relvec_v3[i][j].vecs[0][0] * xk2[0]
-                         + relvec_v3[i][j].vecs[0][1] * xk2[1]
-                         + relvec_v3[i][j].vecs[0][2] * xk2[2]
-                         + relvec_v3[i][j].vecs[1][0] * xk3[0]
-                         + relvec_v3[i][j].vecs[1][1] * xk3[1]
-                         + relvec_v3[i][j].vecs[1][2] * xk3[2];
+                  + relvec_v3[i][j].vecs[0][1] * xk2[1]
+                  + relvec_v3[i][j].vecs[0][2] * xk2[2]
+                  + relvec_v3[i][j].vecs[1][0] * xk3[0]
+                  + relvec_v3[i][j].vecs[1][1] * xk3[1]
+                  + relvec_v3[i][j].vecs[1][2] * xk3[2];
 
             ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
 
@@ -781,6 +787,9 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
 
     const auto knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
     const auto knum_minus = kmesh_in->kindex_minus_xk[knum];
+
+    double epsilon2[2]; // for adaptive smearing
+
 #ifdef _OPENMP
 #pragma omp parallel for private(multi, arr, k1, k2, is, js, omega_inner)
 #endif
@@ -802,22 +811,35 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
 
                 if (integration->ismear == 0) {
                     delta_arr[ik][ns * is + js][0]
-                            = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1], epsilon)
-                              - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1], epsilon);
+                          = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1], epsilon)
+                          - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1], epsilon);
                     delta_arr[ik][ns * is + js][1]
-                            = delta_lorentz(omega_in - omega_inner[0] + omega_inner[1], epsilon)
-                              - delta_lorentz(omega_in + omega_inner[0] - omega_inner[1], epsilon);
+                          = delta_lorentz(omega_in - omega_inner[0] + omega_inner[1], epsilon)
+                          - delta_lorentz(omega_in + omega_inner[0] - omega_inner[1], epsilon);
                 } else if (integration->ismear == 1) {
                     delta_arr[ik][ns * is + js][0]
-                            = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon)
-                              - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon);
+                          = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon)
+                          - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon);
                     delta_arr[ik][ns * is + js][1]
-                            = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon)
-                              - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon);
+                          = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon)
+                          - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon);
+                } else if (integration->ismear == 2) {
+                    //double epsilon2[2];
+                    integration->adaptive_sigma->get_sigma(k1, is, k2, js, epsilon2);
+                    //integration->adaptive_smearing(k1, is, k2, js, epsilon2);
+                    //sum_smear += epsilon2[0] + epsilon2[1];
+                    delta_arr[ik][ns * is + js][0]
+                          = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon2[0])
+                          - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon2[0]);
+                    delta_arr[ik][ns * is + js][1]
+                          = delta_gauss(omega_in - omega_inner[0] + omega_inner[1], epsilon2[1])
+                          - delta_gauss(omega_in + omega_inner[0] - omega_inner[1], epsilon2[1]);
                 }
             }
         }
     }
+    // debug
+    //std::cout << "phonon (" << ik_in << ", " << snum << ") : " << sum_smear / static_cast<double>(2*ns*ns*npair_uniq) << std::endl;
 
     for (ik = 0; ik < npair_uniq; ++ik) {
 
@@ -876,8 +898,8 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
                     }
 
                     ret_tmp += v3_arr[ik][ns * is + js]
-                               * (n1 * delta_arr[ik][ns * is + js][0]
-                                  - n2 * delta_arr[ik][ns * is + js][1]);
+                          * (n1 * delta_arr[ik][ns * is + js][0]
+                                - n2 * delta_arr[ik][ns * is + js][1]);
                 }
             }
         }
@@ -1066,8 +1088,8 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
                     }
 
                     ret_tmp += v3_arr[ik][ns * is + js]
-                               * (n1 * delta_arr[ik][ns * is + js][0]
-                                  - n2 * delta_arr[ik][ns * is + js][1]);
+                          * (n1 * delta_arr[ik][ns * is + js][0]
+                                - n2 * delta_arr[ik][ns * is + js][1]);
                 }
             }
         }
@@ -1079,6 +1101,697 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
     deallocate(kmap_identity);
 
     for (i = 0; i < ntemp; ++i) ret[i] *= pi * std::pow(0.5, 4);
+}
+
+void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
+                                            const double *temp_in,
+                                            const double omega_in,
+                                            const unsigned int ik_in,
+                                            const unsigned int is_in,
+                                            const KpointMeshUniform *kmesh_in,
+                                            const double *const *eval_in,
+                                            const std::complex<double> *const *const *evec_in,
+                                            double *ret)
+{
+    // This function returns the imaginary part of phonon self-energy
+    // for the given frequency omega.
+    // Lorentzian or Gaussian smearing will be used.
+    // This version employs the crystal symmetry to reduce the computational cost
+
+    this->calc_damping4_smearing(ntemp,
+                                 temp_in,
+                                 omega_in,
+                                 ik_in,
+                                 is_in,
+                                 kmesh_in,
+                                 eval_in,
+                                 evec_in,
+                                 phase_storage_dos,
+                                 ret);
+}
+
+
+void AnharmonicCore::calc_damping4_smearing_batch(const unsigned int ntemp,
+                                            const double *temp_in,
+                                            const double omega_in,
+                                            const unsigned int ik_in,
+                                            const unsigned int is_in,
+                                            const KpointMeshUniform *kmesh_in,
+                                            const double *const *eval_in,
+                                            const std::complex<double> *const *const *evec_in,
+                                            const PhaseFactorStorage *phase_storage_in,
+                                            double *ret)
+{
+
+    const int nk = kmesh_in->nk;
+    const int ns = dynamical->neval;
+    const size_t ns2 = ns * ns;
+    const size_t ns3 = ns2 * ns;
+    unsigned int i;
+    int ik;
+    unsigned int is, js, ks;
+    unsigned int arr[4];
+
+    int k1, k2, k3;
+
+    double T_tmp;
+    double n1, n2;
+    double omega_inner[3];
+
+    double multi;
+
+    for (i = 0; i < ntemp; ++i) ret[i] = 0.0;
+
+    double **v4_arr;
+    double ***delta_arr;
+    double ret_tmp;
+
+    double f1, f2, f3;
+
+    const auto epsilon = integration->epsilon_4ph;
+
+    std::vector<KsListGroup> quartet;
+
+    kmesh_in->get_unique_quartet_k(ik_in,
+                                   symmetry->SymmList,
+                                   use_quartet_symmetry,
+                                   sym_permutation,
+                                   quartet);
+
+    unsigned int batchsize = 1e9 / (ns3 * 16); 
+    // 1e9 B ~ 1GB, the batch size will be choosen so that delta_arr will be approximately 1 GB
+    // batchsize * ns3 * 2 * 8B ~ 1GB
+
+    const unsigned int npair_uniq = quartet.size();
+
+    int num_batch = npair_uniq / batchsize;
+    if (npair_uniq > (num_batch * batchsize)) num_batch += 1;
+
+    const int knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
+    const int knum_minus = kmesh_in->kindex_minus_xk[knum];
+
+    allocate(v4_arr, batchsize, ns3);
+    allocate(delta_arr, batchsize, ns3, 2);
+
+    for (auto ibatch = 0; ibatch < num_batch; ++ibatch) {
+        unsigned int start_k = ibatch * batchsize;
+        unsigned int end_k = start_k + batchsize;
+        end_k = std::min( end_k, npair_uniq );
+        auto nk_batch = end_k - start_k;
+
+        unsigned int ik0;
+
+#ifdef _OPENMP
+#pragma omp parallel for private(arr, k1, k2, k3, is, js, ks, omega_inner)
+#endif
+        for (ik0 = 0; ik0 < nk_batch; ++ik0) {
+
+            ik = start_k + ik0;
+
+            arr[0] = ns * knum_minus + is_in;
+            k1 = quartet[ik].group[0].ks[0];
+            k2 = quartet[ik].group[0].ks[1];
+            k3 = quartet[ik].group[0].ks[2];
+
+            for (is = 0; is < ns; ++is) {
+                arr[1] = ns * k1 + is;
+                omega_inner[0] = eval_in[k1][is];
+
+                for (js = 0; js < ns; ++js) {
+                    arr[2] = ns * k2 + js;
+                    omega_inner[1] = eval_in[k2][js];
+
+                    for (ks = 0; ks < ns; ++ks) {
+                        arr[3] = ns * k3 + ks;
+                        omega_inner[2] = eval_in[k3][ks];
+
+                        const auto jb = ns2 * is + ns * js + ks;
+
+                        if (integration->ismear_4ph == 0) {
+                            delta_arr[ik0][jb][0]
+                                = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2], epsilon);
+                            delta_arr[ik0][jb][1]
+                                = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
+                                - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
+                        } else if (integration->ismear_4ph == 1) {
+                            delta_arr[ik0][jb][0] = 0.0;
+                            delta_arr[ik0][jb][1] = 0.0;
+                            const auto sum_omega1 = omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2];
+                            const auto sum_omega2 = omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2];
+                            const auto sum_omega3 = omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2];
+
+                            if (std::abs(sum_omega1) < 2.0 * epsilon) {
+                                delta_arr[ik0][jb][0] = delta_gauss(sum_omega1, epsilon);
+                            }
+                            if (std::abs(sum_omega2) < 2.0 * epsilon) {
+                                delta_arr[ik0][jb][1] += delta_gauss(sum_omega2, epsilon);
+                            }
+                            if (std::abs(sum_omega3) < 2.0 * epsilon) {
+                                delta_arr[ik0][jb][1] -= delta_gauss(sum_omega3, epsilon);
+                            }
+                        } else if (integration->ismear_4ph == 2) {
+                            // add adaptive smearing
+                            double epsilon2[2];
+                            integration->adaptive_sigma4->get_sigma(k1, is, k2, js, k3, ks, epsilon2);
+                            //integration->adaptive_smearing(k1, is, k2, js, k3, ks, epsilon2);
+                            delta_arr[ik0][jb][0] = 0.0;
+                            delta_arr[ik0][jb][1] = 0.0;
+                            const auto sum_omega1 = omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2];
+                            const auto sum_omega2 = omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2];
+                            const auto sum_omega3 = omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2];
+
+                            if (std::abs(sum_omega1) < 2.0 * epsilon2[0]) {
+                                delta_arr[ik0][jb][0] = delta_gauss(sum_omega1, epsilon2[0]);
+                            }
+                            if (std::abs(sum_omega2) < 2.0 * epsilon2[1]) {
+                                delta_arr[ik0][jb][1] += delta_gauss(sum_omega2, epsilon2[1]);
+                            }
+                            if (std::abs(sum_omega3) < 2.0 * epsilon2[1]) {
+                                delta_arr[ik0][jb][1] -= delta_gauss(sum_omega3, epsilon2[1]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (ik0 = 0; ik0 < nk_batch; ++ik0) {
+            ik = start_k + ik0;
+
+            k1 = quartet[ik].group[0].ks[0];
+            k2 = quartet[ik].group[0].ks[1];
+            k3 = quartet[ik].group[0].ks[2];
+
+            multi = static_cast<double>(quartet[ik].group.size());
+
+            for (size_t ib = 0; ib < ns3; ++ib) {
+                is = ib / ns2;
+                js = (ib - ns2 * is) / ns;
+                ks = ib % ns;
+
+                if (delta_arr[ik0][ib][0] > 0.0 || std::abs(delta_arr[ik0][ib][1]) > 0.0) {
+
+                    arr[0] = ns * knum_minus + is_in;
+                    arr[1] = ns * k1 + is;
+                    arr[2] = ns * k2 + js;
+                    arr[3] = ns * k3 + ks;
+
+                    v4_arr[ik0][ib] = std::norm(V4(arr,
+                                                kmesh_in->xk,
+                                                eval_in,
+                                                evec_in,
+                                                phase_storage_in)) * multi;
+                    //std::cout << v4_arr[ik][ib] << std::endl;
+                } else {
+                    v4_arr[ik0][ib] = 0.0;
+                }
+            }
+        }
+
+        for (i = 0; i < ntemp; ++i) { 
+            T_tmp = temp_in[i];
+            ret_tmp = 0.0;
+#ifdef _OPENMP
+#pragma omp parallel for private(k1, k2, k3, is, js, ks, omega_inner, n1, n2, f1, f2, f3), reduction(+:ret_tmp)
+#endif
+            for (ik0 = 0; ik0 < nk_batch; ++ik0) {
+
+                ik = start_k + ik0;
+
+                k1 = quartet[ik].group[0].ks[0];
+                k2 = quartet[ik].group[0].ks[1];
+                k3 = quartet[ik].group[0].ks[2];
+
+                for (is = 0; is < ns; ++is) {
+
+                    omega_inner[0] = eval_in[k1][is];
+
+                    for (js = 0; js < ns; ++js) {
+
+                        omega_inner[1] = eval_in[k2][js];
+
+                        for (ks = 0; ks < ns; ++ks) {
+
+                            omega_inner[2] = eval_in[k3][ks];
+
+                            if (thermodynamics->classical) {
+                                f1 = thermodynamics->fC(omega_inner[0], T_tmp);
+                                f2 = thermodynamics->fC(omega_inner[1], T_tmp);
+                                f3 = thermodynamics->fC(omega_inner[2], T_tmp);
+
+                                n1 = f1 * f2 + f2 * f3 + f3 * f1 + f1 + f2 + f3;
+                                n2 = 3.0 * (f1 * f3 + f2 * f3 - f1 * f2 + f3);
+                            } else {
+                                f1 = thermodynamics->fB(omega_inner[0], T_tmp);
+                                f2 = thermodynamics->fB(omega_inner[1], T_tmp);
+                                f3 = thermodynamics->fB(omega_inner[2], T_tmp);
+
+                                n1 = f1 * f2 + f2 * f3 + f3 * f1 + f1 + f2 + f3 + 1.0;
+                                n2 = 3.0 * (f1 * f3 + f2 * f3 - f1 * f2 + f3);
+                            }
+
+                            ret_tmp += v4_arr[ik0][ns2 * is + ns * js + ks]
+                                * (n1 * delta_arr[ik0][ns2 * is + ns * js + ks][0]
+                                        + n2 * delta_arr[ik0][ns2 * is + ns * js + ks][1]);
+
+                        }
+                    }
+                }
+
+            }
+
+            ret[i] += ret_tmp;
+        }
+
+    }
+
+    deallocate(v4_arr);
+    deallocate(delta_arr);
+    quartet.clear();
+    // std::pow(0.5, 5)
+    for (i = 0; i < ntemp; ++i)
+        ret[i] *= pi * std::pow(0.5, 5)
+              / (3.0 * static_cast<double>(nk * nk)); 
+}
+
+void AnharmonicCore::calc_damping4_smearing(const unsigned int ntemp,
+                                            const double *temp_in,
+                                            const double omega_in,
+                                            const unsigned int ik_in,
+                                            const unsigned int is_in,
+                                            const KpointMeshUniform *kmesh_in,
+                                            const double *const *eval_in,
+                                            const std::complex<double> *const *const *evec_in,
+                                            const PhaseFactorStorage *phase_storage_in,
+                                            double *ret)
+{
+    // This function returns the imaginary part of phonon self-energy
+    // for the given frequency omega.
+    // Lorentzian or Gaussian smearing will be used.
+    // This version employs the crystal symmetry to reduce the computational cost
+
+    const int nk = kmesh_in->nk;
+    const int ns = dynamical->neval;
+    const size_t ns2 = ns * ns;
+    const size_t ns3 = ns2 * ns;
+    unsigned int i;
+    int ik;
+    unsigned int is, js, ks;
+    unsigned int arr[4];
+
+    int k1, k2, k3;
+
+    double T_tmp;
+    double n1, n2;
+    double omega_inner[3];
+
+    double multi;
+
+    for (i = 0; i < ntemp; ++i) ret[i] = 0.0;
+
+    double **v4_arr;
+    double ***delta_arr;
+    double ret_tmp;
+
+    double f1, f2, f3;
+
+    const auto epsilon = integration->epsilon_4ph;
+
+    std::vector<KsListGroup> quartet;
+
+    kmesh_in->get_unique_quartet_k(ik_in,
+                                   symmetry->SymmList,
+                                   use_quartet_symmetry,
+                                   sym_permutation,
+                                   quartet);
+
+    //if (mympi->my_rank == 1) std::cout << quartet.size() << std::endl;
+
+    reduce_pair_simple(ik_in, is_in, omega_in, integration->ismear_4ph,
+                       kmesh_in, eval_in,
+                       quartet);
+
+    //if (mympi->my_rank == 1) {
+    //    std::cout << quartet.size() << std::endl;
+    //    error->exit("exit","exit");
+    //}
+
+    const int npair_uniq = quartet.size();
+
+    allocate(v4_arr, npair_uniq, ns3);
+    allocate(delta_arr, npair_uniq, ns3, 2);
+
+    const int knum = kmesh_in->kpoint_irred_all[ik_in][0].knum;
+    const int knum_minus = kmesh_in->kindex_minus_xk[knum];
+
+#ifdef _OPENMP
+#pragma omp parallel for private(arr, k1, k2, k3, is, js, ks, omega_inner)
+#endif
+    for (ik = 0; ik < npair_uniq; ++ik) {
+
+        arr[0] = ns * knum_minus + is_in;
+
+        k1 = quartet[ik].group[0].ks[0];
+        k2 = quartet[ik].group[0].ks[1];
+        k3 = quartet[ik].group[0].ks[2];
+
+        for (is = 0; is < ns; ++is) {
+            arr[1] = ns * k1 + is;
+            omega_inner[0] = eval_in[k1][is];
+
+            for (js = 0; js < ns; ++js) {
+                arr[2] = ns * k2 + js;
+                omega_inner[1] = eval_in[k2][js];
+
+                for (ks = 0; ks < ns; ++ks) {
+                    arr[3] = ns * k3 + ks;
+                    omega_inner[2] = eval_in[k3][ks];
+
+                    const auto jb = ns2 * is + ns * js + ks;
+
+                    if (integration->ismear_4ph == 0) {
+                        delta_arr[ik][jb][0]
+                              = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2], epsilon);
+                        delta_arr[ik][jb][1]
+                              = delta_lorentz(omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2], epsilon)
+                              - delta_lorentz(omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2], epsilon);
+                    } else if (integration->ismear_4ph == 1) {
+                        delta_arr[ik][jb][0] = 0.0;
+                        delta_arr[ik][jb][1] = 0.0;
+                        const auto sum_omega1 = omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2];
+                        const auto sum_omega2 = omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2];
+                        const auto sum_omega3 = omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2];
+
+                        if (std::abs(sum_omega1) < 2.0 * epsilon) {
+                            delta_arr[ik][jb][0] = delta_gauss(sum_omega1, epsilon);
+                        }
+                        if (std::abs(sum_omega2) < 2.0 * epsilon) {
+                            delta_arr[ik][jb][1] += delta_gauss(sum_omega2, epsilon);
+                        }
+                        if (std::abs(sum_omega3) < 2.0 * epsilon) {
+                            delta_arr[ik][jb][1] -= delta_gauss(sum_omega3, epsilon);
+                        }
+                    } else if (integration->ismear_4ph == 2) {
+                        // add adaptive smearing
+                        double epsilon2[2];
+                        integration->adaptive_sigma4->get_sigma(k1, is, k2, js, k3, ks, epsilon2);
+                        //integration->adaptive_smearing(k1, is, k2, js, k3, ks, epsilon2);
+                        delta_arr[ik][jb][0] = 0.0;
+                        delta_arr[ik][jb][1] = 0.0;
+                        const auto sum_omega1 = omega_in - omega_inner[0] - omega_inner[1] - omega_inner[2];
+                        const auto sum_omega2 = omega_in - omega_inner[0] - omega_inner[1] + omega_inner[2];
+                        const auto sum_omega3 = omega_in + omega_inner[0] + omega_inner[1] - omega_inner[2];
+
+                        if (std::abs(sum_omega1) < 2.0 * epsilon2[0]) {
+                            delta_arr[ik][jb][0] = delta_gauss(sum_omega1, epsilon2[0]);
+                        }
+                        if (std::abs(sum_omega2) < 2.0 * epsilon2[1]) {
+                            delta_arr[ik][jb][1] += delta_gauss(sum_omega2, epsilon2[1]);
+                        }
+                        if (std::abs(sum_omega3) < 2.0 * epsilon2[1]) {
+                            delta_arr[ik][jb][1] -= delta_gauss(sum_omega3, epsilon2[1]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (ik = 0; ik < npair_uniq; ++ik) {
+
+        k1 = quartet[ik].group[0].ks[0];
+        k2 = quartet[ik].group[0].ks[1];
+        k3 = quartet[ik].group[0].ks[2];
+
+        multi = static_cast<double>(quartet[ik].group.size());
+
+        for (size_t ib = 0; ib < ns3; ++ib) {
+            is = ib / ns2;
+            js = (ib - ns2 * is) / ns;
+            ks = ib % ns;
+
+            if (delta_arr[ik][ib][0] > 0.0 || std::abs(delta_arr[ik][ib][1]) > 0.0) {
+
+                arr[0] = ns * knum_minus + is_in;
+                arr[1] = ns * k1 + is;
+                arr[2] = ns * k2 + js;
+                arr[3] = ns * k3 + ks;
+
+                v4_arr[ik][ib] = std::norm(V4(arr,
+                                              kmesh_in->xk,
+                                              eval_in,
+                                              evec_in,
+                                              phase_storage_in)) * multi;
+                //std::cout << v4_arr[ik][ib] << std::endl;
+            } else {
+                v4_arr[ik][ib] = 0.0;
+            }
+        }
+    }
+
+    for (i = 0; i < ntemp; ++i) {
+        T_tmp = temp_in[i];
+        ret_tmp = 0.0;
+#ifdef _OPENMP
+#pragma omp parallel for private(k1, k2, k3, is, js, ks, omega_inner, n1, n2, f1, f2, f3), reduction(+:ret_tmp)
+#endif
+        for (ik = 0; ik < npair_uniq; ++ik) {
+
+            k1 = quartet[ik].group[0].ks[0];
+            k2 = quartet[ik].group[0].ks[1];
+            k3 = quartet[ik].group[0].ks[2];
+
+            for (is = 0; is < ns; ++is) {
+
+                omega_inner[0] = eval_in[k1][is];
+
+                for (js = 0; js < ns; ++js) {
+
+                    omega_inner[1] = eval_in[k2][js];
+
+                    for (ks = 0; ks < ns; ++ks) {
+
+                        omega_inner[2] = eval_in[k3][ks];
+
+                        if (thermodynamics->classical) {
+                            f1 = thermodynamics->fC(omega_inner[0], T_tmp);
+                            f2 = thermodynamics->fC(omega_inner[1], T_tmp);
+                            f3 = thermodynamics->fC(omega_inner[2], T_tmp);
+
+                            n1 = f1 * f2 + f2 * f3 + f3 * f1 + f1 + f2 + f3;
+                            n2 = 3.0 * (f1 * f3 + f2 * f3 - f1 * f2 + f3);
+                        } else {
+                            f1 = thermodynamics->fB(omega_inner[0], T_tmp);
+                            f2 = thermodynamics->fB(omega_inner[1], T_tmp);
+                            f3 = thermodynamics->fB(omega_inner[2], T_tmp);
+
+                            n1 = f1 * f2 + f2 * f3 + f3 * f1 + f1 + f2 + f3 + 1.0;
+                            n2 = 3.0 * (f1 * f3 + f2 * f3 - f1 * f2 + f3);
+                        }
+
+                        ret_tmp += v4_arr[ik][ns2 * is + ns * js + ks]
+                              * (n1 * delta_arr[ik][ns2 * is + ns * js + ks][0]
+                                    + n2 * delta_arr[ik][ns2 * is + ns * js + ks][1]);
+
+                    }
+                }
+            }
+        }
+        ret[i] = ret_tmp;
+    }
+
+    deallocate(v4_arr);
+    deallocate(delta_arr);
+    quartet.clear();
+    // std::pow(0.5, 5)
+    for (i = 0; i < ntemp; ++i)
+        ret[i] *= pi * std::pow(0.5, 5)
+              / (3.0 * static_cast<double>(nk * nk)); // should we have 1/6
+}
+
+std::vector<std::vector<QuartS>> AnharmonicCore::reduce_pair(const int k_in,
+                                                             const int s0,
+                                                             const double omega,
+                                                             const int ismear,
+                                                             const KpointMeshUniform *kmesh_in,
+                                                             const double *const *eval_in,
+                                                             std::vector<KsListGroup> &quartet)
+{
+    // we want to pop out some unwanted pairs, and at the same time reduce the 
+    // total mode that we want to consider
+    int k1, k2, k3;
+    int s1, s2, s3;
+    double omega1, omega2, omega3;
+    double d1, d2, d3;
+    std::vector<std::vector<QuartS>> out;
+
+    int ns = dynamical->neval;
+
+    const int k0 = kmesh_in->kpoint_irred_all[k_in][0].knum;
+
+    const int npair_uniq = quartet.size();
+
+    const auto epsilon = integration->epsilon;
+
+    //double threshold = 0;
+    //if (ismear == 0) {
+    // lorentzian, we set threshold at omega = 3 epsilon
+    //    threshold = delta_lorentz(3.0 * epsilon, epsilon);
+    //} else if (ismear >= 1) {
+    // gaussian, we set threshold at omega = 2 epsilon
+    // threshold will be independent of epsilon
+    //    threshold = delta_gauss(2.0 * epsilon, epsilon);
+    //}
+
+    double epsilon2[2];
+    //for (auto ip = 0; ip < npair_uniq; ip++) {
+    for (auto it = quartet.begin(); it != quartet.end();) {
+
+        std::vector<QuartS> tmp;
+        tmp.clear();
+
+        //k1 = quartet[ip].group[0].ks[0];
+        //k2 = quartet[ip].group[0].ks[1];
+        //k3 = quartet[ip].group[0].ks[2];
+        k1 = it->group[0].ks[0];
+        k2 = it->group[0].ks[1];
+        k3 = it->group[0].ks[2];
+
+        for (auto s1 = 0; s1 < ns; ++s1) {
+            omega1 = eval_in[k1][s1];
+
+            for (auto s2 = 0; s2 < ns; ++s2) {
+                omega2 = eval_in[k2][s2];
+
+                for (auto s3 = 0; s3 < ns; ++s3) {
+                    omega3 = eval_in[k3][s3];
+
+                    d1 = 0.0;
+                    d2 = 0.0;
+
+                    if (ismear == 0) {
+                        d1 = delta_lorentz(omega - omega1 - omega2 - omega3, epsilon);
+                        d2 += delta_lorentz(omega - omega1 - omega2 + omega3, epsilon);
+                        d2 -= delta_lorentz(omega + omega1 + omega2 - omega3, epsilon);
+
+                    } else if (ismear == 1) {
+                        const auto sum1 = omega - omega1 - omega2 - omega3;
+                        const auto sum2 = omega - omega1 - omega2 + omega3;
+                        const auto sum3 = omega + omega1 + omega2 - omega3;
+                        if (std::abs(sum1) < 2.0 * epsilon) {
+                            d1 = delta_gauss(sum1, epsilon);
+                        }
+                        if (std::abs(sum2) < 2.0 * epsilon) {
+                            d2 += delta_gauss(sum2, epsilon);
+                        }
+                        if (std::abs(sum3) < 2.0 * epsilon) {
+                            d2 -= delta_gauss(sum3, epsilon);
+                        }
+                    } else if (ismear == 2) {
+                        integration->adaptive_sigma4->get_sigma(k1, s1, k2, s2, k3, s3, epsilon2);
+                        //integration->adaptive_smearing(k1, s1, k2, s2, k3, s3, epsilon2);
+                        const auto sum1 = omega - omega1 - omega2 - omega3;
+                        const auto sum2 = omega - omega1 - omega2 + omega3;
+                        const auto sum3 = omega + omega1 + omega2 - omega3;
+                        if (std::abs(sum1) < 2.0 * epsilon2[0]) {
+                            d1 = delta_gauss(sum1, epsilon);
+                        }
+                        if (std::abs(sum2) < 2.0 * epsilon2[1]) {
+                            d2 += delta_gauss(sum2, epsilon);
+                        }
+                        if (std::abs(sum3) < 2.0 * epsilon2[1]) {
+                            d2 -= delta_gauss(sum3, epsilon);
+                        }
+                    }
+                    if (std::abs(d1) > eps || std::abs(d2) > eps) {
+                        // we take this set into consideration
+                        tmp.emplace_back(s1, s2, s3, d1, d2);
+                    }
+
+                }
+            }
+        }
+
+        if (tmp.size() > 0) {
+            out.push_back(tmp);
+            ++it;
+        } else {
+            it = quartet.erase(it);
+            // https://www.cplusplus.com/reference/vector/vector/erase/
+            //https://stackoverflow.com/questions/9927163/erase-element-in-vector-while-iterating-the-same-vector
+        }
+
+    }
+
+    if (out.size() != quartet.size()) {
+        exit("reduce pair", "size do not match");
+    }
+
+    return out;
+}
+
+void AnharmonicCore::reduce_pair_simple(const int ik_in,
+                                        const int snum,
+                                        const double omega,
+                                        const int ismear,
+                                        const KpointMeshUniform *kmesh_in,
+                                        const double *const *eval_in,
+                                        std::vector<KsListGroup> &quartet)
+{
+    // we want to pop out some unwanted pairs, and at the same time reduce the 
+    // total mode that we want to consider
+    int k1, k2, k3;
+    int s1, s2, s3;
+    double omega1, omega2, omega3;
+
+    int ns = dynamical->neval;
+
+    const auto epsilon = integration->epsilon;
+
+    //for (auto ip = 0; ip < npair_uniq; ip++) {
+    for (auto it = quartet.begin(); it != quartet.end();) {
+
+        k1 = it->group[0].ks[0];
+        k2 = it->group[0].ks[1];
+        k3 = it->group[0].ks[2];
+
+        bool append = false;
+
+        for (auto s1 = 0; s1 < ns; ++s1) {
+            omega1 = eval_in[k1][s1];
+
+            for (auto s2 = 0; s2 < ns; ++s2) {
+                omega2 = eval_in[k2][s2];
+
+                for (auto s3 = 0; s3 < ns; ++s3) {
+                    omega3 = eval_in[k3][s3];
+
+                    const auto sum1 = std::abs(omega - omega1 - omega2 - omega3);
+                    const auto sum2 = std::abs(omega - omega1 - omega2 + omega3);
+                    const auto sum3 = std::abs(omega + omega1 + omega2 - omega3);
+                    auto sum_min = std::min({sum1, sum2, sum3});
+
+                    if (ismear == 0) {
+                        if (sum_min < 4 * epsilon) append = true;
+                    } else if (ismear == 1) {
+                        if (sum_min < 2 * epsilon) append = true;
+                    } else if (ismear == 2) {
+                        if (sum_min < 2 * epsilon) append = true;
+                    }
+
+                }
+            }
+        }
+
+        if (append) {
+            ++it;
+        } else {
+            it = quartet.erase(it);
+        }
+
+        // https://www.cplusplus.com/reference/vector/vector/erase/
+        //https://stackoverflow.com/questions/9927163/erase-element-in-vector-while-iterating-the-same-vector
+    }
 }
 
 void AnharmonicCore::setup_cubic()
@@ -1116,9 +1829,9 @@ void AnharmonicCore::setup_cubic()
             evec_index_v3[i][j] = fcs_phonon->force_constant_with_cell[1][k].pairs[j].index;
         }
         invmass_v3[i]
-                = invsqrt_mass_p[evec_index_v3[i][0] / 3]
-                  * invsqrt_mass_p[evec_index_v3[i][1] / 3]
-                  * invsqrt_mass_p[evec_index_v3[i][2] / 3];
+              = invsqrt_mass_p[evec_index_v3[i][0] / 3]
+              * invsqrt_mass_p[evec_index_v3[i][1] / 3]
+              * invsqrt_mass_p[evec_index_v3[i][2] / 3];
         k += fcs_group_v3[i].size();
     }
 
@@ -1157,10 +1870,10 @@ void AnharmonicCore::setup_quartic()
             evec_index_v4[i][j] = fcs_phonon->force_constant_with_cell[2][k].pairs[j].index;
         }
         invmass_v4[i]
-                = invsqrt_mass_p[evec_index_v4[i][0] / 3]
-                  * invsqrt_mass_p[evec_index_v4[i][1] / 3]
-                  * invsqrt_mass_p[evec_index_v4[i][2] / 3]
-                  * invsqrt_mass_p[evec_index_v4[i][3] / 3];
+              = invsqrt_mass_p[evec_index_v4[i][0] / 3]
+              * invsqrt_mass_p[evec_index_v4[i][1] / 3]
+              * invsqrt_mass_p[evec_index_v4[i][2] / 3]
+              * invsqrt_mass_p[evec_index_v4[i][3] / 3];
         k += fcs_group_v4[i].size();
     }
 
@@ -1465,7 +2178,7 @@ void AnharmonicCore::calc_self3omega_tetrahedron(const double Temp,
 
                         //#pragma omp critical
                         ret_private[nomega * ithread + iomega]
-                                += v3_arr[ik][ib] * (n1 * weight_tetra[0][ik] - 2.0 * n2 * weight_tetra[1][ik]);
+                              += v3_arr[ik][ib] * (n1 * weight_tetra[0][ik] - 2.0 * n2 * weight_tetra[1][ik]);
                     }
                 }
             }

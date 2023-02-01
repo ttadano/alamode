@@ -1,0 +1,40 @@
+&general
+  prefix = AlSb
+  mode = RTA 
+  nkd = 2
+  kd  = Al Sb 
+  fcsxml = AlSb.xml
+  nonanalytic = 2 
+  borninfo = AlSb.born
+  restart = 0
+  tmin = 100
+  tmax = 1000
+  dt = 50
+  ismear = 2 
+/ 
+
+&cell
+1.88973  #from A to Bohr
+    0.000000000000    3.056542370000    3.056542370000
+    3.056542370000    0.000000000000    3.056542370000
+    3.056542370000    3.056542370000    0.000000000000
+/
+
+&kpoint
+  2      # KPMODE = 1: line mode
+  20 20 20 
+/
+
+&kappa
+  ismear_4ph = 2
+  isotope = 1 
+  iterative = 1
+  max_cycle = 40
+  interpolator = log-linear
+  kmesh_coarse = 8 8 8
+/
+
+&analysis
+  quartic = 0
+/
+

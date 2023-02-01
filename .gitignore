@@ -1,0 +1,14 @@
+anphon/Makefile
+*.o
+CMakeFiles
+CMakeCache.txt
+.vscode/
+anphon/*.o
+anphon/*.sh
+anphon/anphon
+alm/Makefile
+alm/*.o
+alm/alm
+tools/analyze_phonons
+.DS_Store
+tests/results/*
