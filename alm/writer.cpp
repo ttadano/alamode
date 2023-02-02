@@ -839,6 +839,8 @@ void Writer::save_fcs_alamode(const System *system,
                                                            DataSpace::From(host_name));
     hostname.write(host_name);
 
+
+
     natom[0] = system->get_supercell().number_of_atoms;
     nkinds[0] = system->get_supercell().number_of_elems;
 
@@ -874,6 +876,33 @@ void Writer::save_fcs_alamode(const System *system,
     dataset.write(kind_names);
     dataset = group_scell.createDataSet<int>("atomic_kinds", DataSpace::From(system->get_supercell().kind));
     dataset.write(system->get_supercell().kind);
+
+    std::vector<int> flag_spin;
+    if (system->get_spin().lspin) {
+        flag_spin.push_back(1);
+        Attribute spin_polarized = group_scell.createAttribute<int>("spin polarized",
+                                                          DataSpace::From(flag_spin));
+        spin_polarized.write(flag_spin);
+
+        dataset = group_scell.createDataSet<double>("magnetic_moments",
+                                                    DataSpace::From(system->get_spin().magmom));
+        dataset.write(system->get_spin().magmom);
+        std::vector<int> flag_noncol, flag_time_reversal;
+        flag_noncol.push_back(system->get_spin().noncollinear);
+        flag_time_reversal.push_back(system->get_spin().time_reversal_symm);
+        attr = dataset.createAttribute<int>("noncollinear",
+                                            DataSpace::From(flag_noncol));
+        attr.write(flag_noncol);
+
+        attr = dataset.createAttribute<int>("time_reversal_symmetry",
+                                            DataSpace::From(flag_time_reversal));
+        attr.write(flag_time_reversal);
+    } else {
+        flag_spin.push_back(0);
+        Attribute spin_polarized = group_scell.createAttribute<int>("spin polarized",
+                                                                    DataSpace::From(flag_spin));
+        spin_polarized.write(flag_spin);
+    }
 
     // TODO: Primitive Cell
 
