@@ -27,12 +27,17 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
+#include <boost/asio/ip/host_name.hpp>
+#include <boost/date_time.hpp>
+#include <highfive/H5File.hpp>
+
 
 using namespace ALM_NS;
 
 Writer::Writer() : output_maxorder(5)
 {
     save_format_flags["alamode"] = 1;
+    save_format_flags["alamode_h5"] = 1;
     save_format_flags["shengbte"] = 0;
     save_format_flags["qefc"] = 0;
     save_format_flags["hessian"] = 0;
@@ -171,22 +176,38 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
                                    fname_save,
                                    verbosity);
 
+    } else if (fcs_format == "alamode_h5") {
+        auto fname_save = get_filename_fcs();
+        if (fname_save.empty()) {
+            fname_save = files->get_prefix() + ".h5";
+        }
+
+        save_fcs_alamode(system,
+                                   symmetry,
+                                   cluster,
+                                   fcs,
+                                   constraint,
+                                   optimize->get_params(),
+                                   files->get_datfile_train().filename,
+                                   fname_save,
+                                   verbosity);
+
     } else if (fcs_format == "shengbte") {
 
-        if (cluster->get_maxorder() > 1) {
-            auto fname_save = get_filename_fcs();
-            if (fname_save.empty()) {
-                fname_save = files->get_prefix() + ".FORCE_CONSTANT_3RD";;
-            }
+            if (cluster->get_maxorder() > 1) {
+                auto fname_save = get_filename_fcs();
+                if (fname_save.empty()) {
+                    fname_save = files->get_prefix() + ".FORCE_CONSTANT_3RD";;
+                }
 
-            save_fc3_thirdorderpy_format(system,
-                                         symmetry,
-                                         cluster,
-                                         constraint,
-                                         fcs,
-                                         fname_save,
-                                         verbosity);
-        }
+                save_fc3_thirdorderpy_format(system,
+                                             symmetry,
+                                             cluster,
+                                             constraint,
+                                             fcs,
+                                             fname_save,
+                                             verbosity);
+            }
     } else if (fcs_format == "qefc") {
         auto fname_save = get_filename_fcs();
         if (fname_save.empty()) {
@@ -782,6 +803,89 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
     if (verbosity > 0) {
         std::cout << " Input data for the phonon code ANPHON      : " << fname_fcs << std::endl;
     }
+}
+
+void Writer::save_fcs_alamode(const System *system,
+                                        const Symmetry *symmetry,
+                                        const Cluster *cluster,
+                                        const Fcs *fcs,
+                                        const Constraint *constraint,
+                                        const double *fcs_vals,
+                                        const std::string fname_dfset,
+                                        const std::string fname_fcs,
+                                        const int verbosity) const {
+
+    using namespace HighFive;
+    int i, j;
+    std::vector<int> natom, nkinds;
+    std::vector<std::string> kind_names;
+
+    natom.resize(1);
+    nkinds.resize(1);
+
+    File file(fname_fcs, File::Truncate);
+
+    // Supercell information
+    SystemInfo supercell;
+    const std::string grpname_scell("SuperCell");
+    Group group_scell = file.createGroup(grpname_scell, true);
+
+    Attribute version = file.createAttribute<std::string>("version",
+                                                          DataSpace::From(ALAMODE_VERSION));
+    version.write(ALAMODE_VERSION);
+
+    const std::string host_name = static_cast<std::string>(boost::asio::ip::host_name());
+    Attribute hostname = file.createAttribute<std::string>("hostname",
+                                                           DataSpace::From(host_name));
+    hostname.write(host_name);
+
+    natom[0] = system->get_supercell().number_of_atoms;
+    nkinds[0] = system->get_supercell().number_of_elems;
+
+    for (i = 0; i < system->get_supercell().number_of_elems; ++i) {
+        kind_names.push_back(system->get_kdname()[i]);
+    }
+    Attribute attr = group_scell.createAttribute<int>("number_of_atoms",
+                                                      DataSpace::From(natom));
+    attr.write(natom);
+    attr = group_scell.createAttribute<int>("number_of_elements",
+                                                      DataSpace::From(nkinds));
+    attr.write(nkinds);
+
+    std::vector<size_t> dim{3, 3};
+    double data[3][3];
+    DataSet dataset = group_scell.createDataSet<double>("lattice_vector",
+                                                        DataSpace(dim));
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            data[i][j] = system->get_supercell().lattice_vector[j][i];
+        }
+    }
+    dataset.write(data);
+    std::string attr_name("unit");
+    std::string unitname("bohr");
+    attr = dataset.createAttribute<std::string>(attr_name,
+                                                DataSpace::From(unitname));
+    attr.write(unitname);
+    dataset = group_scell.createDataSet<double>("fractional_coordinate",
+                                                        DataSpace::From(system->get_supercell().x_fractional));
+    dataset.write(system->get_supercell().x_fractional);
+    dataset = group_scell.createDataSet<std::string>("elements", DataSpace::From(kind_names));
+    dataset.write(kind_names);
+    dataset = group_scell.createDataSet<int>("atomic_kinds", DataSpace::From(system->get_supercell().kind));
+    dataset.write(system->get_supercell().kind);
+
+    // TODO: Primitive Cell
+
+    // Force Constants
+
+
+    // Finally, save the created date and time as attribute
+    boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
+    const auto time_str = boost::posix_time::to_simple_string(timeLocal);
+    Attribute localtime = file.createAttribute<std::string>("created date",
+                                                          DataSpace::From(time_str));
+    localtime.write(time_str);
 }
 
 void Writer::write_hessian(const System *system,

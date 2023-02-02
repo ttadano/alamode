@@ -72,6 +72,9 @@ if (WITH_HDF5_SUPPORT)
             via -DHDF5_ROOT option.")
         endif()
     endif()
+
+    include_directories("${PROJECT_SOURCE_DIR}/../external")
+
 endif()
 
 find_package(LAPACK REQUIRED)
@@ -80,7 +83,8 @@ include_directories(${Lapack_INCLUDE_DIRS})
 # Source code
 include_directories("${PROJECT_SOURCE_DIR}/../include")
 set(SOURCES ${PROJECT_SOURCE_DIR}/alm.cpp
-            ${PROJECT_SOURCE_DIR}/cluster.cpp ${PROJECT_SOURCE_DIR}/constraint.cpp
+            ${PROJECT_SOURCE_DIR}/cluster.cpp
+            ${PROJECT_SOURCE_DIR}/constraint.cpp
             ${PROJECT_SOURCE_DIR}/fcs.cpp
             ${PROJECT_SOURCE_DIR}/files.cpp
             ${PROJECT_SOURCE_DIR}/input_parser.cpp
