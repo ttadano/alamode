@@ -502,11 +502,11 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
 //     // change self-interaction
 //     if(mode == 0){
 // 
-//         int nat = system->nat;
+//         int nat_base = system->nat_base;
 // 
 //         int i_ind1, i_tran1, i_ind2, i_tran2, iat1, xyz1, xyz2;
 //         double **phi;
-//         allocate(phi, nat, 9);
+//         allocate(phi, nat_base, 9);
 // 
 //         // calculate correction
 //         for(auto &it: delta_fcs){

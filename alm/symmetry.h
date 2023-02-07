@@ -133,9 +133,9 @@ public:
 
 private:
     size_t nsym, ntran, nat_prim;
-    std::vector<std::vector<int>> map_sym;   // [nat, nsym]
+    std::vector<std::vector<int>> map_sym;   // [nat_base, nsym]
     std::vector<std::vector<int>> map_p2s;   // [nat_prim, ntran]
-    std::vector<Maps> map_s2p;               // [nat]
+    std::vector<Maps> map_s2p;               // [nat_base]
     std::vector<SymmetryOperation> SymmData; // [nsym]
     std::vector<int> symnum_tran;            // [ntran]
 

@@ -17,6 +17,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <Eigen/Core>
 
 
 namespace ALM_NS {
@@ -37,20 +38,45 @@ public:
 private:
     std::ifstream ifs_input;
     bool from_stdin{};
-    std::string *kdname{};
     std::string mode;
     int maxorder{};
-    size_t nat{};
-    size_t nkd{};
+    size_t nat_in{};
+    size_t nkd_in{};
     InputSetter *input_setter;
+
+    Eigen::MatrixXd xf_input, xf_poscar;
+    Eigen::Matrix3d lavec_input, lavec_poscar;
+    Eigen::Matrix3d transmat_to_super, transmat_to_prim;
+
+    std::vector<int> atomic_types_input, atomic_types_poscar;
+    std::vector<std::string> kdname_vec, kdname_vec_poscar;
+    std::map<std::string, std::string> dict_input_vars;
 
     void parse_input(ALM *alm);
 
     void parse_general_vars(ALM *alm);
 
+    void parse_transformation_matrix_string(const std::string &string_celldim,
+                                            const std::vector<std::string> &celldim_v,
+                                            Eigen::Matrix3d &transform_matrix,
+                                            const int checkmode_determinant = 0);
+
     void parse_cell_parameter();
 
     void parse_atomic_positions();
+
+    void parse_structure_poscar(const std::string &fname_poscar,
+                                Eigen::Matrix3d &lavec_out,
+                                Eigen::MatrixXd &coordinates_out,
+                                std::vector<std::string> &kdname_vec_out,
+                                std::vector<int> &atomic_types_out);
+
+    void get_magnetic_params(std::map<std::string, std::string> &dict_input_in,
+                             const size_t nat_in,
+                             int &lspin_out,
+                             Eigen::MatrixXd &magmom_out,
+                             int &noncollinear_out,
+                             int &time_reversal_symm_out);
 
     void parse_interaction_vars();
 

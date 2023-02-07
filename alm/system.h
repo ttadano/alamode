@@ -98,7 +98,7 @@ public:
 
 private:
     // Variables for geometric structure
-    Cell supercell;
+    Cell supercell, primcell;
     std::string *kdname;
     int *is_periodic; // is_periodic[3];
     double ***x_image;

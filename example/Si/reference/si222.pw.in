@@ -11,7 +11,7 @@
  &SYSTEM
                        ibrav = 1,
                   celldm(1)  = 20.406,
-                         nat = 64,
+                         nat_base = 64,
                         ntyp = 1,
                      ecutwfc = 40 ,
                      ecutrho = 320 ,

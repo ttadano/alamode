@@ -21,8 +21,11 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <filesystem>
+#include <numeric>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
+#include <Eigen/Core>
 
 using namespace ALM_NS;
 
@@ -68,6 +71,8 @@ void InputParser::parse_displacement_and_force_files(std::vector<std::vector<dou
                                                      DispForceFile &datfile_in) const
 {
     int nrequired;
+
+    const auto nat = nat_in * static_cast<int>(transmat_to_super.determinant());
 
     if (datfile_in.ndata == 0) {
         nrequired = -1;
@@ -159,32 +164,65 @@ void InputParser::parse_input(ALM *alm)
     // Since following methods rely on variables those already
     // parsed.
     // Those below are set as the private class variables. See input_parser.h.
-    //  std::string *kdname;
     //  std::string mode;
     //  int maxorder;
-    //  int nat;
+    //  int nat_base;
     //  int nkd;
 
+    // Parse &general field
     if (!locate_tag("&general")) {
         exit("parse_input",
              "&general entry not found in the input file");
     }
-
-    // kdname is allocated in this method.
     parse_general_vars(alm);
 
-    if (!locate_tag("&cell")) {
-        exit("parse_input",
-             "&cell entry not found in the input file");
-    }
-    parse_cell_parameter();
+    if (dict_input_vars["STRUCTURE_FILE"].empty()) {
+        // Read &cell and &position fields and get structure information
+        if (!locate_tag("&cell")) {
+            exit("parse_input",
+                 "&cell entry not found in the input file");
+        }
+        parse_cell_parameter();
 
-    if (!locate_tag("&position")) {
-        exit("parse_input",
-             "&position entry not found in the input file");
+        if (!locate_tag("&position")) {
+            exit("parse_input",
+                 "&position entry not found in the input file");
+        }
+        parse_atomic_positions();
+
+        input_setter->set_cell_parameter(lavec_input);
+        input_setter->set_atomic_positions(xf_input);
+        input_setter->set_element_types(atomic_types_input, kdname_vec);
+        nat_in = atomic_types_input.size();
+        nkd_in = kdname_vec.size();
+    } else {
+        // If STRUCTURE_FILE is given, use the structure parameters defined in this file.
+        // In this case, the &cell and &position entries are ignored.
+        lavec_poscar /= Bohr_in_Angstrom;
+        input_setter->set_cell_parameter(lavec_poscar);
+        input_setter->set_atomic_positions(xf_poscar);
+        input_setter->set_element_types(atomic_types_poscar, kdname_vec_poscar);
+        nat_in = atomic_types_poscar.size();
+        nkd_in = kdname_vec_poscar.size();
+        kdname_vec = kdname_vec_poscar; // Copy for use in parse_cutoff_radii
     }
-    parse_atomic_positions();
+
+    input_setter->set_transformation_matrices(transmat_to_super,
+                                              transmat_to_prim);
+
+    int noncollinear, time_reversal_symm, lspin;
+    Eigen::MatrixXd magmom_vec;
+    get_magnetic_params(dict_input_vars, nat_in,
+                        lspin,
+                        magmom_vec,
+                        noncollinear,
+                        time_reversal_symm);
+
+    input_setter->set_magnetic_vars(lspin, magmom_vec, noncollinear,time_reversal_symm);
+
+    // This method should be called after the structural and magnetic parameters are set.
     input_setter->set_geometric_structure(alm);
+
 
     if (!locate_tag("&interaction")) {
         exit("parse_input",
@@ -206,12 +244,11 @@ void InputParser::parse_input(ALM *alm)
         }
         parse_optimize_vars(alm);
     }
-
-    deallocate(kdname);
 }
 
 void InputParser::parse_general_vars(ALM *alm)
 {
+    // Parse variables defined in the &general field of an input file.
     size_t i;
     std::string str_tmp, str_disp_basis, basis_force_constant;
     int printsymmetry, is_periodic[3];
@@ -219,20 +256,24 @@ void InputParser::parse_general_vars(ALM *alm)
     auto trim_dispsign_for_evenfunc = true;
     int print_hessian, print_fcs_alamode, print_fc2_qefc, print_fc3_shengbte;
     int noncollinear, trevsym;
-    double **magmom, magmag{0.0};
     double tolerance;
     double tolerance_constraint;
     double fc_zero_threshold;
     int verbosity, nmaxsave;
+    bool structure_from_file = false;
 
-    std::vector<std::string> kdname_v, periodic_v, magmom_v, str_split;
+    std::vector<std::string> kdname_v, periodic_v;
+    std::vector<std::string> supercell_v, primcell_v;
+    std::string structure_file{};
+
     const std::vector<std::string> input_list{
             "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
             "DBASIS", "TRIMEVEN", "VERBOSITY",
             "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FCSYM_BASIS",
-            "NMAXSAVE", "FC3_SHENGBTE", "FC2_QEFC", "FCS_ALAMODE", "FC_ZERO_THR"
+            "NMAXSAVE", "FC3_SHENGBTE", "FC2_QEFC", "FCS_ALAMODE", "FC_ZERO_THR",
+            "SUPERCELL", "PRIMCELL", "STRUCTURE_FILE"
     };
-    std::vector<std::string> no_defaults{"PREFIX", "MODE", "NAT", "NKD", "KD"};
+    std::vector<std::string> no_defaults{"PREFIX", "MODE"};
     std::map<std::string, std::string> general_var_dict;
 
     if (from_stdin) {
@@ -241,8 +282,14 @@ void InputParser::parse_general_vars(ALM *alm)
         ifs_input.ignore();
     }
 
+    // parse all input parameters in &general field
     get_var_dict(input_list, general_var_dict);
 
+    for (const auto &it : general_var_dict) {
+        dict_input_vars.insert(it);
+    }
+
+    // Parse PREFIX and MODE (which are mandatory to be given in inputs)
     for (const auto &it: no_defaults) {
         if (general_var_dict.find(it) == general_var_dict.end()) {
             exit("parse_general_vars",
@@ -250,18 +297,53 @@ void InputParser::parse_general_vars(ALM *alm)
                  it.c_str());
         }
     }
-
     const auto prefix = general_var_dict["PREFIX"];
     mode = general_var_dict["MODE"];
-
     std::transform(mode.begin(), mode.end(), mode.begin(), tolower);
     if (mode != "suggest" && mode != "optimize" && mode != "opt") {
         exit("parse_general_vars", "Invalid MODE variable");
     }
     if (mode == "opt") mode = "optimize";
 
-    assign_val(nat, "NAT", general_var_dict);
-    assign_val(nkd, "NKD", general_var_dict);
+    // We first check if STRUCTURE_FILE field is empty or not.
+    // If not, the structure data is read from the given file (in a POSCAR format)
+    // and copy the lattice vectors, element types, and coordinates to
+    // the corresponding private variables of this class.
+    if (!general_var_dict["STRUCTURE_FILE"].empty()) {
+        structure_file = general_var_dict["STRUCTURE_FILE"];
+        if (!std::filesystem::exists(structure_file)) {
+            const std::string str_message = "STRUCTURE_FILE is given but the target file ("
+                    + structure_file + ") does not exist.";
+            exit("parse_general_vars", str_message.c_str());
+        }
+    }
+    if (!structure_file.empty()) {
+        parse_structure_poscar(structure_file,
+                               lavec_poscar,
+                               xf_poscar,
+                               kdname_vec_poscar,
+                               atomic_types_poscar);
+    }
+
+    // Parse NAT, NKD, and KD variables if they are given.
+    if (!general_var_dict["NAT"].empty()) {
+        assign_val(nat_in, "NAT", general_var_dict);
+    }
+    if (!general_var_dict["NKD"].empty()) {
+        assign_val(nkd_in, "NKD", general_var_dict);
+    }
+    if (!general_var_dict["KD"].empty()) {
+        split_str_by_space(general_var_dict["KD"], kdname_vec);
+    }
+    if (nkd_in > 0) {
+        if (kdname_vec.size() != nkd_in) {
+            exit("parse_general_vars",
+                 "The number of entries for KD is inconsistent with NKD");
+        }
+    } else {
+        nkd_in = kdname_vec.size();
+    }
+
 
     if (general_var_dict["VERBOSITY"].empty()) {
         verbosity = 1;
@@ -275,20 +357,8 @@ void InputParser::parse_general_vars(ALM *alm)
         assign_val(printsymmetry, "PRINTSYM", general_var_dict);
     }
 
-    split_str_by_space(general_var_dict["KD"], kdname_v);
-
-    if (kdname_v.size() != nkd) {
-        exit("parse_general_vars",
-             "The number of entries for KD is inconsistent with NKD");
-    } else {
-        allocate(kdname, nkd);
-        for (i = 0; i < nkd; ++i) {
-            kdname[i] = kdname_v[i];
-        }
-    }
-
+    // PERIODIC tag
     split_str_by_space(general_var_dict["PERIODIC"], periodic_v);
-
     if (periodic_v.empty()) {
         for (i = 0; i < 3; ++i) {
             is_periodic[i] = 1;
@@ -308,6 +378,18 @@ void InputParser::parse_general_vars(ALM *alm)
         exit("parse_general_vars",
              "Invalid number of entries for PERIODIC");
     }
+
+    // parse SUPERCELL
+    split_str_by_space(general_var_dict["SUPERCELL"], supercell_v);
+
+    parse_transformation_matrix_string("SUPERCELL",
+                                       supercell_v,
+                                       transmat_to_super);
+    // parse PRIMCELL
+    split_str_by_space(general_var_dict["PRIMCELL"], primcell_v);
+    parse_transformation_matrix_string("PRIMCELL",
+                                       primcell_v,
+                                       transmat_to_prim, 1);
 
     if (general_var_dict["TOLERANCE"].empty()) {
         tolerance = 1.0e-3;
@@ -337,27 +419,6 @@ void InputParser::parse_general_vars(ALM *alm)
     } else {
         assign_val(nmaxsave, "NMAXSAVE", general_var_dict);
     }
-
-    // Convert MAGMOM input to array
-    allocate(magmom, nat, 3);
-    auto lspin = false;
-
-    for (i = 0; i < nat; ++i) {
-        for (size_t j = 0; j < 3; ++j) {
-            magmom[i][j] = 0.0;
-        }
-    }
-
-    if (general_var_dict["NONCOLLINEAR"].empty()) {
-        noncollinear = 0;
-    } else {
-        assign_val(noncollinear, "NONCOLLINEAR", general_var_dict);
-    }
-    if (general_var_dict["TREVSYM"].empty()) {
-        trevsym = 1;
-    } else {
-        assign_val(trevsym, "TREVSYM", general_var_dict);
-    }
     if (general_var_dict["HESSIAN"].empty()) {
         print_hessian = 0;
     } else {
@@ -384,80 +445,6 @@ void InputParser::parse_general_vars(ALM *alm)
         assign_val(fc_zero_threshold, "FC_ZERO_THR", general_var_dict);
     }
 
-    if (!general_var_dict["MAGMOM"].empty()) {
-        lspin = true;
-
-        if (noncollinear) {
-            icount = 0;
-            split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (const auto &it: magmom_v) {
-                if (it.find('*') != std::string::npos) {
-                    exit("parse_general_vars",
-                         "Wild card '*' is not supported when NONCOLLINEAR = 1.");
-                } else {
-                    magmag = boost::lexical_cast<double>(it);
-                    if (icount / 3 >= nat) {
-                        exit("parse_general_vars", "Too many entries for MAGMOM.");
-                    }
-                    magmom[icount / 3][icount % 3] = magmag;
-                    ++icount;
-                }
-            }
-
-            if (icount != 3 * nat) {
-                exit("parse_general_vars",
-                     "Number of entries for MAGMOM must be 3*NAT when NONCOLLINEAR = 1.");
-            }
-        } else {
-            icount = 0;
-            split_str_by_space(general_var_dict["MAGMOM"], magmom_v);
-            for (const auto &it: magmom_v) {
-
-                if (it.find('*') != std::string::npos) {
-                    if (it == "*") {
-                        exit("parse_general_vars",
-                             "Please place '*' without space for the MAGMOM-tag.");
-                    }
-                    boost::split(str_split, it, boost::is_any_of("*"));
-                    if (str_split.size() != 2) {
-                        exit("parse_general_vars",
-                             "Invalid format for the MAGMOM-tag.");
-                    } else {
-                        if (str_split[0].empty() || str_split[1].empty()) {
-                            exit("parse_general_vars",
-                                 "Please place '*' without space for the MAGMOM-tag.");
-                        }
-                        ncount = 0;
-                        try {
-                            magmag = boost::lexical_cast<double>(str_split[1]);
-                            ncount = static_cast<size_t>(boost::lexical_cast<double>(str_split[0]));
-                        }
-                        catch (std::exception) {
-                            exit("parse_general_vars", "Bad format for MAGMOM.");
-                        }
-
-                        for (i = icount; i < icount + ncount; ++i) {
-                            magmom[i][2] = magmag;
-                        }
-                        icount += ncount;
-                    }
-
-                } else {
-                    magmag = boost::lexical_cast<double>(it);
-                    if (icount == nat) {
-                        icount = 0;
-                        break;
-                    }
-                    magmom[icount++][2] = magmag;
-                }
-            }
-            if (icount != nat) {
-                exit("parse_general_vars",
-                     "Number of entries for MAGMOM must be NAT.");
-            }
-        }
-    }
-
     if (mode == "suggest") {
         if (general_var_dict["DBASIS"].empty()) {
             str_disp_basis = "Cart";
@@ -481,33 +468,110 @@ void InputParser::parse_general_vars(ALM *alm)
                                    mode,
                                    verbosity,
                                    str_disp_basis,
-                                   general_var_dict["MAGMOM"],
-                                   nat,
-                                   nkd,
                                    printsymmetry,
                                    is_periodic,
                                    trim_dispsign_for_evenfunc,
-                                   lspin,
                                    print_hessian,
                                    print_fcs_alamode,
                                    print_fc3_shengbte,
                                    print_fc2_qefc,
-                                   noncollinear,
-                                   trevsym,
-                                   kdname,
-                                   magmom,
                                    tolerance,
                                    tolerance_constraint,
                                    basis_force_constant,
                                    nmaxsave,
                                    fc_zero_threshold);
 
-    allocate(magmom, nat, 3);
-
     kdname_v.clear();
     periodic_v.clear();
     no_defaults.clear();
     general_var_dict.clear();
+}
+
+void InputParser::parse_transformation_matrix_string(const std::string &string_celldim,
+                                                     const std::vector<std::string> &celldim_v,
+                                                     Eigen::Matrix3d &transform_matrix,
+                                                     const int checkmode_determinant)
+{
+    // Split the SUPERCELL or PRIMCELL entry by space and convert the data into
+    // 3x3 double matrix in the Eigen::Matrix3d type.
+    const Eigen::Matrix3d mat_identity = Eigen::Matrix3d::Identity();
+
+    if (celldim_v.empty()) {
+        // if not given, use identity matrix
+        transform_matrix = mat_identity;
+    } else if (celldim_v.size() == 1) {
+        std::cout << celldim_v[0] << std::endl;
+        std::vector<std::string> str_vec;
+        boost::split(str_vec, celldim_v[0], boost::is_any_of("/"));
+
+        if (str_vec.size() == 2) {
+            transform_matrix = std::stod(str_vec[0]) / std::stod(str_vec[1]) * mat_identity;
+        } else {
+            transform_matrix = std::stod(str_vec[0])  * mat_identity;
+        }
+
+    } else if (celldim_v.size() == 3) {
+        transform_matrix = mat_identity;
+        for (auto i = 0; i < 3; ++i) {
+            std::vector<std::string> str_vec;
+            boost::split(str_vec, celldim_v[i], boost::is_any_of("/"));
+
+            if (str_vec.size() == 2) {
+                transform_matrix(i,i) =  std::stod(str_vec[0]) / std::stod(str_vec[1]);
+            } else {
+                transform_matrix(i,i) =  std::stod(str_vec[0]);
+            }
+        }
+    } else if (celldim_v.size() == 9) {
+        auto k = 0;
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                std::vector<std::string> str_vec;
+                boost::split(str_vec, celldim_v[k++], boost::is_any_of("/"));
+                if (str_vec.size() == 2) {
+                    transform_matrix(i,j) =  std::stod(str_vec[0]) / std::stod(str_vec[1]);
+                } else {
+                    transform_matrix(i,j) =  std::stod(str_vec[0]);
+                }
+            }
+        }
+    } else {
+        std::string str_message = "Invalid number of entries for " + string_celldim + ".\n"
+                + "The size should be either 1, 3, or 9.";
+        exit("parse_transformation_matrix", str_message.c_str());
+    }
+
+    // Check if the transformation matrix is
+
+    const double det = transform_matrix.determinant();
+
+    if (std::abs(det) < eps) {
+        std::string str_message = "The input matrix in " + string_celldim + " is singular.\n";
+        exit("parse_transformation_matrix", str_message.c_str());
+    }
+
+    if (checkmode_determinant == 0) {
+        // check if the determinant of the transformation matrix is integer for SUPERCELL
+        if (std::abs(det - static_cast<double>(nint(det))) > eps) {
+            std::string str_message = "The determinant of the matrix in "
+                    + string_celldim + " is not integer.\n";
+            exit("parse_transformation_matrix", str_message.c_str());
+        }
+    } else {
+        // check if the determinant of the transformation matrix is (1/a) for PRIMCELL,
+        // where a is an integer.
+
+        if (std::abs(1/det - static_cast<double>(nint(1/det))) > eps) {
+            std::string str_message = "The determinant of the matrix in "
+                    + string_celldim + " is (1/a) where a is an integer.\n";
+            exit("parse_transformation_matrix", str_message.c_str());
+        }
+    }
+
+    if (det < 0.0) {
+        std::string str_message = "The determinant of the matrix in " + string_celldim + " is negative.\n";
+        warn("parse_transformation_matrix", str_message.c_str());
+    }
 }
 
 void InputParser::parse_cell_parameter()
@@ -596,9 +660,312 @@ void InputParser::parse_cell_parameter()
         }
     }
 
-    input_setter->set_cell_parameter(a, lavec_tmp);
+    for (auto i = 0; i< 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            lavec_poscar(i, j) = a * lavec_tmp[i][j];
+        }
+    }
 }
 
+void InputParser::parse_atomic_positions()
+{
+    std::string line, line_wo_comment;
+    std::string str_tmp;
+    std::string::size_type pos_first_comment_tag;
+    std::vector<std::string> str_v, pos_line;
+
+    if (from_stdin) {
+        std::cin.ignore();
+    } else {
+        ifs_input.ignore();
+    }
+
+    str_v.clear();
+
+    if (from_stdin) {
+
+        while (std::getline(std::cin, line)) {
+
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t\n\r "));
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            str_v.push_back(line_wo_comment);
+        }
+
+    } else {
+
+        while (std::getline(ifs_input, line)) {
+
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            boost::trim_if(line_wo_comment, boost::is_any_of("\t\n\r "));
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            str_v.push_back(line_wo_comment);
+        }
+    }
+
+    if (nat_in > 0) {
+        if (str_v.size() != nat_in) {
+            exit("parse_atomic_positions",
+                 "The number of entries for atomic positions should be NAT");
+        }
+    } else {
+        nat_in = str_v.size();
+    }
+
+    atomic_types_input.resize(nat_in);
+    xf_input.resize(nat_in, 3);
+
+    for (size_t i = 0; i < nat_in; ++i) {
+
+        split_str_by_space(str_v[i], pos_line);
+
+        if (pos_line.size() == 4) {
+            try {
+                atomic_types_input[i] = boost::lexical_cast<int>(pos_line[0]);
+            }
+            catch (std::exception &e) {
+                std::cout << e.what() << std::endl;
+                exit("parse_atomic_positions",
+                     "Invalid entry for the &position field at line ",
+                     i + 1);
+            }
+
+            for (auto j = 0; j < 3; ++j) {
+                xf_input(i, j) = boost::lexical_cast<double>(pos_line[j + 1]);
+            }
+
+        } else {
+            exit("parse_atomic_positions",
+                 "Bad format for &position region");
+        }
+    }
+
+    pos_line.clear();
+    str_v.clear();
+}
+
+
+void InputParser::parse_structure_poscar(const std::string &fname_poscar,
+                                         Eigen::Matrix3d &lavec_out,
+                                         Eigen::MatrixXd &coordinates_out,
+                                         std::vector<std::string> &kdname_vec_out,
+                                         std::vector<int> &atomic_types_out)
+{
+    // Parse structure data from a file in the POSCAR format and
+    // copy the read data to the corresponding private variables of
+    // this class.
+
+    std::ifstream ifs;
+    std::string dummy;
+    double aval;
+
+    ifs.open(fname_poscar, std::ios::in);
+
+    // Skip first row and parse lattice vectors from the 2nd-5th rows
+    std::getline(ifs, dummy);
+    ifs >> aval;
+    ifs >> lavec_out(0, 0) >> lavec_out(1, 0) >> lavec_out(2, 0);
+    ifs >> lavec_out(0, 1) >> lavec_out(1, 1) >> lavec_out(2, 1);
+    ifs >> lavec_out(0, 2) >> lavec_out(1, 2) >> lavec_out(2, 2);
+    lavec_out *= aval;
+    ifs.ignore(); // ignore newline char
+
+    std::string str_species;
+    std::vector<std::string> species_v;
+    std::set<std::string> unique_species;
+    std::set<std::string>::iterator it_set;
+    std::map<std::string, int> map_kindname_to_index;
+
+    std::getline(ifs, str_species);
+    split_str_by_space(str_species, species_v);
+
+    int counter = 0;
+    for (auto &it : species_v) {
+        it_set = unique_species.find(it);
+        if (it_set == unique_species.end()) {
+            unique_species.insert(it);
+            kdname_vec_out.push_back(it);
+            map_kindname_to_index[it] = counter++;
+        }
+    }
+
+    std::string str_num_kinds;
+    std::vector<std::string> num_kinds_split;
+    std::getline(ifs, str_num_kinds);
+    split_str_by_space(str_num_kinds, num_kinds_split);
+
+    if (num_kinds_split.size() != species_v.size()) {
+        exit("parse_structure_poscar",
+             "The numbers for ion species and numbers are inconsistent.");
+    }
+
+    std::vector<int> num_kinds_vec;
+    for (auto &it : num_kinds_split) {
+        num_kinds_vec.push_back(std::stoi(it));
+    }
+    counter = 0;
+    atomic_types_out.clear();
+    for (auto i = 0; i < num_kinds_vec.size(); ++i) {
+        const auto ikd_now = map_kindname_to_index[species_v[i]];
+        for (auto j = 0; j < num_kinds_vec[i]; ++j) {
+            atomic_types_out.push_back(ikd_now);
+        }
+    }
+
+    std::getline(ifs, dummy);
+    std::transform(dummy.begin(), dummy.end(), dummy.begin(), tolower);
+
+    if (dummy[0] == 's') {
+     // Selective dynamics
+     // read the next line
+     std::getline(ifs, dummy);
+     std::transform(dummy.begin(), dummy.end(), dummy.begin(), tolower);
+    }
+    bool structure_given_in_cartesian = false;
+    if (dummy[0] == 'k' || dummy[0] == 'c') {
+        structure_given_in_cartesian = true;
+    }
+
+    const auto nat_tmp = std::accumulate(num_kinds_vec.begin(), num_kinds_vec.end(), 0);
+    coordinates_out.resize(nat_tmp, 3);
+
+    std::vector<std::string> coordinate_entry_split;
+    // Read coordinates
+    for (auto i = 0; i < nat_tmp; ++i) {
+        std::getline(ifs, dummy);
+        split_str_by_space(dummy, coordinate_entry_split);
+        if (coordinate_entry_split.size() < 3) {
+            exit("parse_structure_poscar", "The number of entries for the position is too few.");
+        }
+        for (auto j = 0; j < 3; ++j) {
+            coordinates_out(i, j) = std::stod(coordinate_entry_split[j]);
+        }
+    }
+    ifs.close();
+
+    // If the coordinates are given in Cartesian frame, convert them to the fractional basis.
+    if (structure_given_in_cartesian) {
+        coordinates_out =  coordinates_out * lavec_out.transpose().inverse();
+    }
+}
+
+void InputParser::get_magnetic_params(std::map<std::string, std::string> &dict_input_in,
+                                      const size_t nat_in,
+                                      int &lspin_out,
+                                      Eigen::MatrixXd &magmom_out,
+                                      int &noncollinear_out,
+                                      int &time_reversal_symm_out)
+{
+    double magmag{0.0};
+    std::vector<std::string> magmom_v, str_split;
+    size_t icount, ncount;
+
+    magmom_out = Eigen::MatrixXd::Identity(nat_in, 3);
+    lspin_out = 0;
+
+    if (dict_input_in["NONCOLLINEAR"].empty()) {
+        noncollinear_out = 0;
+    } else {
+        assign_val(noncollinear_out, "NONCOLLINEAR", dict_input_in);
+    }
+    if (dict_input_in["TREVSYM"].empty()) {
+        time_reversal_symm_out = 1;
+    } else {
+        assign_val(time_reversal_symm_out, "TREVSYM", dict_input_in);
+    }
+    if (!dict_input_in["MAGMOM"].empty()) {
+        lspin_out = 1;
+
+        if (noncollinear_out) {
+            icount = 0;
+            split_str_by_space(dict_input_in["MAGMOM"], magmom_v);
+            for (const auto &it: magmom_v) {
+                if (it.find('*') != std::string::npos) {
+                    exit("get_magnetic_params",
+                         "Wild card '*' is not supported when NONCOLLINEAR = 1.");
+                } else {
+                    magmag = boost::lexical_cast<double>(it);
+                    if (icount / 3 >= nat_in) {
+                        exit("get_magnetic_params", "Too many entries for MAGMOM.");
+                    }
+                    magmom_out(icount / 3, icount % 3) = magmag;
+                    ++icount;
+                }
+            }
+
+            if (icount != 3 * nat_in) {
+                exit("get_magnetic_params",
+                     "Number of entries for MAGMOM must be 3*NAT when NONCOLLINEAR = 1.");
+            }
+        } else {
+            icount = 0;
+            split_str_by_space(dict_input_in["MAGMOM"], magmom_v);
+            for (const auto &it: magmom_v) {
+
+                if (it.find('*') != std::string::npos) {
+                    if (it == "*") {
+                        exit("get_magnetic_params",
+                             "Please place '*' without space for the MAGMOM-tag.");
+                    }
+                    boost::split(str_split, it, boost::is_any_of("*"));
+                    if (str_split.size() != 2) {
+                        exit("get_magnetic_params",
+                             "Invalid format for the MAGMOM-tag.");
+                    } else {
+                        if (str_split[0].empty() || str_split[1].empty()) {
+                            exit("get_magnetic_params",
+                                 "Please place '*' without space for the MAGMOM-tag.");
+                        }
+                        ncount = 0;
+                        try {
+                            magmag = boost::lexical_cast<double>(str_split[1]);
+                            ncount = static_cast<size_t>(boost::lexical_cast<double>(str_split[0]));
+                        }
+                        catch (std::exception) {
+                            exit("get_magnetic_params", "Bad format for MAGMOM.");
+                        }
+
+                        for (auto i = icount; i < icount + ncount; ++i) {
+
+                            magmom_out(i, 2) = magmag;
+                        }
+                        icount += ncount;
+                    }
+
+                } else {
+                    magmag = boost::lexical_cast<double>(it);
+                    if (icount == nat_in) {
+                        icount = 0;
+                        break;
+                    }
+                    magmom_out(icount++, 2) = magmag;
+                }
+            }
+            if (icount != nat_in) {
+                exit("get_magnetic_params",
+                     "Number of entries for MAGMOM must be NAT.");
+            }
+        }
+    }
+}
 
 void InputParser::parse_interaction_vars()
 {
@@ -915,105 +1282,6 @@ void InputParser::parse_optimize_vars(ALM *alm)
     optimize_var_dict.clear();
 }
 
-void InputParser::parse_atomic_positions()
-{
-    std::string line, line_wo_comment;
-    std::string str_tmp;
-    std::string::size_type pos_first_comment_tag;
-    std::vector<std::string> str_v, pos_line;
-    double (*xeq)[3];
-    int *kd;
-
-    if (from_stdin) {
-        std::cin.ignore();
-    } else {
-        ifs_input.ignore();
-    }
-
-    str_v.clear();
-
-    if (from_stdin) {
-
-        while (std::getline(std::cin, line)) {
-
-            pos_first_comment_tag = line.find_first_of('#');
-
-            if (pos_first_comment_tag == std::string::npos) {
-                line_wo_comment = line;
-            } else {
-                line_wo_comment = line.substr(0, pos_first_comment_tag);
-            }
-
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t\n\r "));
-            if (line_wo_comment.empty()) continue;
-            if (is_endof_entry(line_wo_comment)) break;
-
-            str_v.push_back(line_wo_comment);
-        }
-
-    } else {
-
-        while (std::getline(ifs_input, line)) {
-
-            pos_first_comment_tag = line.find_first_of('#');
-
-            if (pos_first_comment_tag == std::string::npos) {
-                line_wo_comment = line;
-            } else {
-                line_wo_comment = line.substr(0, pos_first_comment_tag);
-            }
-
-            boost::trim_if(line_wo_comment, boost::is_any_of("\t\n\r "));
-            if (line_wo_comment.empty()) continue;
-            if (is_endof_entry(line_wo_comment)) break;
-
-            str_v.push_back(line_wo_comment);
-        }
-    }
-
-
-    if (str_v.size() != nat) {
-        exit("parse_atomic_positions",
-             "The number of entries for atomic positions should be NAT");
-    }
-
-    allocate(xeq, nat);
-    allocate(kd, nat);
-
-
-    for (size_t i = 0; i < nat; ++i) {
-
-        split_str_by_space(str_v[i], pos_line);
-
-        if (pos_line.size() == 4) {
-            try {
-                kd[i] = boost::lexical_cast<int>(pos_line[0]);
-            }
-            catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
-                exit("parse_atomic_positions",
-                     "Invalid entry for the &position field at line ",
-                     i + 1);
-            }
-
-            for (auto j = 0; j < 3; ++j) {
-                xeq[i][j] = boost::lexical_cast<double>(pos_line[j + 1]);
-            }
-
-        } else {
-            exit("parse_atomic_positions",
-                 "Bad format for &position region");
-        }
-    }
-
-
-    input_setter->set_atomic_positions(nat, kd, xeq);
-
-    deallocate(xeq);
-    deallocate(kd);
-    pos_line.clear();
-    str_v.clear();
-}
 
 void InputParser::parse_cutoff_radii()
 {
@@ -1079,23 +1347,23 @@ void InputParser::parse_cutoff_radii()
     double ***cutoff_radii_tmp;
     bool ***undefined_cutoff;
 
-    allocate(undefined_cutoff, maxorder, nkd, nkd);
+    allocate(undefined_cutoff, maxorder, nkd_in, nkd_in);
 
     for (order = 0; order < maxorder; ++order) {
-        for (i = 0; i < nkd; ++i) {
-            for (j = 0; j < nkd; ++j) {
+        for (i = 0; i < nkd_in; ++i) {
+            for (j = 0; j < nkd_in; ++j) {
                 undefined_cutoff[order][i][j] = true;
             }
         }
     }
 
-    allocate(cutoff_radii_tmp, maxorder, nkd, nkd);
+    allocate(cutoff_radii_tmp, maxorder, nkd_in, nkd_in);
 
     element_allowed.clear();
 
-    for (i = 0; i < nkd; ++i) {
-        element_allowed.insert(kdname[i]);
-        kd_map.insert(std::map<std::string, int>::value_type(kdname[i], i));
+    for (i = 0; i < nkd_in; ++i) {
+        element_allowed.insert(kdname_vec[i]);
+        kd_map.insert(std::map<std::string, int>::value_type(kdname_vec[i], i));
     }
 
     element_allowed.insert("*");
@@ -1138,21 +1406,21 @@ void InputParser::parse_cutoff_radii()
             }
 
             if (ikd == -1 && jkd == -1) {
-                for (i = 0; i < nkd; ++i) {
-                    for (j = 0; j < nkd; ++j) {
+                for (i = 0; i < nkd_in; ++i) {
+                    for (j = 0; j < nkd_in; ++j) {
                         cutoff_radii_tmp[order][i][j] = cutoff_tmp;
                         undefined_cutoff[order][i][j] = false;
                     }
                 }
             } else if (ikd == -1) {
-                for (i = 0; i < nkd; ++i) {
+                for (i = 0; i < nkd_in; ++i) {
                     cutoff_radii_tmp[order][i][jkd] = cutoff_tmp;
                     cutoff_radii_tmp[order][jkd][i] = cutoff_tmp;
                     undefined_cutoff[order][i][jkd] = false;
                     undefined_cutoff[order][jkd][i] = false;
                 }
             } else if (jkd == -1) {
-                for (j = 0; j < nkd; ++j) {
+                for (j = 0; j < nkd_in; ++j) {
                     cutoff_radii_tmp[order][j][ikd] = cutoff_tmp;
                     cutoff_radii_tmp[order][ikd][j] = cutoff_tmp;
                     undefined_cutoff[order][j][ikd] = false;
@@ -1170,8 +1438,8 @@ void InputParser::parse_cutoff_radii()
     str_cutoff.clear();
 
     for (order = 0; order < maxorder; ++order) {
-        for (j = 0; j < nkd; ++j) {
-            for (k = 0; k < nkd; ++k) {
+        for (j = 0; j < nkd_in; ++j) {
+            for (k = 0; k < nkd_in; ++k) {
                 if (undefined_cutoff[order][j][k]) {
                     std::cout << " Cutoff radius for " << std::setw(3)
                               << order + 2 << "th-order terms" << std::endl;
@@ -1185,12 +1453,12 @@ void InputParser::parse_cutoff_radii()
     deallocate(undefined_cutoff);
 
     std::vector<double> cutoff_information_flatten;
-    cutoff_information_flatten.resize(maxorder * nkd * nkd);
+    cutoff_information_flatten.resize(maxorder * nkd_in * nkd_in);
 
     i = 0;
     for (order = 0; order < maxorder; ++order) {
-        for (j = 0; j < nkd; ++j) {
-            for (k = 0; k < nkd; ++k) {
+        for (j = 0; j < nkd_in; ++j) {
+            for (k = 0; k < nkd_in; ++k) {
                 cutoff_information_flatten[i++] = cutoff_radii_tmp[order][j][k];
             }
         }
@@ -1198,7 +1466,7 @@ void InputParser::parse_cutoff_radii()
     deallocate(cutoff_radii_tmp);
 
     input_setter->set_cutoff_radii(maxorder,
-                                   nkd,
+                                   nkd_in,
                                    cutoff_information_flatten);
 }
 

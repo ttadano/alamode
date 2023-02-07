@@ -119,8 +119,8 @@ void Symmetry::init(const System *system,
                              verbosity);
 
 
-    // set_primitive_lattice(system->lavec, system->supercell.number_of_atoms,
-    //                       system->kd, system->xcoord,
+    // set_primitive_lattice(system->lavec_base, system->supercell.number_of_atoms,
+    //                       system->kd, system->xcoord_base,
     //                       lavec_prim, nat_prim,
     //                       kd_prim, xcoord_prim,
     //                       tolerance);
@@ -234,7 +234,7 @@ void Symmetry::setup_symmetry_operation(const Cell &cell,
 
     if (cell.number_of_atoms % ntran) {
         exit("setup_symmetry_operation",
-             "nat != nat_prim * ntran. Something is wrong in the structure.");
+             "nat_base != nat_prim * ntran. Something is wrong in the structure.");
     }
 
     symnum_tran.clear();
@@ -889,7 +889,7 @@ void Symmetry::set_primitive_lattice(const double aa[3][3],
         types_tmp[i] = kd[i];
     }
 
-    //    nat_prim = spg_find_primitive(aa_prim, position, types_tmp, nat, symprec);
+    //    nat_prim = spg_find_primitive(aa_prim, position, types_tmp, nat_base, symprec);
     nat_prim_out = spg_standardize_cell(aa_prim,
                                         position,
                                         types_tmp,
