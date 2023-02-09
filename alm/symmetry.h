@@ -14,35 +14,30 @@
 #include <vector>
 #include "system.h"
 #include "timer.h"
+#include <Eigen/Core>
 
 namespace ALM_NS {
 class SymmetryOperation {
 public:
-    int rotation[3][3];         // in lattice basis
-    double tran[3];             // in Cartesian basis
-    double rotation_cart[3][3]; // in Cartesian basis
+    Eigen::Matrix3i rotation;         // in lattice basis
+    Eigen::Vector3d tran;             // in Cartesian basis
+    Eigen::Matrix3d rotation_cart;  // in Cartesian basis
     bool compatible_with_lattice;
     bool compatible_with_cartesian;
     bool is_translation;
 
     SymmetryOperation();
 
-    SymmetryOperation(const int rot_in[3][3],
-                      const double tran_in[3],
-                      const double rot_cart_in[3][3],
+    SymmetryOperation(const Eigen::Matrix3i &rot_in,
+                      const Eigen::Vector3d &tran_in,
+                      const Eigen::Matrix3d &rot_cart_in,
                       const bool compatibility_lat,
                       const bool compatibility_cart,
                       const bool is_trans_in)
     {
-        for (auto i = 0; i < 3; ++i) {
-            for (auto j = 0; j < 3; ++j) {
-                rotation[i][j] = rot_in[i][j];
-                rotation_cart[i][j] = rot_cart_in[i][j];
-            }
-        }
-        for (auto i = 0; i < 3; ++i) {
-            tran[i] = tran_in[i];
-        }
+        rotation = rot_in;
+        rotation_cart = rot_cart_in;
+        tran = tran_in;
         compatible_with_lattice = compatibility_lat;
         compatible_with_cartesian = compatibility_cart;
         is_translation = is_trans_in;
@@ -54,8 +49,8 @@ public:
         std::vector<double> v1, v2;
         for (auto i = 0; i < 3; ++i) {
             for (auto j = 0; j < 3; ++j) {
-                v1.push_back(static_cast<double>(rotation[i][j]));
-                v2.push_back(static_cast<double>(a.rotation[i][j]));
+                v1.push_back(static_cast<double>(rotation(i,j)));
+                v2.push_back(static_cast<double>(a.rotation(i,j)));
             }
         }
         for (auto i = 0; i < 3; ++i) {
@@ -77,7 +72,8 @@ public:
 
 class RotationMatrix {
 public:
-    int mat[3][3];
+    //int mat[3][3];
+    Eigen::Matrix3i mat;
 
     RotationMatrix();
 
@@ -85,9 +81,12 @@ public:
     {
         for (auto i = 0; i < 3; ++i) {
             for (auto j = 0; j < 3; ++j) {
-                mat[i][j] = rot[i][j];
+                mat(i, j) = rot[i][j];
             }
         }
+    }
+    RotationMatrix(const Eigen::Matrix3i &rot_in) {
+        mat = rot_in;
     }
 };
 
@@ -168,12 +167,21 @@ private:
 
     bool is_translation(const int [3][3]) const;
 
+    bool is_translation(const Eigen::Matrix3i &rot) const;
+
     bool is_proper(const double [3][3]) const;
+
+    bool is_proper(const Eigen::Matrix3d &rot) const;
 
     void symop_in_cart(double [3][3],
                        const int [3][3],
                        const double [3][3],
                        const double [3][3]) const;
+
+    void symop_in_cart(Eigen::Matrix3d &rot_cart,
+                                 const Eigen::Matrix3i &rot_lattice,
+                                 const Eigen::Matrix3d &lavec,
+                                 const Eigen::Matrix3d &rlavec) const;
 
     void print_symminfo_stdout() const;
 
@@ -181,7 +189,11 @@ private:
     bool is_compatible(const T [3][3],
                        double tolerance_zero = 1.0e-5);
 
-    void find_lattice_symmetry(const double [3][3],
+    template<typename T>
+    bool is_compatible(const Eigen::MatrixBase<T> &mat,
+                       double tolerance_zero = 1.0e-5);
+
+    void find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                std::vector<RotationMatrix> &) const;
 
     void find_crystal_symmetry(const Cell &,

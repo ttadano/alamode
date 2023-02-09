@@ -58,29 +58,18 @@ public:
                           const std::string &mode,
                           int verbosity,
                           const std::string &str_disp_basis,
-//                          const std::string &str_magmom,
-//                          size_t nat_in,
-//                          size_t nkd_in,
                           int printsymmetry,
                           const int is_periodic_in[3],
                           bool trim_dispsign_for_evenfunc,
-//                          bool lspin_in,
                           int print_hessian,
                           int print_fcs_alamode,
                           int print_fc3_shengbte,
                           int print_fc2_qefc,
-//                          int noncollinear_in,
-//                          int trevsym_in,
-//                          const std::string *kdname_in,
-//                          const double *const *magmom_in,
                           double tolerance,
                           double tolerance_constraint,
                           const std::string &basis_force_constant,
                           const int nmaxsave,
                           const double fc_zero_threshold);
-//                          const Eigen::Matrix3d &transmat_super,
-//                          const Eigen::Matrix3d &transmat_prim,
-//                          const std::string &structure_fname);
 
     void set_optimize_vars(ALM *alm,
                            const std::vector<std::vector<double>> &u_train_in,
@@ -101,23 +90,16 @@ public:
                              bool fix_harmonic,
                              bool fix_cubic) const;
 
-    void set_geometric_structure(ALM *alm) const;
 
 private:
     size_t nat_base, nkd;
-    int *kd_base;
-    double lavec_base[3][3];
     Eigen::Matrix3d lavec_base_mat;
     Eigen::MatrixXd xcoord_base_mat;
     std::vector<int> kd_base_vec;
-
-    double (*xcoord_base)[3]; // fractional coordinate
-    std::string *kdname;
     std::vector<std::string> kdnames_vec;
     int is_periodic[3];
 
     bool lspin;
-    double (*magmom_base)[3];
     Eigen::MatrixXd magmom_base_mat;
     int noncollinear;
     int trevsym;

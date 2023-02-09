@@ -1011,7 +1011,7 @@ void Fcs::get_available_symmop(const size_t nat,
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
-                        rotation[nsym_avail][i][j] = (*it).rotation_cart[i][j];
+                        rotation[nsym_avail][i][j] = (*it).rotation_cart(i,j);
                     }
                 }
                 for (i = 0; i < nat; ++i) {
@@ -1029,7 +1029,7 @@ void Fcs::get_available_symmop(const size_t nat,
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         rotation[nsym_avail][i][j]
-                                = static_cast<double>((*it).rotation[i][j]);
+                                = static_cast<double>((*it).rotation(i,j));
                     }
                 }
                 for (i = 0; i < nat; ++i) {
@@ -1194,7 +1194,7 @@ void Fcs::set_basis_conversion_matrix(const Cell &supercell)
         for (auto i = 0; i < 3; ++i) {
             for (auto j = 0; j < 3; ++j) {
                 basis_conversion_matrix(i, j)
-                        = supercell.reciprocal_lattice_vector[i][j] * scale_factor;
+                        = supercell.reciprocal_lattice_vector(i,j) * scale_factor;
             }
         }
     } else if (preferred_basis == "Cartesian") {

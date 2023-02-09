@@ -117,8 +117,15 @@ void ALM::set_cell(const size_t nat,
                    const int kind[],
                    const std::string kdname[]) const
 {
-    system->set_supercell(lavec, nat, kind, xcoord);
+    system->set_basecell(lavec, nat, kind, xcoord);
     system->set_kdname(kdname);
+}
+
+void ALM::set_transformation_matrices(const double transmat_to_super[3][3],
+                                      const double transmat_to_prim[3][3]) const
+{
+    system->set_transformation_matrices(transmat_to_super,
+                                        transmat_to_prim);
 }
 
 void ALM::set_magnetic_params(const size_t nat,
@@ -733,7 +740,9 @@ void ALM::init_fc_table()
 
     if (!structure_initialized) {
         system->init(verbosity, timer);
+        std::cout << "OK3\n";
         symmetry->init(system, verbosity, timer);
+        std::cout << "OK4\n";
         structure_initialized = true;
     }
 

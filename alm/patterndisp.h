@@ -146,7 +146,7 @@ private:
 
     void generate_pattern_all(const int maxorder,
                               const size_t nat,
-                              const double lavec[3][3],
+                              const Eigen::Matrix3d &lavec,
                               const Symmetry *symmetry,
                               const std::set<DispAtomSet> *dispset_in,
                               const std::string preferred_basis) const;

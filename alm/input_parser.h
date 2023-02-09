@@ -31,8 +31,6 @@ public:
              const int narg,
              const char *const *arg);
 
-    std::string str_magmom;
-
     std::string get_run_mode() const;
 
 private:

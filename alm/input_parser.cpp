@@ -200,6 +200,7 @@ void InputParser::parse_input(ALM *alm)
         // In this case, the &cell and &position entries are ignored.
         lavec_poscar /= Bohr_in_Angstrom;
         input_setter->set_cell_parameter(lavec_poscar);
+        std::cout << xf_poscar << std::endl;
         input_setter->set_atomic_positions(xf_poscar);
         input_setter->set_element_types(atomic_types_poscar, kdname_vec_poscar);
         nat_in = atomic_types_poscar.size();
@@ -218,11 +219,13 @@ void InputParser::parse_input(ALM *alm)
                         noncollinear,
                         time_reversal_symm);
 
-    input_setter->set_magnetic_vars(lspin, magmom_vec, noncollinear,time_reversal_symm);
+    input_setter->set_magnetic_vars(lspin,
+                                    magmom_vec,
+                                    noncollinear,
+                                    time_reversal_symm);
 
     // This method should be called after the structural and magnetic parameters are set.
     input_setter->set_geometric_structure(alm);
-
 
     if (!locate_tag("&interaction")) {
         exit("parse_input",
@@ -285,7 +288,7 @@ void InputParser::parse_general_vars(ALM *alm)
     // parse all input parameters in &general field
     get_var_dict(input_list, general_var_dict);
 
-    for (const auto &it : general_var_dict) {
+    for (const auto &it: general_var_dict) {
         dict_input_vars.insert(it);
     }
 
@@ -313,7 +316,7 @@ void InputParser::parse_general_vars(ALM *alm)
         structure_file = general_var_dict["STRUCTURE_FILE"];
         if (!std::filesystem::exists(structure_file)) {
             const std::string str_message = "STRUCTURE_FILE is given but the target file ("
-                    + structure_file + ") does not exist.";
+                                            + structure_file + ") does not exist.";
             exit("parse_general_vars", str_message.c_str());
         }
     }
@@ -507,7 +510,7 @@ void InputParser::parse_transformation_matrix_string(const std::string &string_c
         if (str_vec.size() == 2) {
             transform_matrix = std::stod(str_vec[0]) / std::stod(str_vec[1]) * mat_identity;
         } else {
-            transform_matrix = std::stod(str_vec[0])  * mat_identity;
+            transform_matrix = std::stod(str_vec[0]) * mat_identity;
         }
 
     } else if (celldim_v.size() == 3) {
@@ -517,9 +520,9 @@ void InputParser::parse_transformation_matrix_string(const std::string &string_c
             boost::split(str_vec, celldim_v[i], boost::is_any_of("/"));
 
             if (str_vec.size() == 2) {
-                transform_matrix(i,i) =  std::stod(str_vec[0]) / std::stod(str_vec[1]);
+                transform_matrix(i, i) = std::stod(str_vec[0]) / std::stod(str_vec[1]);
             } else {
-                transform_matrix(i,i) =  std::stod(str_vec[0]);
+                transform_matrix(i, i) = std::stod(str_vec[0]);
             }
         }
     } else if (celldim_v.size() == 9) {
@@ -529,15 +532,15 @@ void InputParser::parse_transformation_matrix_string(const std::string &string_c
                 std::vector<std::string> str_vec;
                 boost::split(str_vec, celldim_v[k++], boost::is_any_of("/"));
                 if (str_vec.size() == 2) {
-                    transform_matrix(i,j) =  std::stod(str_vec[0]) / std::stod(str_vec[1]);
+                    transform_matrix(i, j) = std::stod(str_vec[0]) / std::stod(str_vec[1]);
                 } else {
-                    transform_matrix(i,j) =  std::stod(str_vec[0]);
+                    transform_matrix(i, j) = std::stod(str_vec[0]);
                 }
             }
         }
     } else {
         std::string str_message = "Invalid number of entries for " + string_celldim + ".\n"
-                + "The size should be either 1, 3, or 9.";
+                                  + "The size should be either 1, 3, or 9.";
         exit("parse_transformation_matrix", str_message.c_str());
     }
 
@@ -554,16 +557,16 @@ void InputParser::parse_transformation_matrix_string(const std::string &string_c
         // check if the determinant of the transformation matrix is integer for SUPERCELL
         if (std::abs(det - static_cast<double>(nint(det))) > eps) {
             std::string str_message = "The determinant of the matrix in "
-                    + string_celldim + " is not integer.\n";
+                                      + string_celldim + " is not integer.\n";
             exit("parse_transformation_matrix", str_message.c_str());
         }
     } else {
         // check if the determinant of the transformation matrix is (1/a) for PRIMCELL,
         // where a is an integer.
 
-        if (std::abs(1/det - static_cast<double>(nint(1/det))) > eps) {
+        if (std::abs(1 / det - static_cast<double>(nint(1 / det))) > eps) {
             std::string str_message = "The determinant of the matrix in "
-                    + string_celldim + " is (1/a) where a is an integer.\n";
+                                      + string_celldim + " is (1/a) where a is an integer.\n";
             exit("parse_transformation_matrix", str_message.c_str());
         }
     }
@@ -660,9 +663,9 @@ void InputParser::parse_cell_parameter()
         }
     }
 
-    for (auto i = 0; i< 3; ++i) {
+    for (auto i = 0; i < 3; ++i) {
         for (auto j = 0; j < 3; ++j) {
-            lavec_poscar(i, j) = a * lavec_tmp[i][j];
+            lavec_input(i, j) = a * lavec_tmp[i][j];
         }
     }
 }
@@ -798,7 +801,7 @@ void InputParser::parse_structure_poscar(const std::string &fname_poscar,
     split_str_by_space(str_species, species_v);
 
     int counter = 0;
-    for (auto &it : species_v) {
+    for (auto &it: species_v) {
         it_set = unique_species.find(it);
         if (it_set == unique_species.end()) {
             unique_species.insert(it);
@@ -818,7 +821,7 @@ void InputParser::parse_structure_poscar(const std::string &fname_poscar,
     }
 
     std::vector<int> num_kinds_vec;
-    for (auto &it : num_kinds_split) {
+    for (auto &it: num_kinds_split) {
         num_kinds_vec.push_back(std::stoi(it));
     }
     counter = 0;
@@ -834,10 +837,10 @@ void InputParser::parse_structure_poscar(const std::string &fname_poscar,
     std::transform(dummy.begin(), dummy.end(), dummy.begin(), tolower);
 
     if (dummy[0] == 's') {
-     // Selective dynamics
-     // read the next line
-     std::getline(ifs, dummy);
-     std::transform(dummy.begin(), dummy.end(), dummy.begin(), tolower);
+        // Selective dynamics
+        // read the next line
+        std::getline(ifs, dummy);
+        std::transform(dummy.begin(), dummy.end(), dummy.begin(), tolower);
     }
     bool structure_given_in_cartesian = false;
     if (dummy[0] == 'k' || dummy[0] == 'c') {
@@ -863,7 +866,7 @@ void InputParser::parse_structure_poscar(const std::string &fname_poscar,
 
     // If the coordinates are given in Cartesian frame, convert them to the fractional basis.
     if (structure_given_in_cartesian) {
-        coordinates_out =  coordinates_out * lavec_out.transpose().inverse();
+        coordinates_out = coordinates_out * lavec_out.transpose().inverse();
     }
 }
 
@@ -878,7 +881,7 @@ void InputParser::get_magnetic_params(std::map<std::string, std::string> &dict_i
     std::vector<std::string> magmom_v, str_split;
     size_t icount, ncount;
 
-    magmom_out = Eigen::MatrixXd::Identity(nat_in, 3);
+    magmom_out = Eigen::MatrixXd::Zero(nat_in, 3);
     lspin_out = 0;
 
     if (dict_input_in["NONCOLLINEAR"].empty()) {

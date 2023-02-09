@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include "timer.h"
+#include <Eigen/Core>
 
 namespace ALM_NS {
 class AtomType {
@@ -34,14 +35,18 @@ public:
 
 class Cell {
 public:
-    double lattice_vector[3][3];
-    double reciprocal_lattice_vector[3][3];
+    //double lattice_vector[3][3];
+    Eigen::Matrix3d lattice_vector;
+    //double reciprocal_lattice_vector[3][3];
+    Eigen::Matrix3d reciprocal_lattice_vector;
     double volume;
     size_t number_of_atoms;
     size_t number_of_elems;
     std::vector<int> kind;
-    std::vector<std::vector<double>> x_fractional;
-    std::vector<std::vector<double>> x_cartesian;
+    //std::vector<std::vector<double>> x_fractional;
+    Eigen::MatrixXd x_fractional;
+    //std::vector<std::vector<double>> x_cartesian;
+    Eigen::MatrixXd x_cartesian;
 };
 
 class Spin {
@@ -61,12 +66,12 @@ public:
     void init(const int,
               Timer *);
 
-    void frac2cart(double **) const;
+    //void frac2cart(double **) const;
 
-    void set_supercell(const double [3][3],
-                       const size_t,
-                       const int *,
-                       const double [][3]);
+    void set_basecell(const double lavec_in[3][3],
+                      const size_t nat_in,
+                      const int *kind_in,
+                      const double xf_in[][3]);
 
     void set_kdname(const std::string *);
 
@@ -79,6 +84,9 @@ public:
                             const double (*)[3]);
 
     void set_str_magmom(std::string);
+
+    void set_transformation_matrices(const double transmat_to_super_in[3][3],
+                                     const double transmat_to_prim_in[3][3]);
 
     const Cell &get_supercell() const;
 
@@ -98,7 +106,11 @@ public:
 
 private:
     // Variables for geometric structure
-    Cell supercell, primcell;
+    Cell supercell, primcell, inputcell;
+
+    // Transformation matrices
+    Eigen::Matrix3d transmat_to_super, transmat_to_prim;
+
     std::string *kdname;
     int *is_periodic; // is_periodic[3];
     double ***x_image;
@@ -115,8 +127,11 @@ private:
         Direct, Reciprocal
     };
 
-    void set_reciprocal_latt(const double [3][3],
-                             double [3][3]) const;
+//    void set_reciprocal_latt(const double [3][3],
+//                             double [3][3]) const;
+
+    void set_reciprocal_latt(const Eigen::Matrix3d &lavec_in,
+                             Eigen::Matrix3d &rlavec_out) const;
 
     void set_default_variables();
 
@@ -124,6 +139,9 @@ private:
 
     double volume(const double [3][3],
                   LatticeType) const;
+
+    double volume(const Eigen::Matrix3d &mat_in,
+                  const LatticeType latttype_in) const;
 
     void set_atomtype_group();
 

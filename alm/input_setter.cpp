@@ -26,21 +26,21 @@ InputSetter::InputSetter()
     nat_base = 0;
     nkd = 0;
     maxorder = 0;
-    kd_base = nullptr;
-    kdname = nullptr;
+    //kd_base = nullptr;
+    //kdname = nullptr;
 
-    for (auto i = 0; i < 3; ++i) {
-        for (auto j = 0; j < 3; j++) {
-            lavec_base[i][j] = 0.0;
-        }
-    }
-    xcoord_base = nullptr;
+//    for (auto i = 0; i < 3; ++i) {
+//        for (auto j = 0; j < 3; j++) {
+//            lavec_base[i][j] = 0.0;
+//        }
+//    }
+    //xcoord_base = nullptr;
     is_periodic[0] = 1;
     is_periodic[1] = 1;
     is_periodic[2] = 1;
 
     lspin = false;
-    magmom_base = nullptr;
+    //magmom_base = nullptr;
     noncollinear = 0;
     trevsym = 1;
     str_magmom = "";
@@ -51,18 +51,18 @@ InputSetter::InputSetter()
 
 InputSetter::~InputSetter()
 {
-    if (kdname) {
-        deallocate(kdname);
-    }
-    if (xcoord_base) {
-        deallocate(xcoord_base);
-    }
-    if (kd_base) {
-        deallocate(kd_base);
-    }
-    if (magmom_base) {
-        deallocate(magmom_base);
-    }
+//    if (kdname) {
+//        deallocate(kdname);
+//    }
+//    if (xcoord_base) {
+//        deallocate(xcoord_base);
+//    }
+//    if (kd_base) {
+//        deallocate(kd_base);
+//    }
+//    if (magmom_base) {
+//        deallocate(magmom_base);
+//    }
     if (nbody_include) {
         deallocate(nbody_include);
     }
@@ -71,15 +71,15 @@ InputSetter::~InputSetter()
     }
 }
 
-void InputSetter::set_cell_parameter(const double a,
-                                     const double lavec_in[3][3])
-{
-    for (auto i = 0; i < 3; ++i) {
-        for (auto j = 0; j < 3; ++j) {
-            lavec_base[i][j] = a * lavec_in[i][j];
-        }
-    }
-}
+//void InputSetter::set_cell_parameter(const double a,
+//                                     const double lavec_in[3][3])
+//{
+//    for (auto i = 0; i < 3; ++i) {
+//        for (auto j = 0; j < 3; ++j) {
+//            lavec_base[i][j] = a * lavec_in[i][j];
+//        }
+//    }
+//}
 
 void InputSetter::set_cell_parameter(const Eigen::Matrix3d &lavec_in)
 {
@@ -127,60 +127,25 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const std::string &mode,
                                    const int verbosity,
                                    const std::string &str_disp_basis,
-//                                   const std::string &str_magmom,
-//                                   const size_t nat_in,
-//                                   const size_t nkd_in,
                                    const int printsymmetry,
                                    const int is_periodic_in[3],
                                    const bool trim_dispsign_for_evenfunc,
-//                                   const bool lspin_in,
                                    const int print_hessian,
                                    const int print_fcs_alamode,
                                    const int print_fc3_shengbte,
                                    const int print_fc2_qefc,
-//                                   const int noncollinear_in,
-//                                   const int trevsym_in,
-//                                   const std::string *kdname_in,
-//                                   const double *const *magmom_in,
                                    const double tolerance,
                                    const double tolerance_constraint,
                                    const std::string &basis_force_constant,
                                    const int nmaxsave,
                                    const double fc_zero_threshold)
-//                                   const Eigen::Matrix3d &transmat_super,
-//                                   const Eigen::Matrix3d &transmat_prim,
-//                                   const std::string &structure_fname)
 {
     size_t i;
 
     alm->set_output_filename_prefix(prefix);
     alm->set_verbosity(verbosity);
-//    nat_base = nat_in;
-//    nkd = nkd_in;
     alm->set_print_symmetry(printsymmetry);
     alm->set_symmetry_tolerance(tolerance);
-
-//    if (kdname) {
-//        deallocate(kdname);
-//    }
-//    allocate(kdname, nkd);
-//    for (i = 0; i < nkd; ++i) {
-//        kdname[i] = kdname_in[i];
-//    }
-
-//    if (magmom_base) {
-//        deallocate(magmom_base);
-//    }
-//    allocate(magmom_base, nat_base);
-//
-//    for (i = 0; i < nat_base; i++) {
-//        for (auto j = 0; j < 3; j++) {
-//            magmom_base[i][j] = magmom_in[i][j];
-//        }
-//    }
-//    lspin = lspin_in;
-//    noncollinear = noncollinear_in;
-//    trevsym = trevsym_in;
 
     for (i = 0; i < 3; i++) {
         is_periodic[i] = is_periodic_in[i];
@@ -250,30 +215,30 @@ void InputSetter::set_constraint_vars(ALM *alm,
 }
 
 
-void InputSetter::set_atomic_positions(const size_t nat_in,
-                                       const int *kd_in,
-                                       const double (*xcoord_in)[3])
-{
-    if (kd_base) {
-        deallocate(kd_base);
-    }
-    if (xcoord_base) {
-        deallocate(xcoord_base);
-    }
-    allocate(xcoord_base, nat_in);
-    allocate(kd_base, nat_in);
-
-    for (size_t i = 0; i < nat_in; ++i) {
-        kd_base[i] = kd_in[i];
-        for (auto j = 0; j < 3; ++j) {
-            xcoord_base[i][j] = xcoord_in[i][j];
-        }
-    }
-}
+//void InputSetter::set_atomic_positions(const size_t nat_in,
+//                                       const int *kd_in,
+//                                       const double (*xcoord_in)[3])
+//{
+//    if (kd_base) {
+//        deallocate(kd_base);
+//    }
+//    if (xcoord_base) {
+//        deallocate(xcoord_base);
+//    }
+//    allocate(xcoord_base, nat_in);
+//    allocate(kd_base, nat_in);
+//
+//    for (size_t i = 0; i < nat_in; ++i) {
+//        kd_base[i] = kd_in[i];
+//        for (auto j = 0; j < 3; ++j) {
+//            xcoord_base[i][j] = xcoord_in[i][j];
+//        }
+//    }
+//}
 
 void InputSetter::set_atomic_positions(const Eigen::MatrixXd &positions_in)
 {
-    nat_base = kd_base_vec.size();
+    nat_base = positions_in.col(0).size();
     xcoord_base_mat = positions_in;
 }
 
@@ -296,7 +261,7 @@ void InputSetter::set_magnetic_vars(const int lspin_in,
                                     const Eigen::MatrixXd &magmom_in,
                                     const int noncollinear_in,
                                     const int time_reversal_symm_in)
-                                    {
+{
     lspin = lspin_in;
     magmom_base_mat = magmom_in;
     noncollinear = noncollinear_in;
@@ -306,7 +271,46 @@ void InputSetter::set_magnetic_vars(const int lspin_in,
 
 void InputSetter::set_geometric_structure(ALM *alm)
 {
-    alm->set_cell(nat_base, lavec_base, xcoord_base, kd_base, kdname);
+    double (*xcoord_base)[3]; // fractional coordinate
+    double (*magmom_base)[3];
+    int *kd_base;
+    double lavec_base[3][3];
+
+    allocate(xcoord_base, nat_base);
+    allocate(magmom_base, nat_base);
+    allocate(kd_base, nat_base);
+
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            lavec_base[i][j] = lavec_base_mat(i, j);
+        }
+    }
+
+    for (auto i = 0; i < nat_base; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            xcoord_base[i][j] = xcoord_base_mat(i, j);
+            magmom_base[i][j] = magmom_base_mat(i, j);
+        }
+        kd_base[i] = kd_base_vec[i];
+    }
+
+    alm->set_cell(nat_base, lavec_base, xcoord_base, kd_base, kdnames_vec.data());
     alm->set_periodicity(is_periodic);
+
+    deallocate(xcoord_base);
+    deallocate(kd_base);
+
+    double transmat_super_tmp[3][3], transmat_prim_tmp[3][3];
+
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0 ; j <3 ; ++j) {
+            transmat_super_tmp[i][j] = transmat_super(i,j);
+            transmat_prim_tmp[i][j] = transmat_prim(i,j);
+        }
+    }
+    alm->set_transformation_matrices(transmat_super_tmp,
+                                     transmat_prim_tmp);
+
     alm->set_magnetic_params(nat_base, magmom_base, lspin, noncollinear, trevsym, str_magmom);
+    deallocate(magmom_base);
 }

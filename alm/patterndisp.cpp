@@ -22,6 +22,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "constraint.h"
 #include <map>
 #include <boost/bimap.hpp>
+#include <Eigen/LU>
 
 using namespace ALM_NS;
 
@@ -243,14 +244,15 @@ void Displace::deallocate_variables()
 
 void Displace::generate_pattern_all(const int maxorder,
                                     const size_t nat,
-                                    const double lavec[3][3],
+                                    const Eigen::Matrix3d &lavec,
                                     const Symmetry *symmetry,
                                     const std::set<DispAtomSet> *dispset_in,
                                     const std::string preferred_basis) const
 {
     size_t i, j;
     int order;
-    double disp_tmp[3];
+    //double disp_tmp[3];
+    Eigen::Vector3d disp_tmp;
 
     std::vector<int> atoms, vec_tmp, nums;
     std::vector<double> directions, directions_copy;
@@ -313,18 +315,20 @@ void Displace::generate_pattern_all(const int maxorder,
                     const auto sign_double = static_cast<double>(it2[i]);
 
                     for (j = 0; j < 3; ++j) {
-                        disp_tmp[j] = directions_copy[3 * i + j] * sign_double;
+                        disp_tmp(j) = directions_copy[3 * i + j] * sign_double;
                     }
                     if (preferred_basis == "Lattice") {
-                        rotvec(disp_tmp, disp_tmp, lavec);
-                        double norm = 0.0;
-                        for (j = 0; j < 3; ++j) norm += disp_tmp[j] * disp_tmp[j];
-                        norm = std::sqrt(norm);
-                        for (j = 0; j < 3; ++j) disp_tmp[j] /= norm;
+                        disp_tmp = lavec.inverse() * disp_tmp;
+                        disp_tmp /= disp_tmp.norm(); // Do we really need this?
+                        //rotvec(disp_tmp, disp_tmp, lavec);
+                        //double norm = 0.0;
+                        //for (j = 0; j < 3; ++j) norm += disp_tmp[j] * disp_tmp[j];
+                        //norm = std::sqrt(norm);
+                        //for (j = 0; j < 3; ++j) disp_tmp[j] /= norm;
                     }
 
                     for (j = 0; j < 3; ++j) {
-                        directions.push_back(disp_tmp[j]);
+                        directions.push_back(disp_tmp(j));
                     }
                 }
                 pattern_all[order].emplace_back(atoms, directions);
@@ -452,12 +456,12 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
                     if (preferred_basis == "Cartesian") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                    += symmetry->get_SymmData()[isym].rotation_cart[j][k] * disp[list_disp_atom[i]][k];
+                                    += symmetry->get_SymmData()[isym].rotation_cart(j,k) * disp[list_disp_atom[i]][k];
                         }
                     } else if (preferred_basis == "Lattice") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                    += static_cast<double>(symmetry->get_SymmData()[isym].rotation[j][k])
+                                    += static_cast<double>(symmetry->get_SymmData()[isym].rotation(j,k))
                                        * disp[list_disp_atom[i]][k];
                         }
                     } else {
@@ -515,13 +519,13 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
                     if (preferred_basis == "Cartesian") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                    += symmetry->get_SymmData()[symnum_vec[isym]].rotation_cart[j][k]
+                                    += symmetry->get_SymmData()[symnum_vec[isym]].rotation_cart(j,k)
                                        * disp[list_disp_atom[i]][k];
                         }
                     } else if (preferred_basis == "Lattice") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                    += static_cast<double>(symmetry->get_SymmData()[symnum_vec[isym]].rotation[j][k])
+                                    += static_cast<double>(symmetry->get_SymmData()[symnum_vec[isym]].rotation(j,k))
                                        * disp[list_disp_atom[i]][k];
                         }
                     } else {

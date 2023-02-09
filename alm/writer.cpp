@@ -29,8 +29,9 @@
 #include <boost/version.hpp>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/date_time.hpp>
-#include <highfive/H5File.hpp>
 
+#define H5_USE_EIGEN 1
+#include <highfive/H5File.hpp>
 
 using namespace ALM_NS;
 
@@ -496,7 +497,7 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             system_structure.lattice_vector[i][j]
-                    = system->get_supercell().lattice_vector[i][j];
+                    = system->get_supercell().lattice_vector(i,j);
         }
     }
 
@@ -508,9 +509,9 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
     AtomProperty prop_tmp{};
 
     for (i = 0; i < system->get_supercell().number_of_atoms; ++i) {
-        prop_tmp.x = system->get_supercell().x_fractional[i][0];
-        prop_tmp.y = system->get_supercell().x_fractional[i][1];
-        prop_tmp.z = system->get_supercell().x_fractional[i][2];
+        prop_tmp.x = system->get_supercell().x_fractional(i,0);
+        prop_tmp.y = system->get_supercell().x_fractional(i,1);
+        prop_tmp.z = system->get_supercell().x_fractional(i,2);
         prop_tmp.kind = system->get_supercell().kind[i];
         prop_tmp.atom = symmetry->get_map_s2p()[i].atom_num + 1;
         prop_tmp.tran = symmetry->get_map_s2p()[i].tran_num + 1;
@@ -559,7 +560,7 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
 
     for (i = 0; i < system_structure.nat; ++i) {
         str_tmp.clear();
-        for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->get_supercell().x_fractional[i][j]);
+        for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->get_supercell().x_fractional(i,j));
         auto &child = pt.add("Data.Structure.Position.pos", str_tmp);
         child.put("<xmlattr>.index", i + 1);
         child.put("<xmlattr>.element", system->get_kdname()[system->get_supercell().kind[i] - 1]);
@@ -860,7 +861,7 @@ void Writer::save_fcs_alamode(const System *system,
                                                         DataSpace(dim));
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            data[i][j] = system->get_supercell().lattice_vector[j][i];
+            data[i][j] = system->get_supercell().lattice_vector(j,i);
         }
     }
     dataset.write(data);

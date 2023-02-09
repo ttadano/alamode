@@ -17,6 +17,9 @@
 #include <iostream>
 #include <iomanip>
 #include <set>
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <Eigen/Geometry>
 
 using namespace ALM_NS;
 
@@ -50,8 +53,9 @@ void System::init(const int verbosity,
         deallocate(exist_image);
     }
     allocate(exist_image, nneib);
-
+    std::cout << "OK1\n";
     generate_coordinate_of_periodic_images();
+    std::cout << "OK2\n";
 
     if (verbosity > 0) {
         print_structure_stdout(supercell);
@@ -64,10 +68,10 @@ void System::init(const int verbosity,
     timer->stop_clock("system");
 }
 
-void System::set_supercell(const double lavec_in[3][3],
-                           const size_t nat_in,
-                           const int *kind_in,
-                           const double xf_in[][3])
+void System::set_basecell(const double lavec_in[3][3],
+                          const size_t nat_in,
+                          const int *kind_in,
+                          const double xf_in[][3])
 {
     size_t i, j;
     std::vector<int> unique_nums(nat_in);
@@ -104,33 +108,31 @@ void System::set_supercell(const double lavec_in[3][3],
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            supercell.lattice_vector[i][j] = lavec_in[i][j];
+            inputcell.lattice_vector(i, j) = lavec_in[i][j];
         }
     }
-    set_reciprocal_latt(supercell.lattice_vector,
-                        supercell.reciprocal_lattice_vector);
+    std::cout << inputcell.lattice_vector << std::endl;
+    set_reciprocal_latt(inputcell.lattice_vector,
+                        inputcell.reciprocal_lattice_vector);
 
-    supercell.volume = volume(supercell.lattice_vector, Direct);
-    supercell.number_of_atoms = nat_in;
-    supercell.number_of_elems = nkd;
-    supercell.kind.clear();
-    supercell.kind.shrink_to_fit();
-    supercell.x_fractional.clear();
-    supercell.x_fractional.shrink_to_fit();
-    supercell.x_cartesian.clear();
-    supercell.x_cartesian.shrink_to_fit();
+    inputcell.volume = volume(inputcell.lattice_vector, Direct);
+    inputcell.number_of_atoms = nat_in;
+    inputcell.number_of_elems = nkd;
+    inputcell.kind.clear();
+    inputcell.kind.shrink_to_fit();
+    inputcell.x_fractional.resize(nat_in, 3);
 
     std::vector<double> xtmp;
 
     if (!wrong_number) {
         for (i = 0; i < nat_in; ++i) {
-            supercell.kind.push_back(kind_in[i]);
+            inputcell.kind.push_back(kind_in[i]);
         }
     } else {
         for (i = 0; i < nat_in; ++i) {
             for (j = 0; j < nkd; j++) {
                 if (kind_in[i] == unique_nums[j]) {
-                    supercell.kind.push_back(static_cast<int>(j + 1));
+                    inputcell.kind.push_back(static_cast<int>(j + 1));
                 }
             }
         }
@@ -149,22 +151,24 @@ void System::set_supercell(const double lavec_in[3][3],
             while (xtmp[j] < 0.0) {
                 xtmp[j] += 1.0;
             }
+            inputcell.x_fractional(i, j) = xtmp[j];
         }
-        supercell.x_fractional.push_back(xtmp);
     }
 
-    double xf_tmp[3], xc_tmp[3];
+    inputcell.x_cartesian = inputcell.x_fractional * inputcell.lattice_vector.transpose();
 
-    for (const auto &xf: supercell.x_fractional) {
-        for (i = 0; i < 3; ++i) {
-            xf_tmp[i] = xf[i];
-        }
-        rotvec(xc_tmp, xf_tmp, supercell.lattice_vector);
-        for (i = 0; i < 3; ++i) {
-            xtmp[i] = xc_tmp[i];
-        }
-        supercell.x_cartesian.push_back(xtmp);
-    }
+//    double xf_tmp[3], xc_tmp[3];
+//
+//    for (const auto &xf: supercell.x_fractional) {
+//        for (i = 0; i < 3; ++i) {
+//            xf_tmp[i] = xf[i];
+//        }
+//        rotvec(xc_tmp, xf_tmp, supercell.lattice_vector);
+//        for (i = 0; i < 3; ++i) {
+//            xtmp[i] = xc_tmp[i];
+//        }
+//        supercell.x_cartesian.push_back(xtmp);
+//    }
 
     // This is needed to avoid segmentation fault.
     spin.magmom.clear();
@@ -210,7 +214,8 @@ int *System::get_periodicity() const
 
 void System::set_kdname(const std::string *kdname_in)
 {
-    const auto nkd = supercell.number_of_elems;
+    //TODO: modify below
+    const auto nkd = inputcell.number_of_elems;
 
     if (kdname) {
         deallocate(kdname);
@@ -226,68 +231,68 @@ std::string *System::get_kdname() const
     return kdname;
 }
 
-void System::set_reciprocal_latt(const double aa[3][3],
-                                 double bb[3][3]) const
-{
-    /*
-    Calculate Reciprocal Lattice Vectors
+//void System::set_reciprocal_latt(const double aa[3][3],
+//                                 double bb[3][3]) const
+//{
+//    /*
+//    Calculate Reciprocal Lattice Vectors
+//
+//    Here, BB is just the inverse matrix of AA (multiplied by factor 2 Pi)
+//
+//    BB = 2 Pi AA^{-1},
+//    = t(b1, b2, b3)
+//
+//    (b11 b12 b13)
+//    = (b21 b22 b23)
+//    (b31 b32 b33),
+//
+//    b1 = t(b11, b12, b13) etc.
+//    */
+//
+//    const auto det
+//            = aa[0][0] * aa[1][1] * aa[2][2]
+//              + aa[1][0] * aa[2][1] * aa[0][2]
+//              + aa[2][0] * aa[0][1] * aa[1][2]
+//              - aa[0][0] * aa[2][1] * aa[1][2]
+//              - aa[2][0] * aa[1][1] * aa[0][2]
+//              - aa[1][0] * aa[0][1] * aa[2][2];
+//
+//    if (std::abs(det) < eps12) {
+//        exit("set_reciprocal_latt", "Lattice Vector is singular");
+//    }
+//
+//    const auto factor = 2.0 * pi / det;
+//
+//    bb[0][0] = (aa[1][1] * aa[2][2] - aa[1][2] * aa[2][1]) * factor;
+//    bb[0][1] = (aa[0][2] * aa[2][1] - aa[0][1] * aa[2][2]) * factor;
+//    bb[0][2] = (aa[0][1] * aa[1][2] - aa[0][2] * aa[1][1]) * factor;
+//
+//    bb[1][0] = (aa[1][2] * aa[2][0] - aa[1][0] * aa[2][2]) * factor;
+//    bb[1][1] = (aa[0][0] * aa[2][2] - aa[0][2] * aa[2][0]) * factor;
+//    bb[1][2] = (aa[0][2] * aa[1][0] - aa[0][0] * aa[1][2]) * factor;
+//
+//    bb[2][0] = (aa[1][0] * aa[2][1] - aa[1][1] * aa[2][0]) * factor;
+//    bb[2][1] = (aa[0][1] * aa[2][0] - aa[0][0] * aa[2][1]) * factor;
+//    bb[2][2] = (aa[0][0] * aa[1][1] - aa[0][1] * aa[1][0]) * factor;
+//}
 
-    Here, BB is just the inverse matrix of AA (multiplied by factor 2 Pi)
-
-    BB = 2 Pi AA^{-1},
-    = t(b1, b2, b3)
-
-    (b11 b12 b13)
-    = (b21 b22 b23)
-    (b31 b32 b33),
-
-    b1 = t(b11, b12, b13) etc.
-    */
-
-    const auto det
-            = aa[0][0] * aa[1][1] * aa[2][2]
-              + aa[1][0] * aa[2][1] * aa[0][2]
-              + aa[2][0] * aa[0][1] * aa[1][2]
-              - aa[0][0] * aa[2][1] * aa[1][2]
-              - aa[2][0] * aa[1][1] * aa[0][2]
-              - aa[1][0] * aa[0][1] * aa[2][2];
-
-    if (std::abs(det) < eps12) {
-        exit("set_reciprocal_latt", "Lattice Vector is singular");
-    }
-
-    const auto factor = 2.0 * pi / det;
-
-    bb[0][0] = (aa[1][1] * aa[2][2] - aa[1][2] * aa[2][1]) * factor;
-    bb[0][1] = (aa[0][2] * aa[2][1] - aa[0][1] * aa[2][2]) * factor;
-    bb[0][2] = (aa[0][1] * aa[1][2] - aa[0][2] * aa[1][1]) * factor;
-
-    bb[1][0] = (aa[1][2] * aa[2][0] - aa[1][0] * aa[2][2]) * factor;
-    bb[1][1] = (aa[0][0] * aa[2][2] - aa[0][2] * aa[2][0]) * factor;
-    bb[1][2] = (aa[0][2] * aa[1][0] - aa[0][0] * aa[1][2]) * factor;
-
-    bb[2][0] = (aa[1][0] * aa[2][1] - aa[1][1] * aa[2][0]) * factor;
-    bb[2][1] = (aa[0][1] * aa[2][0] - aa[0][0] * aa[2][1]) * factor;
-    bb[2][2] = (aa[0][0] * aa[1][1] - aa[0][1] * aa[1][0]) * factor;
-}
-
-void System::frac2cart(double **xf) const
-{
-    // x_cartesian = A x_fractional
-
-    double *x_tmp;
-    allocate(x_tmp, 3);
-
-    for (size_t i = 0; i < supercell.number_of_atoms; ++i) {
-
-        rotvec(x_tmp, xf[i], supercell.lattice_vector);
-
-        for (auto j = 0; j < 3; ++j) {
-            xf[i][j] = x_tmp[j];
-        }
-    }
-    deallocate(x_tmp);
-}
+//void System::frac2cart(double **xf) const
+//{
+//    // x_cartesian = A x_fractional
+//
+//    double *x_tmp;
+//    allocate(x_tmp, 3);
+//
+//    for (size_t i = 0; i < supercell.number_of_atoms; ++i) {
+//
+//        rotvec(x_tmp, xf[i], supercell.lattice_vector);
+//
+//        for (auto j = 0; j < 3; ++j) {
+//            xf[i][j] = x_tmp[j];
+//        }
+//    }
+//    deallocate(x_tmp);
+//}
 
 double System::volume(const double latt_in[3][3],
                       const LatticeType type) const
@@ -317,6 +322,56 @@ double System::volume(const double latt_in[3][3],
 
     return vol;
 }
+
+void System::set_reciprocal_latt(const Eigen::Matrix3d &lavec_in,
+                                 Eigen::Matrix3d &rlavec_out) const
+{
+    /*
+    Calculate Reciprocal Lattice Vectors
+
+    Here, BB is just the inverse matrix of AA (multiplied by factor 2 Pi)
+
+    BB = 2 Pi AA^{-1},
+    = t(b1, b2, b3)
+
+    (b11 b12 b13)
+    = (b21 b22 b23)
+    (b31 b32 b33),
+
+    b1 = t(b11, b12, b13) etc.
+    */
+
+    const auto det = lavec_in.determinant();
+
+    if (std::abs(det) < eps12) {
+        exit("set_reciprocal_latt", "Lattice Vector is singular");
+    }
+    const auto factor = 2.0 * pi / det;
+    rlavec_out = factor * lavec_in.inverse();
+}
+
+double System::volume(const Eigen::Matrix3d &mat_in,
+                      const LatticeType latttype_in) const
+{
+    Eigen::Matrix3d mat;
+    Eigen::Vector3d v1, v2, v3;
+
+    if (latttype_in == Direct) {
+        mat = mat_in.transpose();
+    } else if (latttype_in == Reciprocal) {
+        mat = mat_in;
+    } else {
+        exit("volume", "Invalid LatticeType is given");
+    }
+
+    v1 = mat.row(0);
+    v2 = mat.row(1);
+    v3 = mat.row(2);
+
+    const auto vol = std::abs(v1.dot(v2.cross(v3)));
+    return vol;
+}
+
 
 void System::set_default_variables()
 {
@@ -444,6 +499,16 @@ void System::set_atomtype_group()
     set_type.clear();
 }
 
+void System::set_transformation_matrices(const double transmat_to_super_in[3][3],
+                                         const double transmat_to_prim_in[3][3])
+                                         {
+    for (auto i = 0; i < 3;++i) {
+        for (auto j = 0; j < 3; ++j) {
+            transmat_to_super(i,j) = transmat_to_super_in[i][j];
+            transmat_to_prim(i,j) = transmat_to_prim_in[i][j];
+        }
+    }
+}
 
 void System::generate_coordinate_of_periodic_images()
 {
@@ -455,16 +520,26 @@ void System::generate_coordinate_of_periodic_images()
     int ia, ja, ka;
 
     const auto nat = supercell.number_of_atoms;
-    const auto xf_in = supercell.x_fractional;
+    const Eigen::MatrixXd xf_in = supercell.x_fractional;
+
+    Eigen::MatrixXd x_tmp(nat, 3);
 
     auto icell = 0;
+
+    std::cout << "nat = " << nat << std::endl;
+    std::cout << xf_in << std::endl;
+
+    x_tmp = xf_in * supercell.lattice_vector.transpose();
+
+    std::cout << x_tmp << std::endl;
+
     for (i = 0; i < nat; ++i) {
         for (unsigned int j = 0; j < 3; ++j) {
-            x_image[0][i][j] = xf_in[i][j];
+            x_image[0][i][j] = x_tmp(i, j);
         }
     }
-    // Convert to Cartesian coordinate
-    frac2cart(x_image[0]);
+//    // Convert to Cartesian coordinate
+//    frac2cart(x_image[0]);
 
     for (ia = -1; ia <= 1; ++ia) {
         for (ja = -1; ja <= 1; ++ja) {
@@ -473,13 +548,27 @@ void System::generate_coordinate_of_periodic_images()
                 if (ia == 0 && ja == 0 && ka == 0) continue;
 
                 ++icell;
+                x_tmp = supercell.x_fractional;
                 for (i = 0; i < nat; ++i) {
-                    x_image[icell][i][0] = xf_in[i][0] + static_cast<double>(ia);
-                    x_image[icell][i][1] = xf_in[i][1] + static_cast<double>(ja);
-                    x_image[icell][i][2] = xf_in[i][2] + static_cast<double>(ka);
+                    x_tmp(i, 0) += static_cast<double>(ia);
+                    x_tmp(i, 1) += static_cast<double>(ja);
+                    x_tmp(i, 2) += static_cast<double>(ka);
                 }
+                x_tmp = x_tmp * supercell.lattice_vector.transpose();
+//                for (i = 0; i < nat; ++i) {
+//                    x_image[icell][i][0] = xf_in[i][0] + static_cast<double>(ia);
+//                    x_image[icell][i][1] = xf_in[i][1] + static_cast<double>(ja);
+//                    x_image[icell][i][2] = xf_in[i][2] + static_cast<double>(ka);
+//                }
                 // Convert to Cartesian coordinate
-                frac2cart(x_image[icell]);
+                //frac2cart(x_image[icell]);
+
+                for (i = 0; i < nat; ++i) {
+                    x_image[icell][i][0] = x_tmp(i, 0);
+                    x_image[icell][i][1] = x_tmp(i, 1);
+                    x_image[icell][i][2] = x_tmp(i, 2);
+                }
+
             }
         }
     }
@@ -524,38 +613,38 @@ void System::print_structure_stdout(const Cell &cell)
     cout.setf(ios::scientific);
 
     cout << "  Lattice Vector" << endl;
-    cout << setw(16) << cell.lattice_vector[0][0];
-    cout << setw(15) << cell.lattice_vector[1][0];
-    cout << setw(15) << cell.lattice_vector[2][0];
+    cout << setw(16) << cell.lattice_vector(0, 0);
+    cout << setw(15) << cell.lattice_vector(1, 0);
+    cout << setw(15) << cell.lattice_vector(2, 0);
     cout << " : a1" << endl;
 
-    cout << setw(16) << cell.lattice_vector[0][1];
-    cout << setw(15) << cell.lattice_vector[1][1];
-    cout << setw(15) << cell.lattice_vector[2][1];
+    cout << setw(16) << cell.lattice_vector(0, 1);
+    cout << setw(15) << cell.lattice_vector(1, 1);
+    cout << setw(15) << cell.lattice_vector(2,1);
     cout << " : a2" << endl;
 
-    cout << setw(16) << cell.lattice_vector[0][2];
-    cout << setw(15) << cell.lattice_vector[1][2];
-    cout << setw(15) << cell.lattice_vector[2][2];
+    cout << setw(16) << cell.lattice_vector(0,2);
+    cout << setw(15) << cell.lattice_vector(1,2);
+    cout << setw(15) << cell.lattice_vector(2,2);
     cout << " : a3" << endl;
     cout << endl;
 
     cout << "  Cell volume = " << cell.volume << endl << endl;
 
     cout << "  Reciprocal Lattice Vector" << std::endl;
-    cout << setw(16) << supercell.reciprocal_lattice_vector[0][0];
-    cout << setw(15) << supercell.reciprocal_lattice_vector[0][1];
-    cout << setw(15) << supercell.reciprocal_lattice_vector[0][2];
+    cout << setw(16) << supercell.reciprocal_lattice_vector(0, 0);
+    cout << setw(15) << supercell.reciprocal_lattice_vector(0,1);
+    cout << setw(15) << supercell.reciprocal_lattice_vector(0,2);
     cout << " : b1" << endl;
 
-    cout << setw(16) << supercell.reciprocal_lattice_vector[1][0];
-    cout << setw(15) << supercell.reciprocal_lattice_vector[1][1];
-    cout << setw(15) << supercell.reciprocal_lattice_vector[1][2];
+    cout << setw(16) << supercell.reciprocal_lattice_vector(1,0);
+    cout << setw(15) << supercell.reciprocal_lattice_vector(1,1);
+    cout << setw(15) << supercell.reciprocal_lattice_vector(1,2);
     cout << " : b2" << endl;
 
-    cout << setw(16) << supercell.reciprocal_lattice_vector[2][0];
-    cout << setw(15) << supercell.reciprocal_lattice_vector[2][1];
-    cout << setw(15) << supercell.reciprocal_lattice_vector[2][2];
+    cout << setw(16) << supercell.reciprocal_lattice_vector(2,0);
+    cout << setw(15) << supercell.reciprocal_lattice_vector(2,1);
+    cout << setw(15) << supercell.reciprocal_lattice_vector(2,2);
     cout << " : b3" << endl;
     cout << endl;
 
@@ -568,9 +657,9 @@ void System::print_structure_stdout(const Cell &cell)
     cout << "  Atomic positions in fractional basis and atomic species" << endl;
     for (i = 0; i < cell.number_of_atoms; ++i) {
         cout << setw(6) << i + 1;
-        cout << setw(15) << cell.x_fractional[i][0];
-        cout << setw(15) << cell.x_fractional[i][1];
-        cout << setw(15) << cell.x_fractional[i][2];
+        cout << setw(15) << cell.x_fractional(i,0);
+        cout << setw(15) << cell.x_fractional(i,1);
+        cout << setw(15) << cell.x_fractional(i,2);
         cout << setw(5) << cell.kind[i] << endl;
     }
     cout << endl << endl;

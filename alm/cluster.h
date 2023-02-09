@@ -84,7 +84,7 @@ public:
         }
     }
 
-    void make_fractional_from_cartesian(const double reciprocal_lat[3][3])
+    void make_fractional_from_cartesian(const Eigen::Matrix3d &reciprocal_lat)
     {
 
         int i, xyz, xyz2;
@@ -98,7 +98,7 @@ public:
             for (xyz = 0; xyz < 3; xyz++) {
                 vectmp.push_back(0.0);
                 for (xyz2 = 0; xyz2 < 3; xyz2++) {
-                    vectmp[xyz] += reciprocal_lat[xyz][xyz2] / (2.0 * pi) * relvecs_cartesian[i][xyz2];
+                    vectmp[xyz] += reciprocal_lat(xyz, xyz2) / (2.0 * pi) * relvecs_cartesian[i][xyz2];
                 }
             }
 
