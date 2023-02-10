@@ -23,6 +23,7 @@
 #include <set>
 #include <filesystem>
 #include <numeric>
+#include <memory>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <Eigen/Core>
@@ -31,12 +32,11 @@ using namespace ALM_NS;
 
 InputParser::InputParser()
 {
-    input_setter = new InputSetter();
-}
+     input_setter = std::make_unique<InputSetter>();
+ }
 
 InputParser::~InputParser()
 {
-    delete input_setter;
 }
 
 void InputParser::run(ALM *alm,
@@ -44,20 +44,15 @@ void InputParser::run(ALM *alm,
                       const char *const *arg)
 {
     if (narg == 1) {
-
         from_stdin = true;
-
     } else {
-
         from_stdin = false;
-
         ifs_input.open(arg[1], std::ios::in);
         if (!ifs_input) {
             std::cout << "No such file or directory: " << arg[1] << std::endl;
             std::exit(EXIT_FAILURE);
         }
     }
-
     parse_input(alm);
 }
 
@@ -82,7 +77,6 @@ void InputParser::parse_displacement_and_force_files(std::vector<std::vector<dou
     }
 
     std::vector<double> value_arr;
-
     std::string line;
     double val;
     auto nline_u = 0;

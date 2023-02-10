@@ -40,7 +40,7 @@ private:
     int maxorder{};
     size_t nat_in{};
     size_t nkd_in{};
-    InputSetter *input_setter;
+    std::unique_ptr<InputSetter> input_setter;
 
     Eigen::MatrixXd xf_input, xf_poscar;
     Eigen::Matrix3d lavec_input, lavec_poscar;
