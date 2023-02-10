@@ -303,9 +303,9 @@ void InputSetter::set_geometric_structure(ALM *alm)
     double transmat_super_tmp[3][3], transmat_prim_tmp[3][3];
 
     for (auto i = 0; i < 3; ++i) {
-        for (auto j = 0 ; j <3 ; ++j) {
-            transmat_super_tmp[i][j] = transmat_super(i,j);
-            transmat_prim_tmp[i][j] = transmat_prim(i,j);
+        for (auto j = 0; j < 3; ++j) {
+            transmat_super_tmp[i][j] = transmat_super(i, j);
+            transmat_prim_tmp[i][j] = transmat_prim(i, j);
         }
     }
     alm->set_transformation_matrices(transmat_super_tmp,

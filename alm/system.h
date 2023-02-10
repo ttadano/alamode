@@ -35,17 +35,13 @@ public:
 
 class Cell {
 public:
-    //double lattice_vector[3][3];
     Eigen::Matrix3d lattice_vector;
-    //double reciprocal_lattice_vector[3][3];
     Eigen::Matrix3d reciprocal_lattice_vector;
     double volume;
     size_t number_of_atoms;
     size_t number_of_elems;
     std::vector<int> kind;
-    //std::vector<std::vector<double>> x_fractional;
     Eigen::MatrixXd x_fractional;
-    //std::vector<std::vector<double>> x_cartesian;
     Eigen::MatrixXd x_cartesian;
 };
 
@@ -65,8 +61,6 @@ public:
 
     void init(const int,
               Timer *);
-
-    //void frac2cart(double **) const;
 
     void set_basecell(const double lavec_in[3][3],
                       const size_t nat_in,
@@ -117,7 +111,7 @@ private:
     int *exist_image;
 
     // Variables for spins
-    Spin spin;
+    Spin spin, spin_super, spin_prim;
     std::string str_magmom;
 
     // concatenate atomic kind and magmom (only for collinear case)
@@ -129,6 +123,12 @@ private:
 
 //    void set_reciprocal_latt(const double [3][3],
 //                             double [3][3]) const;
+
+    void build_cells();
+
+    void build_supercell();
+
+    void build_primcell();
 
     void set_reciprocal_latt(const Eigen::Matrix3d &lavec_in,
                              Eigen::Matrix3d &rlavec_out) const;

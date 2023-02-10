@@ -14,6 +14,7 @@
 #include "mathfunctions.h"
 #include "memory.h"
 #include "timer.h"
+#include "smith.h"
 #include <iostream>
 #include <iomanip>
 #include <set>
@@ -36,6 +37,9 @@ System::~System()
 void System::init(const int verbosity,
                   Timer *timer)
 {
+    // Compute primitive cell and supercell first.
+    build_cells();
+
     const auto nat = supercell.number_of_atoms;
 
     timer->start_clock("system");
@@ -53,13 +57,11 @@ void System::init(const int verbosity,
         deallocate(exist_image);
     }
     allocate(exist_image, nneib);
-    std::cout << "OK1\n";
     generate_coordinate_of_periodic_images();
-    std::cout << "OK2\n";
 
     if (verbosity > 0) {
         print_structure_stdout(supercell);
-        if (spin.lspin) print_magmom_stdout();
+        if (spin_super.lspin) print_magmom_stdout();
         timer->print_elapsed();
         std::cout << " -------------------------------------------------------------------" << std::endl;
         std::cout << std::endl;
@@ -111,7 +113,6 @@ void System::set_basecell(const double lavec_in[3][3],
             inputcell.lattice_vector(i, j) = lavec_in[i][j];
         }
     }
-    std::cout << inputcell.lattice_vector << std::endl;
     set_reciprocal_latt(inputcell.lattice_vector,
                         inputcell.reciprocal_lattice_vector);
 
@@ -145,30 +146,17 @@ void System::set_basecell(const double lavec_in[3][3],
         }
         // The fractional coordinate should be in the range of 0<=xf<1.
         for (j = 0; j < 3; ++j) {
-            while (xtmp[j] >= 1.0) {
-                xtmp[j] -= 1.0;
-            }
-            while (xtmp[j] < 0.0) {
-                xtmp[j] += 1.0;
-            }
+//            while (xtmp[j] >= 1.0) {
+//                xtmp[j] -= 1.0;
+//            }
+//            while (xtmp[j] < 0.0) {
+//                xtmp[j] += 1.0;
+//            }
             inputcell.x_fractional(i, j) = xtmp[j];
         }
     }
 
     inputcell.x_cartesian = inputcell.x_fractional * inputcell.lattice_vector.transpose();
-
-//    double xf_tmp[3], xc_tmp[3];
-//
-//    for (const auto &xf: supercell.x_fractional) {
-//        for (i = 0; i < 3; ++i) {
-//            xf_tmp[i] = xf[i];
-//        }
-//        rotvec(xc_tmp, xf_tmp, supercell.lattice_vector);
-//        for (i = 0; i < 3; ++i) {
-//            xtmp[i] = xc_tmp[i];
-//        }
-//        supercell.x_cartesian.push_back(xtmp);
-//    }
 
     // This is needed to avoid segmentation fault.
     spin.magmom.clear();
@@ -178,6 +166,194 @@ void System::set_basecell(const double lavec_in[3][3],
             vec[j] = 0;
         }
         spin.magmom.push_back(vec);
+    }
+}
+
+void System::build_cells()
+{
+    build_primcell();
+    build_supercell();
+}
+
+
+void System::build_primcell()
+{
+
+    // Generate primitive cell information from the inputcell and PRIMCELL value
+    // The symmetry detection is not performed here as it will be done
+    // when the Symmetry::init() is called.
+
+    const auto ndiv = nint(1.0 / transmat_to_prim.determinant());
+    if (inputcell.number_of_atoms % ndiv != 0) {
+        exit("build_primcell",
+             "The determinant of PRIMCELL is not a divisor of NAT of the input.");
+    }
+
+    primcell.number_of_atoms = inputcell.number_of_atoms / ndiv;
+    primcell.number_of_elems = inputcell.number_of_elems;
+
+    spin_prim.lspin = spin.lspin;
+    spin_prim.noncollinear = spin.noncollinear;
+    spin_prim.time_reversal_symm = spin.time_reversal_symm;
+    spin_prim.magmom.clear();
+    spin_prim.magmom.shrink_to_fit();
+
+    // (a_p, b_p, c_p) = (a_in, b_in, c_in) * Mat(inp->p)
+    primcell.lattice_vector = inputcell.lattice_vector * transmat_to_prim;
+    set_reciprocal_latt(primcell.lattice_vector,
+                        primcell.reciprocal_lattice_vector);
+    primcell.volume = volume(primcell.lattice_vector, Direct);
+
+    // Convert the basis of coordinates from inputcell to primitive fractional
+    // (a_in, b_in, c_in) * xf_in = xc_in
+    // (a_p, b_p, c_p) * xf_p = xc_in
+    // xf_p = (a_p, b_p, c_p)^{-1} * (a_in, b_in, c_in) * xf_in
+    //      = [Mat(inp->p)]^{-1} * xf_in
+    Eigen::Matrix3d conversion_mat = transmat_to_prim.inverse().transpose();
+    Eigen::MatrixXd xf_prim_all = inputcell.x_fractional * conversion_mat;
+
+    std::vector<std::vector<double>> xf_unique, magmom_unique;
+    std::vector<double> xf_tmp_vec(3), magmom_tmp_vec(3);
+    std::vector<int> kind_unique;
+    Eigen::VectorXd xf_tmp(3), xf_tmp2(3);
+
+    for (auto i = 0; i < inputcell.number_of_atoms; ++i) {
+        xf_tmp = xf_prim_all.row(i);
+        xf_tmp = xf_tmp.unaryExpr([](const double x) { return std::fmod(x, 1.0); });
+        for (auto j = 0; j < 3; ++j) {
+            if (xf_tmp[j] < 0.0) xf_tmp[j] += 1.0;
+        }
+
+        bool is_duplicate = false;
+        // Just linear search for simplicity. Should be OK for relatively small number of inputs.
+        for (auto k = 0; k < xf_unique.size(); ++k) {
+            for (auto kk = 0; kk < 3; ++kk) {
+                xf_tmp2[kk] = xf_unique[k][kk];
+            }
+            if ((xf_tmp - xf_tmp2).norm() < eps6) {
+                is_duplicate = true;
+
+                if (kind_unique[k] != inputcell.kind[i]) {
+                    exit("build_primcell",
+                         "Different atoms with different element types occupy the same atomic site.\n"
+                         "This is strange. Please check the PRIMCELL and input structure carefully.");
+                }
+
+                if (spin.lspin) {
+                    double norm_magmom = 0.0;
+                    for (auto kk = 0; kk < 3; ++kk) {
+                        norm_magmom += std::pow(spin.magmom[i][kk] - magmom_unique[k][kk], 2);
+                    }
+                    if (std::sqrt(norm_magmom) > eps6) {
+                        exit("build_primcell",
+                             "Different atoms with different MAGMOM entries occupy the same atomic site.\n"
+                             "This is strange. Please check the PRIMCELL, MAGMOM, and input structure carefully.");
+                    }
+                }
+            }
+        }
+
+        if (!is_duplicate) {
+            for (auto j = 0; j < 3; ++j) xf_tmp_vec[j] = xf_tmp[j];
+            xf_unique.emplace_back(xf_tmp_vec);
+            kind_unique.emplace_back(inputcell.kind[i]);
+            if (spin.lspin) {
+                for (auto j = 0; j < 3; ++j) magmom_tmp_vec[j] = spin.magmom[i][j];
+                magmom_unique.emplace_back(magmom_tmp_vec);
+            }
+        }
+    }
+
+    if (xf_unique.size() != primcell.number_of_atoms) {
+        exit("build_primcell",
+             "Mapping to the primitive cell failed. Please check inputs (PRIMCELL and input structure).");
+    }
+
+    primcell.x_fractional.resize(primcell.number_of_atoms, 3);
+    primcell.kind.resize(primcell.number_of_atoms);
+
+    for (auto i = 0; i < primcell.number_of_atoms; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            primcell.x_fractional(i, j) = xf_unique[i][j];
+        }
+        primcell.kind[i] = kind_unique[i];
+    }
+
+    primcell.x_cartesian = primcell.x_fractional * primcell.lattice_vector.transpose();
+
+    if (spin_prim.lspin) {
+        std::copy(magmom_unique.begin(),
+                  magmom_unique.end(),
+                  std::back_inserter(spin_prim.magmom));
+    }
+}
+
+
+void System::build_supercell()
+{
+    Eigen::MatrixXi transmat_int(3, 3);
+    Eigen::MatrixXi D, R, L;
+
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            transmat_int(i, j) = nint(transmat_to_super(i, j));
+        }
+    }
+    smith_decomposition(transmat_int, D, L, R);
+
+    Eigen::MatrixXd D_double = D.cast<double>();
+    Eigen::MatrixXd R_double = R.cast<double>();
+    Eigen::MatrixXd L_double = L.cast<double>();
+
+    supercell.lattice_vector = inputcell.lattice_vector * transmat_to_super;
+    set_reciprocal_latt(supercell.lattice_vector, supercell.reciprocal_lattice_vector);
+    supercell.volume = volume(supercell.lattice_vector, Direct);
+
+    supercell.number_of_atoms = inputcell.number_of_atoms * nint(transmat_to_super.determinant());
+    supercell.number_of_elems = inputcell.number_of_elems;
+    supercell.x_fractional.resize(supercell.number_of_atoms, 3);
+
+    Eigen::Matrix3d inv_transmat_to_super = transmat_to_super.inverse();
+
+    Eigen::VectorXd DD(3), DD_mod(3);
+    Eigen::MatrixXd DD_inverse = D_double.inverse();
+    Eigen::MatrixXd transmat_newprim_to_origsuper = R_double * DD_inverse;
+
+    supercell.kind.clear();
+
+    std::vector<std::vector<double>> magmom_tmp;
+
+    int counter = 0;
+    for (auto iat = 0; iat < inputcell.number_of_atoms; ++iat) {
+        Eigen::VectorXd xp_f = inputcell.x_fractional.row(iat);
+        Eigen::VectorXd xs_f = inv_transmat_to_super * xp_f;
+        int kind_now = inputcell.kind[iat];
+        for (auto i = 0; i < D(0, 0); ++i) {
+            for (auto j = 0; j < D(1, 1); ++j) {
+                for (auto k = 0; k < D(2, 2); ++k) {
+                    DD << static_cast<double>(i), static_cast<double>(j), static_cast<double>(k);
+                    DD = transmat_newprim_to_origsuper * DD + xs_f;
+                    DD_mod = DD.unaryExpr([](const double x) { return std::fmod(x, 1.0); });
+                    supercell.x_fractional.row(counter) = DD_mod;
+                    supercell.kind.emplace_back(kind_now);
+                    if (spin.lspin) magmom_tmp.emplace_back(spin.magmom[iat]);
+                    ++counter;
+                }
+            }
+        }
+    }
+
+    supercell.x_cartesian = supercell.x_fractional * supercell.lattice_vector.transpose();
+
+    spin_super.lspin = spin.lspin;
+    spin_super.noncollinear = spin.noncollinear;
+    spin_super.time_reversal_symm = spin.time_reversal_symm;
+    spin_super.magmom.clear();
+    spin_super.magmom.shrink_to_fit();
+    if (spin_super.lspin) {
+        std::copy(magmom_tmp.begin(),
+                  magmom_tmp.end(),
+                  std::back_inserter(spin_super.magmom));
     }
 }
 
@@ -326,27 +502,13 @@ double System::volume(const double latt_in[3][3],
 void System::set_reciprocal_latt(const Eigen::Matrix3d &lavec_in,
                                  Eigen::Matrix3d &rlavec_out) const
 {
-    /*
-    Calculate Reciprocal Lattice Vectors
-
-    Here, BB is just the inverse matrix of AA (multiplied by factor 2 Pi)
-
-    BB = 2 Pi AA^{-1},
-    = t(b1, b2, b3)
-
-    (b11 b12 b13)
-    = (b21 b22 b23)
-    (b31 b32 b33),
-
-    b1 = t(b11, b12, b13) etc.
-    */
-
+    // Compute reciprocal lattice vectors
     const auto det = lavec_in.determinant();
 
     if (std::abs(det) < eps12) {
         exit("set_reciprocal_latt", "Lattice Vector is singular");
     }
-    const auto factor = 2.0 * pi / det;
+    const auto factor = 2.0 * pi;
     rlavec_out = factor * lavec_in.inverse();
 }
 
@@ -392,6 +554,8 @@ void System::set_default_variables()
     spin.lspin = false;
     spin.noncollinear = 0;
     spin.time_reversal_symm = 1;
+    transmat_to_super = Eigen::Matrix3d::Identity();
+    transmat_to_prim = Eigen::Matrix3d::Identity();
 }
 
 void System::deallocate_variables()
@@ -501,11 +665,11 @@ void System::set_atomtype_group()
 
 void System::set_transformation_matrices(const double transmat_to_super_in[3][3],
                                          const double transmat_to_prim_in[3][3])
-                                         {
-    for (auto i = 0; i < 3;++i) {
+{
+    for (auto i = 0; i < 3; ++i) {
         for (auto j = 0; j < 3; ++j) {
-            transmat_to_super(i,j) = transmat_to_super_in[i][j];
-            transmat_to_prim(i,j) = transmat_to_prim_in[i][j];
+            transmat_to_super(i, j) = transmat_to_super_in[i][j];
+            transmat_to_prim(i, j) = transmat_to_prim_in[i][j];
         }
     }
 }
@@ -526,12 +690,7 @@ void System::generate_coordinate_of_periodic_images()
 
     auto icell = 0;
 
-    std::cout << "nat = " << nat << std::endl;
-    std::cout << xf_in << std::endl;
-
     x_tmp = xf_in * supercell.lattice_vector.transpose();
-
-    std::cout << x_tmp << std::endl;
 
     for (i = 0; i < nat; ++i) {
         for (unsigned int j = 0; j < 3; ++j) {
@@ -539,7 +698,6 @@ void System::generate_coordinate_of_periodic_images()
         }
     }
 //    // Convert to Cartesian coordinate
-//    frac2cart(x_image[0]);
 
     for (ia = -1; ia <= 1; ++ia) {
         for (ja = -1; ja <= 1; ++ja) {
@@ -620,31 +778,31 @@ void System::print_structure_stdout(const Cell &cell)
 
     cout << setw(16) << cell.lattice_vector(0, 1);
     cout << setw(15) << cell.lattice_vector(1, 1);
-    cout << setw(15) << cell.lattice_vector(2,1);
+    cout << setw(15) << cell.lattice_vector(2, 1);
     cout << " : a2" << endl;
 
-    cout << setw(16) << cell.lattice_vector(0,2);
-    cout << setw(15) << cell.lattice_vector(1,2);
-    cout << setw(15) << cell.lattice_vector(2,2);
+    cout << setw(16) << cell.lattice_vector(0, 2);
+    cout << setw(15) << cell.lattice_vector(1, 2);
+    cout << setw(15) << cell.lattice_vector(2, 2);
     cout << " : a3" << endl;
     cout << endl;
 
     cout << "  Cell volume = " << cell.volume << endl << endl;
 
     cout << "  Reciprocal Lattice Vector" << std::endl;
-    cout << setw(16) << supercell.reciprocal_lattice_vector(0, 0);
-    cout << setw(15) << supercell.reciprocal_lattice_vector(0,1);
-    cout << setw(15) << supercell.reciprocal_lattice_vector(0,2);
+    cout << setw(16) << cell.reciprocal_lattice_vector(0, 0);
+    cout << setw(15) << cell.reciprocal_lattice_vector(0, 1);
+    cout << setw(15) << cell.reciprocal_lattice_vector(0, 2);
     cout << " : b1" << endl;
 
-    cout << setw(16) << supercell.reciprocal_lattice_vector(1,0);
-    cout << setw(15) << supercell.reciprocal_lattice_vector(1,1);
-    cout << setw(15) << supercell.reciprocal_lattice_vector(1,2);
+    cout << setw(16) << cell.reciprocal_lattice_vector(1, 0);
+    cout << setw(15) << cell.reciprocal_lattice_vector(1, 1);
+    cout << setw(15) << cell.reciprocal_lattice_vector(1, 2);
     cout << " : b2" << endl;
 
-    cout << setw(16) << supercell.reciprocal_lattice_vector(2,0);
-    cout << setw(15) << supercell.reciprocal_lattice_vector(2,1);
-    cout << setw(15) << supercell.reciprocal_lattice_vector(2,2);
+    cout << setw(16) << cell.reciprocal_lattice_vector(2, 0);
+    cout << setw(15) << cell.reciprocal_lattice_vector(2, 1);
+    cout << setw(15) << cell.reciprocal_lattice_vector(2, 2);
     cout << " : b3" << endl;
     cout << endl;
 
@@ -657,9 +815,9 @@ void System::print_structure_stdout(const Cell &cell)
     cout << "  Atomic positions in fractional basis and atomic species" << endl;
     for (i = 0; i < cell.number_of_atoms; ++i) {
         cout << setw(6) << i + 1;
-        cout << setw(15) << cell.x_fractional(i,0);
-        cout << setw(15) << cell.x_fractional(i,1);
-        cout << setw(15) << cell.x_fractional(i,2);
+        cout << setw(15) << cell.x_fractional(i, 0);
+        cout << setw(15) << cell.x_fractional(i, 1);
+        cout << setw(15) << cell.x_fractional(i, 2);
         cout << setw(5) << cell.kind[i] << endl;
     }
     cout << endl << endl;

@@ -129,14 +129,14 @@ private:
                                     const int verbosity) const;
 
     void save_fcs_alamode(const System *system,
-                                    const Symmetry *symmetry,
-                                    const Cluster *cluster,
-                                    const Fcs *fcs,
-                                    const Constraint *constraint,
-                                    const double *fcs_vals,
-                                    const std::string fname_dfset,
-                                    const std::string fname_fcs,
-                                    const int verbosity) const;
+                          const Symmetry *symmetry,
+                          const Cluster *cluster,
+                          const Fcs *fcs,
+                          const Constraint *constraint,
+                          const double *fcs_vals,
+                          const std::string fname_dfset,
+                          const std::string fname_fcs,
+                          const int verbosity) const;
 
     void write_hessian(const System *system,
                        const Symmetry *symmetry,

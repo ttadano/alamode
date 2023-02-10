@@ -31,6 +31,7 @@
 #include <boost/date_time.hpp>
 
 #define H5_USE_EIGEN 1
+
 #include <highfive/H5File.hpp>
 
 using namespace ALM_NS;
@@ -184,31 +185,31 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
         }
 
         save_fcs_alamode(system,
-                                   symmetry,
-                                   cluster,
-                                   fcs,
-                                   constraint,
-                                   optimize->get_params(),
-                                   files->get_datfile_train().filename,
-                                   fname_save,
-                                   verbosity);
+                         symmetry,
+                         cluster,
+                         fcs,
+                         constraint,
+                         optimize->get_params(),
+                         files->get_datfile_train().filename,
+                         fname_save,
+                         verbosity);
 
     } else if (fcs_format == "shengbte") {
 
-            if (cluster->get_maxorder() > 1) {
-                auto fname_save = get_filename_fcs();
-                if (fname_save.empty()) {
-                    fname_save = files->get_prefix() + ".FORCE_CONSTANT_3RD";;
-                }
-
-                save_fc3_thirdorderpy_format(system,
-                                             symmetry,
-                                             cluster,
-                                             constraint,
-                                             fcs,
-                                             fname_save,
-                                             verbosity);
+        if (cluster->get_maxorder() > 1) {
+            auto fname_save = get_filename_fcs();
+            if (fname_save.empty()) {
+                fname_save = files->get_prefix() + ".FORCE_CONSTANT_3RD";;
             }
+
+            save_fc3_thirdorderpy_format(system,
+                                         symmetry,
+                                         cluster,
+                                         constraint,
+                                         fcs,
+                                         fname_save,
+                                         verbosity);
+        }
     } else if (fcs_format == "qefc") {
         auto fname_save = get_filename_fcs();
         if (fname_save.empty()) {
@@ -497,7 +498,7 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             system_structure.lattice_vector[i][j]
-                    = system->get_supercell().lattice_vector(i,j);
+                    = system->get_supercell().lattice_vector(i, j);
         }
     }
 
@@ -509,9 +510,9 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
     AtomProperty prop_tmp{};
 
     for (i = 0; i < system->get_supercell().number_of_atoms; ++i) {
-        prop_tmp.x = system->get_supercell().x_fractional(i,0);
-        prop_tmp.y = system->get_supercell().x_fractional(i,1);
-        prop_tmp.z = system->get_supercell().x_fractional(i,2);
+        prop_tmp.x = system->get_supercell().x_fractional(i, 0);
+        prop_tmp.y = system->get_supercell().x_fractional(i, 1);
+        prop_tmp.z = system->get_supercell().x_fractional(i, 2);
         prop_tmp.kind = system->get_supercell().kind[i];
         prop_tmp.atom = symmetry->get_map_s2p()[i].atom_num + 1;
         prop_tmp.tran = symmetry->get_map_s2p()[i].tran_num + 1;
@@ -560,7 +561,7 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
 
     for (i = 0; i < system_structure.nat; ++i) {
         str_tmp.clear();
-        for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->get_supercell().x_fractional(i,j));
+        for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->get_supercell().x_fractional(i, j));
         auto &child = pt.add("Data.Structure.Position.pos", str_tmp);
         child.put("<xmlattr>.index", i + 1);
         child.put("<xmlattr>.element", system->get_kdname()[system->get_supercell().kind[i] - 1]);
@@ -807,14 +808,15 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
 }
 
 void Writer::save_fcs_alamode(const System *system,
-                                        const Symmetry *symmetry,
-                                        const Cluster *cluster,
-                                        const Fcs *fcs,
-                                        const Constraint *constraint,
-                                        const double *fcs_vals,
-                                        const std::string fname_dfset,
-                                        const std::string fname_fcs,
-                                        const int verbosity) const {
+                              const Symmetry *symmetry,
+                              const Cluster *cluster,
+                              const Fcs *fcs,
+                              const Constraint *constraint,
+                              const double *fcs_vals,
+                              const std::string fname_dfset,
+                              const std::string fname_fcs,
+                              const int verbosity) const
+{
 
     using namespace HighFive;
     int i, j;
@@ -841,7 +843,6 @@ void Writer::save_fcs_alamode(const System *system,
     hostname.write(host_name);
 
 
-
     natom[0] = system->get_supercell().number_of_atoms;
     nkinds[0] = system->get_supercell().number_of_elems;
 
@@ -852,7 +853,7 @@ void Writer::save_fcs_alamode(const System *system,
                                                       DataSpace::From(natom));
     attr.write(natom);
     attr = group_scell.createAttribute<int>("number_of_elements",
-                                                      DataSpace::From(nkinds));
+                                            DataSpace::From(nkinds));
     attr.write(nkinds);
 
     std::vector<size_t> dim{3, 3};
@@ -861,7 +862,7 @@ void Writer::save_fcs_alamode(const System *system,
                                                         DataSpace(dim));
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            data[i][j] = system->get_supercell().lattice_vector(j,i);
+            data[i][j] = system->get_supercell().lattice_vector(j, i);
         }
     }
     dataset.write(data);
@@ -871,7 +872,7 @@ void Writer::save_fcs_alamode(const System *system,
                                                 DataSpace::From(unitname));
     attr.write(unitname);
     dataset = group_scell.createDataSet<double>("fractional_coordinate",
-                                                        DataSpace::From(system->get_supercell().x_fractional));
+                                                DataSpace::From(system->get_supercell().x_fractional));
     dataset.write(system->get_supercell().x_fractional);
     dataset = group_scell.createDataSet<std::string>("elements", DataSpace::From(kind_names));
     dataset.write(kind_names);
@@ -882,7 +883,7 @@ void Writer::save_fcs_alamode(const System *system,
     if (system->get_spin().lspin) {
         flag_spin.push_back(1);
         Attribute spin_polarized = group_scell.createAttribute<int>("spin polarized",
-                                                          DataSpace::From(flag_spin));
+                                                                    DataSpace::From(flag_spin));
         spin_polarized.write(flag_spin);
 
         dataset = group_scell.createDataSet<double>("magnetic_moments",
@@ -914,7 +915,7 @@ void Writer::save_fcs_alamode(const System *system,
     boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
     const auto time_str = boost::posix_time::to_simple_string(timeLocal);
     Attribute localtime = file.createAttribute<std::string>("created date",
-                                                          DataSpace::From(time_str));
+                                                            DataSpace::From(time_str));
     localtime.write(time_str);
 }
 

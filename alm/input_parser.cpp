@@ -557,7 +557,7 @@ void InputParser::parse_transformation_matrix_string(const std::string &string_c
         // check if the determinant of the transformation matrix is integer for SUPERCELL
         if (std::abs(det - static_cast<double>(nint(det))) > eps) {
             std::string str_message = "The determinant of the matrix in "
-                                      + string_celldim + " is not integer.\n";
+                                      + string_celldim + " is not an integer.\n";
             exit("parse_transformation_matrix", str_message.c_str());
         }
     } else {
@@ -565,8 +565,8 @@ void InputParser::parse_transformation_matrix_string(const std::string &string_c
         // where a is an integer.
 
         if (std::abs(1 / det - static_cast<double>(nint(1 / det))) > eps) {
-            std::string str_message = "The determinant of the matrix in "
-                                      + string_celldim + " is (1/a) where a is an integer.\n";
+            std::string str_message = "The determinant of the inverse matrix of "
+                                      + string_celldim + " is not an integer.\n";
             exit("parse_transformation_matrix", str_message.c_str());
         }
     }

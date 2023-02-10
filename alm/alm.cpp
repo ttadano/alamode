@@ -683,7 +683,7 @@ int ALM::run_optimize()
         std::cout << "initialize_structure must be called beforehand." << std::endl;
         exit(EXIT_FAILURE);
     }
-    
+
     if (!initialized_constraint_class) {
         constraint->setup(system,
                           fcs,
@@ -740,9 +740,7 @@ void ALM::init_fc_table()
 
     if (!structure_initialized) {
         system->init(verbosity, timer);
-        std::cout << "OK3\n";
         symmetry->init(system, verbosity, timer);
-        std::cout << "OK4\n";
         structure_initialized = true;
     }
 

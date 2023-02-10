@@ -214,7 +214,7 @@ void Symmetry::setup_symmetry_operation(const Cell &cell,
         for (auto &p: SymmData) {
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
-                    ofs_sym << std::setw(4) << p.rotation(i,j);
+                    ofs_sym << std::setw(4) << p.rotation(i, j);
                 }
             }
             ofs_sym << "  ";
@@ -336,14 +336,14 @@ void Symmetry::find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                         if (det != 1 && det != -1) continue;
 
                                         rot_tmp(0, 0) = m11;
-                                        rot_tmp(0, 1)= m12;
-                                        rot_tmp(0,2) = m13;
-                                        rot_tmp(1,0) = m21;
-                                        rot_tmp(1,1) = m22;
-                                        rot_tmp(1,2) = m23;
-                                        rot_tmp(2,0) = m31;
-                                        rot_tmp(2,1) = m32;
-                                        rot_tmp(2,2) = m33;
+                                        rot_tmp(0, 1) = m12;
+                                        rot_tmp(0, 2) = m13;
+                                        rot_tmp(1, 0) = m21;
+                                        rot_tmp(1, 1) = m22;
+                                        rot_tmp(1, 2) = m23;
+                                        rot_tmp(2, 0) = m31;
+                                        rot_tmp(2, 1) = m32;
+                                        rot_tmp(2, 2) = m33;
 
                                         // Here, aa_rot = aa * rot_tmp is correct.
                                         aa_rot = aa * rot_tmp;
@@ -353,7 +353,7 @@ void Symmetry::find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                             for (j = 0; j < 3; ++j) {
                                                 metric_tensor_rot[i][j] = 0.0;
                                                 for (k = 0; k < 3; ++k) {
-                                                    metric_tensor_rot[i][j] += aa_rot(k,i) * aa_rot(k,j);
+                                                    metric_tensor_rot[i][j] += aa_rot(k, i) * aa_rot(k, j);
                                                 }
                                             }
                                         }
@@ -371,7 +371,7 @@ void Symmetry::find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                             ++nsym_tmp;
                                             for (i = 0; i < 3; ++i) {
                                                 for (j = 0; j < 3; ++j) {
-                                                    mat_tmp[i][j] = static_cast<int>(rot_tmp(i,j));
+                                                    mat_tmp[i][j] = static_cast<int>(rot_tmp(i, j));
                                                 }
                                             }
                                             LatticeSymmList.emplace_back(mat_tmp);
@@ -452,7 +452,7 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
         iat = atomtype_group[0][0];
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                rot(i,j) = static_cast<double>(it_latsym.mat(i,j));
+                rot(i, j) = static_cast<double>(it_latsym.mat(i, j));
             }
         }
 
@@ -603,12 +603,12 @@ int Symmetry::findsym_spglib(const Cell &cell,
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            aa_tmp[i][j] = cell.lattice_vector(i,j);
+            aa_tmp[i][j] = cell.lattice_vector(i, j);
         }
     }
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            position[i][j] = cell.x_fractional(i,j);
+            position[i][j] = cell.x_fractional(i, j);
         }
     }
 
@@ -711,7 +711,7 @@ void Symmetry::symop_in_cart(Eigen::Matrix3d &rot_cart,
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            sym_tmp(i, j) = static_cast<double>(rot_lattice(i,j));
+            sym_tmp(i, j) = static_cast<double>(rot_lattice(i, j));
         }
     }
     rot_cart = lavec * sym_tmp * rlavec / (2.0 * pi);
@@ -776,7 +776,7 @@ void Symmetry::gen_mapping_information(const Cell &cell,
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                rot_double[i][j] = static_cast<double>(SymmData[isym].rotation(i,j));
+                rot_double[i][j] = static_cast<double>(SymmData[isym].rotation(i, j));
             }
         }
 
@@ -884,13 +884,14 @@ bool Symmetry::is_compatible(const T rot[3][3],
 }
 
 template<typename T>
-bool Symmetry::is_compatible(const Eigen::MatrixBase<T> &mat, double tolerance_zero) {
+bool Symmetry::is_compatible(const Eigen::MatrixBase<T> &mat, double tolerance_zero)
+{
 
     if (mat.rows() != 3 || mat.cols() != 3) return 0;
 
     auto nfinite = 0;
 
-    for (auto it : mat.reshaped()) {
+    for (auto it: mat.reshaped()) {
         if (std::abs(it) > tolerance_zero) ++nfinite;
     }
     return (nfinite == 3);

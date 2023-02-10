@@ -49,8 +49,8 @@ public:
         std::vector<double> v1, v2;
         for (auto i = 0; i < 3; ++i) {
             for (auto j = 0; j < 3; ++j) {
-                v1.push_back(static_cast<double>(rotation(i,j)));
-                v2.push_back(static_cast<double>(a.rotation(i,j)));
+                v1.push_back(static_cast<double>(rotation(i, j)));
+                v2.push_back(static_cast<double>(a.rotation(i, j)));
             }
         }
         for (auto i = 0; i < 3; ++i) {
@@ -85,7 +85,9 @@ public:
             }
         }
     }
-    RotationMatrix(const Eigen::Matrix3i &rot_in) {
+
+    RotationMatrix(const Eigen::Matrix3i &rot_in)
+    {
         mat = rot_in;
     }
 };
@@ -179,9 +181,9 @@ private:
                        const double [3][3]) const;
 
     void symop_in_cart(Eigen::Matrix3d &rot_cart,
-                                 const Eigen::Matrix3i &rot_lattice,
-                                 const Eigen::Matrix3d &lavec,
-                                 const Eigen::Matrix3d &rlavec) const;
+                       const Eigen::Matrix3i &rot_lattice,
+                       const Eigen::Matrix3d &lavec,
+                       const Eigen::Matrix3d &rlavec) const;
 
     void print_symminfo_stdout() const;
 
