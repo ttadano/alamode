@@ -1205,43 +1205,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                               C2_array,
                               C3_array);
 
-/*        // if the unit cell is fixed,
-        // dummy values are set in the elastic constants
-        if(relax_coordinate == 1){
-            for(i1 = 0; i1 < 9; i1++){
-                C1_array[i1] = 0.0;
-            }
 
-            // The elastic constant should be positive-definite
-            // except for the rotational degrees of freedom
-            for(i1 = 0; i1 < 3; i1++){
-                for(i2 = 0; i2 < 3; i2++){
-                    for(i3 = 0; i3 < 3; i3++){
-                        for(i4 = 0; i4 < 3; i4++){
-                            if((i1 == i3 && i2 == i4) || (i1 == i4 && i2 == i3)){
-                                C2_array[i1*3+i2][i3*3+i4] = 10.0;
-                            }
-                            else{
-                                C2_array[i1*3+i2][i3*3+i4] = 0.0;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            for(i1 = 0; i1 < 9; i1++){
-                for(i2 = 0; i2 < 9; i2++){
-                    for(i3 = 0; i3 < 9; i3++){
-                        C3_array[i1][i2][i3] = 0.0;
-                    }
-                }
-            }
-        }
-        else if(relax_coordinate == 2){
-            read_C1_array(C1_array);
-            read_elastic_constants(C2_array, C3_array);
-        }
-*/
         // Output files of structural optimization
         std::ofstream fout_step_q0;
         std::ofstream fout_step_u0;
@@ -1265,51 +1229,12 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             fout_u_tensor.open("u_tensor.txt");
         }
 
-        write_stropt_file_header(fout_step_q0,
-                                 fout_step_u0,
-                                 fout_q0,
-                                 fout_u0,
-                                 fout_v0,
-                                 fout_step_u_tensor,
-                                 fout_u_tensor);
+        write_resfile_header(fout_q0,
+                             fout_u0,
+                             fout_v0,
+                             fout_u_tensor);
 
-/*        // q0.txt
-        fout_q0 << "#";
-        fout_q0 << std::setw(14) << "temp [K]";
-        for(is1 = 0; is1 < ns; is1++){
-            fout_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
-        }fout_q0 << std::endl;
 
-        // u0.txt
-        fout_u0 << "#";
-        fout_u0 << std::setw(14) << "temp [K]";
-        for(iat1 = 0; iat1 < system->natmin; iat1++){
-            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                get_xyz_string(ixyz1, str_tmp);
-                fout_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
-            }
-        }fout_u0 << std::endl;
-
-        // v0.txt
-        fout_v0 << "#";
-        fout_v0 << std::setw(14) << "temp [K]";
-        fout_v0 << std::setw(15) << "U_0 [Ry]";
-        fout_v0 << std::endl;
-
-        if(relax_coordinate == 2){
-            // u_tensor.txt
-            fout_u_tensor << "#";
-            fout_u_tensor << std::setw(14) << "temp [K]";
-            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                    get_xyz_string(ixyz1, str_tmp);
-                    get_xyz_string(ixyz2, str_tmp2);
-                    fout_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 + "}");
-                }
-            }fout_u_tensor << std::endl;
-        
-        }
-*/
         i_temp_loop = -1;
 
         std::cout << "Start structural optimization." << std::endl;
@@ -1362,81 +1287,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                    set_init_str,
                                    i_temp_loop);
 
-/*            std::cout << " SET_INIT_STR = " << set_init_str << std::endl;
-            if(set_init_str == 1){
-                std::cout << " read initial structure from input files." << std::endl << std::endl;
-                // read initial structure at each temperature
-                read_initial_q0(q0);
-                calculate_u0(q0, u0);
-                // read strain.in
-                if(relax_coordinate == 1){
-                    for(i1 = 0; i1 < 3; i1++){
-                        for(i2 = 0; i2 < 3; i2++){
-                            u_tensor[i1][i2] = 0.0;
-                        }
-                    }
-                }
-                else if(relax_coordinate == 2){
-                    read_initial_strain(u_tensor);
-                }
-                converged_prev = false;
-            }
-            else if(set_init_str == 2){
-                // read initial structure at initial temperature
-                if(i_temp_loop == 0){
-                    std::cout << " read initial structure from input files." << std::endl << std::endl;
 
-                    read_initial_q0(q0);
-                    calculate_u0(q0, u0);
-                    if(relax_coordinate == 1){
-                        for(i1 = 0; i1 < 3; i1++){
-                            for(i2 = 0; i2 < 3; i2++){
-                                u_tensor[i1][i2] = 0.0;
-                            }
-                        }
-                    }
-                    else if(relax_coordinate == 2){
-                        read_initial_strain(u_tensor);
-                    }
-                }
-                else{
-                    std::cout << " start from structure from the previous temperature." << std::endl << std::endl;
-                }
-            }
-            else if(set_init_str == 3){
-                // read initial structure at initial temperature
-                if(i_temp_loop == 0){
-                    std::cout << " read initial structure from input files." << std::endl << std::endl;
-
-                    read_initial_q0(q0);
-                    calculate_u0(q0, u0);
-                    if(relax_coordinate == 1){
-                        for(i1 = 0; i1 < 3; i1++){
-                            for(i2 = 0; i2 < 3; i2++){
-                                u_tensor[i1][i2] = 0.0;
-                            }
-                        }
-                    }
-                    else if(relax_coordinate == 2){
-                        read_initial_strain(u_tensor);
-                    }
-                }
-                // read initial DISPLACEMENT if the structure converges
-                // to the high-symmetry one.
-                if(std::fabs(u0[cooling_u0_index]) < cooling_u0_thr){
-                    std::cout << " u0[" << cooling_u0_index << "] < " << std::setw(15) << std::setprecision(6) << cooling_u0_thr << " is satisfied." << std::endl;
-                    std::cout << " the structure is back to the high-symmetry phase." << std::endl;
-                    std::cout << " read again initial displacement from input file." << std::endl << std::endl;
-
-                    read_initial_q0(q0);
-                    calculate_u0(q0, u0);
-                    converged_prev = false;
-                }
-                else{
-                    std::cout << " start from the structure at the previous temperature." << std::endl << std::endl;
-                }
-            }
-*/
             std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
             for(iat1 = 0; iat1 < system->natmin; iat1++){
                 std::cout << " ";
@@ -1459,21 +1310,27 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }std::cout << std::endl;
             }
 
+            write_stepresfile_header_atT(fout_step_q0, fout_step_u0, fout_step_u_tensor, temp);
+
+            write_stepresfile(q0, u_tensor, u0, 0,
+                              fout_step_q0, fout_step_u0, fout_step_u_tensor);
+
             // step_q0.txt
-            fout_step_q0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
+/*            fout_step_q0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
             fout_step_q0 << std::setw(6) << "step";
             for(is1 = 0; is1 < ns; is1++){
                 fout_step_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
             }fout_step_q0 << std::endl;
+*/
 
             // initial structure
-            fout_step_q0 << std::setw(6) << 0;
+/*            fout_step_q0 << std::setw(6) << 0;
             for(is = 0; is < ns; is++){
                 fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
             }fout_step_q0 << std::endl;
-
+*/
             // step_u0.txt
-            fout_step_u0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl;
+/*            fout_step_u0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl;
             fout_step_u0 << std::setw(6) << "step";
             for(iat1 = 0; iat1 < system->natmin; iat1++){
                 for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
@@ -1481,16 +1338,16 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     fout_step_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
                 }
             }fout_step_u0 << std::endl;
-
+*/
             // initial displacements
-            fout_step_u0 << std::setw(6) << 0;
+/*            fout_step_u0 << std::setw(6) << 0;
             for(is = 0; is < ns; is++){
                 fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
             }fout_step_u0 << std::endl; 
-
+*/
             if(relax_coordinate == 2){
                 // step_u_tensor.txt
-                fout_step_u_tensor << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
+/*                fout_step_u_tensor << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
                 for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
                     for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
                         get_xyz_string(ixyz1, str_tmp);
@@ -1498,11 +1355,13 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                         fout_step_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 + "}");
                     }
                 }fout_step_u_tensor << std::endl;
+*/
 
-                fout_step_u_tensor << std::setw(6) << 0;
+/*                fout_step_u_tensor << std::setw(6) << 0;
                 for(i1 = 0; i1 < 9; i1++){
                     fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[i1/3][i1%3]; 
                 } 
+*/
             }
 
             std::cout << " ----------------------------------------------------------------" << std::endl;
@@ -1732,7 +1591,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 // calculate SCP force
                 calculate_force_in_real_space(v1_array_SCP, force_array);
 
-                // print q0
+                write_stepresfile(q0, u_tensor, u0, i_str_loop+1,
+                                  fout_step_q0, fout_step_u0, fout_step_u_tensor);
+/*                // print q0
                 fout_step_q0 << std::setw(6) << i_str_loop+1;
                 for(is = 0; is < ns; is++){
                     fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
@@ -1749,6 +1610,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                         fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
                     }fout_step_u_tensor << std::endl;
                 }
+*/
 
                 // check convergence
                 du0 = 0.0;
@@ -2123,67 +1985,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                          evec_harmonic,
                          relax_coordinate);
 
-/*    // compute IFC renormalization by lattice relaxation
-    // std::cout << " RELAX_COORDINATE = " << relax_coordinate << ": ";
-    std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl;
 
-    std::cout << "  1st order derivatives of 1st-order IFCs (from harmonic IFCs) ... ";
-    
-    // compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
-    // finite difference method
-    calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(del_v1_strain_from_harmonic, evec_harmonic);
-    std::cout << "done!" << std::endl;
-    timer->print_elapsed();
-
-    std::cout << "  2nd order derivatives of 1st-order IFCs (from cubic IFCs) ... ";
-    compute_del_v1_strain_from_cubic(del_v1_strain_from_cubic, evec_harmonic);
-    // set zero (temporary) from here
-    std::cout << "  set zero ..." << std::endl;
-    for(ixyz1 = 0; ixyz1 < 81; ixyz1++){
-        for(is1 = 0; is1 < ns; is1++){
-            del_v1_strain_from_cubic[ixyz1][is1] = 0.0;
-        }    
-    }
-    // set zero (temporary) to here
-    std::cout << "done!" << std::endl;
-    timer->print_elapsed();
-
-    std::cout << "  3rd order derivatives of 1st-order IFCs (from quartic IFCs) ... ";
-    compute_del_v1_strain_from_quartic(del_v1_strain_from_quartic, evec_harmonic);
-    // set zero (temporary) from here
-    std::cout << "  set zero ..." << std::endl;
-    for(ixyz1 = 0; ixyz1 < 729; ixyz1++){
-        for(is1 = 0; is1 < ns; is1++){
-            del_v1_strain_from_quartic[ixyz1][is1] = 0.0;
-        }    
-    }
-    // set zero (temporary) to here
-
-    std::cout << "done!" << std::endl;
-    timer->print_elapsed();
-
-    std::cout << "  1st order derivatives of harmonic IFCs (from cubic IFCs) ... ";
-    // std::cout << "  1st order derivatives of harmonic IFCs (finite displacement method) ... ";
-    
-    // compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic); // temporary
-    calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
-
-    // calculate del_v2_strain_from_cubic by finite difference method in terms of strain
-    // calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
-    //                                                         del_v2_strain_from_cubic);
-    std::cout << "done!" << std::endl;
-    timer->print_elapsed();
-
-    std::cout << "  2nd order derivatives of harmonic IFCs (from quartic IFCs) ... ";
-    compute_del_v2_strain_from_quartic(del_v2_strain_from_quartic, evec_harmonic);
-    std::cout << "done!" << std::endl;
-    timer->print_elapsed();
-
-    std::cout << "  1st order derivatives of cubic IFCs (from quartic IFCs) ... ";
-    compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
-    std::cout << "done!" << std::endl; 
-    timer->print_elapsed();
-*/
     // for lattice relaxation
     allocate(del_v0_strain_with_strain_displace, 9);
     allocate(del_v0_strain_QHA, 9);
@@ -2261,13 +2063,10 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
         std::ofstream fout_u_tensor;
         fout_u_tensor.open("u_tensor.txt");
 
-        write_stropt_file_header(fout_step_q0,
-                                 fout_step_u0,
-                                 fout_q0,
-                                 fout_u0,
-                                 fout_v0,
-                                 fout_step_u_tensor,
-                                 fout_u_tensor);
+        write_resfile_header(fout_q0,
+                             fout_u0,
+                             fout_v0,
+                             fout_u_tensor);
 
 /*        // q0.txt
         fout_q0 << "#";
@@ -2418,7 +2217,13 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 }std::cout << std::endl;
             }std::cout << std::endl;
 
-            // step_q0.txt
+            write_stepresfile_header_atT(fout_step_q0, fout_step_u0, fout_step_u_tensor, temp);
+
+            write_stepresfile(q0, u_tensor, u0, 0,
+                              fout_step_q0, fout_step_u0, fout_step_u_tensor);
+
+
+/*            // step_q0.txt
             fout_step_q0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
             fout_step_q0 << std::setw(6) << "step";
             for(is1 = 0; is1 < ns; is1++){
@@ -2461,7 +2266,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             for(i1 = 0; i1 < 9; i1++){
                 fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[i1/3][i1%3]; 
             } 
-
+*/
 
             std::cout << " ----------------------------------------------------------------" << std::endl;
 
@@ -2934,6 +2739,11 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 // calculate SCP force
                 calculate_force_in_real_space(v1_array_QHA, force_array);
 
+
+                write_stepresfile(q0, u_tensor, u0, i_str_loop+1,
+                                  fout_step_q0, fout_step_u0, fout_step_u_tensor);
+
+/*
                 // print q0
                 fout_step_q0 << std::setw(6) << i_str_loop+1;
                 for(is = 0; is < ns; is++){
@@ -2950,7 +2760,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 for(is = 0; is < 9; is++){
                     fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
                 }fout_step_u_tensor << std::endl;
-
+*/
                 // check convergence
                 du0 = 0.0;
                 calculate_u0(delta_q0, delta_u0);
@@ -10905,17 +10715,15 @@ void Scph::calc_del_v0_strain_vib(std::complex<double> *del_v0_strain_vib,
     }
 }
 
-void Scph::write_stropt_file_header(std::ofstream &fout_step_q0,
-                                    std::ofstream &fout_step_u0,
-                                    std::ofstream &fout_q0,
-                                    std::ofstream &fout_u0,
-                                    std::ofstream &fout_v0,
-                                    std::ofstream &fout_step_u_tensor,
-                                    std::ofstream &fout_u_tensor)
+void Scph::write_resfile_header(std::ofstream &fout_q0,
+                                std::ofstream &fout_u0,
+                                std::ofstream &fout_v0,
+                                std::ofstream &fout_u_tensor)
 {
+    const auto ns = dynamical->neval;
+    
     int is1, iat1, ixyz1, ixyz2;
     std::string str_tmp, str_tmp2;
-    const auto ns = dynamical->neval;
     
     // q0.txt
     fout_q0 << "#";
@@ -10952,5 +10760,241 @@ void Scph::write_stropt_file_header(std::ofstream &fout_step_q0,
             }
         }fout_u_tensor << std::endl;
     }
+
+}
+
+void Scph::write_stepresfile_header_atT(std::ofstream &fout_step_q0,
+                                        std::ofstream &fout_step_u0,
+                                        std::ofstream &fout_step_u_tensor,
+                                        double temp)
+{
+    const auto ns = dynamical->neval;
+
+    int is1, iat1, ixyz1, ixyz2;
+    std::string str_tmp, str_tmp2;
+
+    if(fout_step_q0){
+        fout_step_q0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
+        fout_step_q0 << std::setw(6) << "step";
+        for(is1 = 0; is1 < ns; is1++){
+            fout_step_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
+        }fout_step_q0 << std::endl;
+    }
+
+    if(fout_step_u0){
+        fout_step_u0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl;
+        fout_step_u0 << std::setw(6) << "step";
+        for(iat1 = 0; iat1 < system->natmin; iat1++){
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                get_xyz_string(ixyz1, str_tmp);
+                fout_step_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
+            }
+        }fout_step_u0 << std::endl;
+    }
+
+    if(fout_step_u_tensor){
+        fout_step_u_tensor << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                get_xyz_string(ixyz1, str_tmp);
+                get_xyz_string(ixyz2, str_tmp2);
+                fout_step_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 + "}");
+            }
+        }fout_step_u_tensor << std::endl;
+    }
+
+}
+
+void Scph::write_stepresfile(double *q0,
+                             double **u_tensor,
+                             double *u0,
+                             int i_str_loop,
+                             std::ofstream &fout_step_q0,
+                             std::ofstream &fout_step_u0,
+                             std::ofstream &fout_step_u_tensor)
+{
+    const auto ns = dynamical->neval;
+
+    int is, i1;
+
+    if(fout_step_q0){
+        fout_step_q0 << std::setw(6) << i_str_loop;
+        for(is = 0; is < ns; is++){
+            fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
+        }fout_step_q0 << std::endl;
+    }
+
+    if(fout_step_u0){
+        fout_step_u0 << std::setw(6) << i_str_loop;
+        for(is = 0; is < ns; is++){
+            fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
+        }fout_step_u0 << std::endl; 
+    }
+
+    if(fout_step_u_tensor){
+        fout_step_u_tensor << std::setw(6) << i_str_loop;
+        for(i1 = 0; i1 < 9; i1++){
+            fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[i1/3][i1%3]; 
+        }fout_step_u_tensor << std::endl;
+    }
+
+}
+
+void Scph::update_cell_coordinate(double *q0,
+                                  double *u0,
+                                  double **u_tensor,
+                                  std::complex<double> *v1_array_atT,
+                                  double **omega2_array,
+                                  std::complex<double> *del_v0_strain_atT,
+                                  double **C2_array,
+                                  std::complex<double> ***cmat_convert,
+                                  std::vector<int> &harm_optical_modes,
+                                  double *delta_q0,
+                                  double *delta_u0,
+                                  double *delta_u_tensor,
+                                  double &du0,
+                                  double &du_tensor)
+{
+    using namespace Eigen;
+
+    const auto ns = dynamical->neval;
+    int is, js;
+    int i1, i2;
+    int itmp1, itmp2, itmp3, itmp4, itmp5, itmp6;
+
+    MatrixXcd Cmat(ns, ns), v2_mat_full(ns, ns);
+    MatrixXcd v2_mat_optical(ns-3, ns-3);
+    VectorXcd dq0_vec(ns-3), v1_vec_atT(ns-3);
+
+    MatrixXcd C2_mat_tmp(6,6);
+    VectorXcd du_tensor_vec(6), del_v0_strain_vec(6);
+
+
+    double Ry_to_kayser_tmp = Hz_to_kayser / time_ry;
+    double add_hess_diag_omega2 = std::pow(add_hess_diag/Ry_to_kayser_tmp, 2);
+    
+    for(is = 0; is < ns; is++){
+        delta_q0[is] = 0.0;
+    }
+    for(is = 0; is < 6; is++){
+        delta_u_tensor[is] = 0.0;
+    }
+
+    if(relax_algo == 1){ // steepest decent
+        for(is = 0; is < ns; is++){
+            // skip acoustic mode
+            if(std::fabs(omega2_harmonic[0][is]) < eps8){
+                continue;
+            }
+            delta_q0[is] = - alpha_steepest_decent * v1_array_atT[is].real();
+            q0[is] += delta_q0[is];
+        }
+    }
+
+    else if(relax_algo == 2){ // iterative solution of linear equation
+
+        // prepare harmonic IFC matrix
+        for(is = 0; is < ns; is++){
+            for(js = 0; js < ns; js++){
+                Cmat(js, is) = cmat_convert[0][is][js]; // transpose
+                v2_mat_full(is, js) = 0.0;
+            }
+            v2_mat_full(is, is) = omega2_array[0][is];
+        }
+        v2_mat_full = Cmat.adjoint() * v2_mat_full * Cmat;
+
+        for(is = 0; is < ns-3; is++){
+            for(js = 0; js < ns-3; js++){
+                v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
+            }
+            v2_mat_optical(is, is) += add_hess_diag_omega2;
+        }
+        // solve linear equation
+        for(is = 0; is < ns-3; is++){
+            v1_vec_atT(is) = v1_array_atT[harm_optical_modes[is]];
+        }
+
+        dq0_vec = v2_mat_optical.colPivHouseholderQr().solve(v1_vec_atT);
+
+        // update q0
+        for(is = 0; is < ns-3; is++){
+            delta_q0[harm_optical_modes[is]] = - mixbeta_coord * dq0_vec(is).real();
+            q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
+        }
+
+        if(relax_coordinate == 1){
+            for(i1 = 0; i1 < 6; i1++){
+                delta_u_tensor[i1] = 0.0;
+            }
+            for(i1 = 0; i1 < 3; i1++){
+                for(i2 = 0; i2 < 3; i2++){
+                    u_tensor[i1][i2] = 0.0;
+                }
+            }
+        }
+        else if(relax_coordinate == 2 || relax_coordinate == -1){
+            // prepare matrix of elastic constants and vector of del_v0_strain_atT
+            for(itmp1 = 0; itmp1 < 3; itmp1++){
+                    del_v0_strain_vec(itmp1) = del_v0_strain_atT[itmp1*3+itmp1];
+
+                    itmp2 = (itmp1+1)%3;
+                    itmp3 = (itmp1+2)%3;
+                    del_v0_strain_vec(itmp1+3) = del_v0_strain_atT[itmp2*3+itmp3];
+            }
+
+            for(itmp1 = 0; itmp1 < 3; itmp1++){
+                for(itmp2 = 0; itmp2 < 3; itmp2++){
+                    C2_mat_tmp(itmp1, itmp2) = C2_array[itmp1*3+itmp1][itmp2*3+itmp2];
+                }
+            }
+            for(itmp1 = 0; itmp1 < 3; itmp1++){
+                for(itmp2 = 0; itmp2 < 3; itmp2++){
+                    itmp3 = (itmp2+1)%3;
+                    itmp4 = (itmp2+2)%3;
+                    C2_mat_tmp(itmp1, itmp2+3) = 2.0 * C2_array[itmp1*3+itmp1][itmp3*3+itmp4];
+                    C2_mat_tmp(itmp2+3, itmp1) = C2_array[itmp3*3+itmp4][itmp1*3+itmp1];
+                }
+            }
+            for(itmp1 = 0; itmp1 < 3; itmp1++){
+                for(itmp2 = 0; itmp2 < 3; itmp2++){
+                    itmp3 = (itmp1+1)%3;
+                    itmp4 = (itmp1+2)%3;
+                    itmp5 = (itmp2+1)%3;
+                    itmp6 = (itmp2+2)%3;
+                    C2_mat_tmp(itmp1+3, itmp2+3) = 2.0 * C2_array[itmp3*3+itmp4][itmp5*3+itmp6];
+                }
+            }
+
+            du_tensor_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_v0_strain_vec);
+
+            // update u tensor
+            for(is = 0; is < 6; is++){
+                delta_u_tensor[is] = - mixbeta_cell * du_tensor_vec(is).real();
+                if(is < 3){
+                    u_tensor[is][is] += delta_u_tensor[is];
+                }
+                else{
+                    itmp1 = (is+1)%3;
+                    itmp2 = (is+2)%3;
+                    u_tensor[itmp1][itmp2] += delta_u_tensor[is];
+                    u_tensor[itmp2][itmp1] += delta_u_tensor[is];
+                }
+            }
+        }
+    }
+
+    du0 = 0.0;
+    calculate_u0(delta_q0, delta_u0);
+    for(is = 0; is < ns; is++){
+        du0 += delta_u0[is] * delta_u0[is];
+    }du0 = std::sqrt(du0);
+
+    du_tensor = 0.0;
+    for(is = 0; is < 6; is++){
+        du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
+        if(is >= 3){
+            du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
+        }
+    }du_tensor = std::sqrt(du_tensor);
 
 }

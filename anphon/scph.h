@@ -191,6 +191,21 @@ private:
 
     void transform_to_real_space_at_Gamma(std::complex<double> *, double *);
 
+    void update_cell_coordinate(double *q0,
+                                double *u0,
+                                double **u_tensor,
+                                std::complex<double> *v1_array_atT,
+                                double **omega2_array,
+                                std::complex<double> *del_v0_strain_atT,
+                                double **C2_array,
+                                std::complex<double> ***cmat_convert,
+                                std::vector<int> &harm_optical_modes,
+                                double *delta_q0,
+                                double *delta_u0,
+                                double *delta_u_tensor,
+                                double &du0,
+                                double &du_tensor);
+
     // void postprocess(std::complex<double> ****delta_dymat_scph,
     //                  std::complex<double> ****delta_dymat_scph_plus_bubble);
     void postprocess(std::complex<double> ****,
@@ -507,13 +522,6 @@ private:
                                double **C2_array,
                                double ***C3_array);
 
-    void write_stropt_file_header(std::ofstream &fout_step_q0,
-                                  std::ofstream &fout_step_u0,
-                                  std::ofstream &fout_q0,
-                                  std::ofstream &fout_u0,
-                                  std::ofstream &fout_v0,
-                                  std::ofstream &fout_step_u_tensor,
-                                  std::ofstream &fout_u_tensor);
 
     void set_init_structure_atT(double *q0,
                                 double **u_tensor,
@@ -521,6 +529,24 @@ private:
                                 bool &converged_prev,
                                 int set_init_str,
                                 int i_temp_loop);
+
+    void write_resfile_header(std::ofstream &fout_q0,
+                              std::ofstream &fout_u0,
+                              std::ofstream &fout_v0,
+                              std::ofstream &fout_u_tensor);
+
+    void write_stepresfile_header_atT(std::ofstream &fout_step_q0,
+                                      std::ofstream &fout_step_u0,
+                                      std::ofstream &fout_step_u_tensor,
+                                      double temp);
+    
+    void write_stepresfile(double *q0,
+                           double **u_tensor,
+                           double *u0,
+                           int i_str_loop,
+                           std::ofstream &fout_step_q0,
+                           std::ofstream &fout_step_u0,
+                           std::ofstream &fout_step_u_tensor);
 
 };
 
