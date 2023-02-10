@@ -37,12 +37,11 @@ System::~System()
 void System::init(const int verbosity,
                   Timer *timer)
 {
+    timer->start_clock("system");
+
     // Compute primitive cell and supercell first.
     build_cells();
-
     const auto nat = supercell.number_of_atoms;
-
-    timer->start_clock("system");
 
     // Set atomic types (kind + magmom)
     set_atomtype_group();
@@ -60,7 +59,7 @@ void System::init(const int verbosity,
     generate_coordinate_of_periodic_images();
 
     if (verbosity > 0) {
-        print_structure_stdout(supercell);
+        print_structure_stdout(verbosity);
         if (spin_super.lspin) print_magmom_stdout();
         timer->print_elapsed();
         std::cout << " -------------------------------------------------------------------" << std::endl;
@@ -159,13 +158,13 @@ void System::set_basecell(const double lavec_in[3][3],
     inputcell.x_cartesian = inputcell.x_fractional * inputcell.lattice_vector.transpose();
 
     // This is needed to avoid segmentation fault.
-    spin.magmom.clear();
+    spin_input.magmom.clear();
     std::vector<double> vec(3);
     for (i = 0; i < nat_in; ++i) {
         for (j = 0; j < 3; ++j) {
             vec[j] = 0;
         }
-        spin.magmom.push_back(vec);
+        spin_input.magmom.push_back(vec);
     }
 }
 
@@ -178,7 +177,6 @@ void System::build_cells()
 
 void System::build_primcell()
 {
-
     // Generate primitive cell information from the inputcell and PRIMCELL value
     // The symmetry detection is not performed here as it will be done
     // when the Symmetry::init() is called.
@@ -192,9 +190,9 @@ void System::build_primcell()
     primcell.number_of_atoms = inputcell.number_of_atoms / ndiv;
     primcell.number_of_elems = inputcell.number_of_elems;
 
-    spin_prim.lspin = spin.lspin;
-    spin_prim.noncollinear = spin.noncollinear;
-    spin_prim.time_reversal_symm = spin.time_reversal_symm;
+    spin_prim.lspin = spin_input.lspin;
+    spin_prim.noncollinear = spin_input.noncollinear;
+    spin_prim.time_reversal_symm = spin_input.time_reversal_symm;
     spin_prim.magmom.clear();
     spin_prim.magmom.shrink_to_fit();
 
@@ -239,10 +237,10 @@ void System::build_primcell()
                          "This is strange. Please check the PRIMCELL and input structure carefully.");
                 }
 
-                if (spin.lspin) {
+                if (spin_input.lspin) {
                     double norm_magmom = 0.0;
                     for (auto kk = 0; kk < 3; ++kk) {
-                        norm_magmom += std::pow(spin.magmom[i][kk] - magmom_unique[k][kk], 2);
+                        norm_magmom += std::pow(spin_input.magmom[i][kk] - magmom_unique[k][kk], 2);
                     }
                     if (std::sqrt(norm_magmom) > eps6) {
                         exit("build_primcell",
@@ -257,8 +255,8 @@ void System::build_primcell()
             for (auto j = 0; j < 3; ++j) xf_tmp_vec[j] = xf_tmp[j];
             xf_unique.emplace_back(xf_tmp_vec);
             kind_unique.emplace_back(inputcell.kind[i]);
-            if (spin.lspin) {
-                for (auto j = 0; j < 3; ++j) magmom_tmp_vec[j] = spin.magmom[i][j];
+            if (spin_input.lspin) {
+                for (auto j = 0; j < 3; ++j) magmom_tmp_vec[j] = spin_input.magmom[i][j];
                 magmom_unique.emplace_back(magmom_tmp_vec);
             }
         }
@@ -336,7 +334,7 @@ void System::build_supercell()
                     DD_mod = DD.unaryExpr([](const double x) { return std::fmod(x, 1.0); });
                     supercell.x_fractional.row(counter) = DD_mod;
                     supercell.kind.emplace_back(kind_now);
-                    if (spin.lspin) magmom_tmp.emplace_back(spin.magmom[iat]);
+                    if (spin_input.lspin) magmom_tmp.emplace_back(spin_input.magmom[iat]);
                     ++counter;
                 }
             }
@@ -345,9 +343,9 @@ void System::build_supercell()
 
     supercell.x_cartesian = supercell.x_fractional * supercell.lattice_vector.transpose();
 
-    spin_super.lspin = spin.lspin;
-    spin_super.noncollinear = spin.noncollinear;
-    spin_super.time_reversal_symm = spin.time_reversal_symm;
+    spin_super.lspin = spin_input.lspin;
+    spin_super.noncollinear = spin_input.noncollinear;
+    spin_super.time_reversal_symm = spin_input.time_reversal_symm;
     spin_super.magmom.clear();
     spin_super.magmom.shrink_to_fit();
     if (spin_super.lspin) {
@@ -360,6 +358,16 @@ void System::build_supercell()
 const Cell &System::get_supercell() const
 {
     return supercell;
+}
+
+const Cell &System::get_primcell() const
+{
+    return primcell;
+}
+
+const Cell &System::get_inputcell() const
+{
+    return inputcell;
 }
 
 double ***System::get_x_image() const
@@ -405,98 +413,6 @@ void System::set_kdname(const std::string *kdname_in)
 std::string *System::get_kdname() const
 {
     return kdname;
-}
-
-//void System::set_reciprocal_latt(const double aa[3][3],
-//                                 double bb[3][3]) const
-//{
-//    /*
-//    Calculate Reciprocal Lattice Vectors
-//
-//    Here, BB is just the inverse matrix of AA (multiplied by factor 2 Pi)
-//
-//    BB = 2 Pi AA^{-1},
-//    = t(b1, b2, b3)
-//
-//    (b11 b12 b13)
-//    = (b21 b22 b23)
-//    (b31 b32 b33),
-//
-//    b1 = t(b11, b12, b13) etc.
-//    */
-//
-//    const auto det
-//            = aa[0][0] * aa[1][1] * aa[2][2]
-//              + aa[1][0] * aa[2][1] * aa[0][2]
-//              + aa[2][0] * aa[0][1] * aa[1][2]
-//              - aa[0][0] * aa[2][1] * aa[1][2]
-//              - aa[2][0] * aa[1][1] * aa[0][2]
-//              - aa[1][0] * aa[0][1] * aa[2][2];
-//
-//    if (std::abs(det) < eps12) {
-//        exit("set_reciprocal_latt", "Lattice Vector is singular");
-//    }
-//
-//    const auto factor = 2.0 * pi / det;
-//
-//    bb[0][0] = (aa[1][1] * aa[2][2] - aa[1][2] * aa[2][1]) * factor;
-//    bb[0][1] = (aa[0][2] * aa[2][1] - aa[0][1] * aa[2][2]) * factor;
-//    bb[0][2] = (aa[0][1] * aa[1][2] - aa[0][2] * aa[1][1]) * factor;
-//
-//    bb[1][0] = (aa[1][2] * aa[2][0] - aa[1][0] * aa[2][2]) * factor;
-//    bb[1][1] = (aa[0][0] * aa[2][2] - aa[0][2] * aa[2][0]) * factor;
-//    bb[1][2] = (aa[0][2] * aa[1][0] - aa[0][0] * aa[1][2]) * factor;
-//
-//    bb[2][0] = (aa[1][0] * aa[2][1] - aa[1][1] * aa[2][0]) * factor;
-//    bb[2][1] = (aa[0][1] * aa[2][0] - aa[0][0] * aa[2][1]) * factor;
-//    bb[2][2] = (aa[0][0] * aa[1][1] - aa[0][1] * aa[1][0]) * factor;
-//}
-
-//void System::frac2cart(double **xf) const
-//{
-//    // x_cartesian = A x_fractional
-//
-//    double *x_tmp;
-//    allocate(x_tmp, 3);
-//
-//    for (size_t i = 0; i < supercell.number_of_atoms; ++i) {
-//
-//        rotvec(x_tmp, xf[i], supercell.lattice_vector);
-//
-//        for (auto j = 0; j < 3; ++j) {
-//            xf[i][j] = x_tmp[j];
-//        }
-//    }
-//    deallocate(x_tmp);
-//}
-
-double System::volume(const double latt_in[3][3],
-                      const LatticeType type) const
-{
-    int i, j;
-    double mat[3][3];
-
-    if (type == Direct) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                mat[i][j] = latt_in[j][i];
-            }
-        }
-    } else if (type == Reciprocal) {
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                mat[i][j] = latt_in[i][j];
-            }
-        }
-    } else {
-        exit("volume", "Invalid LatticeType is given");
-    }
-
-    const auto vol = std::abs(mat[0][0] * (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1])
-                              + mat[0][1] * (mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2])
-                              + mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]));
-
-    return vol;
 }
 
 void System::set_reciprocal_latt(const Eigen::Matrix3d &lavec_in,
@@ -551,9 +467,9 @@ void System::set_default_variables()
     exist_image = nullptr;
     str_magmom = "";
 
-    spin.lspin = false;
-    spin.noncollinear = 0;
-    spin.time_reversal_symm = 1;
+    spin_input.lspin = false;
+    spin_input.noncollinear = 0;
+    spin_input.time_reversal_symm = 1;
     transmat_to_super = Eigen::Matrix3d::Identity();
     transmat_to_prim = Eigen::Matrix3d::Identity();
 }
@@ -580,25 +496,24 @@ void System::set_spin_variables(const size_t nat_in,
                                 const int trev_sym_in,
                                 const double (*magmom_in)[3])
 {
-    spin.lspin = lspin_in;
-    spin.noncollinear = noncol_in;
-    spin.time_reversal_symm = trev_sym_in;
-    spin.magmom.clear();
+    spin_input.lspin = lspin_in;
+    spin_input.noncollinear = noncol_in;
+    spin_input.time_reversal_symm = trev_sym_in;
+    spin_input.magmom.clear();
 
     std::vector<double> vec(3);
     for (size_t i = 0; i < nat_in; ++i) {
         for (auto j = 0; j < 3; ++j) {
             vec[j] = magmom_in[i][j];
         }
-        spin.magmom.push_back(vec);
+        spin_input.magmom.push_back(vec);
     }
 }
 
 const Spin &System::get_spin() const
 {
-    return spin;
+    return spin_input;
 }
-
 
 void System::set_str_magmom(std::string str_magmom_in)
 {
@@ -633,8 +548,8 @@ void System::set_atomtype_group()
     for (i = 0; i < supercell.number_of_atoms; ++i) {
         type_tmp.element = supercell.kind[i];
 
-        if (spin.noncollinear == 0) {
-            type_tmp.magmom = spin.magmom[i][2];
+        if (spin_input.noncollinear == 0) {
+            type_tmp.magmom = spin_input.magmom[i][2];
         } else {
             type_tmp.magmom = 0.0;
         }
@@ -647,13 +562,13 @@ void System::set_atomtype_group()
     for (i = 0; i < supercell.number_of_atoms; ++i) {
         int count = 0;
         for (auto it: set_type) {
-            if (spin.noncollinear) {
+            if (spin_input.noncollinear) {
                 if (supercell.kind[i] == it.element) {
                     atomtype_group[count].push_back(i);
                 }
             } else {
                 if ((supercell.kind[i] == it.element)
-                    && (std::abs(spin.magmom[i][2] - it.magmom) < eps6)) {
+                    && (std::abs(spin_input.magmom[i][2] - it.magmom) < eps6)) {
                     atomtype_group[count].push_back(i);
                 }
             }
@@ -676,9 +591,7 @@ void System::set_transformation_matrices(const double transmat_to_super_in[3][3]
 
 void System::generate_coordinate_of_periodic_images()
 {
-    //
     // Generate Cartesian coordinates of atoms in the neighboring 27 supercells
-    //
 
     unsigned int i;
     int ia, ja, ka;
@@ -697,14 +610,12 @@ void System::generate_coordinate_of_periodic_images()
             x_image[0][i][j] = x_tmp(i, j);
         }
     }
-//    // Convert to Cartesian coordinate
 
+   // Convert to Cartesian coordinate
     for (ia = -1; ia <= 1; ++ia) {
         for (ja = -1; ja <= 1; ++ja) {
             for (ka = -1; ka <= 1; ++ka) {
-
                 if (ia == 0 && ja == 0 && ka == 0) continue;
-
                 ++icell;
                 x_tmp = supercell.x_fractional;
                 for (i = 0; i < nat; ++i) {
@@ -713,20 +624,11 @@ void System::generate_coordinate_of_periodic_images()
                     x_tmp(i, 2) += static_cast<double>(ka);
                 }
                 x_tmp = x_tmp * supercell.lattice_vector.transpose();
-//                for (i = 0; i < nat; ++i) {
-//                    x_image[icell][i][0] = xf_in[i][0] + static_cast<double>(ia);
-//                    x_image[icell][i][1] = xf_in[i][1] + static_cast<double>(ja);
-//                    x_image[icell][i][2] = xf_in[i][2] + static_cast<double>(ka);
-//                }
-                // Convert to Cartesian coordinate
-                //frac2cart(x_image[icell]);
-
                 for (i = 0; i < nat; ++i) {
                     x_image[icell][i][0] = x_tmp(i, 0);
                     x_image[icell][i][1] = x_tmp(i, 1);
                     x_image[icell][i][2] = x_tmp(i, 2);
                 }
-
             }
         }
     }
@@ -737,21 +639,15 @@ void System::generate_coordinate_of_periodic_images()
     for (ia = -1; ia <= 1; ++ia) {
         for (ja = -1; ja <= 1; ++ja) {
             for (ka = -1; ka <= 1; ++ka) {
-
                 if (ia == 0 && ja == 0 && ka == 0) continue;
-
                 ++icell;
-
                 // When periodic flag is zero along an axis,
                 // periodic images along that axis cannot be considered.
                 if (((std::abs(ia) == 1) && (is_periodic[0] == 0)) ||
                     ((std::abs(ja) == 1) && (is_periodic[1] == 0)) ||
                     ((std::abs(ka) == 1) && (is_periodic[2] == 0))) {
-
                     exist_image[icell] = 0;
-
                 } else {
-
                     exist_image[icell] = 1;
                 }
             }
@@ -760,17 +656,24 @@ void System::generate_coordinate_of_periodic_images()
 }
 
 
-void System::print_structure_stdout(const Cell &cell)
+void System::print_structure_stdout(const int verbosity)
 {
     using namespace std;
     size_t i;
 
-    cout << " SYSTEM" << endl;
-    cout << " ======" << endl << endl;
+    cout << " ===================\n";
+    cout << "  CRYSTAL STRUCTURE \n";
+    cout << " ===================\n\n";
 
     cout.setf(ios::scientific);
 
-    cout << "  Lattice Vector" << endl;
+    auto cell = get_inputcell();
+
+    cout << "  ++++++++++++\n";
+    cout << "   Input Cell \n";
+    cout << "  ++++++++++++\n\n";
+
+    cout << "   Lattice Vector (bohr)" << endl;
     cout << setw(16) << cell.lattice_vector(0, 0);
     cout << setw(15) << cell.lattice_vector(1, 0);
     cout << setw(15) << cell.lattice_vector(2, 0);
@@ -787,40 +690,164 @@ void System::print_structure_stdout(const Cell &cell)
     cout << " : a3" << endl;
     cout << endl;
 
-    cout << "  Cell volume = " << cell.volume << endl << endl;
+    cout << "   Number of atoms : " << cell.number_of_atoms << "\n\n";
 
-    cout << "  Reciprocal Lattice Vector" << std::endl;
-    cout << setw(16) << cell.reciprocal_lattice_vector(0, 0);
-    cout << setw(15) << cell.reciprocal_lattice_vector(0, 1);
-    cout << setw(15) << cell.reciprocal_lattice_vector(0, 2);
-    cout << " : b1" << endl;
+    if (verbosity > 1) {
+        cout << "   Cell volume = " << cell.volume << " (bohr^3)" << endl << endl;
 
-    cout << setw(16) << cell.reciprocal_lattice_vector(1, 0);
-    cout << setw(15) << cell.reciprocal_lattice_vector(1, 1);
-    cout << setw(15) << cell.reciprocal_lattice_vector(1, 2);
-    cout << " : b2" << endl;
+        cout << "   Reciprocal Lattice Vector (1/bohr)" << std::endl;
+        cout << setw(16) << cell.reciprocal_lattice_vector(0, 0);
+        cout << setw(15) << cell.reciprocal_lattice_vector(0, 1);
+        cout << setw(15) << cell.reciprocal_lattice_vector(0, 2);
+        cout << " : b1" << endl;
 
-    cout << setw(16) << cell.reciprocal_lattice_vector(2, 0);
-    cout << setw(15) << cell.reciprocal_lattice_vector(2, 1);
-    cout << setw(15) << cell.reciprocal_lattice_vector(2, 2);
-    cout << " : b3" << endl;
-    cout << endl;
+        cout << setw(16) << cell.reciprocal_lattice_vector(1, 0);
+        cout << setw(15) << cell.reciprocal_lattice_vector(1, 1);
+        cout << setw(15) << cell.reciprocal_lattice_vector(1, 2);
+        cout << " : b2" << endl;
 
-    cout << "  Atomic species:" << endl;
+        cout << setw(16) << cell.reciprocal_lattice_vector(2, 0);
+        cout << setw(15) << cell.reciprocal_lattice_vector(2, 1);
+        cout << setw(15) << cell.reciprocal_lattice_vector(2, 2);
+        cout << " : b3" << endl;
+        cout << endl;
+    }
+
+    cout << "   Atomic species:" << endl;
     for (i = 0; i < cell.number_of_elems; ++i) {
         cout << setw(6) << i + 1 << setw(5) << kdname[i] << endl;
     }
+
+    if (verbosity > 1) {
+        cout << "   Atomic positions in fractional basis and atomic species" << endl;
+        for (i = 0; i < cell.number_of_atoms; ++i) {
+            cout << setw(6) << i + 1;
+            cout << setw(15) << cell.x_fractional(i, 0);
+            cout << setw(15) << cell.x_fractional(i, 1);
+            cout << setw(15) << cell.x_fractional(i, 2);
+            cout << setw(5) << cell.kind[i] << endl;
+        }
+    }
+
+    cout << endl << endl;
+
+    cell = get_primcell();
+
+    cout << "  ++++++++++++++++\n";
+    cout << "   Primitive Cell \n";
+    cout << "  ++++++++++++++++\n\n";
+
+    cout << "   Lattice Vector (bohr)" << endl;
+    cout << setw(16) << cell.lattice_vector(0, 0);
+    cout << setw(15) << cell.lattice_vector(1, 0);
+    cout << setw(15) << cell.lattice_vector(2, 0);
+    cout << " : a1" << endl;
+
+    cout << setw(16) << cell.lattice_vector(0, 1);
+    cout << setw(15) << cell.lattice_vector(1, 1);
+    cout << setw(15) << cell.lattice_vector(2, 1);
+    cout << " : a2" << endl;
+
+    cout << setw(16) << cell.lattice_vector(0, 2);
+    cout << setw(15) << cell.lattice_vector(1, 2);
+    cout << setw(15) << cell.lattice_vector(2, 2);
+    cout << " : a3" << endl;
     cout << endl;
 
-    cout << "  Atomic positions in fractional basis and atomic species" << endl;
-    for (i = 0; i < cell.number_of_atoms; ++i) {
-        cout << setw(6) << i + 1;
-        cout << setw(15) << cell.x_fractional(i, 0);
-        cout << setw(15) << cell.x_fractional(i, 1);
-        cout << setw(15) << cell.x_fractional(i, 2);
-        cout << setw(5) << cell.kind[i] << endl;
+    const auto nat_prim = cell.number_of_atoms;
+
+    cout << "   Number of atoms : " << cell.number_of_atoms << "\n\n";
+
+    if (verbosity > 1) {
+        cout << "   Cell volume = " << cell.volume << " (bohr^3)" << endl << endl;
+
+        cout << "   Reciprocal Lattice Vector (1/bohr)" << std::endl;
+        cout << setw(16) << cell.reciprocal_lattice_vector(0, 0);
+        cout << setw(15) << cell.reciprocal_lattice_vector(0, 1);
+        cout << setw(15) << cell.reciprocal_lattice_vector(0, 2);
+        cout << " : b1" << endl;
+
+        cout << setw(16) << cell.reciprocal_lattice_vector(1, 0);
+        cout << setw(15) << cell.reciprocal_lattice_vector(1, 1);
+        cout << setw(15) << cell.reciprocal_lattice_vector(1, 2);
+        cout << " : b2" << endl;
+
+        cout << setw(16) << cell.reciprocal_lattice_vector(2, 0);
+        cout << setw(15) << cell.reciprocal_lattice_vector(2, 1);
+        cout << setw(15) << cell.reciprocal_lattice_vector(2, 2);
+        cout << " : b3" << endl;
+        cout << endl;
+    }
+
+        cout << "   Atomic positions in fractional basis and atomic species" << endl;
+        for (i = 0; i < cell.number_of_atoms; ++i) {
+            cout << setw(6) << i + 1;
+            cout << setw(15) << cell.x_fractional(i, 0);
+            cout << setw(15) << cell.x_fractional(i, 1);
+            cout << setw(15) << cell.x_fractional(i, 2);
+            cout << setw(5) << cell.kind[i] << endl;
+        }
+    cout << endl << endl;
+
+    cell = get_supercell();
+    cout << "  ++++++++++++\n";
+    cout << "   Super Cell \n";
+    cout << "  ++++++++++++\n\n";
+
+    cout << "   Lattice Vector (bohr)" << endl;
+    cout << setw(16) << cell.lattice_vector(0, 0);
+    cout << setw(15) << cell.lattice_vector(1, 0);
+    cout << setw(15) << cell.lattice_vector(2, 0);
+    cout << " : a1" << endl;
+
+    cout << setw(16) << cell.lattice_vector(0, 1);
+    cout << setw(15) << cell.lattice_vector(1, 1);
+    cout << setw(15) << cell.lattice_vector(2, 1);
+    cout << " : a2" << endl;
+
+    cout << setw(16) << cell.lattice_vector(0, 2);
+    cout << setw(15) << cell.lattice_vector(1, 2);
+    cout << setw(15) << cell.lattice_vector(2, 2);
+    cout << " : a3" << endl;
+    cout << endl;
+
+    cout << "   Number of atoms : " << cell.number_of_atoms << "\n\n";
+    cout << "   Supercell contains " << std::setw(5) << cell.number_of_atoms / nat_prim
+    << " primitive cells\n\n";
+
+    if (verbosity > 1) {
+        cout << "   Cell volume = " << cell.volume << " (bohr^3)" << endl << endl;
+
+        cout << "   Reciprocal Lattice Vector (1/bohr)" << std::endl;
+        cout << setw(16) << cell.reciprocal_lattice_vector(0, 0);
+        cout << setw(15) << cell.reciprocal_lattice_vector(0, 1);
+        cout << setw(15) << cell.reciprocal_lattice_vector(0, 2);
+        cout << " : b1" << endl;
+
+        cout << setw(16) << cell.reciprocal_lattice_vector(1, 0);
+        cout << setw(15) << cell.reciprocal_lattice_vector(1, 1);
+        cout << setw(15) << cell.reciprocal_lattice_vector(1, 2);
+        cout << " : b2" << endl;
+
+        cout << setw(16) << cell.reciprocal_lattice_vector(2, 0);
+        cout << setw(15) << cell.reciprocal_lattice_vector(2, 1);
+        cout << setw(15) << cell.reciprocal_lattice_vector(2, 2);
+        cout << " : b3" << endl;
+        cout << endl;
+    }
+
+    if (verbosity > 1) {
+        cout << "   Atomic positions in fractional basis and atomic species" << endl;
+        for (i = 0; i < cell.number_of_atoms; ++i) {
+            cout << setw(6) << i + 1;
+            cout << setw(15) << cell.x_fractional(i, 0);
+            cout << setw(15) << cell.x_fractional(i, 1);
+            cout << setw(15) << cell.x_fractional(i, 2);
+            cout << setw(5) << cell.kind[i] << endl;
+        }
     }
     cout << endl << endl;
+
     cout.unsetf(ios::scientific);
 }
 
@@ -829,20 +856,25 @@ void System::print_magmom_stdout() const
 {
     using namespace std;
 
-    cout << "  MAGMOM is given. The magnetic moments of each atom are as follows:" << endl;
-    for (size_t i = 0; i < supercell.number_of_atoms; ++i) {
+    cout << " ====================\n";
+    cout << "  MAGNETIC STRUCTURE \n";
+    cout << " ====================\n\n";
+
+    cout << "  MAGMOM is given.\n"
+            "  The magnetic moments of each atom in the primitive cell are as follows:" << endl;
+    for (size_t i = 0; i < primcell.number_of_atoms; ++i) {
         cout << setw(6) << i + 1;
-        cout << setw(5) << spin.magmom[i][0];
-        cout << setw(5) << spin.magmom[i][1];
-        cout << setw(5) << spin.magmom[i][2];
+        cout << setw(5) << spin_prim.magmom[i][0];
+        cout << setw(5) << spin_prim.magmom[i][1];
+        cout << setw(5) << spin_prim.magmom[i][2];
         cout << endl;
     }
     cout << endl;
-    if (spin.noncollinear == 0) {
+    if (spin_prim.noncollinear == 0) {
         cout << "  NONCOLLINEAR = 0: magnetic moments are considered as scalar variables." << endl;
-    } else if (spin.noncollinear == 1) {
+    } else if (spin_prim.noncollinear == 1) {
         cout << "  NONCOLLINEAR = 1: magnetic moments are considered as vector variables." << endl;
-        if (spin.time_reversal_symm) {
+        if (spin_prim.time_reversal_symm) {
             cout << "  TREVSYM = 1: Time-reversal symmetry will be considered for generating magnetic space group"
                  << endl;
         } else {

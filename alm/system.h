@@ -84,6 +84,10 @@ public:
 
     const Cell &get_supercell() const;
 
+    const Cell &get_primcell() const;
+
+    const Cell &get_inputcell() const;
+
     double ***get_x_image() const;
 
     int *get_exist_image() const;
@@ -111,7 +115,7 @@ private:
     int *exist_image;
 
     // Variables for spins
-    Spin spin, spin_super, spin_prim;
+    Spin spin_input, spin_super, spin_prim;
     std::string str_magmom;
 
     // concatenate atomic kind and magmom (only for collinear case)
@@ -120,9 +124,6 @@ private:
     enum LatticeType {
         Direct, Reciprocal
     };
-
-//    void set_reciprocal_latt(const double [3][3],
-//                             double [3][3]) const;
 
     void build_cells();
 
@@ -137,9 +138,6 @@ private:
 
     void deallocate_variables();
 
-    double volume(const double [3][3],
-                  LatticeType) const;
-
     double volume(const Eigen::Matrix3d &mat_in,
                   const LatticeType latttype_in) const;
 
@@ -147,7 +145,7 @@ private:
 
     void generate_coordinate_of_periodic_images();
 
-    void print_structure_stdout(const Cell &);
+    void print_structure_stdout(const int verbosity);
 
     void print_magmom_stdout() const;
 };
