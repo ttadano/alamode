@@ -611,7 +611,7 @@ void System::generate_coordinate_of_periodic_images()
         }
     }
 
-   // Convert to Cartesian coordinate
+    // Convert to Cartesian coordinate
     for (ia = -1; ia <= 1; ++ia) {
         for (ja = -1; ja <= 1; ++ja) {
             for (ka = -1; ka <= 1; ++ka) {
@@ -719,13 +719,14 @@ void System::print_structure_stdout(const int verbosity)
     }
 
     if (verbosity > 1) {
+        cout << '\n';
         cout << "   Atomic positions in fractional basis and atomic species" << endl;
         for (i = 0; i < cell.number_of_atoms; ++i) {
             cout << setw(6) << i + 1;
             cout << setw(15) << cell.x_fractional(i, 0);
             cout << setw(15) << cell.x_fractional(i, 1);
             cout << setw(15) << cell.x_fractional(i, 2);
-            cout << setw(5) << cell.kind[i] << endl;
+            cout << setw(5) << kdname[cell.kind[i] - 1] << endl;
         }
     }
 
@@ -779,14 +780,14 @@ void System::print_structure_stdout(const int verbosity)
         cout << endl;
     }
 
-        cout << "   Atomic positions in fractional basis and atomic species" << endl;
-        for (i = 0; i < cell.number_of_atoms; ++i) {
-            cout << setw(6) << i + 1;
-            cout << setw(15) << cell.x_fractional(i, 0);
-            cout << setw(15) << cell.x_fractional(i, 1);
-            cout << setw(15) << cell.x_fractional(i, 2);
-            cout << setw(5) << cell.kind[i] << endl;
-        }
+    cout << "   Atomic positions in fractional basis and atomic species" << endl;
+    for (i = 0; i < cell.number_of_atoms; ++i) {
+        cout << setw(6) << i + 1;
+        cout << setw(15) << cell.x_fractional(i, 0);
+        cout << setw(15) << cell.x_fractional(i, 1);
+        cout << setw(15) << cell.x_fractional(i, 2);
+        cout << setw(5) << kdname[cell.kind[i] - 1] << endl;
+    }
     cout << endl << endl;
 
     cell = get_supercell();
@@ -813,7 +814,7 @@ void System::print_structure_stdout(const int verbosity)
 
     cout << "   Number of atoms : " << cell.number_of_atoms << "\n\n";
     cout << "   Supercell contains " << std::setw(5) << cell.number_of_atoms / nat_prim
-    << " primitive cells\n\n";
+         << " primitive cells\n\n";
 
     if (verbosity > 1) {
         cout << "   Cell volume = " << cell.volume << " (bohr^3)" << endl << endl;
@@ -834,16 +835,14 @@ void System::print_structure_stdout(const int verbosity)
         cout << setw(15) << cell.reciprocal_lattice_vector(2, 2);
         cout << " : b3" << endl;
         cout << endl;
-    }
 
-    if (verbosity > 1) {
         cout << "   Atomic positions in fractional basis and atomic species" << endl;
         for (i = 0; i < cell.number_of_atoms; ++i) {
             cout << setw(6) << i + 1;
             cout << setw(15) << cell.x_fractional(i, 0);
             cout << setw(15) << cell.x_fractional(i, 1);
             cout << setw(15) << cell.x_fractional(i, 2);
-            cout << setw(5) << cell.kind[i] << endl;
+            cout << setw(5) << kdname[cell.kind[i] - 1] << endl;
         }
     }
     cout << endl << endl;
