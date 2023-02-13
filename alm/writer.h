@@ -110,6 +110,10 @@ public:
 
     int get_output_maxorder() const;
 
+    void set_input_vars(const std::map<std::string, std::string> &input_var_dict);
+
+    std::string get_input_var(const std::string &key) const;
+
 private:
     void write_force_constants(const std::unique_ptr<Cluster> &cluster,
                                const std::unique_ptr<Fcs> &fcs,
@@ -167,5 +171,8 @@ private:
     int output_maxorder;
     std::string file_fcs, file_hes;
     std::string filename_fcs;
+
+    std::map<std::string, std::string> input_variables;
+
 };
 }

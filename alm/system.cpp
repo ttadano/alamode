@@ -44,7 +44,8 @@ void System::init(const int verbosity,
     const auto nat = supercell.number_of_atoms;
 
     // Set atomic types (kind + magmom)
-    set_atomtype_group();
+    set_atomtype_group(supercell, spin_super, atomtype_group_super);
+    set_atomtype_group(primcell, spin_prim, atomtype_group_prim);
 
     const auto nneib = 27;
     if (x_image) {
@@ -145,12 +146,12 @@ void System::set_basecell(const double lavec_in[3][3],
         }
         // The fractional coordinate should be in the range of 0<=xf<1.
         for (j = 0; j < 3; ++j) {
-//            while (xtmp[j] >= 1.0) {
-//                xtmp[j] -= 1.0;
-//            }
-//            while (xtmp[j] < 0.0) {
-//                xtmp[j] += 1.0;
-//            }
+            while (xtmp[j] >= 1.0) {
+                xtmp[j] -= 1.0;
+            }
+            while (xtmp[j] < 0.0) {
+                xtmp[j] += 1.0;
+            }
             inputcell.x_fractional(i, j) = xtmp[j];
         }
     }
@@ -173,7 +174,6 @@ void System::build_cells()
     build_primcell();
     build_supercell();
 }
-
 
 void System::build_primcell()
 {
@@ -510,9 +510,13 @@ void System::set_spin_variables(const size_t nat_in,
     }
 }
 
-const Spin &System::get_spin() const
+const Spin &System::get_spin(const std::string cell) const
 {
-    return spin_input;
+    if (cell == "input") return spin_input;
+
+    if (cell == "primitive") return spin_prim;
+
+    return spin_super;
 }
 
 void System::set_str_magmom(std::string str_magmom_in)
@@ -525,13 +529,17 @@ const std::string &System::get_str_magmom() const
     return str_magmom;
 }
 
-const std::vector<std::vector<unsigned int>> &System::get_atomtype_group() const
+const std::vector<std::vector<unsigned int>> &System::get_atomtype_group(const std::string cell) const
 {
-    return atomtype_group;
+    if (cell == "primitive") return atomtype_group_prim;
+
+    return atomtype_group_super;
 }
 
 
-void System::set_atomtype_group()
+void System::set_atomtype_group(const Cell &cell_in,
+                                const Spin &spin_in,
+                                std::vector<std::vector<unsigned int>> &atomtype_group_out)
 {
     // In the case of collinear calculation, spin moments are considered as scalar
     // variables. Therefore, the same elements with different magnetic moments are
@@ -545,11 +553,11 @@ void System::set_atomtype_group()
     std::set<AtomType> set_type;
     set_type.clear();
 
-    for (i = 0; i < supercell.number_of_atoms; ++i) {
-        type_tmp.element = supercell.kind[i];
+    for (i = 0; i < cell_in.number_of_atoms; ++i) {
+        type_tmp.element = cell_in.kind[i];
 
-        if (spin_input.noncollinear == 0) {
-            type_tmp.magmom = spin_input.magmom[i][2];
+        if (spin_in.lspin == 1 && spin_in.noncollinear == 0) {
+            type_tmp.magmom = spin_in.magmom[i][2];
         } else {
             type_tmp.magmom = 0.0;
         }
@@ -557,19 +565,19 @@ void System::set_atomtype_group()
     }
 
     const auto natomtypes = set_type.size();
-    atomtype_group.resize(natomtypes);
+    atomtype_group_out.resize(natomtypes);
 
-    for (i = 0; i < supercell.number_of_atoms; ++i) {
+    for (i = 0; i < cell_in.number_of_atoms; ++i) {
         int count = 0;
         for (auto it: set_type) {
-            if (spin_input.noncollinear) {
-                if (supercell.kind[i] == it.element) {
-                    atomtype_group[count].push_back(i);
+            if (spin_in.noncollinear || spin_in.lspin == 0) {
+                if (cell_in.kind[i] == it.element) {
+                    atomtype_group_out[count].push_back(i);
                 }
             } else {
-                if ((supercell.kind[i] == it.element)
-                    && (std::abs(spin_input.magmom[i][2] - it.magmom) < eps6)) {
-                    atomtype_group[count].push_back(i);
+                if ((cell_in.kind[i] == it.element)
+                    && (std::abs(spin_in.magmom[i][2] - it.magmom) < eps6)) {
+                    atomtype_group_out[count].push_back(i);
                 }
             }
             ++count;

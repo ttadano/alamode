@@ -194,7 +194,6 @@ void InputParser::parse_input(ALM *alm)
         // In this case, the &cell and &position entries are ignored.
         lavec_poscar /= Bohr_in_Angstrom;
         input_setter->set_cell_parameter(lavec_poscar);
-        std::cout << xf_poscar << std::endl;
         input_setter->set_atomic_positions(xf_poscar);
         input_setter->set_element_types(atomic_types_poscar, kdname_vec_poscar);
         nat_in = atomic_types_poscar.size();
@@ -207,6 +206,7 @@ void InputParser::parse_input(ALM *alm)
 
     int noncollinear, time_reversal_symm, lspin;
     Eigen::MatrixXd magmom_vec;
+
     get_magnetic_params(dict_input_vars, nat_in,
                         lspin,
                         magmom_vec,
@@ -241,6 +241,8 @@ void InputParser::parse_input(ALM *alm)
         }
         parse_optimize_vars(alm);
     }
+
+    input_setter->set_input_var_dict(alm, dict_input_vars);
 }
 
 void InputParser::parse_general_vars(ALM *alm)
@@ -823,7 +825,7 @@ void InputParser::parse_structure_poscar(const std::string &fname_poscar,
     for (auto i = 0; i < num_kinds_vec.size(); ++i) {
         const auto ikd_now = map_kindname_to_index[species_v[i]];
         for (auto j = 0; j < num_kinds_vec[i]; ++j) {
-            atomic_types_out.push_back(ikd_now);
+            atomic_types_out.push_back(ikd_now + 1);
         }
     }
 
@@ -941,7 +943,9 @@ void InputParser::get_magnetic_params(std::map<std::string, std::string> &dict_i
                         }
 
                         for (auto i = icount; i < icount + ncount; ++i) {
-
+                            if (i >= nat_in) {
+                                exit("get_magnetic_params", "Too many entries for MAGMOM.");
+                            }
                             magmom_out(i, 2) = magmag;
                         }
                         icount += ncount;
@@ -989,6 +993,10 @@ void InputParser::parse_interaction_vars()
                  "The following variable is not found in &interaction input region: ",
                  it.c_str());
         }
+    }
+
+    for (const auto &it: interaction_var_dict) {
+        dict_input_vars.insert(it);
     }
 
     assign_val(maxorder, "NORDER", interaction_var_dict);
@@ -1063,6 +1071,10 @@ void InputParser::parse_optimize_vars(ALM *alm)
         std::cin.ignore();
     } else {
         ifs_input.ignore();
+    }
+
+    for (const auto &it: optimize_var_dict) {
+        dict_input_vars.insert(it);
     }
 
     get_var_dict(input_list, optimize_var_dict);

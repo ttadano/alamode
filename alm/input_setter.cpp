@@ -26,21 +26,12 @@ InputSetter::InputSetter()
     nat_base = 0;
     nkd = 0;
     maxorder = 0;
-    //kd_base = nullptr;
-    //kdname = nullptr;
 
-//    for (auto i = 0; i < 3; ++i) {
-//        for (auto j = 0; j < 3; j++) {
-//            lavec_base[i][j] = 0.0;
-//        }
-//    }
-    //xcoord_base = nullptr;
     is_periodic[0] = 1;
     is_periodic[1] = 1;
     is_periodic[2] = 1;
 
     lspin = false;
-    //magmom_base = nullptr;
     noncollinear = 0;
     trevsym = 1;
     str_magmom = "";
@@ -51,18 +42,6 @@ InputSetter::InputSetter()
 
 InputSetter::~InputSetter()
 {
-//    if (kdname) {
-//        deallocate(kdname);
-//    }
-//    if (xcoord_base) {
-//        deallocate(xcoord_base);
-//    }
-//    if (kd_base) {
-//        deallocate(kd_base);
-//    }
-//    if (magmom_base) {
-//        deallocate(magmom_base);
-//    }
     if (nbody_include) {
         deallocate(nbody_include);
     }
@@ -70,16 +49,6 @@ InputSetter::~InputSetter()
         deallocate(cutoff_radii);
     }
 }
-
-//void InputSetter::set_cell_parameter(const double a,
-//                                     const double lavec_in[3][3])
-//{
-//    for (auto i = 0; i < 3; ++i) {
-//        for (auto j = 0; j < 3; ++j) {
-//            lavec_base[i][j] = a * lavec_in[i][j];
-//        }
-//    }
-//}
 
 void InputSetter::set_cell_parameter(const Eigen::Matrix3d &lavec_in)
 {
@@ -215,27 +184,6 @@ void InputSetter::set_constraint_vars(ALM *alm,
 }
 
 
-//void InputSetter::set_atomic_positions(const size_t nat_in,
-//                                       const int *kd_in,
-//                                       const double (*xcoord_in)[3])
-//{
-//    if (kd_base) {
-//        deallocate(kd_base);
-//    }
-//    if (xcoord_base) {
-//        deallocate(xcoord_base);
-//    }
-//    allocate(xcoord_base, nat_in);
-//    allocate(kd_base, nat_in);
-//
-//    for (size_t i = 0; i < nat_in; ++i) {
-//        kd_base[i] = kd_in[i];
-//        for (auto j = 0; j < 3; ++j) {
-//            xcoord_base[i][j] = xcoord_in[i][j];
-//        }
-//    }
-//}
-
 void InputSetter::set_atomic_positions(const Eigen::MatrixXd &positions_in)
 {
     nat_base = positions_in.col(0).size();
@@ -248,7 +196,6 @@ void InputSetter::set_element_types(const std::vector<int> &kd_in,
     kd_base_vec = kd_in;
     kdnames_vec = kdnames_in;
 }
-
 
 void InputSetter::set_transformation_matrices(const Eigen::Matrix3d &transmat_super_in,
                                               const Eigen::Matrix3d &transmat_prim_in)
@@ -313,4 +260,10 @@ void InputSetter::set_geometric_structure(ALM *alm)
 
     alm->set_magnetic_params(nat_base, magmom_base, lspin, noncollinear, trevsym, str_magmom);
     deallocate(magmom_base);
+}
+
+void InputSetter::set_input_var_dict(ALM *alm,
+                                     const std::map<std::string, std::string> &dict_input_vars) const
+{
+    alm->set_input_vars(dict_input_vars);
 }

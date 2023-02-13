@@ -516,11 +516,9 @@ bool Cluster::is_inprim(const int iat, // atom index in supercell
                         const size_t natmin,
                         const std::vector<std::vector<int>> &map_p2s) const
 {
-
     for (size_t i = 0; i < natmin; ++i) {
         if (map_p2s[i][0] == iat) return true;
     }
-
     return false;
 }
 

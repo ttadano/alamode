@@ -96,11 +96,11 @@ public:
 
     int *get_periodicity() const;
 
-    const Spin &get_spin() const;
+    const Spin &get_spin(const std::string cell="super") const;
 
     const std::string &get_str_magmom() const;
 
-    const std::vector<std::vector<unsigned int>> &get_atomtype_group() const;
+    const std::vector<std::vector<unsigned int>> &get_atomtype_group(const std::string cell="super") const;
 
 private:
     // Variables for geometric structure
@@ -119,7 +119,7 @@ private:
     std::string str_magmom;
 
     // concatenate atomic kind and magmom (only for collinear case)
-    std::vector<std::vector<unsigned int>> atomtype_group;
+    std::vector<std::vector<unsigned int>> atomtype_group_super, atomtype_group_prim;
 
     enum LatticeType {
         Direct, Reciprocal
@@ -141,7 +141,9 @@ private:
     double volume(const Eigen::Matrix3d &mat_in,
                   const LatticeType latttype_in) const;
 
-    void set_atomtype_group();
+    void set_atomtype_group(const Cell &cell_in,
+                            const Spin &spin_in,
+                            std::vector<std::vector<unsigned int>> &atomtype_group_out);
 
     void generate_coordinate_of_periodic_images();
 

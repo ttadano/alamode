@@ -90,6 +90,8 @@ public:
                              bool fix_harmonic,
                              bool fix_cubic) const;
 
+    void set_input_var_dict(ALM *alm, const std::map<std::string, std::string> &dict_in) const;
+
 
 private:
     size_t nat_base, nkd;

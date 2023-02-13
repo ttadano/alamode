@@ -30,41 +30,23 @@ public:
 
     ~ALM();
 
-//    class Cluster *cluster{};
-
     std::unique_ptr<Cluster> cluster;
 
-    //class Fcs *fcs{};
-
     std::unique_ptr<Fcs> fcs;
-
-//    class System *system{};
 
     std::unique_ptr<System> system;
 
     std::unique_ptr<Symmetry> symmetry;
-//    class Symmetry *symmetry{};
 
-
-
-//    class Optimize *optimize{};
     std::unique_ptr<Optimize> optimize;
-
-//    class Constraint *constraint{};
 
     std::unique_ptr<Constraint> constraint;
 
-    //class Files *files{};
-
     std::unique_ptr<Files> files;
 
-//    class Displace *displace{};
     std::unique_ptr<Displace> displace;
 
-//    class Timer *timer{};
     std::unique_ptr<Timer> timer;
-
-//    class Writer *writer{};
 
     std::unique_ptr<Writer> writer;
 
@@ -230,6 +212,10 @@ public:
     void set_fcs_save_flag(const std::string fcs_format, const int val) const;
 
     int get_fcs_save_flag(const std::string fcs_format) const;
+
+    void set_input_vars(const std::map<std::string, std::string> &input_var_dict) const;
+
+    std::string get_input_var(const std::string &key) const;
 
 private:
 

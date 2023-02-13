@@ -69,8 +69,8 @@ void Writer::write_input_vars(const std::unique_ptr<System> &system,
     std::cout << " Input variables:\n";
     std::cout << " -------------------------------------------------------------------" << '\n';
     std::cout << " General:\n";
-    std::cout << "  PREFIX = " << files->get_prefix() << '\n';
-    std::cout << "  MODE = " << run_mode << '\n';
+    std::cout << "  PREFIX = " << input_variables.at("PREFIX") << '\n';
+    std::cout << "  MODE = " << input_variables.at("MODE") << '\n';
     std::cout << "  NAT = " << nat << "; NKD = " << nkd << '\n';
     std::cout << "  PRINTSYM = " << symmetry->get_print_symmetry()
               << "; TOLERANCE = " << symmetry->get_tolerance() << '\n';
@@ -81,7 +81,7 @@ void Writer::write_input_vars(const std::unique_ptr<System> &system,
     std::cout << "  PERIODIC = ";
     for (i = 0; i < 3; ++i) std::cout << std::setw(3) << system->get_periodicity()[i];
     std::cout << '\n';
-    std::cout << "  MAGMOM = " << system->get_str_magmom() << '\n';
+    std::cout << "  MAGMOM = " << input_variables.at("MAGMOM") << '\n';
     std::cout << "  FCS_ALAMODE = " << save_format_flags.at("alamode") << ';';
     std::cout << "  NMAXSAVE = " << get_output_maxorder() << '\n';
     std::cout << "  FC3_SHENGBTE = " << save_format_flags.at("shengbte") << '\n';
@@ -1284,4 +1284,24 @@ std::string Writer::get_filename_fcs() const
 {
     return filename_fcs;
 }
+
+void Writer::set_input_vars(const std::map<std::string, std::string> &input_var_dict)
+{
+    input_variables.clear();
+    for (const auto &it : input_var_dict) {
+        input_variables.insert(it);
+    }
+}
+
+std::string Writer::get_input_var(const std::string &key) const
+{
+    const auto it = input_variables.find(key);
+    if (it != input_variables.end()) {
+        return it->second;
+    } else {
+        return "";
+    }
+}
+
+
 

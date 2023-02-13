@@ -778,3 +778,13 @@ int ALM::get_fcs_save_flag(const std::string fcs_format) const
 {
     return writer->get_fcs_save_flag(fcs_format);
 }
+
+void ALM::set_input_vars(const std::map<std::string, std::string> &input_var_dict) const
+{
+    writer->set_input_vars(input_var_dict);
+}
+
+std::string ALM::get_input_var(const std::string &key) const
+{
+    return writer->get_input_var(key);
+}

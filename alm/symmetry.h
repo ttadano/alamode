@@ -154,31 +154,27 @@ private:
                                   const Spin &,
                                   const int);
 
-    void gen_mapping_information(const Cell &,
-                                 const std::vector<std::vector<unsigned int>> &);
+    void gen_mapping_information(const Cell &scell,
+                                 const std::vector<std::vector<unsigned int>> &atomtype_group_super,
+                                 const std::vector<SymmetryOperation> &symm_super,
+                                 const Cell &pcell);
 
     void findsym_alm(const Cell &,
-                     const int [3],
                      const std::vector<std::vector<unsigned int>> &,
-                     const Spin &);
+                     const Spin &,
+                     std::vector<SymmetryOperation> &symm_out) const;
 
     int findsym_spglib(const Cell &,
                        const std::vector<std::vector<unsigned int>> &,
                        const Spin &,
-                       std::string &);
+                       std::string &,
+                       std::vector<SymmetryOperation> &symm_out) const;
 
     bool is_translation(const int [3][3]) const;
 
     bool is_translation(const Eigen::Matrix3i &rot) const;
 
-    bool is_proper(const double [3][3]) const;
-
     bool is_proper(const Eigen::Matrix3d &rot) const;
-
-    void symop_in_cart(double [3][3],
-                       const int [3][3],
-                       const double [3][3],
-                       const double [3][3]) const;
 
     void symop_in_cart(Eigen::Matrix3d &rot_cart,
                        const Eigen::Matrix3i &rot_lattice,
@@ -189,20 +185,27 @@ private:
 
     template<typename T>
     bool is_compatible(const T [3][3],
-                       double tolerance_zero = 1.0e-5);
+                       double tolerance_zero = 1.0e-5) const;
 
     template<typename T>
     bool is_compatible(const Eigen::MatrixBase<T> &mat,
-                       double tolerance_zero = 1.0e-5);
+                       double tolerance_zero = 1.0e-5) const;
 
     void find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                std::vector<RotationMatrix> &) const;
 
     void find_crystal_symmetry(const Cell &,
                                const std::vector<std::vector<unsigned int>> &,
-                               const int [3],
                                const Spin &,
-                               const std::vector<RotationMatrix> &);
+                               const std::vector<RotationMatrix> &,
+                               std::vector<SymmetryOperation> &symm_out) const;
+
+    void check_primitive_cell(const Cell &cell_prim,
+                              const Spin &spin_prim,
+                              const std::vector<std::vector<unsigned int>> &atomtype_group_prim,
+                              const Cell &cell_super,
+                              const size_t nsym_in,
+                              const size_t ntran_in) const;
 
     void set_primitive_lattice(const double aa[3][3],
                                const size_t nat,

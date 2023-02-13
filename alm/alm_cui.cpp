@@ -11,16 +11,12 @@
 #include "alm_cui.h"
 #include "alm.h"
 #include "input_parser.h"
-#include "timer.h"
 #include "version.h"
 #include <iostream>
 #include <iomanip>
 #include <memory>
-
 #ifdef _OPENMP
-
 #include <omp.h>
-
 #endif
 
 using namespace ALM_NS;
