@@ -59,9 +59,9 @@ void Optimize::deallocate_variables()
     }
 }
 
-int Optimize::optimize_main(const Symmetry *symmetry,
-                            Constraint *constraint,
-                            Fcs *fcs,
+int Optimize::optimize_main(const std::unique_ptr<Symmetry> &symmetry,
+                            std::unique_ptr<Constraint> &constraint,
+                            std::unique_ptr<Fcs> &fcs,
                             const int maxorder,
                             const std::string &file_prefix,
                             const std::vector<std::string> &str_order,
@@ -69,7 +69,7 @@ int Optimize::optimize_main(const Symmetry *symmetry,
                             const DispForceFile &filedata_train,
                             const DispForceFile &filedata_validation,
                             const int output_maxorder,
-                            Timer *timer)
+                            std::unique_ptr<Timer> &timer)
 {
     timer->start_clock("optimize");
 
@@ -222,9 +222,9 @@ int Optimize::least_squares(const int maxorder,
                             const size_t N_new,
                             const size_t M,
                             const int verbosity,
-                            const Symmetry *symmetry,
-                            const Fcs *fcs,
-                            const Constraint *constraint,
+                            const std::unique_ptr<Symmetry> &symmetry,
+                            const std::unique_ptr<Fcs> &fcs,
+                            const std::unique_ptr<Constraint> &constraint,
                             std::vector<double> &param_out)
 {
     auto info_fitting = 0;
@@ -358,10 +358,10 @@ int Optimize::compressive_sensing(const std::string job_prefix,
                                   const int maxorder,
                                   const size_t N_new,
                                   const size_t M,
-                                  const Symmetry *symmetry,
+                                  const std::unique_ptr<Symmetry> &symmetry,
                                   const std::vector<std::string> &str_order,
-                                  const Fcs *fcs,
-                                  Constraint *constraint,
+                                  const std::unique_ptr<Fcs> &fcs,
+                                  std::unique_ptr<Constraint> &constraint,
                                   const int verbosity,
                                   std::vector<double> &param_out)
 {
@@ -459,9 +459,9 @@ int Optimize::compressive_sensing(const std::string job_prefix,
 
 double Optimize::crossvalidation(const std::string job_prefix,
                                  const int maxorder,
-                                 const Fcs *fcs,
-                                 const Symmetry *symmetry,
-                                 const Constraint *constraint,
+                                 const std::unique_ptr<Fcs> &fcs,
+                                 const std::unique_ptr<Symmetry> &symmetry,
+                                 const std::unique_ptr<Constraint> &constraint,
                                  const int verbosity)
 {
     // Cross-validation mode:
@@ -534,9 +534,9 @@ double Optimize::crossvalidation(const std::string job_prefix,
 
 double Optimize::run_manual_cv(const std::string job_prefix,
                                const int maxorder,
-                               const Fcs *fcs,
-                               const Symmetry *symmetry,
-                               const Constraint *constraint,
+                               const std::unique_ptr<Fcs> &fcs,
+                               const std::unique_ptr<Symmetry> &symmetry,
+                               const std::unique_ptr<Constraint> &constraint,
                                const int verbosity)
 {
     // Manual CV mode where the test data is read from the user-defined file.
@@ -643,9 +643,9 @@ double Optimize::run_manual_cv(const std::string job_prefix,
 
 double Optimize::run_auto_cv(const std::string job_prefix,
                              const int maxorder,
-                             const Fcs *fcs,
-                             const Symmetry *symmetry,
-                             const Constraint *constraint,
+                             const std::unique_ptr<Fcs> &fcs,
+                             const std::unique_ptr<Symmetry> &symmetry,
+                             const std::unique_ptr<Constraint> &constraint,
                              const int verbosity)
 {
     // Automatic CV mode.
@@ -1044,7 +1044,7 @@ void Optimize::solution_path(const int maxorder,
                              const double fnorm_validation,
                              const std::string file_coef,
                              const int verbosity,
-                             const Constraint *constraint,
+                             const std::unique_ptr<Constraint> &constraint,
                              const std::vector<double> &alphas,
                              std::vector<double> &training_error,
                              std::vector<double> &validation_error,
@@ -1225,9 +1225,9 @@ void Optimize::compute_alphas(const double l1_alpha_max,
 void Optimize::optimize_with_given_l1alpha(const int maxorder,
                                            const size_t M,
                                            const size_t N_new,
-                                           const Fcs *fcs,
-                                           const Symmetry *symmetry,
-                                           const Constraint *constraint,
+                                           const std::unique_ptr<Fcs> &fcs,
+                                           const std::unique_ptr<Symmetry> &symmetry,
+                                           const std::unique_ptr<Constraint> &constraint,
                                            const int verbosity,
                                            std::vector<double> &param_out) const
 {
@@ -1398,7 +1398,7 @@ void Optimize::run_least_squares_with_nonzero_coefs(const Eigen::MatrixXd &A_in,
 }
 
 void Optimize::get_number_of_zero_coefs(const int maxorder,
-                                        const Constraint *constraint,
+                                        const std::unique_ptr<Constraint> &constraint,
                                         const Eigen::VectorXd &x,
                                         std::vector<int> &nzeros) const
 {
@@ -1530,7 +1530,7 @@ void Optimize::apply_scaler_displacement(std::vector<std::vector<double>> &u_ino
 
 void Optimize::apply_scaler_constraint(const int maxorder,
                                        const double normalization_factor,
-                                       Constraint *constraint,
+                                       const std::unique_ptr<Constraint> &constraint,
                                        const bool scale_back) const
 {
     if (scale_back) {
@@ -1554,7 +1554,7 @@ void Optimize::apply_scaler_constraint(const int maxorder,
 
 void Optimize::apply_scaler_force_constants(const int maxorder,
                                             const double normalization_factor,
-                                            const Constraint *constraint,
+                                            const std::unique_ptr<Constraint> &constraint,
                                             std::vector<double> &param_inout) const
 {
     auto k = 0;
@@ -1569,7 +1569,7 @@ void Optimize::apply_scaler_force_constants(const int maxorder,
 }
 
 void Optimize::apply_scalers(const int maxorder,
-                             Constraint *constraint)
+                             const std::unique_ptr<Constraint> &constraint)
 {
     apply_scaler_displacement(u_train,
                               optcontrol.displacement_normalization_factor);
@@ -1585,7 +1585,7 @@ void Optimize::apply_scalers(const int maxorder,
 }
 
 void Optimize::finalize_scalers(const int maxorder,
-                                Constraint *constraint)
+                                const std::unique_ptr<Constraint> &constraint)
 {
     apply_scaler_displacement(u_train,
                               optcontrol.displacement_normalization_factor,
@@ -1690,7 +1690,7 @@ size_t Optimize::get_number_of_data() const
 void Optimize::set_fcs_values(const int maxorder,
                               double *fc_in,
                               std::vector<size_t> *nequiv,
-                              const Constraint *constraint)
+                              const std::unique_ptr<Constraint> &constraint)
 {
     // fc_in: irreducible set of force constants
     // fc_length: dimension of params (can differ from that of fc_in)
@@ -1926,8 +1926,8 @@ int Optimize::fit_algebraic_constraints(const size_t N,
                                         std::vector<double> &param_out,
                                         const double fnorm,
                                         const int maxorder,
-                                        const Fcs *fcs,
-                                        const Constraint *constraint,
+                                        const std::unique_ptr<Fcs> &fcs,
+                                        const std::unique_ptr<Constraint> &constraint,
                                         const int verbosity) const
 {
     int i;
@@ -2016,8 +2016,8 @@ void Optimize::get_matrix_elements(const int maxorder,
                                    std::vector<double> &bvec,
                                    const std::vector<std::vector<double>> &u_in,
                                    const std::vector<std::vector<double>> &f_in,
-                                   const Symmetry *symmetry,
-                                   const Fcs *fcs) const
+                                   const std::unique_ptr<Symmetry> &symmetry,
+                                   const std::unique_ptr<Fcs> &fcs) const
 {
     size_t i, j;
     long irow;
@@ -2147,9 +2147,9 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                                                         const std::vector<std::vector<double>> &u_in,
                                                         const std::vector<std::vector<double>> &f_in,
                                                         double &fnorm,
-                                                        const Symmetry *symmetry,
-                                                        const Fcs *fcs,
-                                                        const Constraint *constraint) const
+                                                        const std::unique_ptr<Symmetry> &symmetry,
+                                                        const std::unique_ptr<Fcs> &fcs,
+                                                        const std::unique_ptr<Constraint> &constraint) const
 {
     size_t i, j;
     long irow;
@@ -2347,9 +2347,9 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
                                                   const std::vector<std::vector<double>> &u_in,
                                                   const std::vector<std::vector<double>> &f_in,
                                                   double &fnorm,
-                                                  const Symmetry *symmetry,
-                                                  const Fcs *fcs,
-                                                  const Constraint *constraint) const
+                                                  const std::unique_ptr<Symmetry> &symmetry,
+                                                  const std::unique_ptr<Fcs> &fcs,
+                                                  const std::unique_ptr<Constraint> &constraint) const
 {
     size_t i, j;
     long irow;
@@ -2550,7 +2550,7 @@ void Optimize::recover_original_forceconstants(const int maxorder,
                                                const std::vector<double> &param_in,
                                                std::vector<double> &param_out,
                                                const std::vector<size_t> *nequiv,
-                                               const Constraint *constraint) const
+                                               const std::unique_ptr<Constraint> &constraint) const
 {
     // Expand the given force constants into the larger sets
     // by using the constraint matrix.
@@ -2598,7 +2598,7 @@ void Optimize::recover_original_forceconstants(const int maxorder,
 
 void Optimize::data_multiplier(const std::vector<std::vector<double>> &data_in,
                                std::vector<std::vector<double>> &data_out,
-                               const Symmetry *symmetry) const
+                               const std::unique_ptr<Symmetry> &symmetry) const
 {
     const auto nat = symmetry->get_nat_prim() * symmetry->get_ntran();
     const auto ndata_used = data_in.size();
@@ -2622,7 +2622,7 @@ void Optimize::data_multiplier(const std::vector<std::vector<double>> &data_in,
 }
 
 int Optimize::inprim_index(const int n,
-                           const Symmetry *symmetry) const
+                           const std::unique_ptr<Symmetry> &symmetry) const
 {
     auto in = -1;
     const auto atmn = n / 3;
@@ -2760,8 +2760,8 @@ int Optimize::run_eigen_sparse_solver(const SpMat &sp_mat,
                                       std::vector<double> &param_out,
                                       const double fnorm,
                                       const int maxorder,
-                                      const Fcs *fcs,
-                                      const Constraint *constraint,
+                                      const std::unique_ptr<Fcs> &fcs,
+                                      const std::unique_ptr<Constraint> &constraint,
                                       const std::string solver_type,
                                       const int verbosity) const
 {

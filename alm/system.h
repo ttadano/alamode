@@ -60,7 +60,7 @@ public:
     ~System();
 
     void init(const int,
-              Timer *);
+              std::unique_ptr<Timer> &timer);
 
     void set_basecell(const double lavec_in[3][3],
                       const size_t nat_in,

@@ -45,11 +45,11 @@ Fcs::~Fcs()
     deallocate_variables();
 };
 
-void Fcs::init(const Cluster *cluster,
-               const Symmetry *symmetry,
+void Fcs::init(const std::unique_ptr<Cluster> &cluster,
+               const std::unique_ptr<Symmetry> &symmetry,
                const Cell &supercell,
                const int verbosity,
-               Timer *timer)
+               std::unique_ptr<Timer> &timer)
 {
     int i;
     const auto maxorder = cluster->get_maxorder();
@@ -149,7 +149,7 @@ void Fcs::deallocate_variables()
 void Fcs::generate_force_constant_table(const int order,
                                         const size_t nat,
                                         const std::set<IntList> &pairs,
-                                        const Symmetry *symm_in,
+                                        const std::unique_ptr<Symmetry> &symm_in,
                                         const std::string basis,
                                         std::vector<FcProperty> &fc_vec,
                                         std::vector<size_t> &ndup,
@@ -355,7 +355,7 @@ void Fcs::generate_force_constant_table(const int order,
 }
 
 void Fcs::get_constraint_symmetry(const size_t nat,
-                                  const Symmetry *symmetry,
+                                  const std::unique_ptr<Symmetry> &symmetry,
                                   const int order,
                                   const std::string basis,
                                   const std::vector<FcProperty> &fc_table_in,
@@ -549,7 +549,7 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 }
 
 void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
-                                             const Symmetry *symmetry,
+                                             const std::unique_ptr<Symmetry> &symmetry,
                                              const int order,
                                              const std::string basis,
                                              const std::vector<FcProperty> &fc_table_in,
@@ -985,7 +985,7 @@ std::vector<size_t> Fcs::get_nfc_cart(const int permutation) const
 }
 
 void Fcs::get_available_symmop(const size_t nat,
-                               const Symmetry *symmetry,
+                               const std::unique_ptr<Symmetry> &symmetry,
                                const std::string basis,
                                int &nsym_avail,
                                int **mapping_symm,
@@ -1210,7 +1210,7 @@ void Fcs::set_basis_conversion_matrix(const Cell &supercell)
     }
 }
 
-void Fcs::translate_forceconstant_index_to_centercell(const Symmetry *symmetry,
+void Fcs::translate_forceconstant_index_to_centercell(const std::unique_ptr<Symmetry> &symmetry,
                                                       std::vector<std::vector<int>> &index_inout) const
 {
     const auto map_sym = symmetry->get_map_sym();

@@ -118,11 +118,11 @@ public:
 
     ~Displace();
 
-    void gen_displacement_pattern(const Cluster *cluster,
-                                  const Symmetry *symmetry,
-                                  const Fcs *fcs,
-                                  const Constraint *constraint,
-                                  const System *system,
+    void gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
+                                  const std::unique_ptr<Symmetry> &symmetry,
+                                  const std::unique_ptr<Fcs> &fcs,
+                                  const std::unique_ptr<Constraint> &constraint,
+                                  const std::unique_ptr<System> &system,
                                   const int verbosity);
 
     void set_trim_dispsign_for_evenfunc(const bool);
@@ -147,7 +147,7 @@ private:
     void generate_pattern_all(const int maxorder,
                               const size_t nat,
                               const Eigen::Matrix3d &lavec,
-                              const Symmetry *symmetry,
+                              const std::unique_ptr<Symmetry> &symmetry,
                               const std::set<DispAtomSet> *dispset_in,
                               const std::string preferred_basis) const;
 
@@ -157,7 +157,7 @@ private:
 
     void find_unique_sign_pairs(const int natom_disp_in,
                                 const size_t nat,
-                                const Symmetry *symmetry,
+                                const std::unique_ptr<Symmetry> &symmetry,
                                 const std::vector<std::vector<int>> sign_in,
                                 const std::vector<int> &pair_in,
                                 std::vector<std::vector<int>> &sign_out,

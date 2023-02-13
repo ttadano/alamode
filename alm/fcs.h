@@ -156,11 +156,11 @@ public:
 
     ~Fcs();
 
-    void init(const Cluster *cluster,
-              const Symmetry *symmetry,
+    void init(const std::unique_ptr<Cluster> &cluster,
+              const std::unique_ptr<Symmetry> &symmetry,
               const Cell &supercell,
               const int verbosity,
-              Timer *timer);
+              std::unique_ptr<Timer> &timer);
 
     void get_xyzcomponent(int,
                           int **) const;
@@ -168,7 +168,7 @@ public:
     void generate_force_constant_table(const int,
                                        const size_t nat,
                                        const std::set<IntList> &,
-                                       const Symmetry *,
+                                       const std::unique_ptr<Symmetry> &symm_in,
                                        const std::string,
                                        std::vector<FcProperty> &,
                                        std::vector<size_t> &,
@@ -176,7 +176,7 @@ public:
                                        const bool) const;
 
     void get_constraint_symmetry(const size_t nat,
-                                 const Symmetry *symmetry,
+                                 const std::unique_ptr<Symmetry> &symmetry,
                                  const int order,
                                  const std::string basis,
                                  const std::vector<FcProperty> &fc_table_in,
@@ -186,7 +186,7 @@ public:
                                  const bool do_rref = false) const;
 
     void get_constraint_symmetry_in_integer(const size_t nat,
-                                            const Symmetry *symmetry,
+                                            const std::unique_ptr<Symmetry> &symmetry,
                                             const int order,
                                             const std::string basis,
                                             const std::vector<FcProperty> &fc_table_in,
@@ -216,7 +216,7 @@ public:
 
     double get_fc_zero_threshold() const;
 
-    void translate_forceconstant_index_to_centercell(const Symmetry *symmetry,
+    void translate_forceconstant_index_to_centercell(const std::unique_ptr<Symmetry> &symmetry,
                                                      std::vector<std::vector<int>> &index_inout) const;
 
 private:
@@ -260,7 +260,7 @@ private:
                     int &) const;
 
     void get_available_symmop(const size_t nat,
-                              const Symmetry *symmetry,
+                              const std::unique_ptr<Symmetry> &symmetry,
                               const std::string basis,
                               int &nsym_avail,
                               int **mapping_symm,

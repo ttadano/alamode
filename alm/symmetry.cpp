@@ -101,9 +101,9 @@ size_t Symmetry::get_nat_prim() const
     return nat_prim;
 }
 
-void Symmetry::init(const System *system,
+void Symmetry::init(const std::unique_ptr<System> &system,
                     const int verbosity,
-                    Timer *timer)
+                    std::unique_ptr<Timer> &timer)
 {
     timer->start_clock("symmetry");
 

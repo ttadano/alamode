@@ -36,11 +36,11 @@ Cluster::~Cluster()
     deallocate_variables();
 }
 
-void Cluster::init(const System *system,
-                   const Symmetry *symmetry,
+void Cluster::init(const std::unique_ptr<System> &system,
+                   const std::unique_ptr<Symmetry> &symmetry,
                    const int mirror_image_conv,
                    const int verbosity,
-                   Timer *timer)
+                   std::unique_ptr<Timer> &timer)
 {
     timer->start_clock("cluster");
 
@@ -219,8 +219,8 @@ void Cluster::generate_pairs(const size_t natmin,
     }
 }
 
-void Cluster::check_permutation_symmetry(const System *system,
-                                         const Symmetry *symmetry,
+void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
+                                         const std::unique_ptr<Symmetry> &symmetry,
                                          int order)
 {
     const auto nat = system->get_supercell().number_of_atoms;
@@ -487,8 +487,8 @@ void Cluster::check_permutation_symmetry(const System *system,
 
 }
 
-void Cluster::make_symnum_tran_to_prim(const System *system,
-                                       const Symmetry *symmetry,
+void Cluster::make_symnum_tran_to_prim(const std::unique_ptr<System> &system,
+                                       const std::unique_ptr<Symmetry> &symmetry,
                                        std::vector<int> &symnum_tran_to_prim)
 {
 

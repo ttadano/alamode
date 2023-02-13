@@ -35,7 +35,7 @@ System::~System()
 }
 
 void System::init(const int verbosity,
-                  Timer *timer)
+                  std::unique_ptr<Timer> &timer)
 {
     timer->start_clock("system");
 

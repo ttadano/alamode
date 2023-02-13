@@ -32,8 +32,8 @@ using namespace ALM_NS;
 
 InputParser::InputParser()
 {
-     input_setter = std::make_unique<InputSetter>();
- }
+    input_setter = std::make_unique<InputSetter>();
+}
 
 InputParser::~InputParser()
 {

@@ -36,11 +36,11 @@ Displace::~Displace()
     deallocate_variables();
 }
 
-void Displace::gen_displacement_pattern(const Cluster *cluster,
-                                        const Symmetry *symmetry,
-                                        const Fcs *fcs,
-                                        const Constraint *constraint,
-                                        const System *system,
+void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
+                                        const std::unique_ptr<Symmetry> &symmetry,
+                                        const std::unique_ptr<Fcs> &fcs,
+                                        const std::unique_ptr<Constraint> &constraint,
+                                        const std::unique_ptr<System> &system,
                                         const int verbosity)
 {
     int order;
@@ -245,7 +245,7 @@ void Displace::deallocate_variables()
 void Displace::generate_pattern_all(const int maxorder,
                                     const size_t nat,
                                     const Eigen::Matrix3d &lavec,
-                                    const Symmetry *symmetry,
+                                    const std::unique_ptr<Symmetry> &symmetry,
                                     const std::set<DispAtomSet> *dispset_in,
                                     const std::string preferred_basis) const
 {
@@ -366,7 +366,7 @@ void Displace::generate_signvecs(const int N,
 
 void Displace::find_unique_sign_pairs(const int natom_disp_in,
                                       const size_t nat,
-                                      const Symmetry *symmetry,
+                                      const std::unique_ptr<Symmetry> &symmetry,
                                       const std::vector<std::vector<int>> sign_in,
                                       const std::vector<int> &pair_in,
                                       std::vector<std::vector<int>> &sign_out,

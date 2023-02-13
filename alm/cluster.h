@@ -261,11 +261,11 @@ public:
 
     ~Cluster();
 
-    void init(const System *system,
-              const Symmetry *symmetry,
+    void init(const std::unique_ptr<System> &system,
+              const std::unique_ptr<Symmetry> &symmetry,
               const int mirror_image_conv,
               const int verbosity,
-              Timer *timer);
+              std::unique_ptr<Timer> &timer);
 
     bool satisfy_nbody_rule(const int nelem,
                             const int *arr,
@@ -374,12 +374,12 @@ private:
                         const std::vector<std::vector<int>> &map_p2s,
                         std::set<IntList> *pair_out) const;
 
-    void check_permutation_symmetry(const System *system,
-                                    const Symmetry *symmetry,
+    void check_permutation_symmetry(const std::unique_ptr<System> &system,
+                                    const std::unique_ptr<Symmetry> &symmetry,
                                     int order);
 
-    void make_symnum_tran_to_prim(const System *system,
-                                  const Symmetry *symmetry,
+    void make_symnum_tran_to_prim(const std::unique_ptr<System> &system,
+                                  const std::unique_ptr<Symmetry> &symmetry,
                                   std::vector<int> &symnum_tran_to_prim);
 
     bool is_inprim(const int iat, // atom index in supercell

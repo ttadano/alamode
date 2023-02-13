@@ -79,14 +79,14 @@ void Constraint::deallocate_variables()
     }
 }
 
-void Constraint::setup(const System *system,
-                       const Fcs *fcs,
-                       const Cluster *cluster,
-                       const Symmetry *symmetry,
+void Constraint::setup(const std::unique_ptr<System> &system,
+                       const std::unique_ptr<Fcs> &fcs,
+                       const std::unique_ptr<Cluster> &cluster,
+                       const std::unique_ptr<Symmetry> &symmetry,
                        const int linear_model,
                        const int mirror_image_conv,
                        const int verbosity,
-                       Timer *timer)
+                       std::unique_ptr<Timer> &timer)
 {
     timer->start_clock("constraint");
 
@@ -222,10 +222,10 @@ void Constraint::setup(const System *system,
     timer->stop_clock("constraint");
 }
 
-void Constraint::update_constraint_matrix(const System *system,
-                                          const Symmetry *symmetry,
-                                          const Cluster *cluster,
-                                          const Fcs *fcs,
+void Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
+                                          const std::unique_ptr<Symmetry> &symmetry,
+                                          const std::unique_ptr<Cluster> &cluster,
+                                          const std::unique_ptr<Fcs> &fcs,
                                           const int verbosity,
                                           const int mirror_image_conv)
 {
@@ -411,7 +411,7 @@ void Constraint::update_constraint_matrix(const System *system,
 #endif
 }
 
-void Constraint::print_constraint_information(const Cluster *cluster) const
+void Constraint::print_constraint_information(const std::unique_ptr<Cluster> &cluster) const
 {
     const auto maxorder = cluster->get_maxorder();
     auto extra_constraint_from_symmetry = false;
@@ -890,9 +890,9 @@ void Constraint::set_constraint_flag(const std::string const_name,
 }
 
 void Constraint::generate_symmetry_constraint(const size_t nat,
-                                              const Symmetry *symmetry,
-                                              const Cluster *cluster,
-                                              const Fcs *fcs,
+                                              const std::unique_ptr<Symmetry> &symmetry,
+                                              const std::unique_ptr<Cluster> &cluster,
+                                              const std::unique_ptr<Fcs> &fcs,
                                               const int verbosity)
 {
     // Create constraint matrices arising from the crystal symmetry.
@@ -968,9 +968,9 @@ void Constraint::generate_symmetry_constraint(const size_t nat,
 
 
 void Constraint::generate_translational_constraint(const Cell &supercell,
-                                                   const Symmetry *symmetry,
-                                                   const Cluster *cluster,
-                                                   const Fcs *fcs,
+                                                   const std::unique_ptr<Symmetry> &symmetry,
+                                                   const std::unique_ptr<Cluster> &cluster,
+                                                   const std::unique_ptr<Fcs> &fcs,
                                                    const int mirror_image_conv,
                                                    const int verbosity)
 {
@@ -1032,9 +1032,9 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
 
 
 void Constraint::get_constraint_translation(const Cell &supercell,
-                                            const Symmetry *symmetry,
-                                            const Cluster *cluster,
-                                            const Fcs *fcs,
+                                            const std::unique_ptr<Symmetry> &symmetry,
+                                            const std::unique_ptr<Cluster> &cluster,
+                                            const std::unique_ptr<Fcs> &fcs,
                                             const int order,
                                             const std::vector<FcProperty> &fc_table,
                                             const size_t nparams,
@@ -1331,9 +1331,9 @@ void Constraint::get_constraint_translation(const Cell &supercell,
 }
 
 void Constraint::get_constraint_translation_for_mirror_images(const Cell &supercell,
-                                                              const Symmetry *symmetry,
-                                                              const Cluster *cluster,
-                                                              const Fcs *fcs,
+                                                              const std::unique_ptr<Symmetry> &symmetry,
+                                                              const std::unique_ptr<Cluster> &cluster,
+                                                              const std::unique_ptr<Fcs> &fcs,
                                                               const int order,
                                                               const std::vector<FcProperty> &fc_table,
                                                               const size_t nparams,
@@ -1640,10 +1640,10 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     if (do_rref) rref_sparse(nparams, const_out, eps8);
 }
 
-void Constraint::generate_rotational_constraint(const System *system,
-                                                const Symmetry *symmetry,
-                                                const Cluster *cluster,
-                                                const Fcs *fcs,
+void Constraint::generate_rotational_constraint(const std::unique_ptr<System> &system,
+                                                const std::unique_ptr<Symmetry> &symmetry,
+                                                const std::unique_ptr<Cluster> &cluster,
+                                                const std::unique_ptr<Fcs> &fcs,
                                                 const int verbosity,
                                                 const double tolerance)
 {
@@ -1812,10 +1812,10 @@ void Constraint::generate_rotational_constraint(const System *system,
     deallocate(const_cross_vec);
 }
 
-void Constraint::set_rotation_constraints(const System *system,
-                                          const Symmetry *symmetry,
-                                          const Cluster *cluster,
-                                          const Fcs *fcs,
+void Constraint::set_rotation_constraints(const std::unique_ptr<System> &system,
+                                          const std::unique_ptr<Symmetry> &symmetry,
+                                          const std::unique_ptr<Cluster> &cluster,
+                                          const std::unique_ptr<Fcs> &fcs,
                                           const int order,
                                           const bool valid_rotation_axis[3][3],
                                           const std::unordered_set<FcProperty> &list_found,
@@ -2209,10 +2209,10 @@ void Constraint::set_rotation_constraints(const System *system,
     status_constraint_subset["rotation"] = 1;
 }
 
-void Constraint::set_rotation_constraints_extra(const System *system,
-                                                const Symmetry *symmetry,
-                                                const Cluster *cluster,
-                                                const Fcs *fcs,
+void Constraint::set_rotation_constraints_extra(const std::unique_ptr<System> &system,
+                                                const std::unique_ptr<Symmetry> &symmetry,
+                                                const std::unique_ptr<Cluster> &cluster,
+                                                const std::unique_ptr<Fcs> &fcs,
                                                 const int order,
                                                 const bool valid_rotation_axis[3][3],
                                                 const std::unordered_set<FcProperty> &list_found,
@@ -2411,178 +2411,178 @@ void Constraint::setup_rotation_axis(bool flag[3][3])
 }
 
 
-void Constraint::fix_forceconstants_to_file(const int order,
-                                            const Symmetry *symmetry,
-                                            const Fcs *fcs,
-                                            const std::string file_to_fix,
-                                            std::vector<ConstraintTypeFix> &const_out) const
-{
-    using namespace boost::property_tree;
-    ptree pt;
-
-    try {
-        read_xml(file_to_fix, pt);
-    }
-    catch (std::exception &e) {
-        if (order == 0) {
-            auto str_error = "Cannot open file FC2XML ( " + file_to_fix + " )";
-        } else if (order == 1) {
-            auto str_error = "Cannot open file FC3XML ( " + file_to_fix + " )";
-        }
-        exit("fix_forceconstants_to_file", "Failed to open ", file_to_fix.c_str());
-    }
-
-    const auto nat_ref = boost::lexical_cast<size_t>(
-            get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
-    const auto ntran_ref = boost::lexical_cast<size_t>(
-            get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
-    const auto natmin_ref = nat_ref / ntran_ref;
-
-    if (natmin_ref != symmetry->get_nat_prim()) {
-        exit("fix_forceconstants_to_file",
-             "The number of atoms in the primitive cell is not consistent.");
-    }
-
-    const auto nfcs = fcs->get_nequiv()[order].size();
-
-    if (order == 0) {
-        const auto nfcs_ref = boost::lexical_cast<size_t>(
-                get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.NFC2"));
-
-        if (nfcs_ref != nfcs) {
-            exit("fix_forceconstants_to_file",
-                 "The number of harmonic force constants is not consistent.");
-        }
-
-        std::string preferred_basis_ref = boost::lexical_cast<std::string>(
-                get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.Basis", 0));
-
-        if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
-
-        if (preferred_basis_ref != fcs->get_forceconstant_basis()) {
-            exit("fix_forceconstants_to_file",
-                 "The basis of harmonic force constants is not consistent.");
-        }
-    } else if (order == 1) {
-        const auto nfcs_ref = boost::lexical_cast<size_t>(
-                get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.NFC3"));
-
-        if (nfcs_ref != nfcs) {
-            exit("fix_forceconstants_to_file",
-                 "The number of cubic force constants is not consistent.");
-        }
-
-        std::string preferred_basis_ref = boost::lexical_cast<std::string>(
-                get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.Basis", 0));
-        if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
-
-        if (preferred_basis_ref != fcs->get_forceconstant_basis()) {
-            exit("fix_forceconstants_to_file",
-                 "The basis of cubic force constants is not consistent.");
-        }
-    }
-
-    int **intpair_ref;
-    std::vector<std::vector<int>> intpairs_to_fix;
-    double *fcs_ref;
-
-    intpairs_to_fix.resize(nfcs, std::vector<int>(2));
-
-    allocate(fcs_ref, nfcs);
-    allocate(intpair_ref, nfcs, 3);
-
-    int counter = 0;
-
-    if (order == 0) {
-        BOOST_FOREACH(const ptree::value_type &child_, pt.get_child("Data.ForceConstants.HarmonicUnique")) {
-                        if (child_.first == "FC2") {
-                            const auto &child = child_.second;
-                            const auto str_intpair = child.get<std::string>("<xmlattr>.pairs");
-                            const auto str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
-
-                            std::istringstream is(str_intpair);
-                            is >> intpair_ref[counter][0] >> intpair_ref[counter][1];
-                            fcs_ref[counter] = boost::lexical_cast<double>(child.data());
-                            ++counter;
-                        }
-                    }
-    } else if (order == 1) {
-        BOOST_FOREACH(const ptree::value_type &child_, pt.get_child("Data.ForceConstants.CubicUnique")) {
-                        if (child_.first == "FC3") {
-                            const auto &child = child_.second;
-                            const auto str_intpair = child.get<std::string>("<xmlattr>.pairs");
-                            const auto str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
-
-                            std::istringstream is(str_intpair);
-                            is >> intpair_ref[counter][0] >> intpair_ref[counter][1] >> intpair_ref[counter][2];
-                            fcs_ref[counter] = boost::lexical_cast<double>(child.data());
-                            ++counter;
-                        }
-                    }
-    }
-
-    const auto nterms = order + 2;
-
-    std::unordered_set<FcProperty> list_found;
-    std::unordered_set<FcProperty>::iterator iter_found;
-
-    list_found.clear();
-    auto counter2 = 0;
-    for (auto &list_tmp: fcs->get_fc_table()[order]) {
-        list_found.insert(FcProperty(list_tmp));
-        counter++;
-        std::cout << counter << " " << list_tmp.elems[0] << " " << list_tmp.elems[1] << std::endl;
-    }
-
-    for (auto i = 0; i < nfcs; ++i) {
-        for (auto j = 0; j < 2; ++j) {
-            intpairs_to_fix[i][j] = symmetry->get_map_sym()[intpair_ref[i][j] / 3][10] * 3 + intpair_ref[i][j] % 3;
-        }
-    }
-
-    fcs->translate_forceconstant_index_to_centercell(symmetry,
-                                                     intpairs_to_fix);
-
-    for (auto i = 0; i < nfcs; ++i) {
-        std::cout << intpair_ref[i][0] << " " << intpair_ref[i][1] << '\n';
-    }
-    std::cout << "\n\n";
-    for (auto i = 0; i < nfcs; ++i) {
-        std::cout << intpairs_to_fix[i][0] << " " << intpairs_to_fix[i][1] << '\n';
-    }
-
-    for (auto i = 0; i < nfcs; ++i) {
-        iter_found = list_found.find(FcProperty(nterms, 1.0,
-                                                intpair_ref[i], 1));
-        if (iter_found == list_found.end()) {
-            exit("fix_forceconstants_to_file",
-                 "Cannot find equivalent force constant, number: ",
-                 i + 1);
-        }
-        const_out.emplace_back(ConstraintTypeFix((*iter_found).mother, fcs_ref[i]));
-    }
-
-    for (auto i = 0; i < nfcs; ++i) {
-        iter_found = list_found.find(FcProperty(nterms, 1.0,
-                                                &intpairs_to_fix[i][0], 1));
-        if (iter_found == list_found.end()) {
-            exit("fix_forceconstants_to_file",
-                 "Cannot find equivalent force constant, number: ",
-                 i + 1);
-        }
-//        std::cout << (*iter_found).mother << std::endl;
+//void Constraint::fix_forceconstants_to_file(const int order,
+//                                            const Symmetry *symmetry,
+//                                            const Fcs *fcs,
+//                                            const std::string file_to_fix,
+//                                            std::vector<ConstraintTypeFix> &const_out) const
+//{
+//    using namespace boost::property_tree;
+//    ptree pt;
+//
+//    try {
+//        read_xml(file_to_fix, pt);
+//    }
+//    catch (std::exception &e) {
+//        if (order == 0) {
+//            auto str_error = "Cannot open file FC2XML ( " + file_to_fix + " )";
+//        } else if (order == 1) {
+//            auto str_error = "Cannot open file FC3XML ( " + file_to_fix + " )";
+//        }
+//        exit("fix_forceconstants_to_file", "Failed to open ", file_to_fix.c_str());
+//    }
+//
+//    const auto nat_ref = boost::lexical_cast<size_t>(
+//            get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
+//    const auto ntran_ref = boost::lexical_cast<size_t>(
+//            get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
+//    const auto natmin_ref = nat_ref / ntran_ref;
+//
+//    if (natmin_ref != symmetry->get_nat_prim()) {
+//        exit("fix_forceconstants_to_file",
+//             "The number of atoms in the primitive cell is not consistent.");
+//    }
+//
+//    const auto nfcs = fcs->get_nequiv()[order].size();
+//
+//    if (order == 0) {
+//        const auto nfcs_ref = boost::lexical_cast<size_t>(
+//                get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.NFC2"));
+//
+//        if (nfcs_ref != nfcs) {
+//            exit("fix_forceconstants_to_file",
+//                 "The number of harmonic force constants is not consistent.");
+//        }
+//
+//        std::string preferred_basis_ref = boost::lexical_cast<std::string>(
+//                get_value_from_xml(pt, "Data.ForceConstants.HarmonicUnique.Basis", 0));
+//
+//        if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
+//
+//        if (preferred_basis_ref != fcs->get_forceconstant_basis()) {
+//            exit("fix_forceconstants_to_file",
+//                 "The basis of harmonic force constants is not consistent.");
+//        }
+//    } else if (order == 1) {
+//        const auto nfcs_ref = boost::lexical_cast<size_t>(
+//                get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.NFC3"));
+//
+//        if (nfcs_ref != nfcs) {
+//            exit("fix_forceconstants_to_file",
+//                 "The number of cubic force constants is not consistent.");
+//        }
+//
+//        std::string preferred_basis_ref = boost::lexical_cast<std::string>(
+//                get_value_from_xml(pt, "Data.ForceConstants.CubicUnique.Basis", 0));
+//        if (preferred_basis_ref == "") preferred_basis_ref = "Cartesian";
+//
+//        if (preferred_basis_ref != fcs->get_forceconstant_basis()) {
+//            exit("fix_forceconstants_to_file",
+//                 "The basis of cubic force constants is not consistent.");
+//        }
+//    }
+//
+//    int **intpair_ref;
+//    std::vector<std::vector<int>> intpairs_to_fix;
+//    double *fcs_ref;
+//
+//    intpairs_to_fix.resize(nfcs, std::vector<int>(2));
+//
+//    allocate(fcs_ref, nfcs);
+//    allocate(intpair_ref, nfcs, 3);
+//
+//    int counter = 0;
+//
+//    if (order == 0) {
+//        BOOST_FOREACH(const ptree::value_type &child_, pt.get_child("Data.ForceConstants.HarmonicUnique")) {
+//                        if (child_.first == "FC2") {
+//                            const auto &child = child_.second;
+//                            const auto str_intpair = child.get<std::string>("<xmlattr>.pairs");
+//                            const auto str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
+//
+//                            std::istringstream is(str_intpair);
+//                            is >> intpair_ref[counter][0] >> intpair_ref[counter][1];
+//                            fcs_ref[counter] = boost::lexical_cast<double>(child.data());
+//                            ++counter;
+//                        }
+//                    }
+//    } else if (order == 1) {
+//        BOOST_FOREACH(const ptree::value_type &child_, pt.get_child("Data.ForceConstants.CubicUnique")) {
+//                        if (child_.first == "FC3") {
+//                            const auto &child = child_.second;
+//                            const auto str_intpair = child.get<std::string>("<xmlattr>.pairs");
+//                            const auto str_multiplicity = child.get<std::string>("<xmlattr>.multiplicity");
+//
+//                            std::istringstream is(str_intpair);
+//                            is >> intpair_ref[counter][0] >> intpair_ref[counter][1] >> intpair_ref[counter][2];
+//                            fcs_ref[counter] = boost::lexical_cast<double>(child.data());
+//                            ++counter;
+//                        }
+//                    }
+//    }
+//
+//    const auto nterms = order + 2;
+//
+//    std::unordered_set<FcProperty> list_found;
+//    std::unordered_set<FcProperty>::iterator iter_found;
+//
+//    list_found.clear();
+//    auto counter2 = 0;
+//    for (auto &list_tmp: fcs->get_fc_table()[order]) {
+//        list_found.insert(FcProperty(list_tmp));
+//        counter++;
+//        std::cout << counter << " " << list_tmp.elems[0] << " " << list_tmp.elems[1] << std::endl;
+//    }
+//
+//    for (auto i = 0; i < nfcs; ++i) {
+//        for (auto j = 0; j < 2; ++j) {
+//            intpairs_to_fix[i][j] = symmetry->get_map_sym()[intpair_ref[i][j] / 3][10] * 3 + intpair_ref[i][j] % 3;
+//        }
+//    }
+//
+//    fcs->translate_forceconstant_index_to_centercell(symmetry,
+//                                                     intpairs_to_fix);
+//
+//    for (auto i = 0; i < nfcs; ++i) {
+//        std::cout << intpair_ref[i][0] << " " << intpair_ref[i][1] << '\n';
+//    }
+//    std::cout << "\n\n";
+//    for (auto i = 0; i < nfcs; ++i) {
+//        std::cout << intpairs_to_fix[i][0] << " " << intpairs_to_fix[i][1] << '\n';
+//    }
+//
+//    for (auto i = 0; i < nfcs; ++i) {
+//        iter_found = list_found.find(FcProperty(nterms, 1.0,
+//                                                intpair_ref[i], 1));
+//        if (iter_found == list_found.end()) {
+//            exit("fix_forceconstants_to_file",
+//                 "Cannot find equivalent force constant, number: ",
+//                 i + 1);
+//        }
 //        const_out.emplace_back(ConstraintTypeFix((*iter_found).mother, fcs_ref[i]));
-    }
-
-    deallocate(intpair_ref);
-    deallocate(fcs_ref);
-
-    list_found.clear();
-}
+//    }
+//
+//    for (auto i = 0; i < nfcs; ++i) {
+//        iter_found = list_found.find(FcProperty(nterms, 1.0,
+//                                                &intpairs_to_fix[i][0], 1));
+//        if (iter_found == list_found.end()) {
+//            exit("fix_forceconstants_to_file",
+//                 "Cannot find equivalent force constant, number: ",
+//                 i + 1);
+//        }
+////        std::cout << (*iter_found).mother << std::endl;
+////        const_out.emplace_back(ConstraintTypeFix((*iter_found).mother, fcs_ref[i]));
+//    }
+//
+//    deallocate(intpair_ref);
+//    deallocate(fcs_ref);
+//
+//    list_found.clear();
+//}
 
 void Constraint::get_forceconstants_from_file(const int order,
-                                              const Symmetry *symmetry,
-                                              const Fcs *fcs,
+                                              const std::unique_ptr<Symmetry> &symmetry,
+                                              const std::unique_ptr<Fcs> &fcs,
                                               const std::string file_to_fix,
                                               std::vector<std::vector<int>> &intpair_fcs,
                                               std::vector<double> &fcs_values) const
@@ -2712,8 +2712,8 @@ void Constraint::set_forceconstants_to_fix(const std::vector<std::vector<int>> &
 
 }
 
-void Constraint::generate_fix_constraint(const Symmetry *symmetry,
-                                         const Fcs *fcs)
+void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmetry,
+                                         const std::unique_ptr<Fcs> &fcs)
 {
     std::unordered_set<FcProperty> list_found;
     std::unordered_set<FcProperty>::iterator iter_found;

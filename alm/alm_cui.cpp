@@ -15,6 +15,7 @@
 #include "version.h"
 #include <iostream>
 #include <iomanip>
+#include <memory>
 
 #ifdef _OPENMP
 
@@ -34,10 +35,9 @@ void ALMCUI::run(const int narg,
     auto alm = new ALM();
 
     // alm->mode is set herein.
-    auto input_parser = new InputParser();
+    auto input_parser = std::make_unique<InputParser>();
     input_parser->run(alm, narg, arg);
     auto run_mode = input_parser->get_run_mode();
-    delete input_parser;
 
     if (alm->get_verbosity() > 0) {
         std::cout << " +-----------------------------------------------------------------+" << std::endl;

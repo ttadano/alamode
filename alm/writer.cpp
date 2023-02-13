@@ -48,14 +48,14 @@ Writer::Writer() : output_maxorder(5)
 
 Writer::~Writer() = default;
 
-void Writer::write_input_vars(const System *system,
-                              const Symmetry *symmetry,
-                              const Cluster *cluster,
-                              const Displace *displace,
-                              const Fcs *fcs,
-                              const Constraint *constraint,
-                              const Optimize *optimize,
-                              const Files *files,
+void Writer::write_input_vars(const std::unique_ptr<System> &system,
+                              const std::unique_ptr<Symmetry> &symmetry,
+                              const std::unique_ptr<Cluster> &cluster,
+                              const std::unique_ptr<Displace> &displace,
+                              const std::unique_ptr<Fcs> &fcs,
+                              const std::unique_ptr<Constraint> &constraint,
+                              const std::unique_ptr<Optimize> &optimize,
+                              const std::unique_ptr<Files> &files,
                               const std::string run_mode) const
 {
     size_t i;
@@ -153,13 +153,13 @@ void Writer::write_input_vars(const System *system,
 }
 
 void Writer::save_fcs_with_specific_format(const std::string fcs_format,
-                                           const System *system,
-                                           const Symmetry *symmetry,
-                                           const Cluster *cluster,
-                                           const Constraint *constraint,
-                                           const Fcs *fcs,
-                                           const Optimize *optimize,
-                                           const Files *files,
+                                           const std::unique_ptr<System> &system,
+                                           const std::unique_ptr<Symmetry> &symmetry,
+                                           const std::unique_ptr<Cluster> &cluster,
+                                           const std::unique_ptr<Constraint> &constraint,
+                                           const std::unique_ptr<Fcs> &fcs,
+                                           const std::unique_ptr<Optimize> &optimize,
+                                           const std::unique_ptr<Files> &files,
                                            const int verbosity) const
 {
     if (fcs_format == "alamode") {
@@ -237,13 +237,13 @@ void Writer::save_fcs_with_specific_format(const std::string fcs_format,
 }
 
 
-void Writer::writeall(const System *system,
-                      const Symmetry *symmetry,
-                      const Cluster *cluster,
-                      const Constraint *constraint,
-                      const Fcs *fcs,
-                      const Optimize *optimize,
-                      const Files *files,
+void Writer::writeall(const std::unique_ptr<System> &system,
+                      const std::unique_ptr<Symmetry> &symmetry,
+                      const std::unique_ptr<Cluster> &cluster,
+                      const std::unique_ptr<Constraint> &constraint,
+                      const std::unique_ptr<Fcs> &fcs,
+                      const std::unique_ptr<Optimize> &optimize,
+                      const std::unique_ptr<Files> &files,
                       const int verbosity) const
 {
 //    alm->timer->start_clock("writer");
@@ -277,9 +277,9 @@ void Writer::writeall(const System *system,
 //    alm->timer->stop_clock("writer");
 }
 
-void Writer::write_force_constants(const Cluster *cluster,
-                                   const Fcs *fcs,
-                                   const Symmetry *symmetry,
+void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
+                                   const std::unique_ptr<Fcs> &fcs,
+                                   const std::unique_ptr<Symmetry> &symmetry,
                                    const double *fcs_vals,
                                    const int verbosity,
                                    const std::string fname_save) const
@@ -422,8 +422,8 @@ void Writer::write_force_constants(const Cluster *cluster,
     }
 }
 
-void Writer::write_displacement_pattern(const Cluster *cluster,
-                                        const Displace *displace,
+void Writer::write_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
+                                        const std::unique_ptr<Displace> &displace,
                                         const std::string prefix,
                                         const int verbosity) const
 {
@@ -481,11 +481,11 @@ void Writer::write_displacement_pattern(const Cluster *cluster,
 }
 
 
-void Writer::save_fcs_alamode_oldformat(const System *system,
-                                        const Symmetry *symmetry,
-                                        const Cluster *cluster,
-                                        const Fcs *fcs,
-                                        const Constraint *constraint,
+void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
+                                        const std::unique_ptr<Symmetry> &symmetry,
+                                        const std::unique_ptr<Cluster> &cluster,
+                                        const std::unique_ptr<Fcs> &fcs,
+                                        const std::unique_ptr<Constraint> &constraint,
                                         const double *fcs_vals,
                                         const std::string fname_dfset,
                                         const std::string fname_fcs,
@@ -807,11 +807,11 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
     }
 }
 
-void Writer::save_fcs_alamode(const System *system,
-                              const Symmetry *symmetry,
-                              const Cluster *cluster,
-                              const Fcs *fcs,
-                              const Constraint *constraint,
+void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
+                              const std::unique_ptr<Symmetry> &symmetry,
+                              const std::unique_ptr<Cluster> &cluster,
+                              const std::unique_ptr<Fcs> &fcs,
+                              const std::unique_ptr<Constraint> &constraint,
                               const double *fcs_vals,
                               const std::string fname_dfset,
                               const std::string fname_fcs,
@@ -919,9 +919,9 @@ void Writer::save_fcs_alamode(const System *system,
     localtime.write(time_str);
 }
 
-void Writer::write_hessian(const System *system,
-                           const Symmetry *symmetry,
-                           const Fcs *fcs,
+void Writer::write_hessian(const std::unique_ptr<System> &system,
+                           const std::unique_ptr<Symmetry> &symmetry,
+                           const std::unique_ptr<Fcs> &fcs,
                            const std::string fname_out,
                            const int verbosity) const
 {
@@ -987,9 +987,9 @@ std::string Writer::double2string(const double d,
     return rt;
 }
 
-void Writer::save_fc2_QEfc_format(const System *system,
-                                  const Symmetry *symmetry,
-                                  const Fcs *fcs,
+void Writer::save_fc2_QEfc_format(const std::unique_ptr<System> &system,
+                                  const std::unique_ptr<Symmetry> &symmetry,
+                                  const std::unique_ptr<Fcs> &fcs,
                                   const std::string fname_out,
                                   const int verbosity) const
 {
@@ -1048,11 +1048,11 @@ void Writer::save_fc2_QEfc_format(const System *system,
     }
 }
 
-void Writer::save_fc3_thirdorderpy_format(const System *system,
-                                          const Symmetry *symmetry,
-                                          const Cluster *cluster,
-                                          const Constraint *constraint,
-                                          const Fcs *fcs,
+void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
+                                          const std::unique_ptr<Symmetry> &symmetry,
+                                          const std::unique_ptr<Cluster> &cluster,
+                                          const std::unique_ptr<Constraint> &constraint,
+                                          const std::unique_ptr<Fcs> &fcs,
                                           const std::string fname_out,
                                           const int verbosity) const
 {

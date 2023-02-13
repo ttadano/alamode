@@ -11,6 +11,7 @@
 #pragma once
 
 #include <string>
+#include <memory>
 #include "system.h"
 #include "cluster.h"
 #include "fcs.h"
@@ -29,25 +30,43 @@ public:
 
     ~ALM();
 
-    class Cluster *cluster{};
+//    class Cluster *cluster{};
 
-    class Fcs *fcs{};
+    std::unique_ptr<Cluster> cluster;
 
-    class System *system{};
+    //class Fcs *fcs{};
 
-    class Symmetry *symmetry{};
+    std::unique_ptr<Fcs> fcs;
 
-    class Optimize *optimize{};
+//    class System *system{};
 
-    class Constraint *constraint{};
+    std::unique_ptr<System> system;
 
-    class Files *files{};
+    std::unique_ptr<Symmetry> symmetry;
+//    class Symmetry *symmetry{};
 
-    class Displace *displace{};
 
-    class Timer *timer{};
 
-    class Writer *writer{};
+//    class Optimize *optimize{};
+    std::unique_ptr<Optimize> optimize;
+
+//    class Constraint *constraint{};
+
+    std::unique_ptr<Constraint> constraint;
+
+    //class Files *files{};
+
+    std::unique_ptr<Files> files;
+
+//    class Displace *displace{};
+    std::unique_ptr<Displace> displace;
+
+//    class Timer *timer{};
+    std::unique_ptr<Timer> timer;
+
+//    class Writer *writer{};
+
+    std::unique_ptr<Writer> writer;
 
     void set_verbosity(int verbosity_in);
 

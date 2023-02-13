@@ -206,14 +206,14 @@ public:
 
     ~Constraint();
 
-    void setup(const System *system,
-               const Fcs *fcs,
-               const Cluster *cluster,
-               const Symmetry *symmetry,
+    void setup(const std::unique_ptr<System> &system,
+               const std::unique_ptr<Fcs> &fcs,
+               const std::unique_ptr<Cluster> &cluster,
+               const std::unique_ptr<Symmetry> &symmetry,
                const int linear_model,
                const int mirror_image_conv,
                const int verbosity,
-               Timer *timer);
+               std::unique_ptr<Timer> &timer);
 
     void get_mapping_constraint(const int nmax,
                                 const std::vector<size_t> *nequiv,
@@ -278,10 +278,10 @@ public:
     void set_forceconstants_to_fix(const std::vector<std::vector<int>> &intpair_fix,
                                    const std::vector<double> &values_fix);
 
-    void update_constraint_matrix(const System *system,
-                                  const Symmetry *symmetry,
-                                  const Cluster *cluster,
-                                  const Fcs *fcs,
+    void update_constraint_matrix(const std::unique_ptr<System> &system,
+                                  const std::unique_ptr<Symmetry> &symmetry,
+                                  const std::unique_ptr<Cluster> &cluster,
+                                  const std::unique_ptr<Fcs> &fcs,
                                   const int verbosity,
                                   const int mirror_image_conv);
 
@@ -331,10 +331,10 @@ private:
                     const int,
                     const int) const;
 
-    void generate_rotational_constraint(const System *,
-                                        const Symmetry *,
-                                        const Cluster *,
-                                        const Fcs *,
+    void generate_rotational_constraint(const std::unique_ptr<System> &system,
+                                        const std::unique_ptr<Symmetry> &symmetry,
+                                        const std::unique_ptr<Cluster> &cluster,
+                                        const std::unique_ptr<Fcs> &fcs,
                                         const int,
                                         const double);
 
@@ -346,7 +346,7 @@ private:
 
     void print_constraint(const ConstraintSparseForm &) const;
 
-    void print_constraint_information(const Cluster *cluster) const;
+    void print_constraint_information(const std::unique_ptr<Cluster> &cluster) const;
 
     void setup_rotation_axis(bool [3][3]);
 
@@ -369,18 +369,18 @@ private:
 
     // const_symmetry is updated.
     void generate_symmetry_constraint(const size_t nat,
-                                      const Symmetry *symmetry,
-                                      const Cluster *cluster,
-                                      const Fcs *fcs,
+                                      const std::unique_ptr<Symmetry> &symmetry,
+                                      const std::unique_ptr<Cluster> &cluster,
+                                      const std::unique_ptr<Fcs> &fcs,
                                       const int verbosity);
 
-    void generate_fix_constraint(const Symmetry *symmetry,
-                                 const Fcs *fcs);
+    void generate_fix_constraint(const std::unique_ptr<Symmetry> &symmetry,
+                                 const std::unique_ptr<Fcs> &fcs);
 
     void get_constraint_translation(const Cell &supercell,
-                                    const Symmetry *symmetry,
-                                    const Cluster *cluster,
-                                    const Fcs *fcs,
+                                    const std::unique_ptr<Symmetry> &symmetry,
+                                    const std::unique_ptr<Cluster> &cluster,
+                                    const std::unique_ptr<Fcs> &fcs,
                                     const int order,
                                     const std::vector<FcProperty> &fc_table,
                                     const size_t nparams,
@@ -388,9 +388,9 @@ private:
                                     const bool do_rref = false) const;
 
     void get_constraint_translation_for_mirror_images(const Cell &supercell,
-                                                      const Symmetry *symmetry,
-                                                      const Cluster *cluster,
-                                                      const Fcs *fcs,
+                                                      const std::unique_ptr<Symmetry> &symmetry,
+                                                      const std::unique_ptr<Cluster> &cluster,
+                                                      const std::unique_ptr<Fcs> &fcs,
                                                       const int order,
                                                       const std::vector<FcProperty> &fc_table,
                                                       const size_t nparams,
@@ -399,30 +399,30 @@ private:
 
     // const_translation is updated.
     void generate_translational_constraint(const Cell &,
-                                           const Symmetry *,
-                                           const Cluster *,
-                                           const Fcs *,
+                                           const std::unique_ptr<Symmetry> &symmetry,
+                                           const std::unique_ptr<Cluster> &cluster,
+                                           const std::unique_ptr<Fcs> &fcs,
                                            const int,
                                            const int);
 
-    void fix_forceconstants_to_file(const int,
-                                    const Symmetry *,
-                                    const Fcs *,
-                                    const std::string,
-                                    std::vector<ConstraintTypeFix> &) const;
+//    void fix_forceconstants_to_file(const int,
+//                                    const Symmetry *,
+//                                    const Fcs *,
+//                                    const std::string,
+//                                    std::vector<ConstraintTypeFix> &) const;
 
 
     void get_forceconstants_from_file(const int order,
-                                      const Symmetry *symmetry,
-                                      const Fcs *fcs,
+                                      const std::unique_ptr<Symmetry> &symmetry,
+                                      const std::unique_ptr<Fcs> &fcs,
                                       const std::string file_to_fix,
                                       std::vector<std::vector<int>> &intpair_fcs,
                                       std::vector<double> &fcs_values) const;
 
-    void set_rotation_constraints(const System *system,
-                                  const Symmetry *symmetry,
-                                  const Cluster *cluster,
-                                  const Fcs *fcs,
+    void set_rotation_constraints(const std::unique_ptr<System> &system,
+                                  const std::unique_ptr<Symmetry> &symmetry,
+                                  const std::unique_ptr<Cluster> &cluster,
+                                  const std::unique_ptr<Fcs> &fcs,
                                   const int order,
                                   const bool valid_rotation_axis[3][3],
                                   const std::unordered_set<FcProperty> &list_found,
@@ -431,10 +431,10 @@ private:
                                   std::vector<std::vector<ConstraintDoubleElement>> *const_self_vec,
                                   std::vector<std::vector<ConstraintDoubleElement>> *const_cross_vec);
 
-    void set_rotation_constraints_extra(const System *system,
-                                        const Symmetry *symmetry,
-                                        const Cluster *cluster,
-                                        const Fcs *fcs,
+    void set_rotation_constraints_extra(const std::unique_ptr<System> &system,
+                                        const std::unique_ptr<Symmetry> &symmetry,
+                                        const std::unique_ptr<Cluster> &cluster,
+                                        const std::unique_ptr<Fcs> &fcs,
                                         const int order,
                                         const bool valid_rotation_axis[3][3],
                                         const std::unordered_set<FcProperty> &list_found,

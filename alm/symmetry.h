@@ -104,9 +104,9 @@ public:
 
     ~Symmetry();
 
-    void init(const System *system,
+    void init(const std::unique_ptr<System> &system,
               const int verbosity,
-              Timer *timer);
+              std::unique_ptr<Timer> &timer);
 
     double get_tolerance() const;
 

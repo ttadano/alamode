@@ -35,30 +35,20 @@ ALM::ALM()
 
 ALM::~ALM()
 {
-    delete files;
-    delete system;
-    delete cluster;
-    delete fcs;
-    delete symmetry;
-    delete optimize;
-    delete constraint;
-    delete displace;
-    delete timer;
-    delete writer;
 }
 
 void ALM::init_instances()
 {
-    files = new Files();
-    system = new System();
-    cluster = new Cluster();
-    fcs = new Fcs();
-    symmetry = new Symmetry();
-    optimize = new Optimize();
-    constraint = new Constraint();
-    displace = new Displace();
-    timer = new Timer();
-    writer = new Writer();
+    files = std::make_unique<Files>();
+    system = std::make_unique<System>();
+    cluster = std::make_unique<Cluster>();
+    fcs = std::make_unique<Fcs>();
+    symmetry = std::make_unique<Symmetry>();
+    optimize = std::make_unique<Optimize>();
+    constraint = std::make_unique<Constraint>();
+    displace = std::make_unique<Displace>();
+    timer = std::make_unique<Timer>();
+    writer = std::make_unique<Writer>();
 }
 
 void ALM::set_verbosity(const int verbosity_in)
