@@ -102,6 +102,11 @@ public:
     int renorm_2to1st;
     int renorm_anharmto1st;
 
+    // initial strain and displacement
+    double **init_u_tensor;
+    double *init_u0;
+    int natmin_tmp;
+
 private:
 
     // Information of kmesh for SCPH calculation
@@ -167,9 +172,11 @@ private:
     void read_elastic_constants(double **, 
                                   double ***);
 
-    void read_initial_q0(double *);
+    // void read_initial_q0(double *);
+    void set_initial_q0(double *);
 
-    void read_initial_strain(double **);
+    // void read_initial_strain(double **);
+    void set_initial_strain(double **);
 
     void read_Tdep_initial_q0_from_u(double *, int);
 

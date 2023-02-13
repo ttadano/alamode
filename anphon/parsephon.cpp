@@ -95,6 +95,18 @@ void Input::parce_input(int narg,
             exit("parse_input",
                  "&scph entry not found in the input file");
         parse_scph_vars();
+        if(scph->relax_coordinate != 0 && scph->relax_coordinate != 1){
+            if(!locate_tag("&strain"))
+                exit("parse_input",
+                     "&strain entry not found in the input file");
+            parse_initial_strain();
+        }
+        if(scph->relax_coordinate != 0){
+            if(!locate_tag("&displace"))
+                exit("parse_input",
+                     "&displace entry not found in the input file");
+            parse_initial_displace();
+        }
     }
 }
 
@@ -350,7 +362,8 @@ void Input::parse_scph_vars()
           "CELL_CONV_TOL", "MIXBETA_CELL",
           "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
           "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
-          "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_ANHARMTO1ST"
+          "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_ANHARMTO1ST",
+          "NAT_PRIM"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -410,6 +423,8 @@ void Input::parse_scph_vars()
     int renorm_2to1st = 1;
     int renorm_anharmto1st = 1;
 
+    int nat_prim = 0;
+
     // if file_dymat exists in the current directory,
     // restart mode will be automatically turned on for SCPH calculations.
 
@@ -453,7 +468,13 @@ void Input::parse_scph_vars()
 
     assign_val(renorm_3to2nd, "RENORM_3TO2ND", scph_var_dict);
     assign_val(renorm_2to1st, "RENORM_2TO1ST", scph_var_dict);
-    assign_val(renorm_anharmto1st, "RENORM_ANHARMTO1ST", scph_var_dict);          
+    assign_val(renorm_anharmto1st, "RENORM_ANHARMTO1ST", scph_var_dict);      
+
+    assign_val(nat_prim, "NAT_PRIM", scph_var_dict);
+    if(relax_coordinate != 0 && nat_prim == 0){
+        exit("parse_scph_vars",
+             "NAT_PRIM must be specified when RELAX_COORDINATE != 0.");
+    }
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
@@ -542,10 +563,304 @@ void Input::parse_scph_vars()
     scph->renorm_2to1st = renorm_2to1st;
     scph->renorm_anharmto1st = renorm_anharmto1st;
 
+    scph->natmin_tmp = nat_prim;
+
     kmesh_v.clear();
     kmesh_interpolate_v.clear();
 
     scph_var_dict.clear();
+}
+
+void Input::parse_initial_strain()
+{
+    int i, j;
+    double u_tensor_tmp[3][3];
+    std::string line;
+    std::string line_wo_comment, line_tmp;
+    std::vector<std::string> line_vec, line_split;
+    std::string::size_type pos_first_comment_tag;
+
+    line_vec.clear();
+
+    if (from_stdin) {
+
+        while (std::getline(std::cin, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+
+    } else {
+        while (std::getline(ifs_input, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+    }
+
+    if (line_vec.size() != 3) {
+        exit("parse_initial_strain",
+             "Too few or too much lines for the &strain field.\n \
+                                            The number of valid lines for the &cell field should be 3.");
+    }
+
+    for (i = 0; i < 3; ++i) {
+
+        line = line_vec[i];
+        split(line_split, line,
+              boost::is_any_of("\t "), boost::token_compress_on);
+
+
+        // u_tensor
+        if (line_split.size() == 3) {
+            for (j = 0; j < 3; ++j) {
+                u_tensor_tmp[i][j] = boost::lexical_cast<double>(line_split[j]);
+            }
+        } else {
+            exit("parse_initial_strain",
+                    "Unacceptable format for &strain field.");
+        }
+    }
+
+    allocate(scph->init_u_tensor, 3, 3);
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            scph->init_u_tensor[i][j] = u_tensor_tmp[i][j];
+        }
+    }
+
+    // debug
+    for(i = 0; i < 3; i++){
+        for(j = 0; j < 3; j++){
+            std::cout << scph->init_u_tensor[i][j] << " ";
+        }std::cout << std::endl;
+    }std::cout << std::endl;
+}
+
+void Input::parse_initial_displace()
+{
+    int natmin = scph->natmin_tmp;
+    int i, j;
+    int itmp, jtmp;
+    int ixyz;
+    int iat;
+    std::string line;
+    std::string line_wo_comment, line_tmp;
+    std::vector<std::string> line_vec, line_split;
+    std::string::size_type pos_first_comment_tag;
+
+    int input_mode;
+    int nline;
+
+    double unit;
+    double a[3][3];
+    // double u_fractional[3], u_xyz[3];
+    double **u_fractional, **u_xyz;
+    allocate(u_fractional, natmin, 3);
+    allocate(u_xyz, natmin, 3);
+
+    if (from_stdin) {
+
+        while (std::getline(std::cin, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+
+    } else {
+        while (std::getline(ifs_input, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+    }
+
+    if (line_vec.size() == 0) {
+        exit("parse_initial_displace",
+             "Too few lines for the &displace field.");
+    }
+            
+    line = line_vec[0];
+    split(line_split, line,
+          boost::is_any_of("\t "), boost::token_compress_on);
+
+    if (line_split.size() == 1) {
+        input_mode = boost::lexical_cast<int>(line_split[0]);
+    } else {
+        exit("parse_cell_parameter",
+                "Unacceptable format for &cell field.");
+    }
+
+    if(input_mode < 0 || input_mode >= 2){
+        exit("parse_cell_parameter",
+                "Invalid value of input_mode");
+    }
+
+    // read displacements
+    if(input_mode == 0){
+        if (line_vec.size() != 5 + natmin) {
+            exit("parse_initial_displace",
+                "Too few or too many lines for the &displace field.");
+        }
+
+        // read cell information
+        for (i = 1; i < 5; ++i) {
+
+            line = line_vec[i];
+            split(line_split, line,
+                boost::is_any_of("\t "), boost::token_compress_on);
+
+            if (i == 1) {
+                // read unit
+                if (line_split.size() == 1) {
+                    unit = boost::lexical_cast<double>(line_split[0]);
+                } else {
+                    exit("parse_cell_parameter",
+                        "Unacceptable format for &displace field.");
+                }
+
+            } else {
+                // Lattice vectors a1, a2, a3
+                if (line_split.size() == 3) {
+                    for (j = 0; j < 3; ++j) {
+                        a[i - 2][j] = boost::lexical_cast<double>(line_split[j]);
+                    }
+                } else {
+                    exit("parse_cell_parameter",
+                        "Unacceptable format for &displace field.");
+                }
+            }
+        }
+        
+        for(itmp = 0; itmp < 3; itmp++){
+            for(ixyz = 0; ixyz < 3; ixyz++){
+                a[itmp][ixyz] *= unit;
+            }
+        }
+
+        // read fractional coordinate
+        for(i = 5; i < 5+natmin; i++){
+            line = line_vec[i];
+            split(line_split, line,
+                boost::is_any_of("\t "), boost::token_compress_on);
+
+            // Lattice vectors a1, a2, a3
+            if (line_split.size() == 3) {
+                for (j = 0; j < 3; ++j) {
+                    u_fractional[i - 5][j] = boost::lexical_cast<double>(line_split[j]);
+                }
+            } else {
+                exit("parse_cell_parameter",
+                    "Unacceptable format for &displace field.");
+            }
+        }
+
+        // transform to xyz coordinate
+        for(iat = 0; iat < natmin; iat++){
+            for(ixyz = 0; ixyz < 3; ixyz++){
+                u_xyz[iat][ixyz] = 0.0;
+                for(itmp = 0; itmp < 3; itmp++){
+                    u_xyz[iat][ixyz] += a[itmp][ixyz] * u_fractional[iat][itmp];
+                }
+            }
+        }
+
+    }
+    else if(input_mode == 1){
+        if (line_vec.size() != 1 + natmin) {
+            exit("parse_initial_displace",
+                "Too few or too many lines for the &displace field.");
+        }
+
+        for(i = 1; i < 1+natmin; i++){
+
+            line = line_vec[i];
+            split(line_split, line,
+                boost::is_any_of("\t "), boost::token_compress_on);
+
+            // Lattice vectors a1, a2, a3
+            if (line_split.size() == 3) {
+                for (j = 0; j < 3; ++j) {
+                    u_xyz[i - 1][j] = boost::lexical_cast<double>(line_split[j]);
+                }
+            } else {
+                exit("parse_cell_parameter",
+                    "Unacceptable format for &displace field.");
+            }
+        }
+    }
+
+    // Copy the values to appropriate classes 
+    allocate(scph->init_u0, natmin*3);
+    for(iat = 0; iat < natmin; iat++){
+        for(ixyz = 0; ixyz < 3; ixyz++){
+            scph->init_u0[iat*3+ixyz] = u_xyz[iat][ixyz];
+        }
+    }
+
+    // debug
+    for(iat = 0; iat < natmin; iat++){
+        std::cout << u_fractional[iat][0] << " " << u_fractional[iat][1] << " " << u_fractional[iat][2] << std::endl; // debug
+        std::cout << u_xyz[iat][0] << " " << u_xyz[iat][1] << " " << u_xyz[iat][2] << std::endl; // debug
+    }
+
+
+    deallocate(u_fractional);
+    deallocate(u_xyz);
+
 }
 
 void Input::parse_analysis_vars(const bool use_default_values)

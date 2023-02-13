@@ -93,6 +93,10 @@ void Scph::set_default_variables()
     renorm_2to1st = 1;
     renorm_anharmto1st = 1;
 
+    init_u_tensor = nullptr;
+    init_u0 = nullptr;
+    natmin_tmp = 0;
+
     kmap_interpolate_to_scph = nullptr;
     evec_harmonic = nullptr;
     omega2_harmonic = nullptr;
@@ -1110,6 +1114,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     allocate(v4_array_with_strain, nk_irred_interpolate * kmesh_dense->nk,
                      ns * ns, ns * ns);
+
+    // debug
+    set_initial_q0(q0);
 
     // Calculate v4 array. 
     // This operation is the most expensive part of the calculation.
@@ -2153,10 +2160,10 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             if(set_init_str == 1){
                 std::cout << " read initial structure from input files." << std::endl << std::endl;
                 // read initial structure at each temperature
-                read_initial_q0(q0);
+                set_initial_q0(q0);
                 calculate_u0(q0, u0);
                 // read strain.in
-                read_initial_strain(u_tensor);
+                set_initial_strain(u_tensor);
                 // converged_prev = false;
             }
             else if(set_init_str == 2){
@@ -2164,9 +2171,9 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 if(i_temp_loop == 0){
                     std::cout << " read initial structure from input files." << std::endl << std::endl;
 
-                    read_initial_q0(q0);
+                    set_initial_q0(q0);
                     calculate_u0(q0, u0);
-                    read_initial_strain(u_tensor);
+                    set_initial_strain(u_tensor);
                 }
                 else{
                     std::cout << " start from structure from the previous temperature." << std::endl << std::endl;
@@ -2177,9 +2184,9 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 if(i_temp_loop == 0){
                     std::cout << " read initial structure from input files." << std::endl << std::endl;
 
-                    read_initial_q0(q0);
+                    set_initial_q0(q0);
                     calculate_u0(q0, u0);
-                    read_initial_strain(u_tensor);
+                    set_initial_strain(u_tensor);
                 }
                 // read initial DISPLACEMENT if the structure converges
                 // to the high-symmetry one.
@@ -2188,7 +2195,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     std::cout << " the structure is back to the high-symmetry phase." << std::endl;
                     std::cout << " read again initial structure from input file." << std::endl << std::endl;
 
-                    read_initial_q0(q0);
+                    set_initial_q0(q0);
                     calculate_u0(q0, u0);
                     // converged_prev = false;
                 }
@@ -3370,7 +3377,7 @@ void Scph::set_init_structure_atT(double *q0,
         std::cout << " read initial structure from input files." << std::endl << std::endl;
 
         // read initial structure at each temperature
-        read_initial_q0(q0);
+        set_initial_q0(q0);
         calculate_u0(q0, u0);
 
         // read strain.in
@@ -3382,7 +3389,7 @@ void Scph::set_init_structure_atT(double *q0,
             }
         }
         else{
-            read_initial_strain(u_tensor);
+            set_initial_strain(u_tensor);
         }
         converged_prev = false;
     }
@@ -3391,7 +3398,7 @@ void Scph::set_init_structure_atT(double *q0,
         if(i_temp_loop == 0){
             std::cout << " read initial structure from input files." << std::endl << std::endl;
 
-            read_initial_q0(q0);
+            set_initial_q0(q0);
             calculate_u0(q0, u0);
             if(relax_coordinate == 1){
                 for(i1 = 0; i1 < 3; i1++){
@@ -3401,7 +3408,7 @@ void Scph::set_init_structure_atT(double *q0,
                 }
             }
             else{
-                read_initial_strain(u_tensor);
+                set_initial_strain(u_tensor);
             }
         }
         else{
@@ -3413,7 +3420,7 @@ void Scph::set_init_structure_atT(double *q0,
         if(i_temp_loop == 0){
             std::cout << " read initial structure from input files." << std::endl << std::endl;
 
-            read_initial_q0(q0);
+            set_initial_q0(q0);
             calculate_u0(q0, u0);
             if(relax_coordinate == 1){
                 for(i1 = 0; i1 < 3; i1++){
@@ -3423,7 +3430,7 @@ void Scph::set_init_structure_atT(double *q0,
                 }
             }
             else{
-                read_initial_strain(u_tensor);
+                set_initial_strain(u_tensor);
             }
         }
         // read initial DISPLACEMENT if the structure converges
@@ -3433,7 +3440,7 @@ void Scph::set_init_structure_atT(double *q0,
             std::cout << " the structure is back to the high-symmetry phase." << std::endl;
             std::cout << " read again initial displacement from input file." << std::endl << std::endl;
 
-            read_initial_q0(q0);
+            set_initial_q0(q0);
             calculate_u0(q0, u0);
             converged_prev = false;
         }
@@ -3443,7 +3450,7 @@ void Scph::set_init_structure_atT(double *q0,
     }
 }
 
-void Scph::read_initial_q0(double *q0)
+/*void Scph::read_initial_q0(double *q0)
 {
     std::fstream fin_displace;
     std::string str_tmp;
@@ -3485,7 +3492,7 @@ void Scph::read_initial_q0(double *q0)
     for(i_atm = 0; i_atm < natmin; i_atm++){
         fin_displace >> u_fractional[0] >> u_fractional[1] >> u_fractional[2];
 
-        // std::cout << u_fractional[0] << " " << u_fractional[1] << " " << u_fractional[2] << std::endl;
+        std::cout << u_fractional[0] << " " << u_fractional[1] << " " << u_fractional[2] << std::endl; // debug
 
         for(ixyz = 0; ixyz < 3; ixyz++){
             u_xyz[ixyz] = 0.0;
@@ -3493,6 +3500,8 @@ void Scph::read_initial_q0(double *q0)
                 u_xyz[ixyz] += a[ijk][ixyz] * u_fractional[ijk];
             }
         }
+
+        std::cout << u_xyz[0] << " " << u_xyz[1] << " " << u_xyz[2] << std::endl; // debug
 
         for(is = 0; is < ns; is++){
             for(ixyz = 0; ixyz < 3; ixyz++){
@@ -3503,10 +3512,27 @@ void Scph::read_initial_q0(double *q0)
     
     fin_displace.close();
     return ;
+}*/
+
+void Scph::set_initial_q0(double *q0)
+{
+    auto ns = dynamical->neval;
+    auto natmin = system->natmin;
+    int is, i_atm, ixyz;
+
+    for(is = 0; is < ns; is++){
+        q0[is] = 0.0;
+        for(i_atm = 0; i_atm < natmin; i_atm++){
+            for(ixyz = 0; ixyz < 3; ixyz++){
+                q0[is] += evec_harmonic[0][is][i_atm*3+ixyz].real() * std::sqrt(system->mass[system->map_p2s[i_atm][0]]) 
+                           * init_u0[i_atm*3+ixyz]; 
+            }
+        }
+    }
+
 }
 
-
-void Scph::read_initial_strain(double **u_tensor)
+/*void Scph::read_initial_strain(double **u_tensor)
 {
     std::fstream fin_strain;
     std::string str_tmp;
@@ -3528,8 +3554,16 @@ void Scph::read_initial_strain(double **u_tensor)
     fin_strain.close();
 
     return ;
+}*/
+void Scph::set_initial_strain(double **u_tensor)
+{
+    int i, j;
+    for(i = 0; i < 3; i++){
+        for(j = 0; j < 3; j++){
+            u_tensor[i][j] = init_u_tensor[i][j];
+        }
+    }
 }
-
 
 // void Scph::read_Tdep_initial_q0_from_u(double *q0, int i_temp_loop)
 // {
