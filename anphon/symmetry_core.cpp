@@ -15,6 +15,7 @@
 #include "mathfunctions.h"
 #include "memory.h"
 #include "system.h"
+#include "scph.h"
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
@@ -60,15 +61,109 @@ void Symmetry::setup_symmetry()
 
     SymmList.clear();
 
-    if (mympi->my_rank == 0) {
-        std::cout << " Symmetry" << std::endl;
-        std::cout << " ========" << std::endl << std::endl;
-        setup_symmetry_operation(natmin,
-                                 nsym,
-                                 system->lavec_p,
-                                 system->rlavec_p,
-                                 xtmp,
-                                 kdtmp);
+
+    if(phon->mode == "SCPH" && scph->relax_coordinate != 0){
+        double **xtmp_disp;
+        double lavec_p_strain[3][3], rlavec_p_strain[3][3];
+        double mat_strain[3][3];
+        double xtmp_tmp[3];
+        int i, j;
+        int iat;
+
+        if(scph->init_u_tensor){
+            for(i = 0; i < 3; i++){
+                for(j = 0; j < 3; j++){
+                    mat_strain[i][j] = scph->init_u_tensor[i][j];
+                }
+                mat_strain[i][i] += 1.0;
+            }
+            matmul3(lavec_p_strain, mat_strain, system->lavec_p);
+            invmat3(rlavec_p_strain, lavec_p_strain);
+            for(i = 0; i < 3; i++){
+                for(j = 0; j < 3; j++){
+                    rlavec_p_strain[i][j] *= 2.0*pi;
+                }
+            }
+        }
+        else{
+            for(i = 0; i < 3; i++){
+                for(j = 0; j < 3; j++){
+                    lavec_p_strain[i][j] = system->lavec_p[i][j];
+                    rlavec_p_strain[i][j] = system->rlavec_p[i][j];
+                }
+            }
+        }
+
+        allocate(xtmp_disp, natmin, 3);
+        for(iat = 0; iat < natmin; iat++){
+
+            // set displacement
+            for(i = 0; i < 3; i++){
+                xtmp_disp[iat][i] = scph->init_u0[iat*3+i];
+            }
+            rotvec(xtmp_disp[iat], xtmp_disp[iat], rlavec_p_strain);
+            for (i = 0; i < 3; i++){
+                xtmp_disp[iat][i] /= 2.0 * pi;
+            }
+
+            // add original position
+            for(i = 0; i < 3; i++){
+                xtmp_disp[iat][i] += xtmp[iat][i];
+            }
+        }
+
+        if (mympi->my_rank == 0) {
+            std::cout << " Symmetry" << std::endl;
+            std::cout << " ========" << std::endl << std::endl;
+            setup_symmetry_operation(natmin,
+                                    nsym,
+                                    lavec_p_strain,
+                                    rlavec_p_strain,
+                                    xtmp_disp,
+                                    kdtmp);
+            
+            // debug 
+            std::cout << "print SymmList (new code): " << std::endl;
+            for(auto &it_symop : SymmList){
+                std::cout << "rot: " << std::endl;
+                for(i = 0; i < 3; i++){
+                    for(j = 0; j < 3; j++){
+                        std::cout << it_symop.rot[i][j] << " ";
+                    }std::cout << std::endl;
+                }
+                for(i = 0; i < 3; i++){
+                    std::cout << it_symop.tran[i] << " ";
+                }std::cout << std::endl << std::endl;
+            }
+        }
+
+        deallocate(xtmp_disp);
+
+    }else{
+        if (mympi->my_rank == 0) {
+            std::cout << " Symmetry" << std::endl;
+            std::cout << " ========" << std::endl << std::endl;
+            setup_symmetry_operation(natmin,
+                                    nsym,
+                                    system->lavec_p,
+                                    system->rlavec_p,
+                                    xtmp,
+                                    kdtmp);
+
+            // debug 
+            std::cout << "print SymmList: " << std::endl;
+            for(auto &it_symop : SymmList){
+                std::cout << "rot: " << std::endl;
+                for(auto i = 0; i < 3; i++){
+                    for(auto j = 0; j < 3; j++){
+                        std::cout << it_symop.rot[i][j] << " ";
+                    }std::cout << std::endl;
+                }
+                for(auto i = 0; i < 3; i++){
+                    std::cout << it_symop.tran[i] << " ";
+                }std::cout << std::endl << std::endl;
+            }
+        }
     }
 
     MPI_Bcast(&nsym, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);

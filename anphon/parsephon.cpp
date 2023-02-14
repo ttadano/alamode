@@ -468,7 +468,7 @@ void Input::parse_scph_vars()
 
     assign_val(renorm_3to2nd, "RENORM_3TO2ND", scph_var_dict);
     assign_val(renorm_2to1st, "RENORM_2TO1ST", scph_var_dict);
-    assign_val(renorm_anharmto1st, "RENORM_ANHARMTO1ST", scph_var_dict);      
+    assign_val(renorm_anharmto1st, "RENORM_ANHARMTO1ST", scph_var_dict);
 
     assign_val(nat_prim, "NAT_PRIM", scph_var_dict);
     if(relax_coordinate != 0 && nat_prim == 0){
@@ -681,7 +681,6 @@ void Input::parse_initial_displace()
 
     double unit;
     double a[3][3];
-    // double u_fractional[3], u_xyz[3];
     double **u_fractional, **u_xyz;
     allocate(u_fractional, natmin, 3);
     allocate(u_xyz, natmin, 3);
