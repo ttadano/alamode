@@ -1033,7 +1033,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     std::complex<double> **del_v1_strain_from_quartic;
 
     std::complex<double> ***del_v2_strain_from_cubic;
-    // std::complex<double> ***del_v2_strain_from_cubic_tmp;
     std::complex<double> ***del_v2_strain_from_quartic;
     std::complex<double> ****del_v3_strain_from_quartic;
 
@@ -1115,9 +1114,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     allocate(v4_array_with_strain, nk_irred_interpolate * kmesh_dense->nk,
                      ns * ns, ns * ns);
 
-    // debug
-    set_initial_q0(q0);
-
     // Calculate v4 array. 
     // This operation is the most expensive part of the calculation.
     if (selfenergy_offdiagonal & (ialgo == 1)) {
@@ -1162,9 +1158,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                          del_v3_strain_from_quartic,
                          evec_harmonic,
                          relax_coordinate);
-
-    // add correction from B_array to del_v2_strain_from_cubic
-    // add_strain_mode_coupling_to_del_v2_strain(del_v2_strain_from_cubic, evec_harmonic, B_array);
 
     // for lattice relaxation
     allocate(del_v0_strain_with_strain_displace, 9);
@@ -1321,55 +1314,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
             write_stepresfile(q0, u_tensor, u0, 0,
                               fout_step_q0, fout_step_u0, fout_step_u_tensor);
-
-            // step_q0.txt
-/*            fout_step_q0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
-            fout_step_q0 << std::setw(6) << "step";
-            for(is1 = 0; is1 < ns; is1++){
-                fout_step_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
-            }fout_step_q0 << std::endl;
-*/
-
-            // initial structure
-/*            fout_step_q0 << std::setw(6) << 0;
-            for(is = 0; is < ns; is++){
-                fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
-            }fout_step_q0 << std::endl;
-*/
-            // step_u0.txt
-/*            fout_step_u0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl;
-            fout_step_u0 << std::setw(6) << "step";
-            for(iat1 = 0; iat1 < system->natmin; iat1++){
-                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                    get_xyz_string(ixyz1, str_tmp);
-                    fout_step_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
-                }
-            }fout_step_u0 << std::endl;
-*/
-            // initial displacements
-/*            fout_step_u0 << std::setw(6) << 0;
-            for(is = 0; is < ns; is++){
-                fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
-            }fout_step_u0 << std::endl; 
-*/
-            if(relax_coordinate == 2){
-                // step_u_tensor.txt
-/*                fout_step_u_tensor << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
-                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                    for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                        get_xyz_string(ixyz1, str_tmp);
-                        get_xyz_string(ixyz2, str_tmp2);
-                        fout_step_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 + "}");
-                    }
-                }fout_step_u_tensor << std::endl;
-*/
-
-/*                fout_step_u_tensor << std::setw(6) << 0;
-                for(i1 = 0; i1 < 9; i1++){
-                    fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[i1/3][i1%3]; 
-                } 
-*/
-            }
 
             std::cout << " ----------------------------------------------------------------" << std::endl;
 
@@ -1600,24 +1544,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 write_stepresfile(q0, u_tensor, u0, i_str_loop+1,
                                   fout_step_q0, fout_step_u0, fout_step_u_tensor);
-/*                // print q0
-                fout_step_q0 << std::setw(6) << i_str_loop+1;
-                for(is = 0; is < ns; is++){
-                    fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
-                }fout_step_q0 << std::endl;
-                calculate_u0(q0, u0);
-                fout_step_u0 << std::setw(6) << i_str_loop+1;
-                for(is = 0; is < ns; is++){
-                    fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
-                }fout_step_u0 << std::endl;
-
-                if(relax_coordinate == 2){
-                    fout_step_u_tensor << std::setw(6) << i_str_loop+1;
-                    for(is = 0; is < 9; is++){
-                        fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
-                    }fout_step_u_tensor << std::endl;
-                }
-*/
 
                 // check convergence
                 du0 = 0.0;
@@ -1807,10 +1733,8 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
-    // double ***omega2_anharm;
     std::complex<double> **delta_v2_array_renormalize;
     std::complex<double> **delta_v2_array_with_strain;
-    // std::complex<double> ***evec_anharm_tmp;
     // IFC-renormalized harmonic phonon
     double ***omega2_harm_renormalize;
     std::complex<double> ***evec_harm_renormalize_tmp;
@@ -1842,13 +1766,10 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     std::complex<double> *del_v0_strain_with_strain_displace;
     std::complex<double> *del_v0_strain_QHA;
     std::complex<double> *del_v0_strain_ZSISA;
-    std::complex<double> *del_v0_strain_ZSIDSA;
+    std::complex<double> *del_v0_strain_vZSISA;
 
 
     std::complex<double> **del_v1_strain_with_strain_displace;
-
-    double *delq_delu_ZSISA_tmp;
-    allocate(delq_delu_ZSISA_tmp, ns);
 
     double **delq_delu_ZSISA;
     allocate(delq_delu_ZSISA, ns, 9);
@@ -1891,14 +1812,13 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     pvcell = stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
     pvcell *= 1.0e9/Ryd; // in Ry
 
-    // ZSIDSA
-    // double *delta_q0_ZSIDSA, 
-    double *delta_u_tensor_ZSIDSA;
+    // v-ZSISA
+    double *delta_u_tensor_vZSISA;
     double *del_logV_delu, *u_tilde;
-    VectorXcd del_logV_delu_vec(6), delta_u_tensor_ZSIDSA_vec(6);
+    VectorXcd del_logV_delu_vec(6), delta_u_tensor_vZSISA_vec(6);
     double F_tensor[3][3]; // F_{mu nu} = delta_{mu nu} + u_{mu nu}
     double factor_tmp;
-    double deltaF_ZSIDSA, deltaU_ZSIDSA;
+    double deltaF_vZSISA, deltaU_vZSISA;
 
     double **C2_array_with_strain_displace;
 
@@ -1906,12 +1826,8 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
-    // Compute matrix element of 4-phonon interaction
 
     allocate(v1_array_QHA, ns);
-
-    // allocate(omega2_anharm, NT, nk, ns);
-    // allocate(evec_anharm_tmp, nk, ns, ns);
 
     allocate(v1_array_original, ns);
     allocate(v1_array_with_strain, ns);
@@ -1934,13 +1850,12 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
 
     allocate(delta_u_tensor, 6);
 
-    // allocate(delta_q0_ZSIDSA, ns);
-    allocate(delta_u_tensor_ZSIDSA, 9);
+    allocate(delta_u_tensor_vZSISA, 9);
     allocate(del_logV_delu, 9);
     allocate(u_tilde, 9);
     allocate(C2_array_with_strain_displace, 9, 9);
 
-
+    // Compute matrix element of 4-phonon interaction
     allocate(v4_array_original, nk_irred_interpolate * kmesh_dense->nk,
                      ns * ns, ns * ns);
     allocate(v4_array_renormalized, nk_irred_interpolate * kmesh_dense->nk,
@@ -1997,7 +1912,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     allocate(del_v0_strain_with_strain_displace, 9);
     allocate(del_v0_strain_QHA, 9);
     allocate(del_v0_strain_ZSISA, 9);
-    allocate(del_v0_strain_ZSIDSA, 9);
+    allocate(del_v0_strain_vZSISA, 9);
 
     allocate(del_v1_strain_with_strain_displace, 9, ns);
 
@@ -2044,10 +1959,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
 
         auto converged_prev = false;
 
-        // read elastic constants
-/*        read_C1_array(C1_array);
-        read_elastic_constants(C2_array, C3_array);
-*/
         set_elastic_constants(C1_array,
                               C2_array,
                               C3_array);
@@ -2075,40 +1986,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                              fout_v0,
                              fout_u_tensor);
 
-/*        // q0.txt
-        fout_q0 << "#";
-        fout_q0 << std::setw(14) << "temp [K]";
-        for(is1 = 0; is1 < ns; is1++){
-            fout_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
-        }fout_q0 << std::endl;
 
-        // u0.txt
-        fout_u0 << "#";
-        fout_u0 << std::setw(14) << "temp [K]";
-        for(iat1 = 0; iat1 < system->natmin; iat1++){
-            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                get_xyz_string(ixyz1, str_tmp);
-                fout_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
-            }
-        }fout_u0 << std::endl;
-
-        // u_tensor.txt
-        fout_u_tensor << "#";
-        fout_u_tensor << std::setw(14) << "temp [K]";
-        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                get_xyz_string(ixyz1, str_tmp);
-                get_xyz_string(ixyz2, str_tmp2);
-                fout_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 + "}");
-            }
-        }fout_u_tensor << std::endl;
-        
-        // v0.txt
-        fout_v0 << "#";
-        fout_v0 << std::setw(14) << "temp [K]";
-        fout_v0 << std::setw(15) << "U_0 [Ry]";
-        fout_v0 << std::endl;
-*/
         i_temp_loop = -1;
 
         std::cout << "Start structural optimization." << std::endl;
@@ -2122,32 +2000,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             std::cout << " Temperature = " << temp << " K" << std::endl;
             std::cout << " temperature index : " << std::setw(4) << i_temp_loop << "/" << std::setw(4) << NT << std::endl << std::endl;
 
-
-            // Initialize phonon eigenvectors with harmonic values
-
-            // for (ik = 0; ik < nk; ++ik) {
-            //     for (is = 0; is < ns; ++is) {
-            //         for (int js = 0; js < ns; ++js) {
-            //             evec_anharm_tmp[ik][is][js] = evec_harmonic[ik][is][js];
-            //         }
-            //     }
-            // }
-            // if (converged_prev) {
-            //     if (lower_temp) {
-            //         for (ik = 0; ik < nk; ++ik) {
-            //             for (is = 0; is < ns; ++is) {
-            //                 omega2_anharm[iT][ik][is] = omega2_anharm[iT + 1][ik][is];
-            //             }
-            //         }
-            //     } else {
-            //         for (ik = 0; ik < nk; ++ik) {
-            //             for (is = 0; is < ns; ++is) {
-            //                 omega2_anharm[iT][ik][is] = omega2_anharm[iT - 1][ik][is];
-            //             }
-            //         }
-            //     }
-            // }
-
             set_init_structure_atT(q0,
                                    u_tensor,
                                    u0,
@@ -2155,55 +2007,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                                    set_init_str,
                                    i_temp_loop);
 
-/*
-            std::cout << " SET_INIT_STR = " << set_init_str << std::endl;
-            if(set_init_str == 1){
-                std::cout << " read initial structure from input files." << std::endl << std::endl;
-                // read initial structure at each temperature
-                set_initial_q0(q0);
-                calculate_u0(q0, u0);
-                // read strain.in
-                set_initial_strain(u_tensor);
-                // converged_prev = false;
-            }
-            else if(set_init_str == 2){
-                // read initial structure at initial temperature
-                if(i_temp_loop == 0){
-                    std::cout << " read initial structure from input files." << std::endl << std::endl;
-
-                    set_initial_q0(q0);
-                    calculate_u0(q0, u0);
-                    set_initial_strain(u_tensor);
-                }
-                else{
-                    std::cout << " start from structure from the previous temperature." << std::endl << std::endl;
-                }
-            }
-            else if(set_init_str == 3){
-                // read initial structure at initial temperature
-                if(i_temp_loop == 0){
-                    std::cout << " read initial structure from input files." << std::endl << std::endl;
-
-                    set_initial_q0(q0);
-                    calculate_u0(q0, u0);
-                    set_initial_strain(u_tensor);
-                }
-                // read initial DISPLACEMENT if the structure converges
-                // to the high-symmetry one.
-                if(std::fabs(u0[cooling_u0_index]) < cooling_u0_thr){
-                    std::cout << " u0[" << cooling_u0_index << "] < " << std::setw(15) << std::setprecision(6) << cooling_u0_thr << " is satisfied." << std::endl;
-                    std::cout << " the structure is back to the high-symmetry phase." << std::endl;
-                    std::cout << " read again initial structure from input file." << std::endl << std::endl;
-
-                    set_initial_q0(q0);
-                    calculate_u0(q0, u0);
-                    // converged_prev = false;
-                }
-                else{
-                    std::cout << " start from the structure at the previous temperature." << std::endl << std::endl;
-                }
-            }
-*/
             std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
             for(iat1 = 0; iat1 < system->natmin; iat1++){
                 std::cout << " ";
@@ -2229,52 +2032,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             write_stepresfile(q0, u_tensor, u0, 0,
                               fout_step_q0, fout_step_u0, fout_step_u_tensor);
 
-
-/*            // step_q0.txt
-            fout_step_q0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
-            fout_step_q0 << std::setw(6) << "step";
-            for(is1 = 0; is1 < ns; is1++){
-                fout_step_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
-            }fout_step_q0 << std::endl;
-
-            // initial structure
-            fout_step_q0 << std::setw(6) << 0;
-            for(is = 0; is < ns; is++){
-                fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
-            }fout_step_q0 << std::endl;
-
-            // step_u0.txt
-            fout_step_u0 << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl;
-            fout_step_u0 << std::setw(6) << "step";
-            for(iat1 = 0; iat1 < system->natmin; iat1++){
-                for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                    get_xyz_string(ixyz1, str_tmp);
-                    fout_step_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
-                }
-            }fout_step_u0 << std::endl;
-
-            // initial displacements
-            fout_step_u0 << std::setw(6) << 0;
-            for(is = 0; is < ns; is++){
-                fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
-            }fout_step_u0 << std::endl; 
-
-            // step_u_tensor.txt
-            fout_step_u_tensor << "Temperature :" << std::scientific << std::setw(15) << std::setprecision(6) << temp << " K" << std::endl; 
-            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                    get_xyz_string(ixyz1, str_tmp);
-                    get_xyz_string(ixyz2, str_tmp2);
-                    fout_step_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 < "}");
-                }
-            }fout_step_u_tensor << std::endl;
-
-            fout_step_u_tensor << std::setw(6) << 0;
-            for(i1 = 0; i1 < 9; i1++){
-                fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[i1/3][i1%3]; 
-            } 
-*/
-
             std::cout << " ----------------------------------------------------------------" << std::endl;
 
             std::cout << " Start structural optimization at " << temp << " K." << std::endl;
@@ -2282,19 +2039,12 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             for(i_str_loop = 0; i_str_loop < max_str_iter; i_str_loop++){
 
                 std::cout << std::endl << std::endl << " Structure loop :" << std::setw(5) << i_str_loop+1 << std::endl;
-                std::cout << " IFC renormalization ... ";
 
                 // get eta tensor
                 calculate_eta_tensor(eta_tensor, u_tensor);
 
-                // debug
-                std::cout << "calculate_eta_tensor is done" << std::endl;
-
                 // calculate IFCs under strain
                 renormalize_v0_from_strain(v0_with_strain, v0_original, eta_tensor, C1_array, C2_array, C3_array, u_tensor, pvcell);
-
-                // debug
-                std::cout << "renormalize_v0_from_strain is done" << std::endl;
 
                 renormalize_v1_array_from_strain(v1_array_with_strain, 
                                                  v1_array_original,
@@ -2303,19 +2053,9 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                                                  del_v1_strain_from_quartic, 
                                                  u_tensor);
 
-                // debug
-                std::cout << "renormalize_v1_array_from_strain is done" << std::endl;
-
-
                 renormalize_v2_array_from_strain(delta_v2_array_with_strain, del_v2_strain_from_cubic, del_v2_strain_from_quartic, u_tensor);
 
-                // debug
-                std::cout << "renormalize_v2_array_from_strain is done" << std::endl;
-
                 renormalize_v3_array_from_strain(v3_array_with_strain, v3_array_original, del_v3_strain_from_quartic, u_tensor);
-                // debug
-                std::cout << "renormalize_v3_array_from_strain is done" << std::endl;
-
                 
                 for(ik = 0; ik < nk_irred_interpolate * nk; ik++){
                     for(is = 0; is < ns*ns; is++){
@@ -2327,15 +2067,12 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
 
                 //renormalize IFC
                 renormalize_v1_array(v1_array_renormalized, v1_array_with_strain, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
-                std::cout << "renormalize_v1_array is done" << std::endl; // debug
 
                 renormalize_v2_array(delta_v2_array_renormalize, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
-                std::cout << "renormalize_v2_array is done" << std::endl; // debug
-                renormalize_v3_array(v3_array_renormalized, v3_array_with_strain, v4_array_with_strain, q0);
-                std::cout << "renormalize_v3_array is done" << std::endl; // debug
-                renormalize_v0(v0_renormalized, v0_with_strain, v1_array_with_strain, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
-                std::cout << "renormalize_v0 is done" << std::endl; // debug
 
+                renormalize_v3_array(v3_array_renormalized, v3_array_with_strain, v4_array_with_strain, q0);
+
+                renormalize_v0(v0_renormalized, v0_with_strain, v1_array_with_strain, delta_v2_array_with_strain, v3_array_with_strain, v4_array_with_strain, q0);
 
                 // calculate PES force
                 calculate_force_in_real_space(v1_array_renormalized, force_array);
@@ -2367,9 +2104,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                         }
                     }
                 }
-
-                std::cout << "done!" << std::endl << std::endl;
-                // std::cout << " SCPH calculation." << std::endl << std::endl;
                 
                 compute_renormalized_harmonic_frequency(omega2_harm_renormalize[iT],
                                         evec_harm_renormalize_tmp,
@@ -2382,10 +2116,11 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
 
                 compute_cmat(evec_harm_renormalize_tmp, cmat_convert);
 
-
+                // The same function as in exec_scph_relax_cell_coordinate_main can be used for
+                // calculating the gradient of the free energy with respect to atomic displacements and strain.
+                // This is because we truncate the Taylor expansion of PES at the fourth order (?)
                 compute_anharmonic_v1_array(v1_array_renormalized, v3_array_renormalized, cmat_convert, omega2_harm_renormalize[iT], temp, v1_array_QHA);
 
-                // the same function can be used for updating the strain
                 compute_anharmonic_del_v0_strain(del_v0_strain_QHA, 
                                                  del_v0_strain_with_strain_displace,
                                                  del_v2_strain_from_cubic,
@@ -2397,7 +2132,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                                                  omega2_harm_renormalize[iT], 
                                                  temp);
 
-                // This is for ZSISA
+                // Calculation for ZSISA from here.
                 calculate_del_v1_strain_with_strain_displace(del_v1_strain_with_strain_displace, 
                                                              u_tensor,
                                                              del_v1_strain_from_harmonic,
@@ -2408,7 +2143,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                                                              del_v3_strain_from_quartic,
                                                              q0);
 
-                // calculate (dq0/du_{mu nu})_ZSISA
+                // calculate (d q0/d u_{mu nu})_ZSISA
                 for(i1 = 0; i1 < 9; i1++){
 
                     for(is = 0; is < ns; is++){
@@ -2420,21 +2155,16 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     }
                     v2_mat_full = Cmat.adjoint() * v2_mat_full * Cmat;
 
-                    // std::cout << " preparration of v2_mat_full is done" << std::endl;
-
                     for(is = 0; is < ns-3; is++){
                         for(js = 0; js < ns-3; js++){
-                            //v2_mat_optical(is, js) = v2_mat_full(is+3, js+3);
                             v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
                         }
                     }
-                    // std::cout << " preparration of v2_mat_optical is done" << std::endl;
+
                     // solve linear equation
                     for(is = 0; is < ns-3; is++){
                         vec_del_V1_strain(is) = del_v1_strain_with_strain_displace[i1][harm_optical_modes[is]];
                     }
-
-                    // std::cout << " preparration of vec_del_V1_strain is done" << std::endl;
                     
                     vec_delq_delu_ZSISA = -1.0 * v2_mat_optical.colPivHouseholderQr().solve(vec_del_V1_strain);
 
@@ -2444,61 +2174,38 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     for(is = 0; is < ns-3; is++){
                         delq_delu_ZSISA[harm_optical_modes[is]][i1] = vec_delq_delu_ZSISA(is).real();
                     }
-                    // debug
-                    for(is = 0; is < ns; is++){
-                        delq_delu_ZSISA_tmp[is] = delq_delu_ZSISA[is][i1];
-                    }
-                    calculate_u0(delq_delu_ZSISA_tmp, force_array);
-
-                    // std::cout << "delq_delu_ZSISA_tmp" << std::endl;
-                    // std::cout << "i1 = " << i1 << std::endl;
-                    // for(is = 0; is < ns; is++){
-                    //     std::cout << force_array[is] << " ";
-                    //     if(is%3 == 2){
-                    //         std::cout << std::endl;
-                    //     }
-                    // }std::cout << std::endl;
-
-                    // std::cout << "add correction" << std::endl;
                 }
 
-                // add ZSISA correction to finite-temperature stress tensor
+                // calculate ZSISA stress tensor
                 for(i1 = 0; i1 < 9; i1++){
 
-                    // add correction to QHA stress tensor
                     del_v0_strain_ZSISA[i1] = del_v0_strain_QHA[i1];
 
-                    // std::cout << "tmp1" << std::endl;
-
+                    // add correction to QHA stress tensor
                     for(is = 0; is < ns-3; is++){
-                        // std::cout << is << ": ";
-                        // std::cout << harm_optical_modes[is] << std::endl;
                         del_v0_strain_ZSISA[i1] += v1_array_QHA[harm_optical_modes[is]] * delq_delu_ZSISA[harm_optical_modes[is]][i1];
                     }
-                    // std::cout << "tmp2" << std::endl; 
                 }
 
-                // overwrite v1_array_QHA by v1_array_renormalized for ZSISA
-                // This calculation needs to be done after the calculation of del_v0_strain_ZSISA
-                // because v1_array_QHA is used in the calculation.
+                // qha_scheme == 1 : ZSISA
                 if(qha_scheme == 1){
+
+                    // overwrite v1_array_QHA by zero-temperature first-order IFCs.
+                    // This calculation needs to be done AFTER calculating del_v0_strain_ZSISA
+                    // because v1_array_QHA is used in the calculation.
                     for(is = 0; is < ns; is++){
                         v1_array_QHA[is] = v1_array_renormalized[is];
                     }
-                }
 
-                // overwrite finite-temperature stress tensor
-                if(qha_scheme == 1){ // ZSISA
+                    // overwrite finite-temperature stress tensor
                     for(i1 = 0; i1 < 9; i1++){
-                        // std::cout << i1 << " " << del_v0_strain_QHA[i1] << " ";
                         del_v0_strain_QHA[i1] = del_v0_strain_ZSISA[i1];
-                        // std::cout << del_v0_strain_QHA[i1] << std::cout << std::endl;
                     }
                 }
 
-                // calculation of v-ZSISA
+                // calculation for v-ZSISA from here
 
-                // calculate renormalized C2_array
+                // calculate renormalized second-order elastic constants
                 calculate_C2_array_with_strain_displace(C2_array_with_strain_displace, 
                                                         u_tensor,
                                                         eta_tensor,
@@ -2509,7 +2216,9 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                                                         del_v2_strain_from_quartic,
                                                         q0);
 
-                // calculate C2_ZSISA for vZSISA calculation
+                // calculate second-order elastic constants at zero temperature
+                // with ZSISA internal coordinates.
+                // This is a preparation for v-ZSISA.
                 for(i1 = 0; i1 < 9; i1++){
                     for(i2 = 0; i2 < 9; i2++){
                         C2_ZSISA[i1][i2] = C2_array_with_strain_displace[i1][i2];
@@ -2518,8 +2227,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                         }
                     }
                 }
-
-                // calculate delu_ZSIDSA 
                 
                 // calculate del_logV_delu = (d det(I+u))/(du)
                 for(i1 = 0; i1 < 3; i1++){
@@ -2550,7 +2257,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     u_tilde[i1] = factor_tmp * del_logV_delu[i1];
                 }
 
-                // calcualte delta_u_tensor_ZSIDSA
+                // calcualte delta_u_tensor_vZSISA
                 for(itmp1 = 0; itmp1 < 3; itmp1++){
                     del_logV_delu_vec(itmp1) = del_logV_delu[itmp1*3+itmp1];
 
@@ -2582,58 +2289,52 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     }
                 }
 
-                // solve linear equation for delta_u_tensor_ZSIDSA
-                delta_u_tensor_ZSIDSA_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_logV_delu_vec);
+                // solve linear equation for delta_u_tensor_vZSISA
+                delta_u_tensor_vZSISA_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_logV_delu_vec);
                 for(itmp1 = 0; itmp1 < 3; itmp1++){
                     itmp3 = (itmp1+1)%3;
                     itmp4 = (itmp1+2)%3;
                     
-                    delta_u_tensor_ZSIDSA[itmp1*3+itmp1] = delta_u_tensor_ZSIDSA_vec(itmp1).real();
-                    delta_u_tensor_ZSIDSA[itmp3*3+itmp4] = delta_u_tensor_ZSIDSA_vec(itmp1+3).real();
-                    delta_u_tensor_ZSIDSA[itmp3+itmp4*3] = delta_u_tensor_ZSIDSA_vec(itmp1+3).real();
+                    delta_u_tensor_vZSISA[itmp1*3+itmp1] = delta_u_tensor_vZSISA_vec(itmp1).real();
+                    delta_u_tensor_vZSISA[itmp3*3+itmp4] = delta_u_tensor_vZSISA_vec(itmp1+3).real();
+                    delta_u_tensor_vZSISA[itmp3+itmp4*3] = delta_u_tensor_vZSISA_vec(itmp1+3).real();
                 }
 
-                // normalize delta_u_tensor_ZSIDSA
+                // normalize delta_u_tensor_vZSISA
                 factor_tmp = 0.0;
                 for(i1 = 0; i1 < 9; i1++){
-                    factor_tmp += u_tilde[i1] * delta_u_tensor_ZSIDSA[i1];
+                    factor_tmp += u_tilde[i1] * delta_u_tensor_vZSISA[i1];
                 }
                 factor_tmp = 1.0/factor_tmp;
 
                 for(i1 = 0; i1 < 9; i1++){
-                    delta_u_tensor_ZSIDSA[i1] *= factor_tmp;
+                    delta_u_tensor_vZSISA[i1] *= factor_tmp;
                 }
 
-                // calculate delta_q0_ZSIDSA
+                // calculate delta_q0_vZSISA
 
-                deltaF_ZSIDSA = 0.0;
-                deltaU_ZSIDSA = 0.0;
+                deltaF_vZSISA = 0.0;
+                deltaU_vZSISA = 0.0;
                 for(i1 = 0; i1 < 9; i1++){
-                    deltaF_ZSIDSA += delta_u_tensor_ZSIDSA[i1] * del_v0_strain_ZSISA[i1].real();
-                    deltaU_ZSIDSA += u_tilde[i1] * del_v0_strain_with_strain_displace[i1].real();
+                    deltaF_vZSISA += delta_u_tensor_vZSISA[i1] * del_v0_strain_ZSISA[i1].real();
+                    deltaU_vZSISA += u_tilde[i1] * del_v0_strain_with_strain_displace[i1].real();
                 }
 
                 for(i1 = 0; i1 < 9; i1++){
-                    del_v0_strain_ZSIDSA[i1] = del_v0_strain_with_strain_displace[i1] + u_tilde[i1] * (deltaF_ZSIDSA - deltaU_ZSIDSA);
+                    del_v0_strain_vZSISA[i1] = del_v0_strain_with_strain_displace[i1] + u_tilde[i1] * (deltaF_vZSISA - deltaU_vZSISA);
                 }
 
+                // qha_scheme == 2 : v-ZSISA
                 // overwrite finite-temperature force and stress tensor
                 if(qha_scheme == 2){
                     for(is = 0; is < ns; is++){
                         v1_array_QHA[is] = v1_array_renormalized[is];
                     }
-                }
-                if(qha_scheme == 2){ // v-ZSISA
+
                     for(i1 = 0; i1 < 9; i1++){
-                        // std::cout << i1 << " " << del_v0_strain_QHA[i1] << " ";
-                        del_v0_strain_QHA[i1] = del_v0_strain_ZSIDSA[i1];
-                        // std::cout << del_v0_strain_QHA[i1] << std::cout << std::endl;
+                        del_v0_strain_QHA[i1] = del_v0_strain_vZSISA[i1];
                     }
                 }
-
-
-                // relax internal coordinates by PES force
-                
 
                 // update structure(is = 0,1,2 are TA modes)
                 for(is = 0; is < ns; is++){
@@ -2750,24 +2451,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 write_stepresfile(q0, u_tensor, u0, i_str_loop+1,
                                   fout_step_q0, fout_step_u0, fout_step_u_tensor);
 
-/*
-                // print q0
-                fout_step_q0 << std::setw(6) << i_str_loop+1;
-                for(is = 0; is < ns; is++){
-                    fout_step_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
-                }fout_step_q0 << std::endl;
-
-                calculate_u0(q0, u0);
-                fout_step_u0 << std::setw(6) << i_str_loop+1;
-                for(is = 0; is < ns; is++){
-                    fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
-                }fout_step_u0 << std::endl;
-
-                fout_step_u_tensor << std::setw(6) << i_str_loop+1;
-                for(is = 0; is < 9; is++){
-                    fout_step_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
-                }fout_step_u_tensor << std::endl;
-*/
                 // check convergence
                 du0 = 0.0;
                 calculate_u0(delta_q0, delta_u0);
@@ -2841,34 +2524,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             }fout_u_tensor << std::endl;
 
             fout_v0 << std::scientific << std::setw(15) << std::setprecision(6) << temp << std::setw(15) << v0_renormalized << std::endl;
-
-            // if (!warmstart_scph) converged_prev = false;
-
-            // get renormalization of harmonic dymat 
-//             for(ik = 0; ik < nk_irred_interpolate * kmesh_dense->nk; ik++){
-//                     for(is1 = 0; is1 < ns*ns; is1++){
-//                         for(is2 = 0; is2 < ns*ns; is2++){
-//                             v4_array_renormalized[ik][is1][is2] = complex_zero;
-//                         }
-//                     }
-//                 }
-// 
-//             for (ik = 0; ik < nk; ++ik) {
-//                 for (is = 0; is < ns; ++is) {
-//                     for (int js = 0; js < ns; ++js) {
-//                         evec_harm_renormalize_tmp[ik][is][js] = evec_harmonic[ik][is][js];
-//                     }
-//                 }
-//             }
-// 
-//             compute_renormalized_harmonic_frequency(omega2_harm_renormalize[iT],
-//                                         evec_harm_renormalize_tmp,
-//                                         delta_v2_array_renormalize,
-//                                         writes->getVerbosity());
-// 
-//             calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
-//                                     omega2_harm_renormalize[iT],
-//                                     evec_harm_renormalize_tmp);
         }
 
         // Output files of structural optimization
@@ -2881,6 +2536,59 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
         deallocate(cmat_convert);
 
     }
+
+    deallocate(v1_array_original);
+    deallocate(v1_array_with_strain);
+    deallocate(v1_array_renormalized);
+
+    deallocate(omega2_harm_renormalize);
+    deallocate(evec_harm_renormalize_tmp);
+    deallocate(delta_v2_array_renormalize);
+    deallocate(delta_v2_array_with_strain);
+
+    deallocate(v3_array_original);
+    deallocate(v3_array_renormalized);
+    deallocate(v3_array_with_strain);
+
+    deallocate(v4_array_original);
+    deallocate(v4_array_renormalized);
+    deallocate(v4_array_with_strain);
+
+    deallocate(C1_array);
+    deallocate(C2_array);
+    deallocate(C3_array);
+    deallocate(C2_ZSISA);
+
+    deallocate(del_v1_strain_from_harmonic);
+    deallocate(del_v1_strain_from_cubic);
+    deallocate(del_v1_strain_from_quartic);
+    deallocate(del_v2_strain_from_cubic);
+    deallocate(del_v2_strain_from_quartic);
+    deallocate(del_v3_strain_from_quartic);
+    deallocate(del_v0_strain_with_strain_displace);
+
+    deallocate(del_v1_strain_with_strain_displace);
+    deallocate(del_v0_strain_QHA);
+    deallocate(del_v0_strain_ZSISA);
+    deallocate(del_v0_strain_vZSISA);
+
+    deallocate(q0);
+    deallocate(delta_q0);
+    deallocate(u0);
+    deallocate(delta_u0);
+    deallocate(u_tensor);
+    deallocate(eta_tensor);
+    deallocate(delta_u_tensor);
+
+    deallocate(delq_delu_ZSISA);
+    deallocate(v1_array_QHA);
+    deallocate(delta_u_tensor_vZSISA);
+    deallocate(del_logV_delu);
+    deallocate(u_tilde);
+    deallocate(C2_array_with_strain_displace);
+
+
+    deallocate(force_array);
 
 
 
@@ -3532,29 +3240,6 @@ void Scph::set_initial_q0(double *q0)
 
 }
 
-/*void Scph::read_initial_strain(double **u_tensor)
-{
-    std::fstream fin_strain;
-    std::string str_tmp;
-    int i, j;
-
-    fin_strain.open("strain.in");
-
-    if(!fin_strain){
-        std::cout << "Warning in Scph::read_initial_strain: file strain.in could not open." << std::endl;
-        std::cout << "all u_tensor is not set." << std::endl;
-        return ;
-    }
-
-    fin_strain >> str_tmp;
-    fin_strain >> u_tensor[0][0] >> u_tensor[0][1] >> u_tensor[0][2];
-    fin_strain >> u_tensor[1][0] >> u_tensor[1][1] >> u_tensor[1][2]; 
-    fin_strain >> u_tensor[2][0] >> u_tensor[2][1] >> u_tensor[2][2]; 
-
-    fin_strain.close();
-
-    return ;
-}*/
 void Scph::set_initial_strain(double **u_tensor)
 {
     int i, j;
@@ -3564,61 +3249,6 @@ void Scph::set_initial_strain(double **u_tensor)
         }
     }
 }
-
-// void Scph::read_Tdep_initial_q0_from_u(double *q0, int i_temp_loop)
-// {
-//     std::fstream fin_displace;
-//     std::string str_tmp;
-//     int natmin = system->natmin;
-//     int is, i_atm, ixyz, i;
-//     auto ns = dynamical->neval;
-//     //double unit;
-//     double a[3][3];
-//     double d_tmp, temp_tmp;
-//     //double u_fractional[3], u_xyz[3];
-// 
-//     std::vector<double> u_xyz;
-// 
-//     // initialize q0
-//     for(is = 0; is < ns; is++){
-//         q0[is] = 0.0;
-//     }
-// 
-//     fin_displace.open("u0.in");
-// 
-//     if(!fin_displace){
-//         std::cout << "Warning in Scph::read_Tdep_initial_q0_from_u: file u0.in could not open." << std::endl;
-//         std::cout << "all q0 is set 0." << std::endl;
-//         return ;
-//     }
-// 
-//     // read unnecessary lines
-//     for(i = 0; i < i_temp_loop; i++){
-//         std::getline(fin_displace, str_tmp); 
-//     }
-//     fin_displace >> temp_tmp;
-//     for(is = 0; is < ns; is++){
-//         fin_displace >> d_tmp;
-//         u_xyz.push_back(d_tmp);
-//     }
-// 
-//     for(is = 0; is < ns; is++){
-//         for(i_atm = 0; i_atm < natmin; i_atm++){
-//             for(ixyz = 0; ixyz < 3; ixyz++){
-//                 q0[is] += evec_harmonic[0][is][i_atm*3+ixyz].real() * std::sqrt(system->mass[system->map_p2s[i_atm][0]]) * u_xyz[i_atm*3+ixyz]; 
-//             }
-//         }
-//     }
-// 
-//     std::cout << "temperature = " << temp_tmp << std::endl;
-//     std::cout << "initial q0: " << std::endl;
-//     for(is = 0; is < ns; is++){
-//         std::cout << q0[is] << " ";
-//     }std::cout << std::endl;
-//     
-//     fin_displace.close();
-//     return ;
-// }
 
 void Scph::calculate_u0(double *q0, double *u0){
     int natmin = system->natmin;
@@ -5602,12 +5232,6 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(std::complex<
         std::cout << count_acoustic << " acoustic modes are detected in Gamma point." << std::endl << std::endl; 
     }
 
-    // debug 
-    std::cout << "is_acoustic : " << std::endl;
-    for(is = 0; is < ns; is++){
-        std::cout << is_acoustic[is] << " ";
-    }std::cout << std::endl;
-
     // set acoustic sum rule (ASR)
     for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
         for(is = 0; is < ns; is++){
@@ -6366,12 +5990,6 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
         std::cout << "Warning in calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode: ";
         std::cout << count_acoustic << " acoustic modes are detected in Gamma point." << std::endl << std::endl; 
     }
-
-    // debug 
-    std::cout << "is_acoustic : " << std::endl;
-    for(is = 0; is < ns; is++){
-        std::cout << is_acoustic[is] << " ";
-    }std::cout << std::endl;
 
     // set acoustic sum rule (ASR)
     for(ixyz1 = 0; ixyz1 < 9; ixyz1++){

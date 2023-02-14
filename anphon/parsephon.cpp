@@ -655,13 +655,6 @@ void Input::parse_initial_strain()
             scph->init_u_tensor[i][j] = u_tensor_tmp[i][j];
         }
     }
-
-    // debug
-    for(i = 0; i < 3; i++){
-        for(j = 0; j < 3; j++){
-            std::cout << scph->init_u_tensor[i][j] << " ";
-        }std::cout << std::endl;
-    }std::cout << std::endl;
 }
 
 void Input::parse_initial_displace()
@@ -849,13 +842,6 @@ void Input::parse_initial_displace()
             scph->init_u0[iat*3+ixyz] = u_xyz[iat][ixyz];
         }
     }
-
-    // debug
-    for(iat = 0; iat < natmin; iat++){
-        std::cout << u_fractional[iat][0] << " " << u_fractional[iat][1] << " " << u_fractional[iat][2] << std::endl; // debug
-        std::cout << u_xyz[iat][0] << " " << u_xyz[iat][1] << " " << u_xyz[iat][2] << std::endl; // debug
-    }
-
 
     deallocate(u_fractional);
     deallocate(u_xyz);

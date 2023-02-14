@@ -122,19 +122,6 @@ void Symmetry::setup_symmetry()
                                     xtmp_disp,
                                     kdtmp);
             
-            // debug 
-            std::cout << "print SymmList (new code): " << std::endl;
-            for(auto &it_symop : SymmList){
-                std::cout << "rot: " << std::endl;
-                for(i = 0; i < 3; i++){
-                    for(j = 0; j < 3; j++){
-                        std::cout << it_symop.rot[i][j] << " ";
-                    }std::cout << std::endl;
-                }
-                for(i = 0; i < 3; i++){
-                    std::cout << it_symop.tran[i] << " ";
-                }std::cout << std::endl << std::endl;
-            }
         }
 
         deallocate(xtmp_disp);
@@ -150,19 +137,6 @@ void Symmetry::setup_symmetry()
                                     xtmp,
                                     kdtmp);
 
-            // debug 
-            std::cout << "print SymmList: " << std::endl;
-            for(auto &it_symop : SymmList){
-                std::cout << "rot: " << std::endl;
-                for(auto i = 0; i < 3; i++){
-                    for(auto j = 0; j < 3; j++){
-                        std::cout << it_symop.rot[i][j] << " ";
-                    }std::cout << std::endl;
-                }
-                for(auto i = 0; i < 3; i++){
-                    std::cout << it_symop.tran[i] << " ";
-                }std::cout << std::endl << std::endl;
-            }
         }
     }
 
