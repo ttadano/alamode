@@ -2243,7 +2243,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     ixyz3 = (is2+1)%3;
                     ixyz4 = (is2+2)%3;
 
-                    del_logV_delu[i1] += F_tensor[ixyz1][ixyz3]*F_tensor[ixyz2][ixyz4] - F_tensor[ixyz1][ixyz4]*F_tensor[ixyz2][ixyz3];
+                    del_logV_delu[i1] = F_tensor[ixyz1][ixyz3]*F_tensor[ixyz2][ixyz4] - F_tensor[ixyz1][ixyz4]*F_tensor[ixyz2][ixyz3];
                 }
 
 
