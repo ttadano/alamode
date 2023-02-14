@@ -167,7 +167,7 @@ void Symmetry::setup_symmetry_operation(int N,
 
         if (nsym != nsym2)
             exit("setup_symmetry_operation",
-                 "nsym in the given file and the input file are not consistent.");
+                 "nsym_super in the given file and the input file are not consistent.");
 
         for (i = 0; i < nsym; ++i) {
             ifs_sym

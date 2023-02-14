@@ -20,7 +20,7 @@ namespace ALM_NS {
 class SymmetryOperation {
 public:
     Eigen::Matrix3i rotation;         // in lattice basis
-    Eigen::Vector3d tran;             // in Cartesian basis
+    Eigen::Vector3d tran;             // in lattice basis
     Eigen::Matrix3d rotation_cart;  // in Cartesian basis
     bool compatible_with_lattice;
     bool compatible_with_cartesian;
@@ -133,26 +133,31 @@ public:
     size_t get_nat_prim() const;
 
 private:
-    size_t nsym, ntran, nat_prim;
-    std::vector<std::vector<int>> map_sym;   // [nat_base, nsym]
-    std::vector<std::vector<int>> map_p2s;   // [nat_prim, ntran]
-    std::vector<Maps> map_s2p;               // [nat_base]
-    std::vector<SymmetryOperation> SymmData; // [nsym]
-    std::vector<int> symnum_tran;            // [ntran]
+    size_t nsym_super, ntran_super;
+    size_t nsym_prim, ntran_prim, nat_trueprim;
+
+    std::vector<std::vector<int>> map_sym;   // [nat_base, nsym_super]
+    std::vector<std::vector<int>> map_p2s;   // [nat_trueprim, ntran_super]
+    std::vector<Maps> map_s2p;               // [nat_super]
+    std::vector<SymmetryOperation> symmetry_data_super; // [nsym_super]
+    std::vector<SymmetryOperation> symmetry_data_prim; // [nsym_prim]
+    std::vector<int> symnum_tran;            // [ntran_super]
 
     double tolerance;
-    bool use_internal_symm_finder;
     int printsymmetry;
 
     void set_default_variables();
 
     void deallocate_variables();
 
-    void setup_symmetry_operation(const Cell &,
-                                  const int [3],
-                                  const std::vector<std::vector<unsigned int>> &,
-                                  const Spin &,
-                                  const int);
+    void setup_symmetry_operation(const Cell &pcell,
+                                  const Spin &spin_prim,
+                                  const std::vector<std::vector<unsigned int>> &atomtype_prim,
+                                  const Cell &scell,
+                                  const Spin &spin_super,
+                                  const std::vector<std::vector<unsigned int>> &atomtype_super,
+                                  const int is_periodic[3],
+                                  const int verbosity);
 
     void gen_mapping_information(const Cell &scell,
                                  const std::vector<std::vector<unsigned int>> &atomtype_group_super,
@@ -217,6 +222,13 @@ private:
                                double **x_prim,
                                const double symprec) const;
 
-    std::string file_sym;
+    void update_symmetry_operations_supercell(const Cell &cell_prim,
+                                              const std::vector<SymmetryOperation> &symm_prim,
+                                              const Cell &cell_super,
+                                              std::vector<SymmetryOperation> &symm_super) const;
+
+
+    void print_symmetry_infomation(const int verbosity) const;
+
 };
 }

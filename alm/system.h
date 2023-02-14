@@ -96,11 +96,11 @@ public:
 
     int *get_periodicity() const;
 
-    const Spin &get_spin(const std::string cell="super") const;
+    const Spin &get_spin(const std::string cell = "super") const;
 
     const std::string &get_str_magmom() const;
 
-    const std::vector<std::vector<unsigned int>> &get_atomtype_group(const std::string cell="super") const;
+    const std::vector<std::vector<unsigned int>> &get_atomtype_group(const std::string cell = "super") const;
 
 private:
     // Variables for geometric structure

@@ -393,7 +393,7 @@ void System::load_system_info_from_XML()
                  str_error.c_str());
         }
 
-        // Parse nat_base and ntran
+        // Parse nat_base and ntran_super
 
         nat = boost::lexical_cast<unsigned int>(
                 get_value_from_xml(pt,
@@ -590,7 +590,7 @@ void System::load_system_info_from_XML()
                      str_error.c_str());
             }
 
-            // Parse nat_base and ntran
+            // Parse nat_base and ntran_super
 
             nat = boost::lexical_cast<unsigned int>(
                     get_value_from_xml(pt,
