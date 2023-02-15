@@ -97,6 +97,21 @@ public:
     int tran_num;
 };
 
+class PrimitiveGroup {
+public:
+    std::map<int, int> map_index_p2s;
+    Eigen::Vector3i shift_vector;
+
+    PrimitiveGroup();
+
+    PrimitiveGroup(const std::map<int, int> &map_index_p2s_in,
+                   const Eigen::Vector3i &shift_vector_in)
+    {
+        map_index_p2s = map_index_p2s_in;
+        shift_vector = shift_vector_in;
+    }
+};
+
 class Symmetry {
 public:
     Symmetry();
@@ -133,7 +148,14 @@ public:
 
 private:
     size_t nsym_super, ntran_super;
-    size_t nsym_prim, ntran_prim, nat_trueprim;
+    size_t nsym_prim, ntran_prim;
+    size_t nat_trueprim;
+    // nat_trueprim is the number of atoms included in a true primitive cell.
+    // This value can be different from primcell.number_of_atoms because
+    // the latter value is calculated from the PRIMCELL value given by users,
+    // which does not necessary reduces the inputcell to a true primitive cell.
+    // When nat_trueprim != primcell.number_of_atoms, ntran_prim will be larger
+    // than 1.
 
     std::vector<std::vector<int>> map_sym;   // [nat_base, nsym_super]
     std::vector<std::vector<int>> map_trueprim_to_super;   // [nat_trueprim, ntran_super]
@@ -142,6 +164,7 @@ private:
     std::vector<SymmetryOperation> symmetry_data_prim; // [nsym_prim]
     std::vector<int> symnum_tran_super;            // [ntran_super]
     std::vector<int> symnum_tran_prim;            // [ntran_prim]
+    std::vector<PrimitiveGroup> atomgroup_super;
 
     double tolerance;
     int printsymmetry;
@@ -205,27 +228,12 @@ private:
                                const std::vector<RotationMatrix> &,
                                std::vector<SymmetryOperation> &symm_out) const;
 
-    void check_primitive_cell(const Cell &cell_prim,
-                              const Spin &spin_prim,
-                              const std::vector<std::vector<unsigned int>> &atomtype_group_prim,
-                              const Cell &cell_super,
-                              const size_t nsym_in,
-                              const size_t ntran_in) const;
-
-    void set_primitive_lattice(const double aa[3][3],
-                               const size_t nat,
-                               const int *kd,
-                               double **x,
-                               double aa_prim[3][3],
-                               size_t &nat_prim,
-                               int *kd_prim,
-                               double **x_prim,
-                               const double symprec) const;
 
     void update_symmetry_operations_supercell(const Cell &cell_prim,
                                               const std::vector<SymmetryOperation> &symm_prim,
                                               const Cell &cell_super,
-                                              std::vector<SymmetryOperation> &symm_super) const;
+                                              std::vector<SymmetryOperation> &symm_super,
+                                              std::vector<PrimitiveGroup> &atomgroup_out) const;
 
 
     void print_symmetry_infomation(const int verbosity) const;

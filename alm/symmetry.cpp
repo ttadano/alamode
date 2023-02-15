@@ -139,7 +139,8 @@ void Symmetry::init(const std::unique_ptr<System> &system,
     update_symmetry_operations_supercell(system->get_primcell(),
                                          symmetry_data_prim,
                                          system->get_supercell(),
-                                         symmetry_data_super);
+                                         symmetry_data_super,
+                                         atomgroup_super);
 
     symnum_tran_prim.clear();
     symnum_tran_super.clear();
@@ -155,6 +156,10 @@ void Symmetry::init(const std::unique_ptr<System> &system,
                             symmetry_data_super,
                             system->get_primcell());
 
+    if (printsymmetry) {
+        print_symmetry_infomation(verbosity);
+    }
+
     if (verbosity > 0) {
         print_symminfo_stdout();
         timer->print_elapsed();
@@ -162,9 +167,7 @@ void Symmetry::init(const std::unique_ptr<System> &system,
         std::cout << std::endl;
     }
 
-    if (printsymmetry) {
-        print_symmetry_infomation(verbosity);
-    }
+
 
     timer->stop_clock("symmetry");
 }
@@ -700,38 +703,75 @@ void Symmetry::symop_in_cart(Eigen::Matrix3d &rot_cart,
 
 void Symmetry::print_symminfo_stdout() const
 {
-    std::cout << "  Number of symmetry operations = " << symmetry_data_super.size() << std::endl;
+    std::cout << "  Number of symmetry operations of the primitive cell = "
+                << symmetry_data_prim.size() << std::endl;
     std::cout << std::endl;
-    if (ntran_super > 1) {
-        std::cout << "  Given system is not a primitive cell." << std::endl;
-        std::cout << "  There are " << std::setw(5)
-                  << ntran_super << " translation operations." << std::endl;
-    } else {
-        std::cout << "  Given system is a primitive cell." << std::endl;
+    if (ntran_prim > 1) {
+        std::cout << "  The user defined primitive cell is NOT a true primitive cell." << std::endl;
+        std::cout << "  It is composed of " << std::setw(5)
+                  << ntran_prim << " true primitive cells." << std::endl;
     }
-    std::cout << "  Primitive cell contains " << nat_trueprim << " atoms" << std::endl;
 
     std::cout << std::endl;
-    std::cout << "  **Cell-Atom Correspondens Below**" << std::endl;
-    std::cout << std::setw(6) << " CELL" << " | " << std::setw(5) << "ATOM" << std::endl;
+    std::cout << "  ---------------------------------------------------------\n";
+    std::cout << "         List of primitive cell translation vectors        \n";
+    std::cout << "  ---------------------------------------------------------\n\n";
+    std::cout << "  ┌────────┬───────────────────┬──────────────────────────┐\n";
+    std::cout << "  │ Cell # │   Shift  vector   │        Atom index        │\n";
+    std::cout << "  │        │ (Primitive basis) │(Numbers in the supercell)│\n";
+    std::cout << "  ├────────┼───────────────────┼──────────────────────────┤\n";
 
-    for (size_t i = 0; i < ntran_super; ++i) {
-        std::cout << std::setw(6) << i + 1 << " | ";
-        for (size_t j = 0; j < nat_trueprim; ++j) {
-            std::cout << std::setw(5) << map_trueprim_to_super[j][i] + 1;
-            if ((j + 1) % 5 == 0) {
-                std::cout << std::endl << "       | ";
+    auto natom_per_primitive = atomgroup_super[0].map_index_p2s.size();
+    constexpr int nentry_per_line = 5;
+    auto nlines = natom_per_primitive / nentry_per_line;
+
+    if (natom_per_primitive > nlines * nentry_per_line) ++nlines;
+
+
+    for (auto i = 0; i < atomgroup_super.size(); ++i) {
+
+        auto counter = 0;
+
+        for (auto j = 0; j < nlines; ++j) {
+            if (j == 0) {
+                std::cout << "  │" << std::setw(7) << i + 1 << " │";
+                std::cout.width(4);
+                std::cout << "(" << std::setw(2)
+                << atomgroup_super[i].shift_vector.transpose()
+                << ")";
+                std::cout.width(6);
+                std::cout << "│";
+            } else {
+                std::cout << "  │";
+                std::cout.width(11);
+                std::cout << "│";
+                std::cout.width(22);
+                std::cout << "│";
             }
+
+            for (auto k = 0; k < nentry_per_line; ++k) {
+                counter = nentry_per_line * j + k;
+                if (counter < natom_per_primitive) {
+                    std::cout << std::setw(5) << atomgroup_super[i].map_index_p2s.at(counter) + 1;
+                } else {
+                    std::cout << std::setw(5) << "";
+                }
+            }
+            std::cout << " │\n";
         }
-        std::cout << std::endl;
+        if (i == (atomgroup_super.size() - 1)) {
+            std::cout << "  └────────┴───────────────────┴──────────────────────────┘\n\n";
+        } else {
+            std::cout << "  ├────────┼───────────────────┼──────────────────────────┤\n";
+        }
     }
-    std::cout << std::endl;
 }
 
 void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_prim,
                                                     const std::vector<SymmetryOperation> &symm_prim,
                                                     const ALM_NS::Cell &cell_super,
-                                                    std::vector<SymmetryOperation> &symm_super) const
+                                                    std::vector<SymmetryOperation> &symm_super,
+                                                    std::vector<PrimitiveGroup> &atomgroup_out) const
 {
     // Create the symm_super by replicating the symmetry operations generated for
     // the primitive cell (symm_prim) and the shift vectors.
@@ -775,7 +815,8 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
         }
 
         if (iloc == -1) {
-            exit("update_symmetry_operations_supercell", "An equivalent atom not found.");
+            exit("update_symmetry_operations_supercell",
+                 "An equivalent atom not found.");
         } else {
             atom_num_prim.emplace_back(iloc);
             std::vector<int> vtmp(&tran[0], tran.data()+tran.cols()*tran.rows());
@@ -798,6 +839,25 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
              "The number of primitive translations is inconsistent.");
     }
 
+    // Create atomgroup_out for later use
+    atomgroup_out.clear();
+
+    std::map<int, int> map_index;
+
+    for (auto i = 0; i < unique_shifts_vec.size(); ++i){
+        map_index.clear();
+
+        for (auto j = 0; j < 3; ++j) tran[j] = unique_shifts_vec[i][j];
+
+        for (auto j = 0; j < cell_super.number_of_atoms; ++j) {
+            if (unique_shifts_vec[i] == trans_vecs[j]) {
+                map_index.insert({atom_num_prim[j], j});
+            }
+        }
+        atomgroup_out.emplace_back(map_index, tran);
+    }
+
+    // Finally, update symm_super.
     symm_super.clear();
 
     Eigen::Matrix3d rot_cart, rot_latt;
@@ -806,7 +866,7 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
     for (const auto &it_tran : unique_shifts_vec) {
         for (const auto &it_symm : symm_prim) {
             tran_d = it_symm.tran; // lattice basis of the primitive cell
-            for (auto k = 0; k < 3; ++k) tran_d[k] += it_tran[k]; // add primitive lattice translation
+            for (auto k = 0; k < 3; ++k) tran_d[k] += static_cast<double>(it_tran[k]); // add primitive lattice translation
 
             rot_cart = it_symm.rotation_cart; // Common to the primitive cell and supercell.
 
@@ -909,7 +969,7 @@ void Symmetry::gen_mapping_information(const Cell &scell,
         }
     }
 
-    // Generate map_trueprim_to_super (primitive --> super)
+    // Generate map_trueprim_to_super (true primitive --> super)
 
     bool *is_checked;
     allocate(is_checked, scell.number_of_atoms);
@@ -931,7 +991,7 @@ void Symmetry::gen_mapping_information(const Cell &scell,
 
     deallocate(is_checked);
 
-    // Generate map_super_to_trueprim (super --> primitive)
+    // Generate map_super_to_trueprim (super --> true primitive)
 
     map_super_to_trueprim.clear();
     map_super_to_trueprim.resize(scell.number_of_atoms);
@@ -1008,93 +1068,55 @@ bool Symmetry::is_proper(const Eigen::Matrix3d &rot) const
 }
 
 
-void Symmetry::check_primitive_cell(const Cell &cell_prim,
-                                    const Spin &spin_prim,
-                                    const std::vector<std::vector<unsigned int>> &atomtype_group_prim,
-                                    const Cell &cell_super,
-                                    const size_t nsym_in,
-                                    const size_t ntran_in) const
-{
 
-    std::vector<SymmetryOperation> symm_prim;
-
-    if (spin_prim.lspin && spin_prim.noncollinear) {
-        findsym_alm(cell_prim, atomtype_group_prim, spin_prim, symm_prim);
-    } else {
-        std::string spgsymbol;
-        const auto spgnum = findsym_spglib(cell_prim,
-                                           atomtype_group_prim,
-                                           spin_prim,
-                                           spgsymbol,
-                                           symm_prim);
-    }
-
-    auto ntran_prim = 0;
-
-    for (const auto &it: symm_prim) {
-        if (it.is_translation) ++ntran_prim;
-    }
-    if (ntran_prim > 1) {
-        warn("check_primitive_cell",
-             "The input primitive cell is NOT a real primitive cell.\n"
-             " The calculation continues, but please check again if the input PRIMCELL values are\n"
-             " correct.\n");
-    }
-
-    if ((symm_prim.size() / ntran_prim) != (nsym_in / ntran_in)) {
-        exit("check_primitive_cell",
-             "The number of space group operations is inconsistent between "
-             "the supercell and primitive cell.\n  Please check if the input parameters are correct.\n");
-    }
-}
-
-void Symmetry::set_primitive_lattice(const double aa[3][3],
-                                     const size_t nat,
-                                     const int *kd,
-                                     double **x,
-                                     double aa_prim[3][3],
-                                     size_t &nat_prim_out,
-                                     int *kd_prim,
-                                     double **x_prim,
-                                     const double symprec) const
-{
-    size_t i, j;
-    int *types_tmp;
-    double (*position)[3];
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            aa_prim[i][j] = aa[i][j];
-        }
-    }
-
-    allocate(position, nat);
-    allocate(types_tmp, nat);
-
-    for (i = 0; i < nat; ++i) {
-        for (j = 0; j < 3; ++j) {
-            position[i][j] = x[i][j];
-        }
-        types_tmp[i] = kd[i];
-    }
-
-    //    nat_trueprim = spg_find_primitive(aa_prim, position, types_tmp, nat_base, symprec);
-    nat_prim_out = spg_standardize_cell(aa_prim,
-                                        position,
-                                        types_tmp,
-                                        nat, 1, 0,
-                                        symprec);
-
-    for (i = 0; i < nat_prim_out; ++i) {
-        for (j = 0; j < 3; ++j) {
-            x_prim[i][j] = position[i][j];
-        }
-        kd_prim[i] = types_tmp[i];
-    }
-
-    deallocate(position);
-    deallocate(types_tmp);
-}
+//
+//void Symmetry::set_primitive_lattice(const double aa[3][3],
+//                                     const size_t nat,
+//                                     const int *kd,
+//                                     double **x,
+//                                     double aa_prim[3][3],
+//                                     size_t &nat_prim_out,
+//                                     int *kd_prim,
+//                                     double **x_prim,
+//                                     const double symprec) const
+//{
+//    size_t i, j;
+//    int *types_tmp;
+//    double (*position)[3];
+//
+//    for (i = 0; i < 3; ++i) {
+//        for (j = 0; j < 3; ++j) {
+//            aa_prim[i][j] = aa[i][j];
+//        }
+//    }
+//
+//    allocate(position, nat);
+//    allocate(types_tmp, nat);
+//
+//    for (i = 0; i < nat; ++i) {
+//        for (j = 0; j < 3; ++j) {
+//            position[i][j] = x[i][j];
+//        }
+//        types_tmp[i] = kd[i];
+//    }
+//
+//    //    nat_trueprim = spg_find_primitive(aa_prim, position, types_tmp, nat_base, symprec);
+//    nat_prim_out = spg_standardize_cell(aa_prim,
+//                                        position,
+//                                        types_tmp,
+//                                        nat, 1, 0,
+//                                        symprec);
+//
+//    for (i = 0; i < nat_prim_out; ++i) {
+//        for (j = 0; j < 3; ++j) {
+//            x_prim[i][j] = position[i][j];
+//        }
+//        kd_prim[i] = types_tmp[i];
+//    }
+//
+//    deallocate(position);
+//    deallocate(types_tmp);
+//}
 
 void Symmetry::print_symmetry_infomation(const int verbosity) const
 {

@@ -14,23 +14,25 @@
 #include <cmath>
 #include <complex>
 
-static const double pi = 4.0*atan(1.0);
-static const double amu = 1.660538782e-27;
-static const double electron_mass = 9.10938215e-31;
-static const double amu_ry = amu / electron_mass / 2.0;
-static const double c_light = 299792458;
-static const double h_planck = 6.62606896e-34;
-static const double Ryd = 4.35974394e-18 / 2.0;
-static const double time_ry = h_planck / (2.0 * pi) / Ryd;
-static const double Hz_to_kayser = 1.0e-2 / (2.0 * pi * c_light);
-static const double Bohr_in_Angstrom = 0.52917721092;
-static const double k_Boltzmann = 1.3806488e-23; // J/K
+constexpr double pi = M_PI;
+constexpr double inverse_pi = 1.0 / pi; // pi^{-1}
+constexpr double tpi = 2.0 * pi; // (2*pi)
+constexpr double inv_tpi = 1.0 / tpi; // (2*pi)^{-1}
+constexpr double amu = 1.660538782e-27;
+constexpr double electron_mass = 9.10938215e-31;
+constexpr double amu_ry = amu / electron_mass / 2.0;
+constexpr double c_light = 299792458;
+constexpr double h_planck = 6.62606896e-34;
+constexpr double Ryd = 4.35974394e-18 / 2.0;
+constexpr double time_ry = h_planck * inv_tpi / Ryd;
+constexpr double Hz_to_kayser = 1.0e-2 * inv_tpi / c_light;
+constexpr double Bohr_in_Angstrom = 0.52917721092;
+constexpr double k_Boltzmann = 1.3806488e-23; // J/K
 constexpr std::complex<double> im = std::complex<double>(0.0, 1.0);
-static const double eps = DBL_EPSILON;
-static const double eps15 = 1.0e-15;
-static const double eps12 = 1.0e-12;
-static const double eps10 = 1.0e-10;
-static const double eps8 = 1.0e-8;
-static const double eps6 = 1.0e-6;
-static const double eps4 = 1.0e-4;
-static const double inverse_pi = 1.0 / pi;
+constexpr double eps = DBL_EPSILON;
+constexpr double eps15 = 1.0e-15;
+constexpr double eps12 = 1.0e-12;
+constexpr double eps10 = 1.0e-10;
+constexpr double eps8 = 1.0e-8;
+constexpr double eps6 = 1.0e-6;
+constexpr double eps4 = 1.0e-4;
