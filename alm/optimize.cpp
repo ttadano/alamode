@@ -2075,7 +2075,7 @@ void Optimize::get_matrix_elements(const int maxorder,
 
             // generate r.h.s vector B
             for (i = 0; i < natmin; ++i) {
-                iat = symmetry->get_map_p2s()[i][0];
+                iat = symmetry->get_map_trueprim_to_super()[i][0];
                 for (j = 0; j < 3; ++j) {
                     im = 3 * i + j + natmin3 * irow;
                     bvec[im] = f_multi[irow][3 * iat + j];
@@ -2216,7 +2216,7 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
 
             // generate r.h.s vector B
             for (i = 0; i < natmin; ++i) {
-                iat = symmetry->get_map_p2s()[i][0];
+                iat = symmetry->get_map_trueprim_to_super()[i][0];
                 for (j = 0; j < 3; ++j) {
                     im = 3 * i + j + natmin3 * irow;
                     bvec[im] = f_multi[irow][3 * iat + j];
@@ -2414,7 +2414,7 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
 
             // generate r.h.s vector B
             for (i = 0; i < natmin; ++i) {
-                iat = symmetry->get_map_p2s()[i][0];
+                iat = symmetry->get_map_trueprim_to_super()[i][0];
                 for (j = 0; j < 3; ++j) {
                     im = 3 * i + j + natmin3 * irow;
                     sp_bvec(im) = f_multi[irow][3 * iat + j];
@@ -2629,7 +2629,7 @@ int Optimize::inprim_index(const int n,
     const auto crdn = n % 3;
 
     for (size_t i = 0; i < symmetry->get_nat_prim(); ++i) {
-        if (symmetry->get_map_p2s()[i][0] == atmn) {
+        if (symmetry->get_map_trueprim_to_super()[i][0] == atmn) {
             in = 3 * i + crdn;
             break;
         }

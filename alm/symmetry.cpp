@@ -59,18 +59,19 @@ void Symmetry::set_print_symmetry(const int printsymmetry_in)
     printsymmetry = printsymmetry_in;
 }
 
-const std::vector<Maps> &Symmetry::get_map_s2p() const
+const std::vector<Maps> &Symmetry::get_map_super_to_trueprim() const
 {
-    return map_s2p;
+    return map_super_to_trueprim;
 }
 
-const std::vector<std::vector<int>> &Symmetry::get_map_p2s() const
+const std::vector<std::vector<int>> &Symmetry::get_map_trueprim_to_super() const
 {
-    return map_p2s;
+    return map_trueprim_to_super;
 }
 
-const std::vector<SymmetryOperation> &Symmetry::get_SymmData() const
+const std::vector<SymmetryOperation> &Symmetry::get_symmetry_data(const std::string cell) const
 {
+    if (cell == "prim" || cell == "primitive") return symmetry_data_prim;
     return symmetry_data_super;
 }
 
@@ -79,18 +80,21 @@ const std::vector<std::vector<int>> &Symmetry::get_map_sym() const
     return map_sym;
 }
 
-const std::vector<int> &Symmetry::get_symnum_tran() const
+const std::vector<int> &Symmetry::get_symnum_tran(const std::string cell) const
 {
-    return symnum_tran;
+    if (cell == "prim" || cell == "primitive") return symnum_tran_prim;
+    return symnum_tran_super;
 }
 
-size_t Symmetry::get_nsym() const
+size_t Symmetry::get_nsym(const std::string cell) const
 {
+    if (cell == "prim" || cell == "primitive") return nsym_prim;
     return nsym_super;
 }
 
-size_t Symmetry::get_ntran() const
+size_t Symmetry::get_ntran(const std::string cell) const
 {
+    if (cell == "prim" || cell == "primitive") return ntran_prim;
     return ntran_super;
 }
 
@@ -111,8 +115,8 @@ void Symmetry::init(const std::unique_ptr<System> &system,
         std::cout << " ==========\n\n";
     }
 
-    // nat_trueprim, ntran_super, nsym_super, symmetry_data_super, symnum_tran are set here.
-    // Symmdata[nsym_super], symnum_tran[ntran_super]
+    // nat_trueprim, ntran_super, nsym_super, symmetry_data_super, symnum_tran_super are set here.
+    // Symmdata[nsym_super], symnum_tran_super[ntran_super]
     setup_symmetry_operation(system->get_primcell(),
                              system->get_spin("primitive"),
                              system->get_atomtype_group("primitive"),
@@ -127,9 +131,9 @@ void Symmetry::init(const std::unique_ptr<System> &system,
     map_sym.shrink_to_fit();
     map_sym.resize(system->get_supercell().number_of_atoms, std::vector<int>(nsym_super));
 
-    map_p2s.clear();
-    map_p2s.shrink_to_fit();
-    map_p2s.resize(nat_trueprim, std::vector<int>(ntran_super));
+    map_trueprim_to_super.clear();
+    map_trueprim_to_super.shrink_to_fit();
+    map_trueprim_to_super.resize(nat_trueprim, std::vector<int>(ntran_super));
 
     // symmetry_data_super is updated here.
     update_symmetry_operations_supercell(system->get_primcell(),
@@ -137,9 +141,13 @@ void Symmetry::init(const std::unique_ptr<System> &system,
                                          system->get_supercell(),
                                          symmetry_data_super);
 
-    symnum_tran.clear();
+    symnum_tran_prim.clear();
+    symnum_tran_super.clear();
+    for (auto i = 0; i < nsym_prim; ++i) {
+        if (symmetry_data_prim[i].is_translation) symnum_tran_prim.push_back(i);
+    }
     for (auto i = 0; i < nsym_super; ++i) {
-        if (symmetry_data_super[i].is_translation) symnum_tran.push_back(i);
+        if (symmetry_data_super[i].is_translation) symnum_tran_super.push_back(i);
     }
 
     gen_mapping_information(system->get_supercell(),
@@ -710,7 +718,7 @@ void Symmetry::print_symminfo_stdout() const
     for (size_t i = 0; i < ntran_super; ++i) {
         std::cout << std::setw(6) << i + 1 << " | ";
         for (size_t j = 0; j < nat_trueprim; ++j) {
-            std::cout << std::setw(5) << map_p2s[j][i] + 1;
+            std::cout << std::setw(5) << map_trueprim_to_super[j][i] + 1;
             if ((j + 1) % 5 == 0) {
                 std::cout << std::endl << "       | ";
             }
@@ -795,10 +803,10 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
     Eigen::Matrix3d rot_cart, rot_latt;
     Eigen::Matrix3i rot_latt_int;
 
-    for (const auto &tran : unique_shifts_vec) {
+    for (const auto &it_tran : unique_shifts_vec) {
         for (const auto &it_symm : symm_prim) {
             tran_d = it_symm.tran; // lattice basis of the primitive cell
-            for (auto k = 0; k < 3; ++k) tran_d[k] += tran[k]; // add primitive lattice translation
+            for (auto k = 0; k < 3; ++k) tran_d[k] += it_tran[k]; // add primitive lattice translation
 
             rot_cart = it_symm.rotation_cart; // Common to the primitive cell and supercell.
 
@@ -829,7 +837,6 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
                                   is_translation(rot_latt_int));
         }
     }
-
 }
 
 void Symmetry::gen_mapping_information(const Cell &scell,
@@ -902,7 +909,7 @@ void Symmetry::gen_mapping_information(const Cell &scell,
         }
     }
 
-    // Generate map_p2s (primitive --> super)
+    // Generate map_trueprim_to_super (primitive --> super)
 
     bool *is_checked;
     allocate(is_checked, scell.number_of_atoms);
@@ -915,8 +922,8 @@ void Symmetry::gen_mapping_information(const Cell &scell,
 
         if (is_checked[iat]) continue;
         for (i = 0; i < ntran_super; ++i) {
-            atomnum_translated = map_sym[iat][symnum_tran[i]];
-            map_p2s[jat][i] = atomnum_translated;
+            atomnum_translated = map_sym[iat][symnum_tran_super[i]];
+            map_trueprim_to_super[jat][i] = atomnum_translated;
             is_checked[atomnum_translated] = true;
         }
         ++jat;
@@ -924,16 +931,16 @@ void Symmetry::gen_mapping_information(const Cell &scell,
 
     deallocate(is_checked);
 
-    // Generate map_s2p (super --> primitive)
+    // Generate map_super_to_trueprim (super --> primitive)
 
-    map_s2p.clear();
-    map_s2p.resize(scell.number_of_atoms);
+    map_super_to_trueprim.clear();
+    map_super_to_trueprim.resize(scell.number_of_atoms);
 
     for (iat = 0; iat < nat_trueprim; ++iat) {
         for (i = 0; i < ntran_super; ++i) {
-            atomnum_translated = map_p2s[iat][i];
-            map_s2p[atomnum_translated].atom_num = iat;
-            map_s2p[atomnum_translated].tran_num = i;
+            atomnum_translated = map_trueprim_to_super[iat][i];
+            map_super_to_trueprim[atomnum_translated].atom_num = iat;
+            map_super_to_trueprim[atomnum_translated].tran_num = i;
         }
     }
 }

@@ -169,7 +169,7 @@ void Fcs::generate_force_constant_table(const int order,
 
     int **xyzcomponent;
 
-    const auto nsym = symm_in->get_SymmData().size();
+    const auto nsym = symm_in->get_symmetry_data().size();
     bool is_zero;
     bool *is_searched;
     int **map_sym;
@@ -221,7 +221,7 @@ void Fcs::generate_force_constant_table(const int order,
 
             i_prim = get_minimum_index_in_primitive(order + 2, ind, nat,
                                                     symm_in->get_nat_prim(),
-                                                    symm_in->get_map_p2s());
+                                                    symm_in->get_map_trueprim_to_super());
             std::swap(ind[0], ind[i_prim]);
             sort_tail(order + 2, ind);
 
@@ -240,7 +240,7 @@ void Fcs::generate_force_constant_table(const int order,
                 if (!is_inprim(order + 2,
                                atmn_mapped,
                                symm_in->get_nat_prim(),
-                               symm_in->get_map_p2s()))
+                               symm_in->get_map_trueprim_to_super()))
                     continue;
 
                 for (i2 = 0; i2 < nxyz; ++i2) {
@@ -258,7 +258,7 @@ void Fcs::generate_force_constant_table(const int order,
                                                                 ind_mapped,
                                                                 nat,
                                                                 symm_in->get_nat_prim(),
-                                                                symm_in->get_map_p2s());
+                                                                symm_in->get_map_trueprim_to_super());
                         std::swap(ind_mapped[0], ind_mapped[i_prim]);
                         sort_tail(order + 2, ind_mapped);
 
@@ -291,7 +291,7 @@ void Fcs::generate_force_constant_table(const int order,
                             for (i = 1; i < order + 2; ++i) {
                                 if ((!is_searched[ind_mapped[i]]) && is_inprim(ind_mapped[i],
                                                                                symm_in->get_nat_prim(),
-                                                                               symm_in->get_map_p2s())) {
+                                                                               symm_in->get_map_trueprim_to_super())) {
 
                                     for (j = 0; j < order + 2; ++j) ind_mapped_tmp[j] = ind_mapped[j];
                                     std::swap(ind_mapped_tmp[0], ind_mapped_tmp[i]);
@@ -381,7 +381,7 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 
     int **map_sym;
     double ***rotation;
-    const auto nsym = symmetry->get_SymmData().size();
+    const auto nsym = symmetry->get_symmetry_data().size();
     const auto natmin = symmetry->get_nat_prim();
     const auto nfcs = fc_table_in.size();
     const auto use_compatible = false;
@@ -464,7 +464,7 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 
                 for (i = 0; i < order + 2; ++i)
                     atm_index_symm[i] = map_sym[atm_index[i]][isym];
-                if (!is_inprim(order + 2, atm_index_symm, natmin, symmetry->get_map_p2s())) continue;
+                if (!is_inprim(order + 2, atm_index_symm, natmin, symmetry->get_map_trueprim_to_super())) continue;
 
                 for (i = 0; i < nparams; ++i) const_now_omp[i] = 0.0;
 
@@ -474,7 +474,8 @@ void Fcs::get_constraint_symmetry(const size_t nat,
                     for (i = 0; i < order + 2; ++i)
                         ind[i] = 3 * atm_index_symm[i] + xyzcomponent[ixyz][i];
 
-                    i_prim = get_minimum_index_in_primitive(order + 2, ind, nat, natmin, symmetry->get_map_p2s());
+                    i_prim = get_minimum_index_in_primitive(order + 2, ind, nat, natmin,
+                                                            symmetry->get_map_trueprim_to_super());
                     std::swap(ind[0], ind[i_prim]);
                     sort_tail(order + 2, ind);
 
@@ -578,7 +579,7 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
 
     int **map_sym;
     double ***rotation;
-    const auto nsym = symmetry->get_SymmData().size();
+    const auto nsym = symmetry->get_symmetry_data().size();
     const auto natmin = symmetry->get_nat_prim();
     const auto nfcs = fc_table_in.size();
     const auto use_compatible = false;
@@ -659,7 +660,7 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
 
                 for (i = 0; i < order + 2; ++i)
                     atm_index_symm[i] = map_sym[atm_index[i]][isym];
-                if (!is_inprim(order + 2, atm_index_symm, natmin, symmetry->get_map_p2s())) continue;
+                if (!is_inprim(order + 2, atm_index_symm, natmin, symmetry->get_map_trueprim_to_super())) continue;
 
                 for (i = 0; i < nparams; ++i) const_now_omp[i] = 0;
 
@@ -669,7 +670,8 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
                     for (i = 0; i < order + 2; ++i)
                         ind[i] = 3 * atm_index_symm[i] + xyzcomponent[ixyz][i];
 
-                    i_prim = get_minimum_index_in_primitive(order + 2, ind, nat, natmin, symmetry->get_map_p2s());
+                    i_prim = get_minimum_index_in_primitive(order + 2, ind, nat, natmin,
+                                                            symmetry->get_map_trueprim_to_super());
                     std::swap(ind[0], ind[i_prim]);
                     sort_tail(order + 2, ind);
 
@@ -1005,7 +1007,7 @@ void Fcs::get_available_symmop(const size_t nat,
 
     if (basis == "Cartesian") {
 
-        for (auto it = symmetry->get_SymmData().begin(); it != symmetry->get_SymmData().end(); ++it) {
+        for (auto it = symmetry->get_symmetry_data().begin(); it != symmetry->get_symmetry_data().end(); ++it) {
 
             if ((*it).compatible_with_cartesian == use_compatible) {
 
@@ -1024,7 +1026,7 @@ void Fcs::get_available_symmop(const size_t nat,
 
     } else if (basis == "Lattice") {
 
-        for (auto it = symmetry->get_SymmData().begin(); it != symmetry->get_SymmData().end(); ++it) {
+        for (auto it = symmetry->get_symmetry_data().begin(); it != symmetry->get_symmetry_data().end(); ++it) {
             if ((*it).compatible_with_lattice == use_compatible) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
@@ -1214,7 +1216,7 @@ void Fcs::translate_forceconstant_index_to_centercell(const std::unique_ptr<Symm
                                                       std::vector<std::vector<int>> &index_inout) const
 {
     const auto map_sym = symmetry->get_map_sym();
-    const auto map_p2s = symmetry->get_map_p2s();
+    const auto map_p2s = symmetry->get_map_trueprim_to_super();
     const auto symnum_tran = symmetry->get_symnum_tran();
     const auto nfcs = index_inout.size();
     const auto nelems = index_inout[0].size();

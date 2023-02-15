@@ -335,7 +335,7 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
                 for (l = 1; l < order + 2; ++l) {
                     atom_tmp.push_back(fcs->get_fc_table()[order][m].elems[l] / 3);
                 }
-                j = symmetry->get_map_s2p()[fcs->get_fc_table()[order][m].elems[0] / 3].atom_num;
+                j = symmetry->get_map_super_to_trueprim()[fcs->get_fc_table()[order][m].elems[0] / 3].atom_num;
                 std::sort(atom_tmp.begin(), atom_tmp.end());
 
                 const auto iter_cluster
@@ -514,8 +514,8 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
         prop_tmp.y = system->get_supercell().x_fractional(i, 1);
         prop_tmp.z = system->get_supercell().x_fractional(i, 2);
         prop_tmp.kind = system->get_supercell().kind[i];
-        prop_tmp.atom = symmetry->get_map_s2p()[i].atom_num + 1;
-        prop_tmp.tran = symmetry->get_map_s2p()[i].tran_num + 1;
+        prop_tmp.atom = symmetry->get_map_super_to_trueprim()[i].atom_num + 1;
+        prop_tmp.tran = symmetry->get_map_super_to_trueprim()[i].tran_num + 1;
 
         system_structure.atoms.emplace_back(AtomProperty(prop_tmp));
     }
@@ -571,7 +571,7 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
     for (i = 0; i < system_structure.ntran; ++i) {
         for (j = 0; j < system_structure.natmin; ++j) {
             auto &child = pt.add("Data.Symmetry.Translations.map",
-                                 symmetry->get_map_p2s()[j][i] + 1);
+                                 symmetry->get_map_trueprim_to_super()[j][i] + 1);
             child.put("<xmlattr>.tran", i + 1);
             child.put("<xmlattr>.atom", j + 1);
         }
@@ -611,7 +611,7 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
         for (i = 0; i < 2; ++i) {
             pair_tmp[i] = fcs->get_fc_table()[0][ihead].elems[i] / 3;
         }
-        j = symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
+        j = symmetry->get_map_super_to_trueprim()[pair_tmp[0]].atom_num;
 
         atom_tmp.clear();
         atom_tmp.push_back(pair_tmp[1]);
@@ -646,7 +646,7 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
             for (i = 0; i < 3; ++i) {
                 pair_tmp[i] = fcs->get_fc_table()[1][ihead].elems[i] / 3;
             }
-            j = symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
+            j = symmetry->get_map_super_to_trueprim()[pair_tmp[0]].atom_num;
 
             atom_tmp.clear();
             for (i = 1; i < 3; ++i) {
@@ -689,7 +689,7 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
             pair_tmp[k] = it.atoms[k];
         }
 
-        j = symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
+        j = symmetry->get_map_super_to_trueprim()[pair_tmp[0]].atom_num;
 
         atom_tmp.clear();
         atom_tmp.push_back(pair_tmp[1]);
@@ -744,7 +744,7 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
             for (k = 0; k < order + 2; ++k) {
                 pair_tmp[k] = it.atoms[k];
             }
-            j = symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
+            j = symmetry->get_map_super_to_trueprim()[pair_tmp[0]].atom_num;
 
             atom_tmp.clear();
 
@@ -1104,7 +1104,7 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
             coord_tmp[i] = it.coords[i];
         }
 
-        j = symmetry->get_map_s2p()[pair_tmp[0]].atom_num;
+        j = symmetry->get_map_super_to_trueprim()[pair_tmp[0]].atom_num;
 
         if (pair_tmp[1] > pair_tmp[2]) {
             atom_tmp[0] = pair_tmp[2];
@@ -1147,8 +1147,8 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
                 for (auto ktran = 0; ktran < ntran; ++ktran) {
                     for (k = 0; k < natmin; ++k) {
 
-                        const auto jat = symmetry->get_map_p2s()[j][jtran];
-                        const auto kat = symmetry->get_map_p2s()[k][ktran];
+                        const auto jat = symmetry->get_map_trueprim_to_super()[j][jtran];
+                        const auto kat = symmetry->get_map_trueprim_to_super()[k][ktran];
 
                         if (!has_element[i][jat][kat]) continue;
 
@@ -1170,9 +1170,9 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
 
                         const auto multiplicity = (*iter_cluster).cell.size();
 
-                        const auto jat0 = symmetry->get_map_p2s()[symmetry->get_map_s2p()[atom_tmp[0]].
+                        const auto jat0 = symmetry->get_map_trueprim_to_super()[symmetry->get_map_super_to_trueprim()[atom_tmp[0]].
                                 atom_num][0];
-                        const auto kat0 = symmetry->get_map_p2s()[symmetry->get_map_s2p()[atom_tmp[1]].
+                        const auto kat0 = symmetry->get_map_trueprim_to_super()[symmetry->get_map_super_to_trueprim()[atom_tmp[1]].
                                 atom_num][0];
 
                         for (size_t imult = 0; imult < multiplicity; ++imult) {

@@ -904,14 +904,14 @@ void Constraint::generate_symmetry_constraint(const size_t nat,
 
     if (fcs->get_forceconstant_basis() == "Cartesian") {
         for (auto isym = 0; isym < symmetry->get_nsym(); ++isym) {
-            if (!symmetry->get_SymmData()[isym].compatible_with_cartesian) {
+            if (!symmetry->get_symmetry_data()[isym].compatible_with_cartesian) {
                 has_constraint_from_symm = true;
                 break;
             }
         }
     } else {
         for (auto isym = 0; isym < symmetry->get_nsym(); ++isym) {
-            if (!symmetry->get_SymmData()[isym].compatible_with_lattice) {
+            if (!symmetry->get_symmetry_data()[isym].compatible_with_lattice) {
                 has_constraint_from_symm = true;
                 break;
             }
@@ -1110,7 +1110,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
 
     for (i = 0; i < natmin; ++i) {
 
-        iat = symmetry->get_map_p2s()[i][0];
+        iat = symmetry->get_map_trueprim_to_super()[i][0];
 
         // Generate atom pairs for each order
 
@@ -1410,7 +1410,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
     for (i = 0; i < natmin; ++i) {
 
-        iat = symmetry->get_map_p2s()[i][0];
+        iat = symmetry->get_map_trueprim_to_super()[i][0];
 
         // Generate atom pairs for each order
 
@@ -1884,7 +1884,7 @@ void Constraint::set_rotation_constraints(const std::unique_ptr<System> &system,
 
     for (int i = 0; i < natmin; ++i) {
 
-        iat = symmetry->get_map_p2s()[i][0];
+        iat = symmetry->get_map_trueprim_to_super()[i][0];
 
         interaction_atom[0] = iat;
 
@@ -2272,7 +2272,7 @@ void Constraint::set_rotation_constraints_extra(const std::unique_ptr<System> &s
 
     for (int i = 0; i < natmin; ++i) {
 
-        iat = symmetry->get_map_p2s()[i][0];
+        iat = symmetry->get_map_trueprim_to_super()[i][0];
 
         interaction_atom[0] = iat;
 

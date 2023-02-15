@@ -303,7 +303,7 @@ int *ALM::get_periodicity() const
 
 const std::vector<std::vector<int>> &ALM::get_atom_mapping_by_pure_translations() const
 {
-    return symmetry->get_map_p2s();
+    return symmetry->get_map_trueprim_to_super();
 }
 
 int ALM::get_maxorder() const

@@ -72,7 +72,6 @@ public:
 
 class RotationMatrix {
 public:
-    //int mat[3][3];
     Eigen::Matrix3i mat;
 
     RotationMatrix();
@@ -116,19 +115,19 @@ public:
 
     void set_print_symmetry(const int);
 
-    const std::vector<Maps> &get_map_s2p() const;
+    const std::vector<Maps> &get_map_super_to_trueprim() const;
 
-    const std::vector<std::vector<int>> &get_map_p2s() const;
+    const std::vector<std::vector<int>> &get_map_trueprim_to_super() const;
 
-    const std::vector<SymmetryOperation> &get_SymmData() const;
+    const std::vector<SymmetryOperation> &get_symmetry_data(const std::string cell = "super") const;
 
     const std::vector<std::vector<int>> &get_map_sym() const;
 
-    const std::vector<int> &get_symnum_tran() const;
+    const std::vector<int> &get_symnum_tran(const std::string cell = "super") const;
 
-    size_t get_nsym() const;
+    size_t get_nsym(const std::string cell = "super") const;
 
-    size_t get_ntran() const;
+    size_t get_ntran(const std::string cell = "super") const;
 
     size_t get_nat_prim() const;
 
@@ -137,11 +136,12 @@ private:
     size_t nsym_prim, ntran_prim, nat_trueprim;
 
     std::vector<std::vector<int>> map_sym;   // [nat_base, nsym_super]
-    std::vector<std::vector<int>> map_p2s;   // [nat_trueprim, ntran_super]
-    std::vector<Maps> map_s2p;               // [nat_super]
+    std::vector<std::vector<int>> map_trueprim_to_super;   // [nat_trueprim, ntran_super]
+    std::vector<Maps> map_super_to_trueprim;               // [nat_super]
     std::vector<SymmetryOperation> symmetry_data_super; // [nsym_super]
     std::vector<SymmetryOperation> symmetry_data_prim; // [nsym_prim]
-    std::vector<int> symnum_tran;            // [ntran_super]
+    std::vector<int> symnum_tran_super;            // [ntran_super]
+    std::vector<int> symnum_tran_prim;            // [ntran_prim]
 
     double tolerance;
     int printsymmetry;

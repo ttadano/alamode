@@ -513,9 +513,7 @@ void System::set_spin_variables(const size_t nat_in,
 const Spin &System::get_spin(const std::string cell) const
 {
     if (cell == "input") return spin_input;
-
-    if (cell == "primitive") return spin_prim;
-
+    if (cell == "prim" || cell == "primitive") return spin_prim;
     return spin_super;
 }
 
@@ -531,8 +529,7 @@ const std::string &System::get_str_magmom() const
 
 const std::vector<std::vector<unsigned int>> &System::get_atomtype_group(const std::string cell) const
 {
-    if (cell == "primitive") return atomtype_group_prim;
-
+    if (cell == "prim" || cell == "primitive") return atomtype_group_prim;
     return atomtype_group_super;
 }
 

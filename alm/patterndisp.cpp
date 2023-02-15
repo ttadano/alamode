@@ -70,7 +70,7 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
     // Decide preferred basis (Cartesian or Lattice)
     auto ncompat_cart = 0;
     auto ncompat_latt = 0;
-    for (const auto &it: symmetry->get_SymmData()) {
+    for (const auto &it: symmetry->get_symmetry_data()) {
         if (it.compatible_with_cartesian) ++ncompat_cart;
         if (it.compatible_with_lattice) ++ncompat_latt;
     }
@@ -456,12 +456,13 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
                     if (preferred_basis == "Cartesian") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                    += symmetry->get_SymmData()[isym].rotation_cart(j, k) * disp[list_disp_atom[i]][k];
+                                    +=
+                                    symmetry->get_symmetry_data()[isym].rotation_cart(j, k) * disp[list_disp_atom[i]][k];
                         }
                     } else if (preferred_basis == "Lattice") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                    += static_cast<double>(symmetry->get_SymmData()[isym].rotation(j, k))
+                                    += static_cast<double>(symmetry->get_symmetry_data()[isym].rotation(j, k))
                                        * disp[list_disp_atom[i]][k];
                         }
                     } else {
@@ -519,13 +520,13 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
                     if (preferred_basis == "Cartesian") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                    += symmetry->get_SymmData()[symnum_vec[isym]].rotation_cart(j, k)
+                                    += symmetry->get_symmetry_data()[symnum_vec[isym]].rotation_cart(j, k)
                                        * disp[list_disp_atom[i]][k];
                         }
                     } else if (preferred_basis == "Lattice") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                    += static_cast<double>(symmetry->get_SymmData()[symnum_vec[isym]].rotation(j, k))
+                                    += static_cast<double>(symmetry->get_symmetry_data()[symnum_vec[isym]].rotation(j, k))
                                        * disp[list_disp_atom[i]][k];
                         }
                     } else {

@@ -745,11 +745,11 @@ std::string Gruneisen::double2string(const double d) const
 // 
 //         for (i = 0; i < norder; ++i) {
 //             for (j = 0; j < 3; ++j) {
-//                 vec[i][j] = system->xr_s[system->map_p2s[(*it).pairs[i].index / 3][(*it).pairs[i].tran]][j]
+//                 vec[i][j] = system->xr_s[system->map_trueprim_to_super[(*it).pairs[i].index / 3][(*it).pairs[i].tran]][j]
 //                 + xshift_s[(*it).pairs[i].cell_s][j];
 // 
-//                 pos[i][j] = system->xr_s[system->map_p2s[(*it).pairs[i].index / 3][0]][j];
-//             //    vec[i][j] = system->xr_s[system->map_p2s[0][(*it).pairs[i].tran]][j] + xshift_s[(*it).pairs[i].cell_s][j];
+//                 pos[i][j] = system->xr_s[system->map_trueprim_to_super[(*it).pairs[i].index / 3][0]][j];
+//             //    vec[i][j] = system->xr_s[system->map_trueprim_to_super[0][(*it).pairs[i].tran]][j] + xshift_s[(*it).pairs[i].cell_s][j];
 //             }
 //             rotvec(vec[i], vec[i], system->lavec_s);
 //             rotvec(pos[i], pos[i], system->lavec_s);
@@ -793,10 +793,10 @@ std::string Gruneisen::double2string(const double d) const
 // 
 //         for (i = 0; i < norder; ++i) {
 //             for (j = 0; j < 3; ++j) {
-//                 vec[i][j] = system->xr_s[system->map_p2s[(*it).pairs[i].index / 3][(*it).pairs[i].tran]][j]
+//                 vec[i][j] = system->xr_s[system->map_trueprim_to_super[(*it).pairs[i].index / 3][(*it).pairs[i].tran]][j]
 //                 + xshift_s[(*it).pairs[i].cell_s][j];
 // 
-//                 pos[i][j] = system->xr_s[system->map_p2s[(*it).pairs[i].index / 3][0]][j];
+//                 pos[i][j] = system->xr_s[system->map_trueprim_to_super[(*it).pairs[i].index / 3][0]][j];
 //             }
 //             rotvec(vec[i], vec[i], system->lavec_s);
 //             rotvec(pos[i], pos[i], system->lavec_s);

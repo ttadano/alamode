@@ -294,7 +294,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     for (auto i = 0; i < ns; ++i) {
         for (auto j = 0; j < ns; ++j) {
             evec[i][j] /= std::sqrt(system->mass[system->map_p2s[j / 3][0]] / amu_ry);
-//            evec[i][j] /= std::sqrt(system->mass[system->map_p2s[j / 3][0]]);
+//            evec[i][j] /= std::sqrt(system->mass[system->map_trueprim_to_super[j / 3][0]]);
         }
     }
 

@@ -104,17 +104,17 @@ void Cluster::init(const std::unique_ptr<System> &system,
     set_interaction_by_cutoff(system->get_supercell().number_of_atoms,
                               system->get_supercell().kind,
                               symmetry->get_nat_prim(),
-                              symmetry->get_map_p2s());
+                              symmetry->get_map_trueprim_to_super());
 
     calc_interaction_clusters(symmetry->get_nat_prim(),
                               system->get_supercell().kind,
-                              symmetry->get_map_p2s(),
+                              symmetry->get_map_trueprim_to_super(),
                               system->get_x_image(),
                               system->get_exist_image(),
                               mirror_image_conv);
 
     generate_pairs(symmetry->get_nat_prim(),
-                   symmetry->get_map_p2s(),
+                   symmetry->get_map_trueprim_to_super(),
                    cluster_list);
 
     // check permutation symmetry of anharmonic IFC
@@ -155,14 +155,14 @@ void Cluster::init(const std::unique_ptr<System> &system,
 
         print_neighborlist(system->get_supercell().number_of_atoms,
                            symmetry->get_nat_prim(),
-                           symmetry->get_map_p2s(),
+                           symmetry->get_map_trueprim_to_super(),
                            system->get_supercell().kind,
                            system->get_kdname());
     }
 
     if (verbosity > 1) {
         print_interaction_information(symmetry->get_nat_prim(),
-                                      symmetry->get_map_p2s(),
+                                      symmetry->get_map_trueprim_to_super(),
                                       system->get_supercell().kind,
                                       system->get_kdname(),
                                       interaction_pair);
@@ -264,11 +264,11 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                 isym = symmetry->get_symnum_tran()[isym_tran];
 
                 jat_translated = symmetry->get_map_sym()[jat][isym];
-                jat_prim = symmetry->get_map_s2p()[jat].atom_num;
+                jat_prim = symmetry->get_map_super_to_trueprim()[jat].atom_num;
 
                 data_now.clear();
                 // original center
-                iat = symmetry->get_map_p2s()[iat_prim][0];
+                iat = symmetry->get_map_trueprim_to_super()[iat_prim][0];
                 iat_translated = symmetry->get_map_sym()[iat][isym];
                 data_now.push_back(iat_translated);
 
@@ -344,7 +344,7 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                         for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                             j2at = (*cluster_tmp2).atom[j2];
                             dtmp1 = system->get_x_image()[(*cluster_tmp2).cell[i_mirror][j2]][j2at][xyztmp] -
-                                    system->get_x_image()[0][symmetry->get_map_p2s()[jat_prim][0]][xyztmp];
+                                    system->get_x_image()[0][symmetry->get_map_trueprim_to_super()[jat_prim][0]][xyztmp];
                             relvec_tmp.push_back(dtmp1);
                         }
                         relvecs2[i_mirror].relvecs_cartesian.push_back(relvec_tmp);
@@ -505,7 +505,7 @@ void Cluster::make_symnum_tran_to_prim(const std::unique_ptr<System> &system,
             jat = symmetry->get_map_sym()[iat][isym];
 
             // if jat is in the primitive cell
-            if (is_inprim(jat, natmin, symmetry->get_map_p2s())) {
+            if (is_inprim(jat, natmin, symmetry->get_map_trueprim_to_super())) {
                 symnum_tran_to_prim[iat] = isym_tran;
             }
         }
