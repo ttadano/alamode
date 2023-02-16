@@ -1073,7 +1073,7 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
     atom_tmp.resize(2);
     cell_dummy.resize(2);
 
-    double ***x_image = system->get_x_image();
+    auto x_image = system->get_x_image();
 
     allocate(fc3, 3 * natmin, nat3, nat3);
     allocate(has_element, natmin, nat, nat);
@@ -1179,14 +1179,14 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
                             auto cell_now = (*iter_cluster).cell[imult];
 
                             for (auto m = 0; m < 3; ++m) {
-                                vec1[m] = (x_image[0][atom_tmp[0]][m]
-                                           - x_image[0][jat0][m]
-                                           + x_image[cell_now[0]][0][m]
-                                           - x_image[0][0][m]) * Bohr_in_Angstrom;
-                                vec2[m] = (x_image[0][atom_tmp[1]][m]
-                                           - x_image[0][kat0][m]
-                                           + x_image[cell_now[1]][0][m]
-                                           - x_image[0][0][m]) * Bohr_in_Angstrom;
+                                vec1[m] = (x_image[0](atom_tmp[0],m)
+                                           - x_image[0](jat0,m)
+                                           + x_image[cell_now[0]](0,m)
+                                           - x_image[0](0,m)) * Bohr_in_Angstrom;
+                                vec2[m] = (x_image[0](atom_tmp[1],m)
+                                           - x_image[0](kat0,m)
+                                           + x_image[cell_now[1]](0,m)
+                                           - x_image[0](0,m)) * Bohr_in_Angstrom;
                             }
 
                             ++ielem;

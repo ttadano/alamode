@@ -276,7 +276,7 @@ Cell ALM::get_supercell() const
     return system->get_supercell();
 }
 
-std::string *ALM::get_kdname() const
+std::vector<std::string> ALM::get_kdname() const
 {
     return system->get_kdname();
 }
@@ -291,7 +291,7 @@ std::string ALM::get_str_magmom() const
     return system->get_str_magmom();
 }
 
-double ***ALM::get_x_image() const
+const std::vector<Eigen::MatrixXd> &ALM::get_x_image() const
 {
     return system->get_x_image();
 }

@@ -315,7 +315,7 @@ private:
     // can be made const function, but mindist_pairs is modified
     // in this function.
     void get_pairs_of_minimum_distance(const size_t nat,
-                                       const double *const *const *xc_in,
+                                       const std::vector<Eigen::MatrixXd> &xc_in,
                                        const int *exist) const;
 
     void generate_interaction_information_by_cutoff(const size_t nat,
@@ -334,16 +334,16 @@ private:
                             const size_t,
                             const std::vector<std::vector<int>> &,
                             const std::vector<int> &,
-                            const std::string *) const;
+                            const std::vector<std::string> &) const;
 
     void print_interaction_information(const size_t natmin,
                                        const std::vector<std::vector<int>> &map_p2s,
                                        const std::vector<int> &kd,
-                                       const std::string *kdname,
+                                       const std::vector<std::string> &kdname,
                                        const std::vector<int> *const *interaction_list) const;
 
-    double distance(const double *,
-                    const double *) const;
+    double distance(const Eigen::MatrixXd &x1,
+                   const Eigen::MatrixXd &x2) const;
 
     int nbody(const int,
               const int *) const;
@@ -351,7 +351,7 @@ private:
     void calc_interaction_clusters(const size_t natmin,
                                    const std::vector<int> &kd,
                                    const std::vector<std::vector<int>> &map_p2s,
-                                   const double *const *const *x_image,
+                                   const std::vector<Eigen::MatrixXd> &x_image,
                                    const int *exist,
                                    const int mirror_image_conv) const;
 
@@ -360,7 +360,7 @@ private:
                                  const std::vector<int> &kd,
                                  const std::vector<std::vector<int>> &map_p2s,
                                  const std::vector<int> *interaction_pair_in,
-                                 const double *const *const *x_image,
+                                 const std::vector<Eigen::MatrixXd> &x_image,
                                  const int *exist,
                                  const int mirror_image_conv,
                                  std::set<InteractionCluster> *interaction_cluster_out) const;

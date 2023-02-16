@@ -48,10 +48,8 @@ void System::init(const int verbosity,
     set_atomtype_group(primcell, spin_prim, atomtype_group_prim);
 
     const auto nneib = 27;
-    if (x_image) {
-        deallocate(x_image);
-    }
-    allocate(x_image, nneib, nat, 3);
+    x_image.clear();
+    x_image.shrink_to_fit();
 
     if (exist_image) {
         deallocate(exist_image);
@@ -370,7 +368,7 @@ const Cell &System::get_inputcell() const
     return inputcell;
 }
 
-double ***System::get_x_image() const
+const std::vector<Eigen::MatrixXd> &System::get_x_image() const
 {
     return x_image;
 }
@@ -401,16 +399,14 @@ void System::set_kdname(const std::string *kdname_in)
     //TODO: modify below
     const auto nkd = inputcell.number_of_elems;
 
-    if (kdname) {
-        deallocate(kdname);
-    }
-    allocate(kdname, nkd);
+    kdname.clear();
+    kdname.resize(nkd);
     for (size_t i = 0; i < nkd; ++i) {
         kdname[i] = kdname_in[i];
     }
 }
 
-std::string *System::get_kdname() const
+const std::vector<std::string> &System::get_kdname() const
 {
     return kdname;
 }
@@ -424,8 +420,7 @@ void System::set_reciprocal_latt(const Eigen::Matrix3d &lavec_in,
     if (std::abs(det) < eps12) {
         exit("set_reciprocal_latt", "Lattice Vector is singular");
     }
-    const auto factor = 2.0 * pi;
-    rlavec_out = factor * lavec_in.inverse();
+    rlavec_out = tpi * lavec_in.inverse();
 }
 
 double System::volume(const Eigen::Matrix3d &mat_in,
@@ -453,8 +448,6 @@ double System::volume(const Eigen::Matrix3d &mat_in,
 
 void System::set_default_variables()
 {
-    kdname = nullptr;
-
     supercell.number_of_atoms = 0;
     supercell.number_of_elems = 0;
 
@@ -463,7 +456,6 @@ void System::set_default_variables()
     is_periodic[1] = 1;
     is_periodic[2] = 1;
 
-    x_image = nullptr;
     exist_image = nullptr;
     str_magmom = "";
 
@@ -476,12 +468,6 @@ void System::set_default_variables()
 
 void System::deallocate_variables()
 {
-    if (kdname) {
-        deallocate(kdname);
-    }
-    if (x_image) {
-        deallocate(x_image);
-    }
     if (is_periodic) {
         deallocate(is_periodic);
     }
@@ -610,11 +596,7 @@ void System::generate_coordinate_of_periodic_images()
 
     x_tmp = xf_in * supercell.lattice_vector.transpose();
 
-    for (i = 0; i < nat; ++i) {
-        for (unsigned int j = 0; j < 3; ++j) {
-            x_image[0][i][j] = x_tmp(i, j);
-        }
-    }
+    x_image.emplace_back(x_tmp);
 
     // Convert to Cartesian coordinate
     for (ia = -1; ia <= 1; ++ia) {
@@ -629,11 +611,7 @@ void System::generate_coordinate_of_periodic_images()
                     x_tmp(i, 2) += static_cast<double>(ka);
                 }
                 x_tmp = x_tmp * supercell.lattice_vector.transpose();
-                for (i = 0; i < nat; ++i) {
-                    x_image[icell][i][0] = x_tmp(i, 0);
-                    x_image[icell][i][1] = x_tmp(i, 1);
-                    x_image[icell][i][2] = x_tmp(i, 2);
-                }
+                x_image.emplace_back(x_tmp);
             }
         }
     }

@@ -88,11 +88,11 @@ public:
 
     const Cell &get_inputcell() const;
 
-    double ***get_x_image() const;
+    const std::vector<Eigen::MatrixXd> &get_x_image() const;
 
     int *get_exist_image() const;
 
-    std::string *get_kdname() const;
+    const std::vector<std::string> &get_kdname() const;
 
     int *get_periodicity() const;
 
@@ -109,9 +109,10 @@ private:
     // Transformation matrices
     Eigen::Matrix3d transmat_to_super, transmat_to_prim;
 
-    std::string *kdname;
+    std::vector<std::string> kdname;
     int *is_periodic; // is_periodic[3];
-    double ***x_image;
+    //double ***x_image;
+    std::vector<Eigen::MatrixXd> x_image;
     int *exist_image;
 
     // Variables for spins

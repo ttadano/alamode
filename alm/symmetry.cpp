@@ -921,7 +921,6 @@ void Symmetry::gen_mapping_information(const Cell &scell,
         }
     }
 
-    // This part may be incompatible with the tolerance used in spglib
     const auto natomtypes = atomtype_group_super.size();
 
 #ifdef _OPENMP

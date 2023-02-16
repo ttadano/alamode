@@ -144,7 +144,7 @@ public:
 
     Cell get_supercell() const;
 
-    std::string *get_kdname() const;
+    std::vector<std::string> get_kdname() const;
 
     Spin get_spin() const;
 
@@ -152,7 +152,7 @@ public:
 
     std::string get_str_magmom() const;
 
-    double ***get_x_image() const;
+    const std::vector<Eigen::MatrixXd> &get_x_image() const;
 
     int *get_periodicity() const;
 

@@ -50,8 +50,9 @@ void Cluster::init(const std::unique_ptr<System> &system,
     const auto nkd = system->get_supercell().number_of_elems;
 
     if (verbosity > 0) {
-        std::cout << " INTERACTION" << std::endl;
-        std::cout << " ===========" << std::endl << std::endl;
+        std::cout << " =============\n";
+        std::cout << "  INTERACTION \n";
+        std::cout << " =============\n\n";
     }
 
     if (distall) {
@@ -176,8 +177,6 @@ void Cluster::init(const std::unique_ptr<System> &system,
                 std::cout << " atoms will be neglected." << std::endl;
             }
         }
-
-
         timer->print_elapsed();
         std::cout << " -------------------------------------------------------------------" << std::endl;
         std::cout << std::endl;
@@ -310,8 +309,8 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                     // first relative vector
                     relvec_tmp.clear();
                     for (xyztmp = 0; xyztmp < 3; xyztmp++) {
-                        dtmp1 = system->get_x_image()[0][iat][xyztmp] -
-                                system->get_x_image()[cluster_tmp.cell[i_mirror][j]][jat][xyztmp];
+                        dtmp1 = system->get_x_image()[0](iat,xyztmp) -
+                                system->get_x_image()[cluster_tmp.cell[i_mirror][j]](jat, xyztmp);
                         relvec_tmp.push_back(dtmp1);
                     }
                     relvecs1[i_mirror].relvecs_cartesian.push_back(relvec_tmp);
@@ -324,8 +323,8 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                         relvec_tmp.clear();
                         for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                             j2at = cluster_tmp.atom[j2];
-                            dtmp1 = system->get_x_image()[cluster_tmp.cell[i_mirror][j2]][j2at][xyztmp] -
-                                    system->get_x_image()[cluster_tmp.cell[i_mirror][j]][jat][xyztmp];
+                            dtmp1 = system->get_x_image()[cluster_tmp.cell[i_mirror][j2]](j2at,xyztmp) -
+                                    system->get_x_image()[cluster_tmp.cell[i_mirror][j]](jat,xyztmp);
                             relvec_tmp.push_back(dtmp1);
                         }
                         relvecs1[i_mirror].relvecs_cartesian.push_back(relvec_tmp);
@@ -343,8 +342,8 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                         relvec_tmp.clear();
                         for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                             j2at = (*cluster_tmp2).atom[j2];
-                            dtmp1 = system->get_x_image()[(*cluster_tmp2).cell[i_mirror][j2]][j2at][xyztmp] -
-                                    system->get_x_image()[0][symmetry->get_map_trueprim_to_super()[jat_prim][0]][xyztmp];
+                            dtmp1 = system->get_x_image()[(*cluster_tmp2).cell[i_mirror][j2]](j2at,xyztmp) -
+                                    system->get_x_image()[0](symmetry->get_map_trueprim_to_super()[jat_prim][0],xyztmp);
                             relvec_tmp.push_back(dtmp1);
                         }
                         relvecs2[i_mirror].relvecs_cartesian.push_back(relvec_tmp);
@@ -566,17 +565,14 @@ void Cluster::deallocate_variables()
     }
 }
 
-double Cluster::distance(const double *x1,
-                         const double *x2) const
+double Cluster::distance(const Eigen::MatrixXd &x1,
+                        const Eigen::MatrixXd &x2) const
 {
-    auto dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
-    dist = std::sqrt(dist);
-
-    return dist;
+    return (x1 - x2).norm();
 }
 
 void Cluster::get_pairs_of_minimum_distance(const size_t nat,
-                                            const double *const *const *xc_in,
+                                            const std::vector<Eigen::MatrixXd> &xc_in,
                                             const int *exist) const
 {
     size_t i, j;
@@ -588,12 +584,10 @@ void Cluster::get_pairs_of_minimum_distance(const size_t nat,
             distall[i][j].clear();
 
             for (auto icell = 0; icell < 27; ++icell) {
-
                 if (exist[icell]) {
+                    const auto dist_tmp = distance(xc_in[0].row(i), xc_in[icell].row(j));
 
-                    const auto dist_tmp = distance(xc_in[0][i], xc_in[icell][j]);
-
-                    for (auto k = 0; k < 3; ++k) vec[k] = xc_in[icell][j][k] - xc_in[0][i][k];
+                    for (auto k = 0; k < 3; ++k) vec[k] = xc_in[icell](j,k) - xc_in[0](i,k);
 
                     distall[i][j].emplace_back(DistInfo(icell, dist_tmp, vec));
                 }
@@ -625,7 +619,7 @@ void Cluster::print_neighborlist(const size_t nat,
                                  const size_t natmin,
                                  const std::vector<std::vector<int>> &map_p2s,
                                  const std::vector<int> &kd,
-                                 const std::string *kdname) const
+                                 const std::vector<std::string> &kdname) const
 {
     //
     // Print the list of neighboring atoms and distances
@@ -757,12 +751,9 @@ void Cluster::generate_interaction_information_by_cutoff(const size_t nat,
             const auto cutoff_tmp = rc[ikd][jkd];
 
             if (cutoff_tmp < 0.0) {
-
                 // Cutoff 'None'
                 interaction_list[i].push_back(jat);
-
             } else {
-
                 if (mindist_pairs[iat][jat][0].dist <= cutoff_tmp) {
                     interaction_list[i].push_back(jat);
                 }
@@ -862,7 +853,7 @@ const std::set<InteractionCluster> &Cluster::get_interaction_cluster(const unsig
 void Cluster::print_interaction_information(const size_t natmin,
                                             const std::vector<std::vector<int>> &map_p2s,
                                             const std::vector<int> &kd,
-                                            const std::string *kdname,
+                                            const std::vector<std::string> &kdname,
                                             const std::vector<int> *const *interaction_list) const
 {
     std::vector<int> intlist;
@@ -936,7 +927,6 @@ bool Cluster::is_incutoff(const int n,
                 (mindist_pairs[iat][jat][0].dist > cutoff_tmp)) {
                 return false;
             }
-
         }
     }
     return true;
@@ -970,7 +960,7 @@ bool Cluster::satisfy_nbody_rule(const int nelem,
 void Cluster::calc_interaction_clusters(const size_t natmin,
                                         const std::vector<int> &kd,
                                         const std::vector<std::vector<int>> &map_p2s,
-                                        const double *const *const *x_image,
+                                        const std::vector<Eigen::MatrixXd> &x_image,
                                         const int *exist,
                                         const int mirror_image_conv) const
 {
@@ -998,7 +988,7 @@ void Cluster::set_interaction_cluster(const int order,
                                       const std::vector<int> &kd,
                                       const std::vector<std::vector<int>> &map_p2s,
                                       const std::vector<int> *interaction_pair_in,
-                                      const double *const *const *x_image,
+                                      const std::vector<Eigen::MatrixXd> &x_image,
                                       const int *exist,
                                       const int mirror_image_conv,
                                       std::set<InteractionCluster> *interaction_cluster_out) const
@@ -1160,7 +1150,7 @@ void Cluster::set_interaction_cluster(const int order,
                     dist_vector.clear();
 
                     for (k = 0; k < cellpair.size(); ++k) {
-                        dist_tmp = distance(x_image[cellpair[k]][data_now[k]], x_image[0][iat]);
+                        dist_tmp = distance(x_image[cellpair[k]].row(data_now[k]), x_image[0].row(iat));
                         dist_vector.push_back(dist_tmp);
                     }
 
@@ -1169,8 +1159,8 @@ void Cluster::set_interaction_cluster(const int order,
 
                     for (k = 0; k < cellpair.size(); ++k) {
                         for (ii = k + 1; ii < cellpair.size(); ++ii) {
-                            dist_tmp = distance(x_image[cellpair[k]][data_now[k]],
-                                                x_image[cellpair[ii]][data_now[ii]]);
+                            dist_tmp = distance(x_image[cellpair[k]].row(data_now[k]),
+                                                x_image[cellpair[ii]].row(data_now[ii]));
                             rc_tmp = cutoff_radii[order][kd[data_now[k]] - 1][kd[data_now[ii]] - 1];
                             if (rc_tmp >= 0.0 && dist_tmp > rc_tmp) {
                                 isok = false;
