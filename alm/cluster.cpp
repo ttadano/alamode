@@ -1120,7 +1120,7 @@ void Cluster::set_interaction_cluster(const int order,
 
                     // Loop over the cell images of atom 'jat' and add to the list
                     // as a candidate for the cluster.
-                    // The mirror images whose distance is larger than the minimum value
+                    // The periodic images whose distance is larger than the minimum value
                     // of the distance(iat, jat) can be added to the cell_vector list.
                     for (const auto &it: distall[iat][jat]) {
                         if (exist[it.cell]) {
@@ -1166,7 +1166,7 @@ void Cluster::set_interaction_cluster(const int order,
                                 isok = false;
                                 break;
                             }
-                            dist_vector.push_back(dist_tmp);
+                            dist_vector.emplace_back(dist_tmp);
                         }
                         if (!isok) break;
                     }
@@ -1177,11 +1177,11 @@ void Cluster::set_interaction_cluster(const int order,
                 } // close loop over the mirror image combination
 
                 if (!distance_list.empty()) {
-                    // If the distance_list is not empty, there is a set of mirror images
+                    // If the distance_list is not empty, there is a set of periodic images
                     // that satisfies the condition of the cluster.
 
                     if (mirror_image_conv == 0) {
-                        // assign IFCs to mirror images in which the center atom and each of the other atoms
+                        // assign IFCs to periodic images in which the center atom and each of the other atoms
                         // are nearest.
                         // The distance between non-center atoms are not considered.
                         // The IFCs in this convention automatically satisfies the ASR without additional constraint, 
@@ -1193,9 +1193,9 @@ void Cluster::set_interaction_cluster(const int order,
                             cell_vector.clear();
 
                             for (ii = 0; ii < mindist_pairs[iat][jat].size(); ++ii) {
-                                cell_vector.push_back(mindist_pairs[iat][jat][ii].cell);
+                                cell_vector.emplace_back(mindist_pairs[iat][jat][ii].cell);
                             }
-                            pairs_icell.push_back(cell_vector);
+                            pairs_icell.emplace_back(cell_vector);
                         }
 
                         accum_tmp.clear();
@@ -1207,10 +1207,10 @@ void Cluster::set_interaction_cluster(const int order,
                             cellpair.clear();
                             for (k = 0; k < group_atom.size(); ++k) {
                                 for (auto m = 0; m < group_atom[k]; ++m) {
-                                    cellpair.push_back(comb_cell[j][k]);
+                                    cellpair.emplace_back(comb_cell[j][k]);
                                 }
                             }
-                            comb_cell_atom_center.push_back(cellpair);
+                            comb_cell_atom_center.emplace_back(cellpair);
                         }
 
                         std::sort(distance_list.begin(), distance_list.end(),
@@ -1218,17 +1218,18 @@ void Cluster::set_interaction_cluster(const int order,
 
                         distmax = *std::max_element(distance_list[0].dist.begin(),
                                                     distance_list[0].dist.end());
+
                         interaction_cluster_out[i].insert(InteractionCluster(data_now,
                                                                              comb_cell_atom_center,
                                                                              distmax));
 
                     } else/* if(mirror_image_conv == 1)*/{
 
-                        // assign IFCs to mirror images in which the sum of the distances between the atom pairs 
+                        // assign IFCs to periodic images in which the sum of the distances between the atom pairs
                         // is the smallest.
                         // The IFCs made in this convention satisfies the permutation symmetry.
                         // Additional constraints are imposed in constraint.cpp to make the IFCs satisfy ASR 
-                        // after assigning IFCs to the mirror images.
+                        // after assigning IFCs to the periodic images.
 
                         std::sort(distance_list.begin(), distance_list.end(), MinDistList::compare_sum_distance);
                         comb_cell_min.clear();
@@ -1250,17 +1251,14 @@ void Cluster::set_interaction_cluster(const int order,
                             // are stored.
                             if (std::abs(sum_dist - sum_dist_min) < eps6) {
                                 // if (sum_dist < sum_dist_min*1.2+eps6) { // This version is not used.
-                                comb_cell_min.push_back(distance_list[j].cell);
+                                comb_cell_min.emplace_back(distance_list[j].cell);
                             } else {
                                 // break;
                             }
                         }
-
                         interaction_cluster_out[i].insert(InteractionCluster(data_now,
                                                                              comb_cell_min,
                                                                              sum_dist_min));
-
-
                     }
                 }
             }

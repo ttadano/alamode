@@ -220,11 +220,8 @@ public:
                                      const MinDistList &b)
     {
         // This function works properly when dvec_a.size() > 0 and dvec_b.size() > 0
-        std::vector<double> dvec_a, dvec_b;
-        std::copy(a.dist.begin(), a.dist.end(), std::back_inserter(dvec_a));
-        std::copy(b.dist.begin(), b.dist.end(), std::back_inserter(dvec_b));
-        const auto max_dist_a = *std::max_element(dvec_a.begin(), dvec_a.end());
-        const auto max_dist_b = *std::max_element(dvec_b.begin(), dvec_b.end());
+        const auto max_dist_a = *std::max_element(a.dist.begin(), a.dist.end());
+        const auto max_dist_b = *std::max_element(b.dist.begin(), b.dist.end());
 
         return max_dist_a < max_dist_b;
     }
