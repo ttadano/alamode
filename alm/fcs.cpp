@@ -9,7 +9,6 @@
 */
 
 #include "fcs.h"
-#include "constants.h"
 #include "constraint.h"
 #include "error.h"
 #include "cluster.h"
@@ -55,8 +54,9 @@ void Fcs::init(const std::unique_ptr<Cluster> &cluster,
     timer->start_clock("fcs");
 
     if (verbosity > 0) {
-        std::cout << " FORCE CONSTANT" << std::endl;
-        std::cout << " ==============" << std::endl << std::endl;
+        std::cout << " ================\n";
+        std::cout << "  FORCE CONSTANT \n";
+        std::cout << " ================\n\n";
         std::cout << "  Symmetry is handled in ";
         if (preferred_basis == "Lattice") {
             std::cout << "crystallographic (fractional) coordinates.";
@@ -170,23 +170,22 @@ void Fcs::generate_force_constant_table(const int order,
     const auto nsym = symm_in->get_symmetry_data().size();
     bool is_zero;
     bool *is_searched;
-    int **map_sym;
-    double ***rotation;
+    std::vector<std::vector<int>> map_sym;
+    std::vector<Eigen::Matrix3d> rotation;
     const bool use_compatible = true;
 
     if (order < 0) return;
 
-    allocate(rotation, nsym, 3, 3);
-    allocate(map_sym, nat, nsym);
     int nsym_in_use = 0;
 
     get_available_symmop(nat,
                          symm_in,
                          basis,
-                         nsym_in_use,
                          map_sym,
                          rotation,
                          use_compatible);
+
+    nsym_in_use = rotation.size();
 
     allocate(atmn, order + 2);
     allocate(atmn_mapped, order + 2);
@@ -336,8 +335,6 @@ void Fcs::generate_force_constant_table(const int order,
     deallocate(ind_tmp);
     deallocate(ind_mapped_tmp);
     deallocate(is_searched);
-    deallocate(rotation);
-    deallocate(map_sym);
 
     // sort fc_vec
 
@@ -377,8 +374,8 @@ void Fcs::get_constraint_symmetry(const size_t nat,
     std::vector<ConstEntry> constraint_all;
     ConstEntry const_tmp;
 
-    int **map_sym;
-    double ***rotation;
+    std::vector<std::vector<int>> map_sym;
+    std::vector<Eigen::Matrix3d> rotation;
     const auto nsym = symmetry->get_symmetry_data().size();
     const auto natmin = symmetry->get_nat_prim();
     const auto nfcs = fc_table_in.size();
@@ -388,20 +385,15 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 
     const auto nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
 
-    allocate(rotation, nsym, 3, 3);
-    allocate(map_sym, nat, nsym);
-
     get_available_symmop(nat,
                          symmetry,
                          basis,
-                         nsym_in_use,
                          map_sym,
                          rotation,
                          use_compatible);
 
+    nsym_in_use = rotation.size();
     if (nsym_in_use == 0) {
-        deallocate(rotation);
-        deallocate(map_sym);
         return;
     }
 
@@ -517,8 +509,8 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 
     deallocate(xyzcomponent);
     deallocate(index_tmp);
-    deallocate(rotation);
-    deallocate(map_sym);
+    //deallocate(rotation);
+    //deallocate(map_sym);
 
     std::sort(constraint_all.begin(), constraint_all.end());
     constraint_all.erase(std::unique(constraint_all.begin(),
@@ -575,8 +567,8 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
     std::vector<ConstEntry> constraint_all;
     ConstEntry const_tmp;
 
-    int **map_sym;
-    double ***rotation;
+    std::vector<std::vector<int>> map_sym;
+    std::vector<Eigen::Matrix3d> rotation;
     const auto nsym = symmetry->get_symmetry_data().size();
     const auto natmin = symmetry->get_nat_prim();
     const auto nfcs = fc_table_in.size();
@@ -586,20 +578,15 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
 
     const auto nxyz = static_cast<int>(std::pow(static_cast<double>(3), order + 2));
 
-    allocate(rotation, nsym, 3, 3);
-    allocate(map_sym, nat, nsym);
-
     get_available_symmop(nat,
                          symmetry,
                          basis,
-                         nsym_in_use,
                          map_sym,
                          rotation,
                          use_compatible);
 
+    nsym_in_use = rotation.size();
     if (nsym_in_use == 0) {
-        deallocate(rotation);
-        deallocate(map_sym);
         return;
     }
 
@@ -713,8 +700,6 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
 
     deallocate(xyzcomponent);
     deallocate(index_tmp);
-    deallocate(rotation);
-    deallocate(map_sym);
 
     std::sort(constraint_all.begin(), constraint_all.end());
     constraint_all.erase(std::unique(constraint_all.begin(),
@@ -987,9 +972,8 @@ std::vector<size_t> Fcs::get_nfc_cart(const int permutation) const
 void Fcs::get_available_symmop(const size_t nat,
                                const std::unique_ptr<Symmetry> &symmetry,
                                const std::string basis,
-                               int &nsym_avail,
-                               int **mapping_symm,
-                               double ***rotation,
+                               std::vector<std::vector<int>> &mapping_symm,
+                               std::vector<Eigen::Matrix3d> &rotation,
                                const bool use_compatible) const
 {
     // Return mapping information of atoms and the rotation matrices of symmetry operations
@@ -998,65 +982,57 @@ void Fcs::get_available_symmop(const size_t nat,
     // use_compatible == true returns the compatible space group (for creating fc_table)
     // use_compatible == false returnes the incompatible supace group (for creating constraint)
 
-    int i, j;
     int counter = 0;
 
-    nsym_avail = 0;
+    mapping_symm.clear();
+    rotation.clear();
+
+    std::vector<int> isym_to_add;
 
     if (basis == "Cartesian") {
 
-        for (auto it = symmetry->get_symmetry_data().begin(); it != symmetry->get_symmetry_data().end(); ++it) {
-
-            if ((*it).compatible_with_cartesian == use_compatible) {
-
-                for (i = 0; i < 3; ++i) {
-                    for (j = 0; j < 3; ++j) {
-                        rotation[nsym_avail][i][j] = (*it).rotation_cart(i, j);
-                    }
-                }
-                for (i = 0; i < nat; ++i) {
-                    mapping_symm[i][nsym_avail] = symmetry->get_map_sym()[i][counter];
-                }
-                ++nsym_avail;
+        for (const auto &it : symmetry->get_symmetry_data()) {
+            if (it.compatible_with_cartesian == use_compatible) {
+                rotation.emplace_back(it.rotation_cart);
+                isym_to_add.emplace_back(counter);
             }
             ++counter;
         }
 
     } else if (basis == "Lattice") {
 
-        for (auto it = symmetry->get_symmetry_data().begin(); it != symmetry->get_symmetry_data().end(); ++it) {
-            if ((*it).compatible_with_lattice == use_compatible) {
-                for (i = 0; i < 3; ++i) {
-                    for (j = 0; j < 3; ++j) {
-                        rotation[nsym_avail][i][j]
-                                = static_cast<double>((*it).rotation(i, j));
-                    }
-                }
-                for (i = 0; i < nat; ++i) {
-                    mapping_symm[i][nsym_avail] = symmetry->get_map_sym()[i][counter];
-                }
-                ++nsym_avail;
+        for (const auto &it : symmetry->get_symmetry_data()) {
+            if (it.compatible_with_lattice == use_compatible) {
+                rotation.emplace_back(it.rotation.unaryExpr([](const int x) {return static_cast<double>(x);}));
+                isym_to_add.emplace_back(counter);
             }
             ++counter;
         }
 
-
     } else {
-        deallocate(rotation);
-        deallocate(mapping_symm);
         exit("get_available_symmop", "Invalid basis input");
+    }
+
+    const auto nsym_to_use = isym_to_add.size();
+
+    mapping_symm.resize(nat, std::vector<int>(nsym_to_use));
+
+    for (auto i = 0; i < nsym_to_use; ++i) {
+        for (auto j = 0; j < nat; ++j) {
+            mapping_symm[j][i] = symmetry->get_map_sym()[j][isym_to_add[i]];
+        }
     }
 }
 
 double Fcs::coef_sym(const int n,
-                     const double *const *rot,
+                     const Eigen::Matrix3d &rot,
                      const int *arr1,
                      const int *arr2) const
 {
     auto tmp = 1.0;
 
     for (auto i = 0; i < n; ++i) {
-        tmp *= rot[arr2[i]][arr1[i]];
+        tmp *= rot(arr2[i],arr1[i]);
     }
     return tmp;
 }

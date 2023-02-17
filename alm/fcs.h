@@ -262,9 +262,8 @@ private:
     void get_available_symmop(const size_t nat,
                               const std::unique_ptr<Symmetry> &symmetry,
                               const std::string basis,
-                              int &nsym_avail,
-                              int **mapping_symm,
-                              double ***rotation,
+                              std::vector<std::vector<int>> &mapping_symm,
+                              std::vector<Eigen::Matrix3d> &rotation,
                               const bool use_compatible) const;
 
     int get_minimum_index_in_primitive(const int n,
@@ -274,7 +273,7 @@ private:
                                        const std::vector<std::vector<int>> &map_p2s) const;
 
     double coef_sym(const int,
-                    const double *const *,
+                    const Eigen::Matrix3d &rot,
                     const int *,
                     const int *) const;
 
