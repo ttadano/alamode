@@ -539,7 +539,7 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
 
             if (isok) {
                 rot_tmp = rot * cell.reciprocal_lattice_vector;
-                rot_cart = cell.lattice_vector * rot_tmp / (2.0 * pi);
+                rot_cart = cell.lattice_vector * rot_tmp * inv_tpi;
 
                 if (spin.lspin && spin.noncollinear) {
 
@@ -697,7 +697,7 @@ void Symmetry::symop_in_cart(Eigen::Matrix3d &rot_cart,
             sym_tmp(i, j) = static_cast<double>(rot_lattice(i, j));
         }
     }
-    rot_cart = lavec * sym_tmp * rlavec / (2.0 * pi);
+    rot_cart = lavec * sym_tmp * rlavec * inv_tpi;
 }
 
 
@@ -726,7 +726,6 @@ void Symmetry::print_symminfo_stdout() const
     auto nlines = natom_per_primitive / nentry_per_line;
 
     if (natom_per_primitive > nlines * nentry_per_line) ++nlines;
-
 
     for (auto i = 0; i < atomgroup_super.size(); ++i) {
 

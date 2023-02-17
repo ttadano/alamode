@@ -13,7 +13,6 @@
 #include "constraint.h"
 #include "error.h"
 #include "cluster.h"
-#include "mathfunctions.h"
 #include "memory.h"
 #include "rref.h"
 #include "symmetry.h"
@@ -26,7 +25,6 @@
 #include <cmath>
 #include "../external/combination.hpp"
 #include <unordered_set>
-#include <boost/algorithm/string/case_conv.hpp>
 
 #if defined(_WIN32) || defined(_WIN64)
 #undef min

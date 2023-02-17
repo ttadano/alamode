@@ -67,7 +67,7 @@ public:
                       const int *kind_in,
                       const double xf_in[][3]);
 
-    void set_kdname(const std::string *);
+    void set_kdname(const std::vector<std::string> &kdname_in);
 
     void set_periodicity(const int [3]);
 
@@ -111,7 +111,6 @@ private:
 
     std::vector<std::string> kdname;
     int *is_periodic; // is_periodic[3];
-    //double ***x_image;
     std::vector<Eigen::MatrixXd> x_image;
     int *exist_image;
 

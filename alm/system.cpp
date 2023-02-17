@@ -394,16 +394,15 @@ int *System::get_periodicity() const
     return is_periodic;
 }
 
-void System::set_kdname(const std::string *kdname_in)
+void System::set_kdname(const std::vector<std::string> &kdname_in)
 {
-    //TODO: modify below
-    const auto nkd = inputcell.number_of_elems;
-
-    kdname.clear();
-    kdname.resize(nkd);
-    for (size_t i = 0; i < nkd; ++i) {
-        kdname[i] = kdname_in[i];
+    if (inputcell.number_of_elems != kdname_in.size()) {
+        exit("set_kdname",
+             "The size of kdname_in is different from the number of elements inferred from the "
+                           "kind variable of the set_cell method.");
     }
+    kdname.clear();
+    std::copy(kdname_in.begin(), kdname_in.end(), std::back_inserter(kdname));
 }
 
 const std::vector<std::string> &System::get_kdname() const

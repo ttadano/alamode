@@ -10,11 +10,9 @@
 
 #include "constraint.h"
 #include "combination.h"
-#include "constants.h"
 #include "error.h"
 #include "fcs.h"
 #include "cluster.h"
-#include "mathfunctions.h"
 #include "memory.h"
 #include "rref.h"
 #include "symmetry.h"

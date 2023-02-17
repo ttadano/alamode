@@ -73,8 +73,9 @@ public:
     void set_cell(const size_t nat,
                   const double lavec[3][3],
                   const double xcoord[][3],
-                  const int kind[],
-                  const std::string kdname[]) const;
+                  const int kind[]) const;
+
+    void set_element_names(const std::vector<std::string> &kdname_in) const;
 
     void set_transformation_matrices(const double transmat_to_super[3][3],
                                      const double transmat_to_prim[3][3]) const;

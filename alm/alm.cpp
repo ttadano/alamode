@@ -104,11 +104,14 @@ void ALM::set_periodicity(const int is_periodic[3]) const // PERIODIC
 void ALM::set_cell(const size_t nat,
                    const double lavec[3][3],
                    const double xcoord[][3],
-                   const int kind[],
-                   const std::string kdname[]) const
+                   const int kind[]) const
 {
     system->set_basecell(lavec, nat, kind, xcoord);
-    system->set_kdname(kdname);
+}
+
+void ALM::set_element_names(const std::vector<std::string> &kdname_in) const
+{
+    system->set_kdname(kdname_in);
 }
 
 void ALM::set_transformation_matrices(const double transmat_to_super[3][3],

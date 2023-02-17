@@ -10,9 +10,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 #include "cluster.h"
 #include "combination.h"
-#include "constants.h"
-#include "fcs.h"
-#include "mathfunctions.h"
 #include "memory.h"
 #include "symmetry.h"
 #include "system.h"
@@ -100,7 +97,9 @@ void Cluster::init(const std::unique_ptr<System> &system,
 
     get_pairs_of_minimum_distance(nat,
                                   system->get_x_image(),
-                                  system->get_exist_image());
+                                  system->get_exist_image(),
+                                  distall,
+                                  mindist_pairs);
 
     set_interaction_by_cutoff(system->get_supercell().number_of_atoms,
                               system->get_supercell().kind,
@@ -573,7 +572,9 @@ double Cluster::distance(const Eigen::MatrixXd &x1,
 
 void Cluster::get_pairs_of_minimum_distance(const size_t nat,
                                             const std::vector<Eigen::MatrixXd> &xc_in,
-                                            const int *exist) const
+                                            const int *exist,
+                                            std::vector<DistInfo> **distall_out,
+                                            std::vector<DistInfo> **mindist_pairs_out) const
 {
     size_t i, j;
     double vec[3];
@@ -581,7 +582,7 @@ void Cluster::get_pairs_of_minimum_distance(const size_t nat,
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < nat; ++j) {
 
-            distall[i][j].clear();
+            distall_out[i][j].clear();
 
             for (auto icell = 0; icell < 27; ++icell) {
                 if (exist[icell]) {
@@ -589,26 +590,24 @@ void Cluster::get_pairs_of_minimum_distance(const size_t nat,
 
                     for (auto k = 0; k < 3; ++k) vec[k] = xc_in[icell](j,k) - xc_in[0](i,k);
 
-                    distall[i][j].emplace_back(DistInfo(icell, dist_tmp, vec));
+                    distall_out[i][j].emplace_back(DistInfo(icell, dist_tmp, vec));
                 }
             }
-            std::sort(distall[i][j].begin(), distall[i][j].end());
+            std::sort(distall_out[i][j].begin(), distall_out[i][j].end());
         }
     }
 
     // Construct pairs of minimum distance.
-
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < nat; ++j) {
-            mindist_pairs[i][j].clear();
-
-            const auto dist_min = distall[i][j][0].dist;
-            for (auto it = distall[i][j].cbegin(); it != distall[i][j].cend(); ++it) {
+            mindist_pairs_out[i][j].clear();
+            const auto dist_min = distall_out[i][j][0].dist;
+            for (const auto &it : distall_out[i][j]) {
                 // The tolerance below (1.e-3) should be chosen so that
                 // the mirror images with equal distances are found correctly.
                 // If this fails, the phonon dispersion would be incorrect.
-                if (std::abs((*it).dist - dist_min) < 1.0e-3) {
-                    mindist_pairs[i][j].emplace_back(DistInfo(*it));
+                if (std::abs(it.dist - dist_min) < 1.0e-3) {
+                    mindist_pairs_out[i][j].emplace_back(DistInfo(it));
                 }
             }
         }

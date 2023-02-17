@@ -241,7 +241,8 @@ void InputSetter::set_geometric_structure(ALM *alm)
         kd_base[i] = kd_base_vec[i];
     }
 
-    alm->set_cell(nat_base, lavec_base, xcoord_base, kd_base, kdnames_vec.data());
+    alm->set_cell(nat_base, lavec_base, xcoord_base, kd_base);
+    alm->set_element_names(kdnames_vec);
     alm->set_periodicity(is_periodic);
 
     deallocate(xcoord_base);

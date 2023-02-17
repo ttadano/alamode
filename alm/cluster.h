@@ -316,7 +316,9 @@ private:
     // in this function.
     void get_pairs_of_minimum_distance(const size_t nat,
                                        const std::vector<Eigen::MatrixXd> &xc_in,
-                                       const int *exist) const;
+                                       const int *exist,
+                                       std::vector<DistInfo> **distall_out,
+                                       std::vector<DistInfo> **mindist_pairs_out) const;
 
     void generate_interaction_information_by_cutoff(const size_t nat,
                                                     const size_t natmin,
