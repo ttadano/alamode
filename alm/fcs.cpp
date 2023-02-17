@@ -176,8 +176,6 @@ void Fcs::generate_force_constant_table(const int order,
 
     if (order < 0) return;
 
-    int nsym_in_use = 0;
-
     get_available_symmop(nat,
                          symm_in,
                          basis,
@@ -185,7 +183,7 @@ void Fcs::generate_force_constant_table(const int order,
                          rotation,
                          use_compatible);
 
-    nsym_in_use = rotation.size();
+    const auto nsym_in_use = rotation.size();
 
     allocate(atmn, order + 2);
     allocate(atmn_mapped, order + 2);
@@ -367,7 +365,6 @@ void Fcs::get_constraint_symmetry(const size_t nat,
     int ixyz;
     int *index_tmp;
     int **xyzcomponent;
-    int nsym_in_use;
     std::unordered_set<FcProperty> list_found;
 
     typedef std::vector<ConstraintDoubleElement> ConstEntry;
@@ -392,10 +389,8 @@ void Fcs::get_constraint_symmetry(const size_t nat,
                          rotation,
                          use_compatible);
 
-    nsym_in_use = rotation.size();
-    if (nsym_in_use == 0) {
-        return;
-    }
+    const auto nsym_in_use = rotation.size();
+    if (nsym_in_use == 0)  return;
 
     const_out.clear();
 
@@ -509,8 +504,6 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 
     deallocate(xyzcomponent);
     deallocate(index_tmp);
-    //deallocate(rotation);
-    //deallocate(map_sym);
 
     std::sort(constraint_all.begin(), constraint_all.end());
     constraint_all.erase(std::unique(constraint_all.begin(),

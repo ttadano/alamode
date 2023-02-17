@@ -211,13 +211,13 @@ void System::build_primcell()
     std::vector<std::vector<double>> xf_unique, magmom_unique;
     std::vector<double> xf_tmp_vec(3), magmom_tmp_vec(3);
     std::vector<int> kind_unique;
-    Eigen::VectorXd xf_tmp(3), xf_tmp2(3);
+    Eigen::VectorXd xf_tmp(3), xf_tmp2(3), xf_diff(3);
 
     for (auto i = 0; i < inputcell.number_of_atoms; ++i) {
         xf_tmp = xf_prim_all.row(i);
         xf_tmp = xf_tmp.unaryExpr([](const double x) { return std::fmod(x, 1.0); });
         for (auto j = 0; j < 3; ++j) {
-            if (xf_tmp[j] < 0.0) xf_tmp[j] += 1.0;
+            if (xf_tmp[j] < -eps6) xf_tmp[j] += 1.0;
         }
 
         bool is_duplicate = false;
@@ -226,7 +226,12 @@ void System::build_primcell()
             for (auto kk = 0; kk < 3; ++kk) {
                 xf_tmp2[kk] = xf_unique[k][kk];
             }
-            if ((xf_tmp - xf_tmp2).norm() < eps6) {
+            xf_diff = (xf_tmp - xf_tmp2).unaryExpr([](const double x) {return std::fmod(x,1.0);});
+            for (auto j = 0; j < 3; ++j) {
+                if (xf_diff[j] < -0.5) xf_diff[j] += 1.0;
+                if (xf_diff[j] >= 0.5) xf_diff[j] -= 1.0;
+            }
+            if (xf_diff.norm() < eps6) {
                 is_duplicate = true;
 
                 if (kind_unique[k] != inputcell.kind[i]) {
@@ -261,6 +266,8 @@ void System::build_primcell()
     }
 
     if (xf_unique.size() != primcell.number_of_atoms) {
+        std::cout << "primcell.number_of_atoms = " << primcell.number_of_atoms << '\n';
+        std::cout << "xf_unique.size() = " << xf_unique.size() << '\n';
         exit("build_primcell",
              "Mapping to the primitive cell failed. Please check inputs (PRIMCELL and input structure).");
     }

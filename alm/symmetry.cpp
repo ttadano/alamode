@@ -792,17 +792,14 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
         auto iloc = -1;
         for (auto j = 0; j < cell_prim.number_of_atoms; ++j) {
             xtmp2 = cell_prim.x_fractional.row(j);
-            xdiff = (xtmp - xtmp2).unaryExpr([](const double x) { return x - nint(x); });
+            xdiff = (xtmp - xtmp2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
 
             if (xdiff.norm() < eps6) {
                 tran_d = (xtmp - xtmp2).unaryExpr([](const double x) { return static_cast<double>(nint(x)); });
                 // First move back to the fractional coordinate of the supercell and
                 // make sure that the shift vectors are in the 0<=x<1 region in that basis.
                 tran_d = transform_basis_primitive_to_super * tran_d;
-                tran_d = tran_d.unaryExpr([](const double x) { return std::fmod(x, 1.0); });
-                for (auto k = 0; k < 3; ++k) {
-                    if (tran_d[k] < -eps6) tran_d[k] += 1.0;
-                }
+                tran_d = tran_d.unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
                 // Then, transform it back to the components in the primitive cell basis.
                 // All components should be integer.
                 tran_d = transform_basis_primitive_to_super.inverse() * tran_d;
