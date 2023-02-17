@@ -345,7 +345,7 @@ private:
                                        const std::vector<int> *const *interaction_list) const;
 
     double distance(const Eigen::MatrixXd &x1,
-                   const Eigen::MatrixXd &x2) const;
+                    const Eigen::MatrixXd &x2) const;
 
     int nbody(const int,
               const int *) const;

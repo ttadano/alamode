@@ -399,7 +399,7 @@ void System::set_kdname(const std::vector<std::string> &kdname_in)
     if (inputcell.number_of_elems != kdname_in.size()) {
         exit("set_kdname",
              "The size of kdname_in is different from the number of elements inferred from the "
-                           "kind variable of the set_cell method.");
+             "kind variable of the set_cell method.");
     }
     kdname.clear();
     std::copy(kdname_in.begin(), kdname_in.end(), std::back_inserter(kdname));

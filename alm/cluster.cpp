@@ -308,7 +308,7 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                     // first relative vector
                     relvec_tmp.clear();
                     for (xyztmp = 0; xyztmp < 3; xyztmp++) {
-                        dtmp1 = system->get_x_image()[0](iat,xyztmp) -
+                        dtmp1 = system->get_x_image()[0](iat, xyztmp) -
                                 system->get_x_image()[cluster_tmp.cell[i_mirror][j]](jat, xyztmp);
                         relvec_tmp.push_back(dtmp1);
                     }
@@ -322,8 +322,8 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                         relvec_tmp.clear();
                         for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                             j2at = cluster_tmp.atom[j2];
-                            dtmp1 = system->get_x_image()[cluster_tmp.cell[i_mirror][j2]](j2at,xyztmp) -
-                                    system->get_x_image()[cluster_tmp.cell[i_mirror][j]](jat,xyztmp);
+                            dtmp1 = system->get_x_image()[cluster_tmp.cell[i_mirror][j2]](j2at, xyztmp) -
+                                    system->get_x_image()[cluster_tmp.cell[i_mirror][j]](jat, xyztmp);
                             relvec_tmp.push_back(dtmp1);
                         }
                         relvecs1[i_mirror].relvecs_cartesian.push_back(relvec_tmp);
@@ -341,8 +341,9 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                         relvec_tmp.clear();
                         for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                             j2at = (*cluster_tmp2).atom[j2];
-                            dtmp1 = system->get_x_image()[(*cluster_tmp2).cell[i_mirror][j2]](j2at,xyztmp) -
-                                    system->get_x_image()[0](symmetry->get_map_trueprim_to_super()[jat_prim][0],xyztmp);
+                            dtmp1 = system->get_x_image()[(*cluster_tmp2).cell[i_mirror][j2]](j2at, xyztmp) -
+                                    system->get_x_image()[0](symmetry->get_map_trueprim_to_super()[jat_prim][0],
+                                                             xyztmp);
                             relvec_tmp.push_back(dtmp1);
                         }
                         relvecs2[i_mirror].relvecs_cartesian.push_back(relvec_tmp);
@@ -565,7 +566,7 @@ void Cluster::deallocate_variables()
 }
 
 double Cluster::distance(const Eigen::MatrixXd &x1,
-                        const Eigen::MatrixXd &x2) const
+                         const Eigen::MatrixXd &x2) const
 {
     return (x1 - x2).norm();
 }
@@ -588,7 +589,7 @@ void Cluster::get_pairs_of_minimum_distance(const size_t nat,
                 if (exist[icell]) {
                     const auto dist_tmp = distance(xc_in[0].row(i), xc_in[icell].row(j));
 
-                    for (auto k = 0; k < 3; ++k) vec[k] = xc_in[icell](j,k) - xc_in[0](i,k);
+                    for (auto k = 0; k < 3; ++k) vec[k] = xc_in[icell](j, k) - xc_in[0](i, k);
 
                     distall_out[i][j].emplace_back(DistInfo(icell, dist_tmp, vec));
                 }
@@ -602,7 +603,7 @@ void Cluster::get_pairs_of_minimum_distance(const size_t nat,
         for (j = 0; j < nat; ++j) {
             mindist_pairs_out[i][j].clear();
             const auto dist_min = distall_out[i][j][0].dist;
-            for (const auto &it : distall_out[i][j]) {
+            for (const auto &it: distall_out[i][j]) {
                 // The tolerance below (1.e-3) should be chosen so that
                 // the mirror images with equal distances are found correctly.
                 // If this fails, the phonon dispersion would be incorrect.

@@ -457,7 +457,8 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
                                     +=
-                                    symmetry->get_symmetry_data()[isym].rotation_cart(j, k) * disp[list_disp_atom[i]][k];
+                                    symmetry->get_symmetry_data()[isym].rotation_cart(j, k) *
+                                    disp[list_disp_atom[i]][k];
                         }
                     } else if (preferred_basis == "Lattice") {
                         for (k = 0; k < 3; ++k) {
@@ -526,8 +527,9 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
                     } else if (preferred_basis == "Lattice") {
                         for (k = 0; k < 3; ++k) {
                             disp_sym[mapped_atom][j]
-                                    += static_cast<double>(symmetry->get_symmetry_data()[symnum_vec[isym]].rotation(j, k))
-                                       * disp[list_disp_atom[i]][k];
+                                    +=
+                                    static_cast<double>(symmetry->get_symmetry_data()[symnum_vec[isym]].rotation(j, k))
+                                    * disp[list_disp_atom[i]][k];
                         }
                     } else {
                         exit("find_unique_sign_pairs",

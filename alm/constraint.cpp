@@ -2072,7 +2072,7 @@ void Constraint::set_rotation_constraints(const std::unique_ptr<System> &system,
                                             for (int j = 0; j < nsize_equiv; ++j) {
                                                 for (auto k = 0; k < 3; ++k) {
                                                     vec_for_rot[k] += system->get_x_image()[(*iter_cluster).cell[j][
-                                                            iloc]](jat,k);
+                                                            iloc]](jat, k);
                                                 }
                                             }
 

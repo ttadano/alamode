@@ -1179,14 +1179,14 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
                             auto cell_now = (*iter_cluster).cell[imult];
 
                             for (auto m = 0; m < 3; ++m) {
-                                vec1[m] = (x_image[0](atom_tmp[0],m)
-                                           - x_image[0](jat0,m)
-                                           + x_image[cell_now[0]](0,m)
-                                           - x_image[0](0,m)) * Bohr_in_Angstrom;
-                                vec2[m] = (x_image[0](atom_tmp[1],m)
-                                           - x_image[0](kat0,m)
-                                           + x_image[cell_now[1]](0,m)
-                                           - x_image[0](0,m)) * Bohr_in_Angstrom;
+                                vec1[m] = (x_image[0](atom_tmp[0], m)
+                                           - x_image[0](jat0, m)
+                                           + x_image[cell_now[0]](0, m)
+                                           - x_image[0](0, m)) * Bohr_in_Angstrom;
+                                vec2[m] = (x_image[0](atom_tmp[1], m)
+                                           - x_image[0](kat0, m)
+                                           + x_image[cell_now[1]](0, m)
+                                           - x_image[0](0, m)) * Bohr_in_Angstrom;
                             }
 
                             ++ielem;
@@ -1288,7 +1288,7 @@ std::string Writer::get_filename_fcs() const
 void Writer::set_input_vars(const std::map<std::string, std::string> &input_var_dict)
 {
     input_variables.clear();
-    for (const auto &it : input_var_dict) {
+    for (const auto &it: input_var_dict) {
         input_variables.insert(it);
     }
 }

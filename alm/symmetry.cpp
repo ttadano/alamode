@@ -168,7 +168,6 @@ void Symmetry::init(const std::unique_ptr<System> &system,
     }
 
 
-
     timer->stop_clock("symmetry");
 }
 
@@ -704,7 +703,7 @@ void Symmetry::symop_in_cart(Eigen::Matrix3d &rot_cart,
 void Symmetry::print_symminfo_stdout() const
 {
     std::cout << "  Number of symmetry operations of the primitive cell = "
-                << symmetry_data_prim.size() << std::endl;
+              << symmetry_data_prim.size() << std::endl;
     std::cout << std::endl;
     if (ntran_prim > 1) {
         std::cout << "  The user defined primitive cell is NOT a true primitive cell." << std::endl;
@@ -736,8 +735,8 @@ void Symmetry::print_symminfo_stdout() const
                 std::cout << "  │" << std::setw(7) << i + 1 << " │";
                 std::cout.width(4);
                 std::cout << "(" << std::setw(2)
-                << atomgroup_super[i].shift_vector.transpose()
-                << ")";
+                          << atomgroup_super[i].shift_vector.transpose()
+                          << ")";
                 std::cout.width(6);
                 std::cout << "│";
             } else {
@@ -783,7 +782,7 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
     std::vector<std::vector<int>> trans_vecs;
     const Eigen::Matrix3d invlavec_p = cell_prim.lattice_vector.transpose().inverse();
     const Eigen::Matrix3d transform_basis_primitive_to_super
-    = cell_super.lattice_vector.inverse() * cell_prim.lattice_vector;
+            = cell_super.lattice_vector.inverse() * cell_prim.lattice_vector;
 
     x_super = cell_super.x_cartesian * invlavec_p;
 
@@ -793,10 +792,10 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
         auto iloc = -1;
         for (auto j = 0; j < cell_prim.number_of_atoms; ++j) {
             xtmp2 = cell_prim.x_fractional.row(j);
-            xdiff = (xtmp - xtmp2).unaryExpr([](const double x) { return x-nint(x); });
+            xdiff = (xtmp - xtmp2).unaryExpr([](const double x) { return x - nint(x); });
 
             if (xdiff.norm() < eps6) {
-                tran_d = (xtmp - xtmp2).unaryExpr([](const double x) {return static_cast<double>(nint(x));});
+                tran_d = (xtmp - xtmp2).unaryExpr([](const double x) { return static_cast<double>(nint(x)); });
                 // First move back to the fractional coordinate of the supercell and
                 // make sure that the shift vectors are in the 0<=x<1 region in that basis.
                 tran_d = transform_basis_primitive_to_super * tran_d;
@@ -807,7 +806,7 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
                 // Then, transform it back to the components in the primitive cell basis.
                 // All components should be integer.
                 tran_d = transform_basis_primitive_to_super.inverse() * tran_d;
-                tran = tran_d.unaryExpr([](const double x) {return nint(x);});
+                tran = tran_d.unaryExpr([](const double x) { return nint(x); });
                 iloc = j;
                 break;
             }
@@ -818,7 +817,7 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
                  "An equivalent atom not found.");
         } else {
             atom_num_prim.emplace_back(iloc);
-            std::vector<int> vtmp(&tran[0], tran.data()+tran.cols()*tran.rows());
+            std::vector<int> vtmp(&tran[0], tran.data() + tran.cols() * tran.rows());
             trans_vecs.emplace_back(vtmp);
         }
     }
@@ -843,7 +842,7 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
 
     std::map<int, int> map_index;
 
-    for (auto i = 0; i < unique_shifts_vec.size(); ++i){
+    for (auto i = 0; i < unique_shifts_vec.size(); ++i) {
         map_index.clear();
 
         for (auto j = 0; j < 3; ++j) tran[j] = unique_shifts_vec[i][j];
@@ -862,10 +861,11 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
     Eigen::Matrix3d rot_cart, rot_latt;
     Eigen::Matrix3i rot_latt_int;
 
-    for (const auto &it_tran : unique_shifts_vec) {
-        for (const auto &it_symm : symm_prim) {
+    for (const auto &it_tran: unique_shifts_vec) {
+        for (const auto &it_symm: symm_prim) {
             tran_d = it_symm.tran; // lattice basis of the primitive cell
-            for (auto k = 0; k < 3; ++k) tran_d[k] += static_cast<double>(it_tran[k]); // add primitive lattice translation
+            for (auto k = 0; k < 3; ++k)
+                tran_d[k] += static_cast<double>(it_tran[k]); // add primitive lattice translation
 
             rot_cart = it_symm.rotation_cart; // Common to the primitive cell and supercell.
 
@@ -873,8 +873,8 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
             rot_latt = cell_super.lattice_vector.inverse() * rot_cart * cell_super.lattice_vector;
             for (auto k = 0; k < 3; ++k) {
                 for (auto m = 0; m < 3; ++m) {
-                    rot_latt_int(k,m) = nint(rot_latt(k,m));
-                    if (std::abs(rot_latt(k,m)-static_cast<double>(rot_latt_int(k,m))) > eps6) {
+                    rot_latt_int(k, m) = nint(rot_latt(k, m));
+                    if (std::abs(rot_latt(k, m) - static_cast<double>(rot_latt_int(k, m))) > eps6) {
                         exit("update_symmetry_operations_supercell",
                              "The components of the rotation matrix in "
                              "the supercell lattice basis must be integer.");
@@ -889,11 +889,11 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
                 if (tran_d[k] < -eps6) tran_d[k] += 1.0;
             }
             symm_super.emplace_back(rot_latt_int,
-                                  tran_d,
-                                  rot_cart,
-                                  is_compatible(rot_latt_int),
-                                  is_compatible(rot_cart),
-                                  is_translation(rot_latt_int));
+                                    tran_d,
+                                    rot_cart,
+                                    is_compatible(rot_latt_int),
+                                    is_compatible(rot_cart),
+                                    is_translation(rot_latt_int));
         }
     }
 }
