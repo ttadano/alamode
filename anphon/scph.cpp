@@ -4348,8 +4348,8 @@ void Scph::compute_del_v1_strain_from_harmonic(std::complex<double> **del_v1_str
         ind1 = it.atm1*3 + it.xyz1;
 
         for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            vec[ixyz1] = system->xr_s_no_displace[it.atm2][ixyz1]
-                        - system->xr_s_no_displace[system->map_p2s[it.atm1][0]][ixyz1]
+            vec[ixyz1] = system->xr_s[it.atm2][ixyz1]
+                        - system->xr_s[system->map_p2s[it.atm1][0]][ixyz1]
                         + xshift_s[it.cell_s][ixyz1];
         }
         rotvec(vec, vec, system->lavec_s);
@@ -4437,11 +4437,11 @@ void Scph::compute_del_v1_strain_from_cubic(std::complex<double> **del_v1_strain
         ind1 = it.pairs[0].index;
 
         for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            vec1[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
-                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
+            vec1[ixyz1] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
+                        - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[1].cell_s][ixyz1];
-            vec2[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
-                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
+            vec2[ixyz1] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
+                        - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[2].cell_s][ixyz1];
         }
         rotvec(vec1, vec1, system->lavec_s_anharm);
@@ -4533,14 +4533,14 @@ void Scph::compute_del_v1_strain_from_quartic(std::complex<double> **del_v1_stra
         ind1 = it.pairs[0].index;
 
         for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            vec1[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
-                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
+            vec1[ixyz1] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]][ixyz1]
+                        - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[1].cell_s][ixyz1];
-            vec2[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
-                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
+            vec2[ixyz1] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]][ixyz1]
+                        - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[2].cell_s][ixyz1];
-            vec3[ixyz1] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[3].index / 3][it.pairs[3].tran]][ixyz1]
-                        - system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
+            vec3[ixyz1] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[3].index / 3][it.pairs[3].tran]][ixyz1]
+                        - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][ixyz1]
                         + xshift_s[it.pairs[3].cell_s][ixyz1];
         }
         rotvec(vec1, vec1, system->lavec_s_anharm);
@@ -6458,24 +6458,16 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
             set_index_uniq.insert(index_with_cell);
 
             for(i = 0; i < 3; i++){
-                // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                vec_origin[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-1; j++){
-                    // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
-                    //                 + xshift_s[it.pairs[j].cell_s][i];
-                    vec_origin[i] += system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                      + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-1);
             }
 
             for (i = 0; i < 3; ++i) {
-                // vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                //                                                                                             1].tran]][i]
-                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                //         - vec_origin[i]
-                //         + xshift_s[it.pairs[norder - 1].cell_s][i];
-                vec[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
                                                                                                             1].tran]][i]
                         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
@@ -6571,27 +6563,19 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
             }
 
             for(i = 0; i < 3; i++){
-                // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                vec_origin[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+
                 for(j = 1; j < norder-1; j++){
-                    // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
-                    //                 + xshift_s[it.pairs[j].cell_s][i];
-                    vec_origin[i] += system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-1);
             }
 
             for (i = 0; i < 3; ++i) {
-                // vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                //                                                                                             1].tran]][i]
-                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                //         - vec_origin[i]
-                //         + xshift_s[it.pairs[norder - 1].cell_s][i];
-
-                vec[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
                                                                                                             1].tran]][i]
-                        // - system->xr_s_no_displace[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
+                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
@@ -6601,11 +6585,6 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
             fcs_tmp += it.fcs_val * vec[ixyz2];
             // it.pairs[norder - 1].index % 3 == ixyz1 has been checked.
         }
-        // std::cout << "loop done" << std::endl;
-        // std::cout << "index_with_cell " << std::endl;
-        // for(auto index_with_cell_elements: index_with_cell){
-        //     std::cout << index_with_cell_elements << " ";
-        // }std::cout << std::endl;
 
         if (std::abs(fcs_tmp) > eps15) {
 
@@ -6623,7 +6602,6 @@ void Scph::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCel
             }
             delta_fcs.emplace_back(fcs_tmp, pairs_vec);
         }
-        // std::cout << "done." << std::endl;
     }
 
     deallocate(xshift_s);
@@ -6759,37 +6737,22 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
             set_index_uniq.insert(index_with_cell);
 
             for(i = 0; i < 3; i++){
-                // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                vec_origin[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-2; j++){
-                    // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
-                    //                 + xshift_s[it.pairs[j].cell_s][i];
-                    vec_origin[i] += system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-2);
             }
 
             for (i = 0; i < 3; ++i) {
-                // vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder - 2].tran]]
-                //         [i]
-                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                //         - vec_origin[i]
-                //         + xshift_s[it.pairs[norder - 2].cell_s][i];
-
-                vec1[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder - 2].tran]][i]
-                        // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
+                vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder - 2].tran]][i]
+                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 2].cell_s][i];
-                // vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                //                                                                                             1].tran]]
-                //         [i]
-                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                //         - vec_origin[i]
-                //         + xshift_s[it.pairs[norder - 1].cell_s][i];
 
-                vec2[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder - 1].tran]][i]
-                        // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
+                vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder - 1].tran]][i]
+                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
@@ -6833,12 +6796,6 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
         index_with_cell.clear();
 
         for (const auto &it: fcs_aligned) {
-
-            // std::cout << "FCS" << std::endl;
-            // std::cout << "index ";
-            // for(auto ittmp: it.pairs){
-            //     std::cout << ittmp.index << " ";
-            // }std::cout << std::endl;
 
             // if the xyz does not match the considering coponent
             if(it.pairs[norder - 2].index % 3 != ixyz11 || it.pairs[norder-1].index % 3 != ixyz21){
@@ -6884,47 +6841,28 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
             }
 
             for(i = 0; i < 3; i++){
-                // vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-                vec_origin[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
                 for(j = 1; j < norder-2; j++){
-                    // vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
-                    //                 + xshift_s[it.pairs[j].cell_s][i];
-                    vec_origin[i] += system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                    vec_origin[i] += system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
                                     + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= (norder-2);
             }
 
             for (i = 0; i < 3; ++i) {
-                // vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder -
-                //                                                                                             2].tran]]
-                //         [i]
-                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                //         - vec_origin[i]
-                //         + xshift_s[it.pairs[norder - 2].cell_s][i];
-
-                vec1[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder -
+                vec1[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 2].index / 3][it.pairs[norder -
                                                                                                             2].tran]][i]
-                        // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
+                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 2].cell_s][i];
 
-                // vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                //                                                                                             1].tran]]
-                //         [i]
-                //         // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
-                //         - vec_origin[i]
-                //         + xshift_s[it.pairs[norder - 1].cell_s][i];
-
-                vec2[i] = system->xr_s_no_disp_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                vec2[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
                                                                                                             1].tran]][i]
-                        // - system->xr_s_no_displace[system->map_p2s[it.pairs[0].index / 3][0]][i]
+                        // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                         - vec_origin[i]
                         + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            // rotvec(vec1, vec1, system->lavec_s_anharm);
-            // rotvec(vec2, vec2, system->lavec_s_anharm);
             rotvec(vec1, vec1, system->lavec_s_anharm);
             rotvec(vec2, vec2, system->lavec_s_anharm);
 
@@ -6948,7 +6886,6 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
             }
             delta_fcs.emplace_back(fcs_tmp, pairs_vec);
         }
-        // std::cout << "done." << std::endl;
     }
 
     deallocate(xshift_s);
@@ -8375,8 +8312,7 @@ void Scph::setup_transform_ifc()
     }
 
     for (i = 0; i < nat; ++i) {
-        rotvec(xf_p[i], system->xr_s_no_displace[system->map_p2s[i][0]], system->lavec_s);
-        // rotvec(xf_p[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
+        rotvec(xf_p[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
         rotvec(xf_p[i], xf_p[i], system->rlavec_p);
         for (j = 0; j < 3; ++j) xf_p[i][j] /= 2.0 * pi;
     }
@@ -9948,8 +9884,7 @@ void Scph::print_distance_harmonic_IFC()
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            xcrd[0][i][j] = system->xr_s_no_displace[i][j];
-            // xcrd[0][i][j] = system->xr_s[i][j];
+            xcrd[0][i][j] = system->xr_s[i][j];
         }
     }
     auto icell = 0;
@@ -9961,12 +9896,9 @@ void Scph::print_distance_harmonic_IFC()
 
                 ++icell;
                 for (i = 0; i < nat; ++i) {
-                    xcrd[icell][i][0] = system->xr_s_no_displace[i][0] + static_cast<double>(isize);
-                    xcrd[icell][i][1] = system->xr_s_no_displace[i][1] + static_cast<double>(jsize);
-                    xcrd[icell][i][2] = system->xr_s_no_displace[i][2] + static_cast<double>(ksize);
-                    // xcrd[icell][i][0] = system->xr_s[i][0] + static_cast<double>(isize);
-                    // xcrd[icell][i][1] = system->xr_s[i][1] + static_cast<double>(jsize);
-                    // xcrd[icell][i][2] = system->xr_s[i][2] + static_cast<double>(ksize);
+                    xcrd[icell][i][0] = system->xr_s[i][0] + static_cast<double>(isize);
+                    xcrd[icell][i][1] = system->xr_s[i][1] + static_cast<double>(jsize);
+                    xcrd[icell][i][2] = system->xr_s[i][2] + static_cast<double>(ksize);
                 }
             }
         }
@@ -10477,6 +10409,7 @@ void Scph::write_stepresfile(double *q0,
     }
 
     if(fout_step_u0){
+        calculate_u0(q0, u0);
         fout_step_u0 << std::setw(6) << i_str_loop;
         for(is = 0; is < ns; is++){
             fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];

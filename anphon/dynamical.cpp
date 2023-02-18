@@ -288,8 +288,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            xcrd[0][i][j] = system->xr_s_no_displace[i][j];
-            // xcrd[0][i][j] = system->xr_s[i][j];
+            xcrd[0][i][j] = system->xr_s[i][j];
         }
     }
     auto icell = 0;
@@ -301,12 +300,9 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
                 ++icell;
                 for (i = 0; i < nat; ++i) {
-                    xcrd[icell][i][0] = system->xr_s_no_displace[i][0] + static_cast<double>(isize);
-                    xcrd[icell][i][1] = system->xr_s_no_displace[i][1] + static_cast<double>(jsize);
-                    xcrd[icell][i][2] = system->xr_s_no_displace[i][2] + static_cast<double>(ksize);
-                    // xcrd[icell][i][0] = system->xr_s[i][0] + static_cast<double>(isize);
-                    // xcrd[icell][i][1] = system->xr_s[i][1] + static_cast<double>(jsize);
-                    // xcrd[icell][i][2] = system->xr_s[i][2] + static_cast<double>(ksize);
+                    xcrd[icell][i][0] = system->xr_s[i][0] + static_cast<double>(isize);
+                    xcrd[icell][i][1] = system->xr_s[i][1] + static_cast<double>(jsize);
+                    xcrd[icell][i][2] = system->xr_s[i][2] + static_cast<double>(ksize);
                 }
             }
         }

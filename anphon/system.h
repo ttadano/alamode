@@ -45,8 +45,6 @@ public:
     double lavec_p[3][3], rlavec_p[3][3];
     double lavec_s_anharm[3][3], rlavec_s_anharm[3][3];
     double **xr_p, **xr_s, **xc;
-    double **xr_s_no_displace;
-    double **xr_s_no_disp_anharm;
     double **xr_s_anharm;
     double **magmom;
     double volume_p;
@@ -94,7 +92,6 @@ private:
                                      double *);
 
     void load_system_info_from_XML();
-    void load_xr_s_no_displace_from_XML();
 
     void recips(double [3][3],
                 double [3][3]) const;
