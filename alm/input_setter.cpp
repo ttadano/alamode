@@ -195,6 +195,7 @@ void InputSetter::set_element_types(const std::vector<int> &kd_in,
 {
     kd_base_vec = kd_in;
     kdnames_vec = kdnames_in;
+    nkd = kdnames_in.size();
 }
 
 void InputSetter::set_transformation_matrices(const Eigen::Matrix3d &transmat_super_in,
