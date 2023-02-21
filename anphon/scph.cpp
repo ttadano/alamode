@@ -1427,8 +1427,16 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                                 temp);
                 }
 
+                update_cell_coordinate(q0, u0, u_tensor,
+                                       v1_array_SCP, omega2_anharm[iT],
+                                       del_v0_strain_SCP, C2_array,
+                                       cmat_convert,
+                                       harm_optical_modes,
+                                       delta_q0, delta_u0, delta_u_tensor,
+                                       du0, du_tensor);
+
                 // change structure(is = 0,1,2 are TA modes)
-                for(is = 0; is < ns; is++){
+/*                for(is = 0; is < ns; is++){
                     delta_q0[is] = 0.0;
                 }
                 for(is = 0; is < 6; is++){
@@ -1539,13 +1547,14 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                         }
                     }
                 }
+*/
                 // calculate SCP force
-                calculate_force_in_real_space(v1_array_SCP, force_array);
+                // calculate_force_in_real_space(v1_array_SCP, force_array);
 
                 write_stepresfile(q0, u_tensor, u0, i_str_loop+1,
                                   fout_step_q0, fout_step_u0, fout_step_u_tensor);
 
-                // check convergence
+/*                // check convergence
                 du0 = 0.0;
                 calculate_u0(delta_q0, delta_u0);
                 for(is = 0; is < ns; is++){
@@ -1559,7 +1568,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                         du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
                     }
                 }du_tensor = std::sqrt(du_tensor);
-
+*/
                 std::cout << std::endl;
                 std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]" << std::endl;
                 std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor << std::endl << std::endl;
@@ -2336,7 +2345,14 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                     }
                 }
 
-                // update structure(is = 0,1,2 are TA modes)
+                update_cell_coordinate(q0, u0, u_tensor,
+                                       v1_array_QHA, omega2_harm_renormalize[iT],
+                                       del_v0_strain_QHA, C2_array,
+                                       cmat_convert, harm_optical_modes,
+                                       delta_q0, delta_u0, delta_u_tensor,
+                                       du0, du_tensor);
+
+/*                // update structure(is = 0,1,2 are TA modes)
                 for(is = 0; is < ns; is++){
                     delta_q0[is] = 0.0;
                 }
@@ -2446,13 +2462,13 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 }
                 // calculate SCP force
                 calculate_force_in_real_space(v1_array_QHA, force_array);
-
+*/
 
                 write_stepresfile(q0, u_tensor, u0, i_str_loop+1,
                                   fout_step_q0, fout_step_u0, fout_step_u_tensor);
 
                 // check convergence
-                du0 = 0.0;
+/*                du0 = 0.0;
                 calculate_u0(delta_q0, delta_u0);
                 for(is = 0; is < ns; is++){
                     du0 += delta_u0[is] * delta_u0[is];
@@ -2465,7 +2481,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                         du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
                     }
                 }du_tensor = std::sqrt(du_tensor);
-
+*/
                 std::cout << std::endl;
                 std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]" << std::endl;
                 std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor << std::endl << std::endl;
@@ -10186,6 +10202,8 @@ void Scph::update_cell_coordinate(double *q0,
             }
         }
     }
+
+    calculate_u0(q0, u0);
 
     du0 = 0.0;
     calculate_u0(delta_q0, delta_u0);
