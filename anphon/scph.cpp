@@ -1070,7 +1070,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     // cell optimization
     double pvcell = 0.0; // pressure * v_{cell,reference} [Ry]
-
     pvcell = stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
     pvcell *= 1.0e9/Ryd; // in Ry
 
@@ -1200,6 +1199,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         }
 
         auto converged_prev = false;
+        auto str_diverged = 0;
+
 
         set_elastic_constants(C1_array,
                               C2_array,
@@ -1280,12 +1281,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }
             }
 
-            set_init_structure_atT(q0,
-                                   u_tensor,
-                                   u0,
-                                   converged_prev,
-                                   set_init_str,
-                                   i_temp_loop);
+            set_init_structure_atT(q0, u_tensor, u0,
+                                   converged_prev, str_diverged, 
+                                   set_init_str, i_temp_loop);
 
 
             std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
@@ -1553,6 +1551,16 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 write_stepresfile(q0, u_tensor, u0, i_str_loop+1,
                                   fout_step_q0, fout_step_u0, fout_step_u_tensor);
+                
+                check_str_divergence(str_diverged,
+                                     q0, u0, u_tensor);
+                
+                if(str_diverged){
+                    converged_prev = false;
+                    std::cout << " The crystal structure diverged.";
+                    std::cout << " Break from the structure loop." << std::endl;
+                    break;
+                }
 
 /*                // check convergence
                 du0 = 0.0;
@@ -1967,6 +1975,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
         }
 
         auto converged_prev = false;
+        auto str_diverged = 0;
 
         set_elastic_constants(C1_array,
                               C2_array,
@@ -2009,12 +2018,9 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             std::cout << " Temperature = " << temp << " K" << std::endl;
             std::cout << " temperature index : " << std::setw(4) << i_temp_loop << "/" << std::setw(4) << NT << std::endl << std::endl;
 
-            set_init_structure_atT(q0,
-                                   u_tensor,
-                                   u0,
-                                   converged_prev,
-                                   set_init_str,
-                                   i_temp_loop);
+            set_init_structure_atT(q0, u_tensor, u0,
+                                   converged_prev, str_diverged, 
+                                   set_init_str, i_temp_loop);
 
             std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
             for(iat1 = 0; iat1 < system->natmin; iat1++){
@@ -2466,6 +2472,16 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
 
                 write_stepresfile(q0, u_tensor, u0, i_str_loop+1,
                                   fout_step_q0, fout_step_u0, fout_step_u_tensor);
+
+                check_str_divergence(str_diverged,
+                                     q0, u0, u_tensor);
+                
+                if(str_diverged){
+                    converged_prev = false;
+                    std::cout << " The crystal structure diverged.";
+                    std::cout << " Break from the structure loop." << std::endl;
+                    break;
+                }
 
                 // check convergence
 /*                du0 = 0.0;
@@ -3078,11 +3094,36 @@ void Scph::set_init_structure_atT(double *q0,
                                 double **u_tensor,
                                 double *u0,
                                 bool &converged_prev,
+                                int &str_diverged,
                                 const int set_init_str,
                                 const int i_temp_loop)
 {
 
     int i1, i2;
+
+    if(str_diverged){
+        std::cout << " The crystal structure at the previous temperature is divergent." << std::endl;
+        std::cout << " read initial structure from input files." << std::endl << std::endl;
+
+        set_initial_q0(q0);
+        calculate_u0(q0, u0);
+
+        // read strain.in
+        if(relax_coordinate == 1){
+            for(i1 = 0; i1 < 3; i1++){
+                for(i2 = 0; i2 < 3; i2++){
+                    u_tensor[i1][i2] = 0.0;
+                }
+            }
+        }
+        else{
+            set_initial_strain(u_tensor);
+        }
+        converged_prev = false;
+        str_diverged = 0;
+
+        return;
+    }
 
     std::cout << " SET_INIT_STR = " << set_init_str << std::endl;
 
@@ -3105,6 +3146,8 @@ void Scph::set_init_structure_atT(double *q0,
             set_initial_strain(u_tensor);
         }
         converged_prev = false;
+
+        return;
     }
     else if(set_init_str == 2){
         // read initial structure at initial temperature
@@ -3127,6 +3170,8 @@ void Scph::set_init_structure_atT(double *q0,
         else{
             std::cout << " start from structure from the previous temperature." << std::endl << std::endl;
         }
+
+        return;
     }
     else if(set_init_str == 3){
         // read initial structure at initial temperature
@@ -3160,6 +3205,8 @@ void Scph::set_init_structure_atT(double *q0,
         else{
             std::cout << " start from the structure at the previous temperature." << std::endl << std::endl;
         }
+
+        return;
     }
 }
 
@@ -10219,4 +10266,38 @@ void Scph::update_cell_coordinate(double *q0,
         }
     }du_tensor = std::sqrt(du_tensor);
 
+}
+
+void Scph::check_str_divergence(int &diverged,
+                                const double * const q0,
+                                const double * const u0,
+                                const double * const* const u_tensor)
+{
+    auto ns = dynamical->neval;
+
+    int i, j;
+    
+    int flag_diverged = 0;
+
+    for(i = 0; i < ns; i++){
+        if(std::isfinite(q0[i]) && std::isfinite(u0[i])){
+            continue;
+        }
+        else{
+            flag_diverged = 1;
+            break;
+        }
+    }
+
+    for(i = 0; i < 3; i++){
+        for(j = 0; j < 3; j++){
+            if(!std::isfinite(u_tensor[i][j])){
+                flag_diverged = 1;
+                i = 3;
+                break;
+            }
+        }
+    }
+
+    diverged = flag_diverged;
 }

@@ -511,6 +511,7 @@ private:
                                 double **u_tensor,
                                 double *u0,
                                 bool &converged_prev,
+                                int &str_diverged,
                                 const int set_init_str,
                                 const int i_temp_loop);
 
@@ -531,6 +532,11 @@ private:
                            std::ofstream &fout_step_q0,
                            std::ofstream &fout_step_u0,
                            std::ofstream &fout_step_u_tensor);
+
+    void check_str_divergence(int &diverged,
+                              const double * const q0,
+                              const double * const u0,
+                              const double * const* const u_tensor);
 
 };
 
