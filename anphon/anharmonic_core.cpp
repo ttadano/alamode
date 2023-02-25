@@ -330,24 +330,12 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
     // Return zero if any of the involving phonon has imaginary frequency
     if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8) return 0.0;
 
-//    for (i = 0; i < ngroup_v3; ++i) {
-//        std::cout << "invmass_v3[i] = " << invmass_v3[i] << std::endl;
-//    }
-//
-//    for (i = 0; i < ngroup_v3; ++i) {
-//        std::cout << "evec_index_v3 = " << evec_index_v3[i][0]
-//        << evec_index_v3[i][1] <<  evec_index_v3[i][2] << std::endl;
-//    }
-
     if (kn[1] != kindex_phi3_stored[0] || kn[2] != kindex_phi3_stored[1]) {
         calc_phi3_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
                              phase_storage_in,
                              phi3_reciprocal);
 
-//        for (i = 0; i < ngroup_v3; ++i) {
-//            std::cout << phi3_reciprocal[i] << std::endl;
-//        }
         kindex_phi3_stored[0] = kn[1];
         kindex_phi3_stored[1] = kn[2];
     }

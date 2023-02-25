@@ -213,17 +213,14 @@ void Scph::exec_scph()
         }
 
         else if(relax_coordinate == -1){
-            exec_QHA_relax_main(delta_dymat_scph);
+            exec_QHA_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
         else if(relax_coordinate == -2){
             exec_perturbative_QHA();
         }
 
-        // print_distance_harmonic_IFC();
-        // return;
-
         if (mympi->my_rank == 0) {
-            // write dymat for file
+            // write dymat to file
             store_scph_dymat_to_file(delta_dymat_scph, input->job_title + ".scph_dymat");
             store_scph_dymat_to_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
             write_anharmonic_correction_fc2(delta_dymat_scph, NT);
@@ -289,6 +286,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
         double *heat_capacity_correction = nullptr;
         double *FE_QHA = nullptr;
         double *dFE_scph = nullptr;
+        double *FE_total = nullptr;
         double **msd_scph = nullptr;
         double ***ucorr_scph = nullptr;
         double ****dielec_scph = nullptr;
@@ -311,6 +309,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             allocate(heat_capacity, NT);
             allocate(FE_QHA, NT);
             allocate(dFE_scph, NT);
+            allocate(FE_total, NT);
 
             if (writes->getPrintMSD()) {
                 allocate(msd_scph, NT, ns);
@@ -375,6 +374,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                                                   evec_tmp,
                                                                   eval_harm_renormalized[iT],
                                                                   evec_harm_renormalized_tmp);
+
+                FE_total[iT] = thermodynamics->compute_FE_total(iT,
+                                                                FE_QHA[iT],
+                                                                dFE_scph[iT]);
 
                 if (writes->getPrintMSD()) {
                     double shift[3]{0.0, 0.0, 0.0};
@@ -442,7 +445,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             writes->write_scph_thermodynamics(heat_capacity,
                                               heat_capacity_correction,
                                               FE_QHA,
-                                              dFE_scph);
+                                              dFE_scph,
+                                              FE_total);
             if (writes->getPrintMSD()) {
                 writes->write_scph_msd(msd_scph);
             }
@@ -659,6 +663,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
         if (heat_capacity_correction) deallocate(heat_capacity_correction);
         if (FE_QHA) deallocate(FE_QHA);
         if (dFE_scph) deallocate(dFE_scph);
+        if (FE_total) deallocate(FE_total);
         if (dielec_scph) deallocate(dielec_scph);
 
         if (eval_gam) deallocate(eval_gam);
@@ -686,7 +691,6 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
         const auto consider_offdiagonal = selfenergy_offdiagonal;
         double temp;
         std::ifstream ifs_dymat;
-        // auto file_dymat = input->job_title + ".scph_dymat";
         auto file_dymat = filename_dymat;
         bool consider_offdiag_tmp;
         unsigned int nk_interpolate_ref[3];
@@ -1076,6 +1080,10 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     std::vector<double> vec_temp;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    if(V0){
+        deallocate(V0);
+    }
+    allocate(V0, NT);
 
     // Compute matrix element of 4-phonon interaction
 
@@ -1433,119 +1441,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                        delta_q0, delta_u0, delta_u_tensor,
                                        du0, du_tensor);
 
-                // change structure(is = 0,1,2 are TA modes)
-/*                for(is = 0; is < ns; is++){
-                    delta_q0[is] = 0.0;
-                }
-                for(is = 0; is < 6; is++){
-                    delta_u_tensor[is] = 0.0;
-                }
-
-                if(relax_algo == 1){ // steepest decent
-                    dq0 = 0.0;
-                    for(is = 0; is < ns; is++){
-                        // skip acoustic mode
-                        if(std::fabs(omega2_harmonic[0][is]) < eps8){
-                            continue;
-                        }
-                        delta_q0[is] = - alpha_steepest_decent * v1_array_SCP[is].real();
-                        q0[is] += delta_q0[is];
-                    }
-                   
-                }
-                else if(relax_algo == 2){ // iterative solution of linear equation
-
-                    // prepare harmonic IFC matrix
-                    for(is = 0; is < ns; is++){
-                        for(js = 0; js < ns; js++){
-                            Cmat(js, is) = cmat_convert[0][is][js]; // transpose
-                            v2_mat_full(is, js) = 0.0;
-                        }
-                        v2_mat_full(is, is) = omega2_anharm[iT][0][is];
-                    }
-                    v2_mat_full = Cmat.adjoint() * v2_mat_full * Cmat;
-
-                    for(is = 0; is < ns-3; is++){
-                        for(js = 0; js < ns-3; js++){
-                            v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
-                        }
-                        v2_mat_optical(is, is) += add_hess_diag_omega2;
-                    }
-                    // solve linear equation
-                    for(is = 0; is < ns-3; is++){
-                        v1_vec_SCP(is) = v1_array_SCP[harm_optical_modes[is]];
-                    }
-
-                    dq0_vec = v2_mat_optical.colPivHouseholderQr().solve(v1_vec_SCP);
-
-                    // update q0
-                    dq0 = 0.0;
-                    for(is = 0; is < ns-3; is++){
-                        delta_q0[harm_optical_modes[is]] = - mixbeta_coord * dq0_vec(is).real();
-                        q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
-                    }
-
-                    if(relax_coordinate == 1){
-                        for(i1 = 0; i1 < 6; i1++){
-                            delta_u_tensor[i1] = 0.0;
-                        }
-                        for(i1 = 0; i1 < 3; i1++){
-                            for(i2 = 0; i2 < 3; i2++){
-                                u_tensor[i1][i2] = 0.0;
-                            }
-                        }
-                    }
-                    else if(relax_coordinate == 2){
-                        // prepare matrix of elastic constants and vector of del_v0_strain_SCP
-                        for(itmp1 = 0; itmp1 < 3; itmp1++){
-                                del_v0_strain_vec(itmp1) = del_v0_strain_SCP[itmp1*3+itmp1];
-
-                                itmp2 = (itmp1+1)%3;
-                                itmp3 = (itmp1+2)%3;
-                                del_v0_strain_vec(itmp1+3) = del_v0_strain_SCP[itmp2*3+itmp3];
-                        }
-
-                        for(itmp1 = 0; itmp1 < 3; itmp1++){
-                            for(itmp2 = 0; itmp2 < 3; itmp2++){
-                                C2_mat_tmp(itmp1, itmp2) = C2_array[itmp1*3+itmp1][itmp2*3+itmp2];
-                            }
-                        }
-                        for(itmp1 = 0; itmp1 < 3; itmp1++){
-                            for(itmp2 = 0; itmp2 < 3; itmp2++){
-                                itmp3 = (itmp2+1)%3;
-                                itmp4 = (itmp2+2)%3;
-                                C2_mat_tmp(itmp1, itmp2+3) = 2.0 * C2_array[itmp1*3+itmp1][itmp3*3+itmp4];
-                                C2_mat_tmp(itmp2+3, itmp1) = C2_array[itmp3*3+itmp4][itmp1*3+itmp1];
-                            }
-                        }
-                        for(itmp1 = 0; itmp1 < 3; itmp1++){
-                            for(itmp2 = 0; itmp2 < 3; itmp2++){
-                                itmp3 = (itmp1+1)%3;
-                                itmp4 = (itmp1+2)%3;
-                                itmp5 = (itmp2+1)%3;
-                                itmp6 = (itmp2+2)%3;
-                                C2_mat_tmp(itmp1+3, itmp2+3) = 2.0 * C2_array[itmp3*3+itmp4][itmp5*3+itmp6];
-                            }
-                        }
-
-                        du_tensor_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_v0_strain_vec);
-
-                        // update u tensor
-                        for(is = 0; is < 6; is++){
-                            delta_u_tensor[is] = - mixbeta_cell * du_tensor_vec(is).real();
-                            if(is < 3){
-                                u_tensor[is][is] += delta_u_tensor[is];
-                            }
-                            else{
-                                itmp1 = (is+1)%3;
-                                itmp2 = (is+2)%3;
-                                u_tensor[itmp1][itmp2] += delta_u_tensor[is];
-                                u_tensor[itmp2][itmp1] += delta_u_tensor[is];
-                            }
-                        }
-                    }
-                }
-*/
                 // calculate SCP force
                 // calculate_force_in_real_space(v1_array_SCP, force_array);
 
@@ -1562,21 +1457,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                     break;
                 }
 
-/*                // check convergence
-                du0 = 0.0;
-                calculate_u0(delta_q0, delta_u0);
-                for(is = 0; is < ns; is++){
-                    du0 += delta_u0[is] * delta_u0[is];
-                }du0 = std::sqrt(du0);
-
-                du_tensor = 0.0;
-                for(is = 0; is < 6; is++){
-                    du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
-                    if(is >= 3){
-                        du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
-                    }
-                }du_tensor = std::sqrt(du_tensor);
-*/
+                // check convergence
                 std::cout << std::endl;
                 std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]" << std::endl;
                 std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor << std::endl << std::endl;
@@ -1618,6 +1499,9 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             else{
                 std::cout << std::endl;
             }
+
+            // record zero-th order term of PES
+            V0[iT] = v0_renormalized;
 
             // print obtained structure
             calculate_u0(q0, u0);
@@ -1733,7 +1617,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     deallocate(delta_u_tensor);
 }
 
-void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_renormalize){
+void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm, 
+                               std::complex<double> ****delta_harmonic_dymat_renormalize){
     using namespace Eigen;
 
     int ik, is, js;
@@ -1842,7 +1727,10 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
     std::vector<double> vec_temp;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-
+    if(V0){
+        deallocate(V0);
+    }
+    allocate(V0, NT);
 
     allocate(v1_array_QHA, ns);
 
@@ -2128,6 +2016,8 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
                                     omega2_harm_renormalize[iT],
                                     evec_harm_renormalize_tmp);
+                // delta_harmonic_dymat_renormalize is copied to dymat_anharm later,
+                // which is required for postprocess.
 
                 compute_cmat(cmat_convert, evec_harm_renormalize_tmp);
 
@@ -2358,118 +2248,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                                        delta_q0, delta_u0, delta_u_tensor,
                                        du0, du_tensor);
 
-/*                // update structure(is = 0,1,2 are TA modes)
-                for(is = 0; is < ns; is++){
-                    delta_q0[is] = 0.0;
-                }
-                for(is = 0; is < 6; is++){
-                    delta_u_tensor[is] = 0.0;
-                }
-                if(relax_algo == 1){ // steepest decent
-                    dq0 = 0.0;
-                    for(is = 0; is < ns; is++){
-                        // skip acoustic mode
-                        if(std::fabs(omega2_harmonic[0][is]) < eps8){
-                            continue;
-                        }
-                        delta_q0[is] = - alpha_steepest_decent * v1_array_QHA[is].real();
-                        q0[is] += delta_q0[is];
-                    }
-                   
-                }
-                else if(relax_algo == 2){ // iterative solution of linear equation
-
-                    // prepare harmonic IFC matrix
-                    for(is = 0; is < ns; is++){
-                        for(js = 0; js < ns; js++){
-                            Cmat(js, is) = cmat_convert[0][is][js]; // transpose
-                            v2_mat_full(is, js) = 0.0;
-                        }
-                        v2_mat_full(is, is) = omega2_harm_renormalize[iT][0][is];
-                    }
-                    v2_mat_full = Cmat.adjoint() * v2_mat_full * Cmat;
-
-                    for(is = 0; is < ns-3; is++){
-                        for(js = 0; js < ns-3; js++){
-                            //v2_mat_optical(is, js) = v2_mat_full(is+3, js+3);
-                            v2_mat_optical(is, js) = v2_mat_full(harm_optical_modes[is], harm_optical_modes[js]);
-                        }
-                        v2_mat_optical(is, is) += add_hess_diag_omega2;
-                    }
-                    // solve linear equation
-                    for(is = 0; is < ns-3; is++){
-                        v1_vec_QHA(is) = v1_array_QHA[harm_optical_modes[is]];
-                    }
-                    
-                    dq0_vec = v2_mat_optical.colPivHouseholderQr().solve(v1_vec_QHA);
-
-                    // update q0
-                    dq0 = 0.0;
-                    for(is = 0; is < ns-3; is++){
-                        delta_q0[harm_optical_modes[is]] = - mixbeta_coord * dq0_vec(is).real();
-                        // delta_q0[harm_optical_modes[is]] = 0.0;
-                        q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
-                    }
-
-                    // prepare matrix of elastic constants and vector of del_v0_strain_SCP
-                    for(itmp1 = 0; itmp1 < 3; itmp1++){
-                            del_v0_strain_vec(itmp1) = del_v0_strain_QHA[itmp1*3+itmp1];
-
-                            itmp2 = (itmp1+1)%3;
-                            itmp3 = (itmp1+2)%3;
-                            del_v0_strain_vec(itmp1+3) = del_v0_strain_QHA[itmp2*3+itmp3];
-                    }
-
-                    for(itmp1 = 0; itmp1 < 3; itmp1++){
-                        for(itmp2 = 0; itmp2 < 3; itmp2++){
-                            C2_mat_tmp(itmp1, itmp2) = C2_array[itmp1*3+itmp1][itmp2*3+itmp2];
-                        }
-                    }
-
-
-                    for(itmp1 = 0; itmp1 < 3; itmp1++){
-                        for(itmp2 = 0; itmp2 < 3; itmp2++){
-                            itmp3 = (itmp2+1)%3;
-                            itmp4 = (itmp2+2)%3;
-                            C2_mat_tmp(itmp1, itmp2+3) = 2.0 * C2_array[itmp1*3+itmp1][itmp3*3+itmp4];
-                            C2_mat_tmp(itmp2+3, itmp1) = C2_array[itmp3*3+itmp4][itmp1*3+itmp1];
-                        }
-                    }
-
-                    for(itmp1 = 0; itmp1 < 3; itmp1++){
-                        for(itmp2 = 0; itmp2 < 3; itmp2++){
-                            itmp3 = (itmp1+1)%3;
-                            itmp4 = (itmp1+2)%3;
-                            itmp5 = (itmp2+1)%3;
-                            itmp6 = (itmp2+2)%3;
-                            C2_mat_tmp(itmp1+3, itmp2+3) = 2.0 * C2_array[itmp3*3+itmp4][itmp5*3+itmp6];
-                        }
-                    }
-
-                    // solve linear equation
-                    du_tensor_vec = C2_mat_tmp.colPivHouseholderQr().solve(del_v0_strain_vec);
-
-                    for(is = 0; is < 6; is++){
-                        delta_u_tensor[is] = - mixbeta_cell * du_tensor_vec(is).real();
-                    }
-
-                    // update u tensor
-                    for(is = 0; is < 6; is++){
-                        if(is < 3){
-                            u_tensor[is][is] += delta_u_tensor[is];
-                        }
-                        else{
-                            itmp1 = (is+1)%3;
-                            itmp2 = (is+2)%3;
-                            u_tensor[itmp1][itmp2] += delta_u_tensor[is];
-                            u_tensor[itmp2][itmp1] += delta_u_tensor[is];
-                        }
-                    }
-                }
-                // calculate SCP force
-                calculate_force_in_real_space(v1_array_QHA, force_array);
-*/
-
                 write_stepresfile(q0, u_tensor, u0, i_str_loop+1,
                                   fout_step_q0, fout_step_u0, fout_step_u_tensor);
 
@@ -2484,20 +2262,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
                 }
 
                 // check convergence
-/*                du0 = 0.0;
-                calculate_u0(delta_q0, delta_u0);
-                for(is = 0; is < ns; is++){
-                    du0 += delta_u0[is] * delta_u0[is];
-                }du0 = std::sqrt(du0);
-
-                du_tensor = 0.0;
-                for(is = 0; is < 6; is++){
-                    du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
-                    if(is >= 3){
-                        du_tensor += delta_u_tensor[is] * delta_u_tensor[is];
-                    }
-                }du_tensor = std::sqrt(du_tensor);
-*/
                 std::cout << std::endl;
                 std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]" << std::endl;
                 std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor << std::endl << std::endl;
@@ -2536,6 +2300,19 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****delta_harmonic_dymat_ren
             }
             else{
                 std::cout << std::endl;
+            }
+
+            // record zero-th order term of PES
+            V0[iT] = v0_renormalized;
+
+            // copy delta_harmonic_dymat_renormalize to dymat_anharm
+            // This process is required for postprocess.
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    for(ik = 0; ik < kmesh_coarse->nk; ik++){
+                        dymat_anharm[iT][is1][is2][ik] = delta_harmonic_dymat_renormalize[iT][is1][is2][ik];
+                    }
+                }
             }
 
             // print obtained structure
@@ -9166,7 +8943,7 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
         size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
                        + nk_ref * ns * NT * sizeof(double);
 
-        const auto nsize_dble = static_cast<double>(nsize) / 100000000.0;
+        const auto nsize_dble = static_cast<double>(nsize) / 1000000000.0;
         std::cout << "  Estimated memory usage per MPI process: " << std::setw(10)
                   << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
 
@@ -9579,101 +9356,6 @@ void Scph::duplicate_xk_boundary(double *xk_in,
             }
         }
     }
-}
-
-void Scph::print_distance_harmonic_IFC()
-{
-    const auto nat = system->nat;
-    const auto natmin = system->natmin;
-
-    double ***harmonic_IFCs;
-    allocate(harmonic_IFCs, natmin, nat, 9);
-
-    int i1, i2, ixyz;
-
-    // initialize harmonic_IFCs
-    for(i1 = 0; i1 < natmin; i1++){
-        for(i2 = 0; i2 < nat; i2++){
-            for(ixyz = 0; ixyz < 9; ixyz++){
-                harmonic_IFCs[i1][i2][ixyz] = 0.0;
-            }
-        }
-    }
-    
-    for(auto &it : fcs_phonon->fc2_ext){
-        ixyz = it.xyz1 * 3 + it.xyz2;
-        harmonic_IFCs[it.atm1][it.atm2][ixyz] += it.fcs_val;
-    }
-
-    // get minimum distance for pairs
-    unsigned int i, j;
-    const unsigned int nneib = 27;
-
-    double ***xcrd;
-
-    std::vector<DistWithCell> **distall;
-    double **min_dist_tmp;
-
-    allocate(distall, natmin, nat);
-    allocate(xcrd, nneib, nat, 3);
-    allocate(min_dist_tmp, natmin, nat);
-
-    for (i = 0; i < nat; ++i) {
-        for (j = 0; j < 3; ++j) {
-            xcrd[0][i][j] = system->xr_s[i][j];
-        }
-    }
-    auto icell = 0;
-    for (auto isize = -1; isize <= 1; ++isize) {
-        for (auto jsize = -1; jsize <= 1; ++jsize) {
-            for (auto ksize = -1; ksize <= 1; ++ksize) {
-
-                if (isize == 0 && jsize == 0 && ksize == 0) continue;
-
-                ++icell;
-                for (i = 0; i < nat; ++i) {
-                    xcrd[icell][i][0] = system->xr_s[i][0] + static_cast<double>(isize);
-                    xcrd[icell][i][1] = system->xr_s[i][1] + static_cast<double>(jsize);
-                    xcrd[icell][i][2] = system->xr_s[i][2] + static_cast<double>(ksize);
-                }
-            }
-        }
-    }
-
-    for (icell = 0; icell < nneib; ++icell) {
-        for (i = 0; i < nat; ++i) {
-            rotvec(xcrd[icell][i], xcrd[icell][i], system->lavec_s);
-        }
-    }
-
-    for (i = 0; i < natmin; ++i) {
-        const auto iat = system->map_p2s[i][0];
-        for (j = 0; j < nat; ++j) {
-            distall[i][j].clear();
-            for (icell = 0; icell < nneib; ++icell) {
-
-                double dist_tmp = distance(xcrd[0][iat], xcrd[icell][j]);
-                distall[i][j].emplace_back(icell, dist_tmp);
-            }
-            std::sort(distall[i][j].begin(), distall[i][j].end());
-            min_dist_tmp[i][j] = distall[i][j][0].dist;
-        }
-    }
-
-    // print result
-
-    std::ofstream fin_harmonic_IFCs;
-
-    fin_harmonic_IFCs.open("harmonic_IFCs.txt");
-    for(i1 = 0; i1 < natmin; i1++){
-        for(i2 = 0; i2 < nat; i2++){
-            for(ixyz = 0; ixyz < 9; ixyz++){
-                fin_harmonic_IFCs << min_dist_tmp[i1][i2] << " " << harmonic_IFCs[i1][i2][ixyz] << std::endl;
-            }
-        }
-    }
-
-    return;
 }
 
 void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,

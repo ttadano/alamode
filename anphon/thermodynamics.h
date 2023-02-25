@@ -113,5 +113,12 @@ public:
                               double **,
                               std::complex<double> ***,
                               double **,
-                              std::complex<double> ***) const;};
+                              std::complex<double> ***) const;
+
+    double compute_FE_total(unsigned int,
+                            double,
+                            double);
+                            
+};
+    
 }

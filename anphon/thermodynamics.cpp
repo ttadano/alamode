@@ -19,6 +19,7 @@
 #include "phonon_dos.h"
 #include "pointers.h"
 #include "system.h"
+#include "scph.h"
 #include <iostream>
 #include <complex>
 
@@ -822,4 +823,23 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
     }
 
     return ret / static_cast<double>(nk);
+}
+
+double Thermodynamics::compute_FE_total(unsigned int iT,
+                                        double fe_qha,
+                                        double dfe_scph = 0.0)
+{
+    double fe_total = fe_qha;
+    // skip scph correction for QHA + structural optimization
+    if(scph->relax_coordinate >= 0){
+        fe_total += dfe_scph;
+    }
+    if (thermodynamics->calc_FE_bubble) {
+        fe_total += thermodynamics->FE_bubble[iT];
+    }
+    if(scph->relax_coordinate != 0){
+        fe_total += scph->V0[iT];
+    }
+
+    return fe_total;
 }

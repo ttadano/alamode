@@ -789,7 +789,6 @@ void Input::parse_initial_displace()
             split(line_split, line,
                 boost::is_any_of("\t "), boost::token_compress_on);
 
-            // Lattice vectors a1, a2, a3
             if (line_split.size() == 3) {
                 for (j = 0; j < 3; ++j) {
                     u_fractional[i - 5][j] = boost::lexical_cast<double>(line_split[j]);
@@ -823,7 +822,6 @@ void Input::parse_initial_displace()
             split(line_split, line,
                 boost::is_any_of("\t "), boost::token_compress_on);
 
-            // Lattice vectors a1, a2, a3
             if (line_split.size() == 3) {
                 for (j = 0; j < 3; ++j) {
                     u_xyz[i - 1][j] = boost::lexical_cast<double>(line_split[j]);

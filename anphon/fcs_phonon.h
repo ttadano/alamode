@@ -154,8 +154,6 @@ private:
 
     void load_fc2_xml();
 
-    
-
     void load_fcs_xml() const;
 
     void examine_translational_invariance(int,

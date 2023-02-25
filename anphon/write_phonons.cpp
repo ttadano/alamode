@@ -181,6 +181,7 @@ void Writes::write_input_vars()
                 std::cout << "  RENORM_2TO1ST = " << scph->renorm_2to1st << std::endl;
                 std::cout << "  RENORM_ANHARMTO1ST = " << scph->renorm_anharmto1st << std::endl;
             }
+            std::cout << "  NAT_PRIM = " << scph->natmin_tmp << std::endl;
 
         }
     }
@@ -2938,7 +2939,8 @@ void Writes::write_scph_dos(double **dos_scph, const int bubble) const
 void Writes::write_scph_thermodynamics(double *heat_capacity,
                                        double *heat_capacity_correction,
                                        double *FE_QHA,
-                                       double *dFE_scph) const
+                                       double *dFE_scph,
+                                       double *FE_total) const
 {
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
@@ -2958,15 +2960,42 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
         exit("write_scph_thermodynamics",
              "cannot open file_thermo");
 
+    // write header 
+    if(scph->relax_coordinate > 1) {
+        ofs_thermo << " # The renormalized static potential is also shown." << std::endl;
+    }
     if (thermodynamics->calc_FE_bubble) {
         ofs_thermo << "# The bubble free-energy calculated on top of the SCPH wavefunction is also shown." << std::endl;
-        ofs_thermo <<
-                   "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry], F_{vib} (Bubble correction) [Ry]"
-                   << std::endl;
-    } else {
-        ofs_thermo << "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry]"
-                   << std::endl;
     }
+
+    ofs_thermo << "# Temperature [K], Cv [in kB unit]";
+    if (print_anharmonic_correction_Cv) {
+        ofs_thermo << ", Cv (anharm correction) [in kB unit]";
+    }
+    ofs_thermo << ", F_{vib} (QHA term) [Ry]";
+    // do not write scph correction in QHA + structural optimization
+    if(scph->relax_coordinate >= 0){
+        ofs_thermo << ", F_{vib} (SCPH correction) [Ry]";
+    }
+    if(thermodynamics->calc_FE_bubble){
+        ofs_thermo << ", F_{vib} (Bubble correction) [Ry]";
+    }
+    // write renormalized zero-th order IFC
+    if(scph->relax_coordinate != 0){
+        ofs_thermo << ", Phi0 [Ry]";
+    }
+    ofs_thermo << ", F_{total} [Ry]";
+    ofs_thermo << std::endl;
+
+    // if (thermodynamics->calc_FE_bubble) {
+    //     ofs_thermo << "# The bubble free-energy calculated on top of the SCPH wavefunction is also shown." << std::endl;
+    //     ofs_thermo <<
+    //                "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry], F_{vib} (Bubble correction) [Ry]"
+    //                << std::endl;
+    // } else {
+    //     ofs_thermo << "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry]"
+    //                << std::endl;
+    // }
 
     if (thermodynamics->classical) {
         ofs_thermo << "# CLASSICAL = 1: Use classical limit." << std::endl;
@@ -2982,11 +3011,18 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
             ofs_thermo << std::setw(18) << std::scientific << heat_capacity_correction[iT] / k_Boltzmann;
         }
         ofs_thermo << std::setw(18) << FE_QHA[iT];
-        ofs_thermo << std::setw(18) << dFE_scph[iT];
-
+        // skip scph correction for QHA + structural optimization
+        if(scph->relax_coordinate >= 0){
+            ofs_thermo << std::setw(18) << dFE_scph[iT];
+        }
         if (thermodynamics->calc_FE_bubble) {
             ofs_thermo << std::setw(18) << thermodynamics->FE_bubble[iT];
         }
+
+        if(scph->relax_coordinate != 0){
+            ofs_thermo << std::setw(18) << scph->V0[iT];
+        }
+        ofs_thermo << std::setw(18) << FE_total[iT];
         ofs_thermo << std::endl;
     }
 

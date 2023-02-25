@@ -103,9 +103,12 @@ public:
     int renorm_anharmto1st;
 
     // initial strain and displacement
-    double **init_u_tensor;
-    double *init_u0;
+    double **init_u_tensor = nullptr;
+    double *init_u0 = nullptr;
     int natmin_tmp;
+
+    // zero-th order term of the potential energy surface
+    double *V0 = nullptr;
 
 private:
 
@@ -162,7 +165,8 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                           std::complex<double> ****);
 
-    void exec_QHA_relax_main(std::complex<double> ****);
+    void exec_QHA_relax_main(std::complex<double> ****,
+                             std::complex<double> ****);
 
     void exec_perturbative_QHA();
 
@@ -446,8 +450,6 @@ private:
 
     static void duplicate_xk_boundary(double *,
                                         std::vector<std::vector<double>> &);
-
-    void print_distance_harmonic_IFC();
 
     void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                                             const unsigned int NT,
