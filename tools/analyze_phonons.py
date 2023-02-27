@@ -55,8 +55,8 @@ def print_temperature_dep_lifetime(analyze_obj, calc, file_result, options, retu
     avg, isotope, file_isotope = set_average(options)
 
     if options.kpoint is None or options.mode is None:
-        sys.exit("Please specify the temperature by --temp option, \
-or specify both --kpoint and --mode when --calc=tau")
+        sys.exit("Please specify the temperature by --temp option,"
+                 "or specify both --kpoint and --mode when --calc=tau")
     else:
         if len(options.kpoint.split(':')) != 1:
             sys.exit("Invalid usage of --kpoint for --calc=tau")
@@ -273,13 +273,14 @@ def print_cumulative_thermal_conductivity(analyze_obj, cumulative_mode, file_res
             sys.exit("Invalid usage of --mode for --calc=%s" % cumulative_mode)
 
     if options.length is None:
-        max_len = 1000.0
-        d_len = 1.0
-    elif len(options.length.split(':')) == 2:
-        arr = options.length.split(':')
-        max_len, d_len = float(arr[0]), float(arr[1])
+        max_len = 0.0
+        d_len = 0.0
     else:
-        sys.exit("Invalid usage of --length option")
+        if len(options.length.split(':')) == 2:
+            arr = options.length.split(':')
+            max_len, d_len = float(arr[0]), float(arr[1])
+        else:
+            sys.exit("Invalid usage of --length option")
 
     if cumulative_mode == "cumulative":
         if return_cmd:
@@ -287,14 +288,18 @@ def print_cumulative_thermal_conductivity(analyze_obj, cumulative_mode, file_res
                        str(beg_s), str(end_s),
                        isotope, file_isotope,
                        str(max_len),
-                       str(d_len), options.temp]
+                       str(d_len), options.temp,
+                       options.nsample,
+                       options.gridtype]
 
         else:
             command = analyze_obj + file_result + " " + calc + " " + avg + " " \
                       + str(beg_s) + " " + str(end_s) \
                       + " " + isotope + " " + file_isotope \
                       + " " + str(max_len) + " " \
-                      + str(d_len) + " " + options.temp
+                      + str(d_len) + " " + options.temp + " "\
+                      + str(options.nsample) + " " \
+                      + options.gridtype
 
     else:
         size_flag = [0] * 3
@@ -316,14 +321,16 @@ def print_cumulative_thermal_conductivity(analyze_obj, cumulative_mode, file_res
                        isotope, file_isotope,
                        str(max_len), str(d_len),
                        options.temp, str(size_flag[0]),
-                       str(size_flag[1]), str(size_flag[2])]
+                       str(size_flag[1]), str(size_flag[2]),
+                       options.nsample, options.gridtype]
         else:
             command = analyze_obj + file_result + " " + calc + " " + avg + " " \
                       + str(beg_s) + " " + str(end_s) \
                       + " " + isotope + " " + file_isotope \
                       + " " + str(max_len) + " " + str(d_len) \
                       + " " + options.temp + " " + str(size_flag[0]) \
-                      + " " + str(size_flag[1]) + " " + str(size_flag[2])
+                      + " " + str(size_flag[1]) + " " + str(size_flag[2]) \
+                      + " " + str(options.nsample) + " " + options.gridtype
 
     if return_cmd:
         return command
@@ -371,6 +378,13 @@ if __name__ == '__main__':
                           help="specify the maximum value of system size L and its"
                                "step dL in units of nm."
                                "The default value is --length=1000:10 .")
+
+        parser.add_option('--nsample', metavar="100", default=1000,
+                          help="specify the number of sampling points used for calculating cumulative kappa.")
+
+        parser.add_option('--gridtype', metavar="linear | log", default="log",
+                          help="specify whether the uniform grid of L (length) for cumulative kappa is "
+                               "generated in linear scale or logarithmic scale.")
 
         group = optparse.OptionGroup(parser,
                                      "The following options are available/necessary "

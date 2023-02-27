@@ -50,14 +50,18 @@ void calc_tau_temp(int,
 
 void calc_kappa();
 
-void calc_kappa_cumulative(double,
-                           double,
-                           int);
+void calc_kappa_cumulative(double max_length,
+                           double delta_length,
+                           int itemp,
+                           const int nsample,
+                           const std::string &gridtype);
 
-void calc_kappa_cumulative2(double,
-                            double,
-                            int,
-                            int [3]);
+void calc_kappa_cumulative2(double max_length,
+                            double delta_length,
+                            int itemp,
+                            int flag[3],
+                            const int nsample,
+                            const std::string &gridtype);
 
 void calc_kappa_boundary(const double);
 
