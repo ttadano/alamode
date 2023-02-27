@@ -145,6 +145,15 @@ void Scph::deallocate_variables()
     if (phi4_reciprocal) {
         deallocate(phi4_reciprocal);
     }
+    if (init_u_tensor) {
+        deallocate(init_u_tensor);
+    }
+    if (init_u0) {
+        deallocate(init_u0);
+    }
+    if (V0) {
+        deallocate(V0);
+    }
 
     if (kmesh_coarse) delete kmesh_coarse;
     if (kmesh_dense) delete kmesh_dense;
@@ -190,11 +199,35 @@ void Scph::exec_scph()
         zerofill_harmonic_dymat_renormalize(delta_harmonic_dymat_renormalize, NT);
     //}
 
+    if(relax_coordinate != 0 && thermodynamics->calc_FE_bubble){
+        exit("exec_scph",
+             "Sorry, RELAX_COORDINATE!=0 can't be used with bubble correction of the free energy.");
+    }
+    if(relax_coordinate != 0 && bubble > 0){
+        exit("exec_scph",
+             "Sorry, RELAX_COORDINATE!=0 can't be used with bubble self-energy on top of the SCPH calculation.");
+    }
+
     if (restart_scph) {
 
+        std::cout << " RESTART_SCPH is true." << std::endl;
+        std::cout << " Dynamical matrix is read from file ...";
+
         // Read anharmonic correction to the dynamical matrix from the existing file
-        load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
-        load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+        // SCPH calculation, no structural optimization
+        if(relax_coordinate == 0){
+            load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
+        }
+        // SCPH + structural optimization
+        else if(relax_coordinate > 0){
+            load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
+            load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+        }
+        // QHA + structural optimization
+        else/* if(relax_coordinate < 0) */{
+            load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".renorm_harm_dymat");
+            load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+        }
 
     } else {
 
@@ -221,8 +254,14 @@ void Scph::exec_scph()
 
         if (mympi->my_rank == 0) {
             // write dymat to file
-            store_scph_dymat_to_file(delta_dymat_scph, input->job_title + ".scph_dymat");
-            store_scph_dymat_to_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+            // write scph dynamical matrix when scph calculation is performed
+            if(relax_coordinate >= 0){
+                store_scph_dymat_to_file(delta_dymat_scph, input->job_title + ".scph_dymat");
+            }
+            // write renormalized harmonic dynamical matrix when the crystal structure is optimized
+            if(relax_coordinate != 0){
+                store_scph_dymat_to_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+            }
             write_anharmonic_correction_fc2(delta_dymat_scph, NT);
         }
     }
@@ -700,8 +739,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
         std::string str_dummy;
         int nonanalytic_tmp;
 
-        std::cout << " RESTART_SCPH is true." << std::endl;
-        std::cout << " Dynamical matrix is read from file ...";
+        
 
         ifs_dymat.open(file_dymat.c_str(), std::ios::in);
 
@@ -1220,7 +1258,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         std::ofstream fout_step_u0;
         std::ofstream fout_q0;
         std::ofstream fout_u0;
-        std::ofstream fout_v0;
         
         // cell optimization
         std::ofstream fout_step_u_tensor;
@@ -1230,7 +1267,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         fout_step_u0.open("step_u0.txt");
         fout_q0.open("q0.txt");
         fout_u0.open("u0.txt");
-        fout_v0.open("v0.txt");
         
         // if the unit cell is relaxed
         if(relax_coordinate == 2){
@@ -1240,7 +1276,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
         write_resfile_header(fout_q0,
                              fout_u0,
-                             fout_v0,
                              fout_u_tensor);
 
 
@@ -1522,8 +1557,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }fout_u_tensor << std::endl;
             }
 
-            fout_v0 << std::scientific << std::setw(15) << std::setprecision(6) << temp << std::setw(15) << v0_renormalized << std::endl;
-
             if (!warmstart_scph) converged_prev = false;
 
             // get renormalization of harmonic dymat 
@@ -1558,7 +1591,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         fout_step_u0.close();
         fout_q0.close();
         fout_u0.close();
-        fout_v0.close();
         
         if(relax_coordinate == 2){
             fout_step_u_tensor.close();
@@ -1878,8 +1910,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         fout_q0.open("q0.txt");
         std::ofstream fout_u0;
         fout_u0.open("u0.txt");
-        std::ofstream fout_v0;
-        fout_v0.open("v0.txt");
 
         // cell optimization
         std::ofstream fout_step_u_tensor;
@@ -1889,7 +1919,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
         write_resfile_header(fout_q0,
                              fout_u0,
-                             fout_v0,
                              fout_u_tensor);
 
 
@@ -2332,7 +2361,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
             }fout_u_tensor << std::endl;
 
-            fout_v0 << std::scientific << std::setw(15) << std::setprecision(6) << temp << std::setw(15) << v0_renormalized << std::endl;
         }
 
         // Output files of structural optimization
@@ -2340,7 +2368,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         fout_step_u0.close();
         fout_q0.close();
         fout_u0.close();
-        fout_v0.close();
 
         deallocate(cmat_convert);
 
@@ -4156,7 +4183,6 @@ void Scph::compute_del_v1_strain_from_cubic(std::complex<double> **del_v1_strain
 {
     // calculate renormalization in real space
     int natmin = system->natmin;
-    // int nat = system->nat;
     int ns = dynamical->neval;
     double **del_v1_strain_from_cubic_in_real_space;
     allocate(del_v1_strain_from_cubic_in_real_space, 81, ns);
@@ -4251,7 +4277,6 @@ void Scph::compute_del_v1_strain_from_quartic(std::complex<double> **del_v1_stra
 {
     // calculate renormalization in real space
     int natmin = system->natmin;
-    // int nat = system->nat;
     int ns = dynamical->neval;
     double **del_v1_strain_from_quartic_in_real_space;
 
@@ -4383,7 +4408,6 @@ void Scph::compute_del_v2_strain_from_cubic(std::complex<double> ***del_v2_strai
                                                                        mat_tmp);
 
                 // Unitary transformation
-                // knum = kmap_interpolate_to_scph[ik];
                 knum = ik;
                 for(is1 = 0; is1 < ns; is1++){
                     for(is2 = 0; is2 < ns; is2++){
@@ -4420,7 +4444,6 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
 #pragma omp parallel private(ixyz, itmp, ixyz11, ixyz12, ixyz21, ixyz22, is1, is2, ik, knum)
 {
     std::vector<FcsArrayWithCell> delta_fcs;
-    // std::vector<FcsClassExtent> delta_fcs2;
     FcsClassExtent fc_extent_tmp;
 
     std::complex<double> **mat_tmp;
@@ -4442,25 +4465,13 @@ void Scph::compute_del_v2_strain_from_quartic(std::complex<double> ***del_v2_str
         compute_del_v_strain_in_real_space2(fcs_phonon->force_constant_with_cell[2],
                                                         delta_fcs, ixyz11, ixyz12, ixyz21, ixyz22, 1);
 
-
-        // change format of harmonic IFCs.
-        // delta_fcs2.clear();
-
-        // for (const auto &it: delta_fcs){
-        //     fc_extent_tmp = from_FcsArrayWithCell_to_FcsClassExtent(it);
-        //     delta_fcs2.emplace_back(fc_extent_tmp);
-        // }
         
         for(ik = 0; ik < nk; ik++){
             anharmonic_core->calc_analytic_k_from_FcsArrayWithCell(kmesh_dense->xk[ik],
                                                                    delta_fcs,
                                                                    mat_tmp);
-            // dynamical->calc_analytic_k(kmesh_dense->xk[ik],
-            //                         delta_fcs2,
-            //                         mat_tmp);
 
             // Unitary transformation
-            // knum = kmap_interpolate_to_scph[ik];
             knum = ik;
             for(is1 = 0; is1 < ns; is1++){
                 for(is2 = 0; is2 < ns; is2++){
@@ -9665,7 +9676,6 @@ void Scph::calc_del_v0_strain_vib(std::complex<double> *del_v0_strain_vib,
 
 void Scph::write_resfile_header(std::ofstream &fout_q0,
                                 std::ofstream &fout_u0,
-                                std::ofstream &fout_v0,
                                 std::ofstream &fout_u_tensor)
 {
     const auto ns = dynamical->neval;
@@ -9689,12 +9699,6 @@ void Scph::write_resfile_header(std::ofstream &fout_q0,
             fout_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
         }
     }fout_u0 << std::endl;
-
-    // v0.txt
-    fout_v0 << "#";
-    fout_v0 << std::setw(14) << "temp [K]";
-    fout_v0 << std::setw(15) << "U_0 [Ry]";
-    fout_v0 << std::endl;
 
     // if the cell shape is relaxed
     if(fout_u_tensor){

@@ -519,7 +519,6 @@ private:
 
     void write_resfile_header(std::ofstream &fout_q0,
                               std::ofstream &fout_u0,
-                              std::ofstream &fout_v0,
                               std::ofstream &fout_u_tensor);
 
     void write_stepresfile_header_atT(std::ofstream &fout_step_q0,

@@ -386,6 +386,7 @@ void Input::parse_scph_vars()
     }
 
     auto file_dymat = this->job_title + ".scph_dymat";
+    auto file_harm_dymat = this->job_title + ".renorm_harm_dymat";
 
     // Default values
 
@@ -425,14 +426,8 @@ void Input::parse_scph_vars()
 
     int nat_prim = 0;
 
-    // if file_dymat exists in the current directory,
-    // restart mode will be automatically turned on for SCPH calculations.
-
-    auto restart_scph = stat(file_dymat.c_str(), &st) == 0;
-
     // Assign given values
 
-    assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
     assign_val(maxiter, "MAXITER", scph_var_dict);
     assign_val(mixalpha, "MIXALPHA", scph_var_dict);
     assign_val(selenergy_offdiagonal, "SELF_OFFDIAG", scph_var_dict);
@@ -475,6 +470,26 @@ void Input::parse_scph_vars()
         exit("parse_scph_vars",
              "NAT_PRIM must be specified when RELAX_COORDINATE != 0.");
     }
+
+    // The order to determine parameters is irregular here.
+    // This is because the restart files depend on relax_coordinate.
+    // Thus, we first read relax_coordinate.
+    // Then we determine restart_scph by checking the restart files.
+    // Finally, we overwrite restart_scph if it is explicitly given in the input file.
+
+    // if file_dymat exists in the current directory,
+    // restart mode will be automatically turned on for SCPH calculations.
+    bool restart_scph = false;
+    if(relax_coordinate == 0){
+        restart_scph = stat(file_dymat.c_str(), &st) == 0;
+    }
+    else if(relax_coordinate > 0){
+        restart_scph = (stat(file_dymat.c_str(), &st) == 0) & (stat(file_harm_dymat.c_str(), &st) == 0);
+    }
+    else{
+        restart_scph = stat(file_harm_dymat.c_str(), &st);
+    }
+    assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
