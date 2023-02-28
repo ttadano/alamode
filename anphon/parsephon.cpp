@@ -487,7 +487,7 @@ void Input::parse_scph_vars()
         restart_scph = (stat(file_dymat.c_str(), &st) == 0) & (stat(file_harm_dymat.c_str(), &st) == 0);
     }
     else{
-        restart_scph = stat(file_harm_dymat.c_str(), &st);
+        restart_scph = stat(file_harm_dymat.c_str(), &st) == 0;
     }
     assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
 
