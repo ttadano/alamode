@@ -1540,22 +1540,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
             // print obtained structure
             calculate_u0(q0, u0);
-            fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
-            for(is = 0; is < ns; is++){
-                fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
-            }fout_q0 << std::endl;
 
-            fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
-            for(is = 0; is < ns; is++){
-                fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
-            }fout_u0 << std::endl;
-
-            if(relax_coordinate == 2){
-                fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << temp;
-                for(is = 0; is < 9; is++){
-                    fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
-                }fout_u_tensor << std::endl;
-            }
+            write_resfile_atT(q0, u_tensor, u0, temp, fout_q0, fout_u0, fout_u_tensor);
 
             if (!warmstart_scph) converged_prev = false;
 
@@ -2346,20 +2332,8 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
             // print obtained structure
             calculate_u0(q0, u0);
-            fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
-            for(is = 0; is < ns; is++){
-                fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
-            }fout_q0 << std::endl;
 
-            fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
-            for(is = 0; is < ns; is++){
-                fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
-            }fout_u0 << std::endl;
-
-            fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << temp;
-            for(is = 0; is < 9; is++){
-                fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
-            }fout_u_tensor << std::endl;
+            write_resfile_atT(q0, u_tensor, u0, temp, fout_q0, fout_u0, fout_u_tensor);
 
         }
 
@@ -2560,50 +2534,18 @@ void Scph::exec_perturbative_QHA()
         fout_q0.open(input->job_title + ".normal_disp");
         std::ofstream fout_u0;
         fout_u0.open(input->job_title + ".atom_disp");
-        std::ofstream fout_v0;
-        fout_v0.open("v0.txt");
 
         // cell optimization
         std::ofstream fout_u_tensor;
         fout_u_tensor.open(input->job_title + ".umn_tensor");
 
-        // atomic displacement (normal coordinate)
-        fout_q0 << "#";
-        fout_q0 << std::setw(14) << "temp [K]";
-        for(is1 = 0; is1 < ns; is1++){
-            fout_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
-        }fout_q0 << std::endl;
-
-        // atomic displacement
-        fout_u0 << "#";
-        fout_u0 << std::setw(14) << "temp [K]";
-        for(iat1 = 0; iat1 < system->natmin; iat1++){
-            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                get_xyz_string(ixyz1, str_tmp);
-                fout_u0 << std::setw(15) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
-            }
-        }fout_u0 << std::endl;
-
-        // strain
-        fout_u_tensor << "#";
-        fout_u_tensor << std::setw(14) << "temp [K]";
-        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                get_xyz_string(ixyz1, str_tmp);
-                get_xyz_string(ixyz2, str_tmp2);
-                fout_u_tensor << std::setw(15) << ("u_{" + str_tmp + str_tmp2 < "}");
-            }
-        }fout_u_tensor << std::endl;
-        
-        // v0.txt
-        fout_v0 << "#";
-        fout_v0 << std::setw(14) << "temp [K]";
-        fout_v0 << std::setw(15) << "U_0 [Ry]";
-        fout_v0 << std::endl;
+        write_resfile_header(fout_q0,
+                             fout_u0,
+                             fout_u_tensor);
 
         i_temp_loop = -1;
 
-        std::cout << "Start QHA." << std::endl;
+        std::cout << "Start QHA calculation." << std::endl;
         std::cout << " Internal coordinates and shape of the unit cell are calculated by lowest-order perturbation theory." << std::endl;
 
         for (double temp : vec_temp) {
@@ -2614,11 +2556,8 @@ void Scph::exec_perturbative_QHA()
             std::cout << " Temperature = " << temp << " K" << std::endl;
             std::cout << " temperature index : " << std::setw(4) << i_temp_loop << "/" << std::setw(4) << NT << std::endl << std::endl;
 
-            std::cout << "calc_v1_array_vib" << std::endl;
             calc_v1_array_vib(v1_array_vib, v3_array_original, temp);
-            std::cout << "calc_del_v0_strain_vib" << std::endl;
             calc_del_v0_strain_vib(del_v0_strain_vib, del_v2_strain_from_cubic, temp);
-            std::cout << "done" << std::endl;
 
             // calculate matrix
             // elastic_mat_tmp
@@ -2630,7 +2569,6 @@ void Scph::exec_perturbative_QHA()
 
             for(is1 = 0; is1 < ns-3; is1++){
                 elastic_mat_tmp(is1, is1) = omega2_harmonic[0][harm_optical_modes[is1]];
-                // harm_optical_modes[js];
             }
 
             for(is1 = 0; is1 < ns-3; is1++){
@@ -2649,21 +2587,6 @@ void Scph::exec_perturbative_QHA()
                                                      + del_v1_strain_from_harmonic[ixyz3*3 + ixyz2][is2];
                     elastic_mat_tmp(ns+ixyz1, is1) = elastic_mat_tmp(is1, ns+ixyz1);
                 }
-
-                
-/*                for(ixyz1 = 0; ixyz1 < 6; ixyz1++){
-                    // ignore coupling of u_mn tensor and q_lambda
-                    if(qha_scheme == 3){
-                        elastic_mat_tmp(is1, ns-3+ixyz1) = complex_zero;
-                        elastic_mat_tmp(ns-3+ixyz1, is1) = complex_zero;
-                    }
-
-                    // ignore feedback from coordinate to strain
-                    if(qha_scheme == 4){
-                        elastic_mat_tmp(ns-3+ixyz1, is1) = complex_zero;
-                    }
-                }
-*/
 
             }
 
@@ -2689,11 +2612,6 @@ void Scph::exec_perturbative_QHA()
                 is2 = harm_optical_modes[is1];
                 
                 del_Fvib_q0_umn(is1) = -v1_array_vib[is2];
-
-                // ignore v1_array_vib in ZSISA
-                // if(qha_scheme == 2){
-                //     del_Fvib_q0_umn(is1) = complex_zero;
-                // }
             }
             for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
                 ixyz2 = (ixyz1+1)%3;
@@ -2701,7 +2619,6 @@ void Scph::exec_perturbative_QHA()
 
                 del_Fvib_q0_umn(ns-3+ixyz1) = -del_v0_strain_vib[ixyz1*3 + ixyz1];
                 del_Fvib_q0_umn(ns+ixyz1) = -del_v0_strain_vib[ixyz2*3 + ixyz3] + del_v0_strain_vib[ixyz3*3 + ixyz2];
-
             }
             q0_umn = elastic_mat_tmp.colPivHouseholderQr().solve(del_Fvib_q0_umn);
 
@@ -2709,17 +2626,13 @@ void Scph::exec_perturbative_QHA()
             for(is1 = 0; is1 < ns; is1++){
                 q0[is1] = 0.0;
             }
-            std::cout << "q0: " << std::endl;
             for(is1 = 0; is1 < ns-3; is1++){
                 is2 = harm_optical_modes[is1];
                 
                 q0[is2] = q0_umn(is1).real();
-                std::cout << q0_umn(is1) << " ";
-            }std::cout << std::endl;
-
+            }
             calculate_u0(q0, u0);
 
-            std::cout << "u_mn: " << std::endl;
             for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
                 ixyz2 = (ixyz1+1)%3;
                 ixyz3 = (ixyz1+2)%3;
@@ -2729,35 +2642,16 @@ void Scph::exec_perturbative_QHA()
                 u_tensor[ixyz3][ixyz2] = q0_umn(ns+ixyz1).real();
             }
 
-            // write result
-            fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
-            for(is = 0; is < ns; is++){
-                fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
-            }fout_q0 << std::endl;
+            // print obtained structure
+            calculate_u0(q0, u0);
 
-            fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
-            for(is = 0; is < ns; is++){
-                fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
-            }fout_u0 << std::endl;
-
-            fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << temp;
-            for(is = 0; is < 9; is++){
-                fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
-            }fout_u_tensor << std::endl;
-
+            write_resfile_atT(q0, u_tensor, u0, temp, fout_q0, fout_u0, fout_u_tensor);
         }
 
         fout_q0.close();
         fout_u0.close();
-        fout_v0.close();
         fout_u_tensor.close();
-
-
     }
-
-
-    
-
 
     deallocate(v1_array_vib);
     deallocate(del_v0_strain_vib);
@@ -9754,6 +9648,41 @@ void Scph::write_resfile_header(std::ofstream &fout_q0,
 
 }
 
+void Scph::write_resfile_atT(const double * const q0,
+                             const double * const* const u_tensor,
+                             const double * const u0,
+                             const double temp,
+                             std::ofstream &fout_q0,
+                             std::ofstream &fout_u0,
+                             std::ofstream &fout_u_tensor)
+{
+    int is;
+    const auto ns = dynamical->neval;
+
+    if(fout_q0){
+        fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
+        for(is = 0; is < ns; is++){
+            fout_q0 << std::scientific << std::setw(15) << std::setprecision(6) << q0[is];
+        }fout_q0 << std::endl;
+    }
+
+    if(fout_u0){
+        fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << temp;
+        for(is = 0; is < ns; is++){
+            fout_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];
+        }fout_u0 << std::endl;
+    }
+
+    if(fout_u_tensor){
+        fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << temp;
+        for(is = 0; is < 9; is++){
+            fout_u_tensor << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[is/3][is%3];
+        }fout_u_tensor << std::endl;
+    }
+
+}
+
+
 void Scph::write_stepresfile_header_atT(std::ofstream &fout_step_q0,
                                         std::ofstream &fout_step_u0,
                                         std::ofstream &fout_step_u_tensor,
@@ -9796,9 +9725,9 @@ void Scph::write_stepresfile_header_atT(std::ofstream &fout_step_q0,
 
 }
 
-void Scph::write_stepresfile(double *q0,
-                             double **u_tensor,
-                             double *u0,
+void Scph::write_stepresfile(const double * const q0,
+                             const double * const* const u_tensor,
+                             const double * const u0,
                              const int i_str_loop,
                              std::ofstream &fout_step_q0,
                              std::ofstream &fout_step_u0,
@@ -9816,7 +9745,6 @@ void Scph::write_stepresfile(double *q0,
     }
 
     if(fout_step_u0){
-        calculate_u0(q0, u0);
         fout_step_u0 << std::setw(6) << i_str_loop;
         for(is = 0; is < ns; is++){
             fout_step_u0 << std::scientific << std::setw(15) << std::setprecision(6) << u0[is];

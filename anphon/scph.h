@@ -521,14 +521,22 @@ private:
                               std::ofstream &fout_u0,
                               std::ofstream &fout_u_tensor);
 
+    void write_resfile_atT(const double * const q0,
+                           const double * const* const u_tensor,
+                           const double * const u0,
+                           const double temperature,
+                           std::ofstream &fout_q0,
+                           std::ofstream &fout_u0,
+                           std::ofstream &fout_u_tensor);
+
     void write_stepresfile_header_atT(std::ofstream &fout_step_q0,
                                       std::ofstream &fout_step_u0,
                                       std::ofstream &fout_step_u_tensor,
                                       const double temp);
     
-    void write_stepresfile(double *q0,
-                           double **u_tensor,
-                           double *u0,
+    void write_stepresfile(const double * const q0,
+                           const double * const* const u_tensor,
+                           const double * const u0,
                            const int i_str_loop,
                            std::ofstream &fout_step_q0,
                            std::ofstream &fout_step_u0,
