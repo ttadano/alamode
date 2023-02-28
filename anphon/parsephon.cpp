@@ -387,6 +387,7 @@ void Input::parse_scph_vars()
 
     auto file_dymat = this->job_title + ".scph_dymat";
     auto file_harm_dymat = this->job_title + ".renorm_harm_dymat";
+    auto file_v0 = this->job_title + ".V0";
 
     // Default values
 
@@ -480,6 +481,7 @@ void Input::parse_scph_vars()
     // if file_dymat exists in the current directory,
     // restart mode will be automatically turned on for SCPH calculations.
     bool restart_scph = false;
+    // chech dynamical matrix files
     if(relax_coordinate == 0){
         restart_scph = stat(file_dymat.c_str(), &st) == 0;
     }
@@ -489,6 +491,11 @@ void Input::parse_scph_vars()
     else{
         restart_scph = stat(file_harm_dymat.c_str(), &st) == 0;
     }
+    // check V0 file
+    if(relax_coordinate != 0){
+        restart_scph = restart_scph & (stat(file_v0.c_str(), &st) == 0);
+    }
+
     assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];

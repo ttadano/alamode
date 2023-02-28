@@ -194,9 +194,13 @@ void Scph::exec_scph()
 
     allocate(delta_dymat_scph, NT, ns, ns, kmesh_coarse->nk);
     allocate(delta_harmonic_dymat_renormalize, NT, ns, ns, kmesh_coarse->nk);
+    allocate(V0, NT);
 
     // if(!relax_coordinate){
         zerofill_harmonic_dymat_renormalize(delta_harmonic_dymat_renormalize, NT);
+        for(int iT = 0; iT < NT; iT++){
+            V0[iT] = 0.0;
+        }
     //}
 
     if(relax_coordinate != 0 && thermodynamics->calc_FE_bubble){
@@ -210,8 +214,10 @@ void Scph::exec_scph()
 
     if (restart_scph) {
 
-        std::cout << " RESTART_SCPH is true." << std::endl;
-        std::cout << " Dynamical matrix is read from file ...";
+        if(mympi->my_rank == 0){
+            std::cout << " RESTART_SCPH is true." << std::endl;
+            std::cout << " Dynamical matrix is read from file ...";
+        }
 
         // Read anharmonic correction to the dynamical matrix from the existing file
         // SCPH calculation, no structural optimization
@@ -227,6 +233,11 @@ void Scph::exec_scph()
         else/* if(relax_coordinate < 0) */{
             load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".renorm_harm_dymat");
             load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+        }
+
+        // structural optimization
+        if(relax_coordinate != 0){
+            load_V0_from_file(V0);
         }
 
     } else {
@@ -261,6 +272,7 @@ void Scph::exec_scph()
             // write renormalized harmonic dynamical matrix when the crystal structure is optimized
             if(relax_coordinate != 0){
                 store_scph_dymat_to_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+                store_V0_to_file(V0);
             }
             write_anharmonic_correction_fc2(delta_dymat_scph, NT);
         }
@@ -874,6 +886,81 @@ void Scph::store_scph_dymat_to_file(const std::complex<double> *const *const *co
     std::cout << " : Anharmonic dynamical matrix (restart file)" << std::endl;
 }
 
+
+void Scph::load_V0_from_file(double *V0)
+{
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+    if (mympi->my_rank == 0) {
+
+        std::vector<double> Temp_array(NT);
+        double temp;
+
+        for (int i = 0; i < NT; ++i) {
+            Temp_array[i] = Tmin + dT * static_cast<double>(i);
+        }
+
+        std::ifstream ifs_v0;
+        auto file_v0 = input->job_title + ".V0";
+        ifs_v0.open(file_v0.c_str(), std::ios::in);
+
+        if (!ifs_v0) {
+            exit("load_V0_from_file",
+                "Cannot open V0 file.");
+        }
+
+        for(int iT = 0; iT < NT; iT++){
+            ifs_v0 >> temp >> V0[iT];
+
+            if(std::fabs(temp - Temp_array[iT]) > eps6){
+                exit("load_V0_from_file",
+                    "Temperature grid is not consistent.");
+            }
+        }
+
+        ifs_v0.close();
+    }
+    MPI_Bcast(V0, NT, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+}
+
+void Scph::store_V0_to_file(const double *const V0)
+{
+    const auto Tmin = system->Tmin;
+    const auto Tmax = system->Tmax;
+    const auto dT = system->dT;
+
+    const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    std::vector<double> Temp_array(NT);
+
+    for (int i = 0; i < NT; ++i) {
+        Temp_array[i] = Tmin + dT * static_cast<double>(i);
+    }
+
+    std::ofstream ofs_v0;
+    auto file_v0 = input->job_title + ".V0";
+
+    ofs_v0.open(file_v0.c_str(), std::ios::out);
+
+    if (!ofs_v0) {
+        exit("store_V0_to_file",
+             "Cannot open V0 file");
+    }
+
+    for (int i = 0; i < NT; i++) {
+        ofs_v0 << std::scientific << std::setprecision(15);
+        ofs_v0 << std::setw(30) << Temp_array[i] << std::setw(30) << V0[i] << std::endl;
+    }
+
+    ofs_v0.close();
+
+    std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_v0;
+    std::cout << " : Renormalized static potential V0 (restart file)" << std::endl;
+
+}
 void Scph::zerofill_harmonic_dymat_renormalize(std::complex<double> ****delta_harmonic_dymat_renormalize, 
                                                unsigned int NT)
 {
@@ -1118,10 +1205,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     std::vector<double> vec_temp;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    if(V0){
-        deallocate(V0);
-    }
-    allocate(V0, NT);
 
     // Compute matrix element of 4-phonon interaction
 
@@ -1745,10 +1828,6 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     std::vector<double> vec_temp;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    if(V0){
-        deallocate(V0);
-    }
-    allocate(V0, NT);
 
     allocate(v1_array_QHA, ns);
 
@@ -2471,10 +2550,6 @@ void Scph::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
     std::vector<double> vec_temp;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-    if(V0){
-        deallocate(V0);
-    }
-    allocate(V0, NT);
 
     MatrixXcd elastic_mat_tmp(ns-3 + 6, ns-3 + 6); // optical phonons + independent strain
     VectorXcd q0_umn(ns-3 + 6), del_Fvib_q0_umn(ns-3 + 6); 

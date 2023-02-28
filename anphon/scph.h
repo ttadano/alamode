@@ -157,6 +157,10 @@ private:
     void store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in,
                                     std::string);
 
+    void load_V0_from_file(double *);
+
+    void store_V0_to_file(const double *const);
+
     void zerofill_harmonic_dymat_renormalize(std::complex<double> ****, 
                                             unsigned int);
                                                 
