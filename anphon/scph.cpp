@@ -2506,22 +2506,13 @@ void Scph::exec_perturbative_QHA()
     }
     
     // compute IFC renormalization by strain
-    std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl;
-
-    std::cout << "  1st order derivatives of 1st-order IFCs (from harmonic IFCs) ... ";
     allocate(del_v1_strain_from_harmonic, 9, ns);
-    compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
-    std::cout << "done!" << std::endl;
-    timer->print_elapsed();
-
-    std::cout << "  1st order derivatives of harmonic IFCs (from cubic IFCs) ... ";
     allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
-    compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
-    // calculate del_v2_strain_from_cubic by finite difference method in terms of strain
-    // calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
-    //                                                         del_v2_strain_from_cubic);
-    std::cout << "done!" << std::endl;
-    timer->print_elapsed();
+    compute_del_v_strain(del_v1_strain_from_harmonic,
+                         nullptr, nullptr,
+                         del_v2_strain_from_cubic,
+                         nullptr, nullptr,
+                         evec_harmonic, relax_coordinate);
 
     allocate(C1_array, 9);
     allocate(C2_array, 9, 9);
@@ -2559,9 +2550,10 @@ void Scph::exec_perturbative_QHA()
             }
         }
 
-        // read elastic constants
-        read_C1_array(C1_array);
-        read_elastic_constants(C2_array, C3_array);
+        // set elastic constants
+        set_elastic_constants(C1_array,
+                              C2_array,
+                              C3_array);
 
         // Output files of structural optimization
         std::ofstream fout_q0;
@@ -2791,7 +2783,7 @@ void Scph::set_elastic_constants(double *C1_array,
     
     // if the shape of the unit cell is relaxed,
     // read elastic constants from file
-    if(relax_coordinate == 2 || relax_coordinate == -1){
+    if(relax_coordinate == 2 || relax_coordinate == -1 || relax_coordinate == -2){
         read_C1_array(C1_array);
         read_elastic_constants(C2_array, C3_array);
     }
@@ -4085,6 +4077,53 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_strain_from_harmon
         std::cout << "  first-order derivatives of cubic IFCs (from quartic IFCs) ... ";
         compute_del_v3_strain_from_quartic(del_v3_strain_from_quartic, evec_harmonic);
         std::cout << "  done!" << std::endl; 
+        timer->print_elapsed();
+    }
+    // relax_coordinate == -2 : calculate lowest-order linear equation of QHA.
+    else if(relax_coordinate == -2){
+        std::cout << "Calculate derivatives of k-space IFCs by strain." << std::endl;
+
+        // 1st-order derivative of 1st-order IFCs
+        if(renorm_2to1st == 0){
+            std::cout << "  first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
+            compute_del_v1_strain_from_harmonic(del_v1_strain_from_harmonic, evec_harmonic);
+        }
+        else if(renorm_2to1st == 1){
+            std::cout << "  first-order derivatives of first-order IFCs (finite difference method) ... ";
+            calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(del_v1_strain_from_harmonic, evec_harmonic);
+        }
+        else if(renorm_2to1st == 2){
+            std::cout << "  first-order derivatives of first-order IFCs (set as zero) ... ";
+            for(i1 = 0; i1 < 9; i1++){
+                for(is1 = 0; is1 < ns; is1++){
+                    del_v1_strain_from_harmonic[i1][is1] = complex_zero;
+                }
+            }
+        }
+        std::cout << "  done!" << std::endl;
+        timer->print_elapsed();
+
+        // 1st-order derivatives of harmonic IFCs
+        if(renorm_3to2nd == 0){
+            std::cout << "  first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
+            compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
+        }
+        else if(renorm_3to2nd == 1){
+            std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method) ... ";
+            calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
+        }
+        else if(renorm_3to2nd == 2){
+            std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
+            std::cout << "  (finite displacement method for cubic material with O_h point group) ... ";
+            calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
+                                                                del_v2_strain_from_cubic);
+        }
+        else if(renorm_3to2nd == 3){
+            std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
+            std::cout << "  (read from file in k-space representation) ... ";
+            read_del_v2_strain_from_cubic_in_kspace(evec_harmonic, del_v2_strain_from_cubic);
+        }
+        std::cout << "  done!" << std::endl;
         timer->print_elapsed();
     }
 
