@@ -1265,13 +1265,13 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
         fout_step_q0.open("step_q0.txt");
         fout_step_u0.open("step_u0.txt");
-        fout_q0.open("q0.txt");
-        fout_u0.open("u0.txt");
+        fout_q0.open(input->job_title + ".normal_disp");
+        fout_u0.open(input->job_title + ".atom_disp");
         
         // if the unit cell is relaxed
         if(relax_coordinate == 2){
             fout_step_u_tensor.open("step_u_tensor.txt");
-            fout_u_tensor.open("u_tensor.txt");
+            fout_u_tensor.open(input->job_title + ".umn_tensor");
         }
 
         write_resfile_header(fout_q0,
@@ -1907,15 +1907,15 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         std::ofstream fout_step_u0;
         fout_step_u0.open("step_u0.txt");
         std::ofstream fout_q0;
-        fout_q0.open("q0.txt");
+        fout_q0.open(input->job_title + ".normal_disp");
         std::ofstream fout_u0;
-        fout_u0.open("u0.txt");
-
+        fout_u0.open(input->job_title + ".atom_disp");
+        
         // cell optimization
         std::ofstream fout_step_u_tensor;
         fout_step_u_tensor.open("step_u_tensor.txt");
         std::ofstream fout_u_tensor;
-        fout_u_tensor.open("u_tensor.txt");
+        fout_u_tensor.open(input->job_title + ".umn_tensor");
 
         write_resfile_header(fout_q0,
                              fout_u0,
@@ -2565,24 +2565,24 @@ void Scph::exec_perturbative_QHA()
 
         // Output files of structural optimization
         std::ofstream fout_q0;
-        fout_q0.open("q0.txt");
+        fout_q0.open(input->job_title + ".normal_disp");
         std::ofstream fout_u0;
-        fout_u0.open("u0.txt");
+        fout_u0.open(input->job_title + ".atom_disp");
         std::ofstream fout_v0;
         fout_v0.open("v0.txt");
 
         // cell optimization
         std::ofstream fout_u_tensor;
-        fout_u_tensor.open("u_tensor.txt");
+        fout_u_tensor.open(input->job_title + ".umn_tensor");
 
-        // q0.txt
+        // atomic displacement (normal coordinate)
         fout_q0 << "#";
         fout_q0 << std::setw(14) << "temp [K]";
         for(is1 = 0; is1 < ns; is1++){
             fout_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
         }fout_q0 << std::endl;
 
-        // u0.txt
+        // atomic displacement
         fout_u0 << "#";
         fout_u0 << std::setw(14) << "temp [K]";
         for(iat1 = 0; iat1 < system->natmin; iat1++){
@@ -2592,7 +2592,7 @@ void Scph::exec_perturbative_QHA()
             }
         }fout_u0 << std::endl;
 
-        // u_tensor.txt
+        // strain
         fout_u_tensor << "#";
         fout_u_tensor << std::setw(14) << "temp [K]";
         for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
@@ -9683,14 +9683,14 @@ void Scph::write_resfile_header(std::ofstream &fout_q0,
     int is1, iat1, ixyz1, ixyz2;
     std::string str_tmp, str_tmp2;
     
-    // q0.txt
+    // atomic displacement (normal coordinate)
     fout_q0 << "#";
     fout_q0 << std::setw(14) << "temp [K]";
     for(is1 = 0; is1 < ns; is1++){
         fout_q0 << std::setw(15) << ("q_{" +  std::to_string(is1) + "}");
     }fout_q0 << std::endl;
 
-    // u0.txt
+    // atomic displacement
     fout_u0 << "#";
     fout_u0 << std::setw(14) << "temp [K]";
     for(iat1 = 0; iat1 < system->natmin; iat1++){
