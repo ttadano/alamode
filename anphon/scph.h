@@ -168,7 +168,8 @@ private:
     void exec_QHA_relax_main(std::complex<double> ****,
                              std::complex<double> ****);
 
-    void exec_perturbative_QHA();
+    void exec_perturbative_QHA(std::complex<double> ****,
+                               std::complex<double> ****);
 
     void read_C1_array(double * const);
 

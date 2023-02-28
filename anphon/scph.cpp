@@ -249,7 +249,7 @@ void Scph::exec_scph()
             exec_QHA_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
         else if(relax_coordinate == -2){
-            exec_perturbative_QHA();
+            exec_perturbative_QHA(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
 
         if (mympi->my_rank == 0) {
@@ -2405,7 +2405,8 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 }
 
 
-void Scph::exec_perturbative_QHA()
+void Scph::exec_perturbative_QHA(std::complex<double> ****dymat_anharm, 
+                                 std::complex<double> ****delta_harmonic_dymat_renormalize)
 {    
     using namespace Eigen;
 
@@ -2423,9 +2424,16 @@ void Scph::exec_perturbative_QHA()
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
-    // original IFCs
-    std::complex<double> *v1_array_original;
-    std::complex<double> ***v3_array_original;
+
+    std::complex<double> **delta_v2_array_renormalize;
+    std::complex<double> **delta_v2_array_with_strain;
+    // IFC-renormalized harmonic phonon
+    double ***omega2_harm_renormalize;
+    std::complex<double> ***evec_harm_renormalize_tmp;
+    // original and renormalized IFCs
+    std::complex<double> *v1_array_original, *v1_array_renormalized, *v1_array_with_strain;
+    std::complex<double> ***v3_array_original; // We fix cubic IFCs in perturbative QHA.
+    std::complex<double> ***v4_array_dummy; // We set quartic IFCs as zero.
 
     // elastic constants
     double *C1_array;
@@ -2437,8 +2445,17 @@ void Scph::exec_perturbative_QHA()
 
     // IFC renormalization from strain
     std::complex<double> **del_v1_strain_from_harmonic;
+    std::complex<double> **del_v1_strain_from_cubic;
+    std::complex<double> **del_v1_strain_from_quartic_dummy;
+
     std::complex<double> ***del_v2_strain_from_cubic;
+    std::complex<double> ***del_v2_strain_from_quartic_dummy;
+    std::complex<double> ****del_v3_strain_from_quartic_dummy;
+
     std::complex<double> *del_v0_strain_vib;
+
+    // IFC renormalization
+    double v0_with_strain, v0_renormalized;
 
     int i_temp_loop;
     std::vector<int> harm_optical_modes(ns-3);
@@ -2454,19 +2471,44 @@ void Scph::exec_perturbative_QHA()
     std::vector<double> vec_temp;
 
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+    if(V0){
+        deallocate(V0);
+    }
+    allocate(V0, NT);
 
     MatrixXcd elastic_mat_tmp(ns-3 + 6, ns-3 + 6); // optical phonons + independent strain
     VectorXcd q0_umn(ns-3 + 6), del_Fvib_q0_umn(ns-3 + 6); 
 
-    allocate(v1_array_vib, ns);
     allocate(del_v0_strain_vib, 9);
 
+    allocate(v1_array_vib, ns);
     allocate(v1_array_original, ns);
+    allocate(v1_array_with_strain, ns);
+    allocate(v1_array_renormalized, ns);
+
+    allocate(omega2_harm_renormalize, NT, nk, ns);
+    allocate(evec_harm_renormalize_tmp, nk, ns, ns);   
+    allocate(delta_v2_array_renormalize, nk_interpolate, ns*ns);
+    allocate(delta_v2_array_with_strain, nk_interpolate, ns*ns);
+
+
     allocate(q0, ns);
     allocate(u0, ns);
 
     allocate(u_tensor, 3, 3);
     allocate(eta_tensor, 3, 3);
+
+    allocate(v4_array_dummy, nk_irred_interpolate * kmesh_dense->nk,
+             ns * ns, ns * ns);
+
+    for(ik1 = 0; ik1 < nk_irred_interpolate * kmesh_dense->nk; ik1++){
+        for(is1 = 0; is1 < ns * ns; is1++){
+            for(is2 = 0; is2 < ns * ns; is2++){
+                v4_array_dummy[ik1][is1][is2] = complex_zero;
+            }
+        }
+    }
+
 
     allocate(v3_array_original, nk, ns, ns * ns);
 
@@ -2481,12 +2523,42 @@ void Scph::exec_perturbative_QHA()
     
     // compute IFC renormalization by strain
     allocate(del_v1_strain_from_harmonic, 9, ns);
+    allocate(del_v1_strain_from_cubic, 81, ns);
     allocate(del_v2_strain_from_cubic, 9, nk, ns*ns);
+
+    allocate(del_v1_strain_from_quartic_dummy, 729, ns);
+    allocate(del_v2_strain_from_quartic_dummy, 81, nk, ns*ns);
+    allocate(del_v3_strain_from_quartic_dummy, 9, nk, ns, ns*ns);
+
     compute_del_v_strain(del_v1_strain_from_harmonic,
-                         nullptr, nullptr,
+                         del_v1_strain_from_cubic, nullptr,
                          del_v2_strain_from_cubic,
                          nullptr, nullptr,
                          evec_harmonic, relax_coordinate);
+    
+    // set dummy variables as zero.
+    // These are used for the preparation for the postprocess
+    for(ixyz1 = 0; ixyz1 < 729; ixyz1++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_quartic_dummy[ixyz1][is1] = complex_zero;
+        }
+    }
+    for(ixyz1 = 0; ixyz1 < 81; ixyz1++){
+        for(ik1 = 0; ik1 < nk; ik1++){
+            for(is1 = 0; is1 < ns*ns; is1++){
+                del_v2_strain_from_quartic_dummy[ixyz1][ik1][is1] = complex_zero;
+            }
+        }
+    }
+    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(ik1 = 0; ik1 < nk; ik1++){
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns*ns; is2++){
+                    del_v3_strain_from_quartic_dummy[ixyz1][ik1][is1][is2] = complex_zero;
+                }
+            }
+        }
+    }
 
     allocate(C1_array, 9);
     allocate(C2_array, 9, 9);
@@ -2646,6 +2718,58 @@ void Scph::exec_perturbative_QHA()
             calculate_u0(q0, u0);
 
             write_resfile_atT(q0, u_tensor, u0, temp, fout_q0, fout_u0, fout_u_tensor);
+
+            // calculate renormalized IFCs
+            // This is for postprocess
+
+            // renormalization by strain
+            calculate_eta_tensor(eta_tensor, u_tensor);
+            renormalize_v0_from_strain(v0_with_strain, 0.0, eta_tensor, C1_array, C2_array, C3_array, u_tensor, 0.0);
+
+            renormalize_v1_array_from_strain(v1_array_with_strain, 
+                                             v1_array_original,
+                                             del_v1_strain_from_harmonic, 
+                                             del_v1_strain_from_cubic, 
+                                             del_v1_strain_from_quartic_dummy, 
+                                             u_tensor);
+                        
+            renormalize_v2_array_from_strain(delta_v2_array_with_strain, del_v2_strain_from_cubic, del_v2_strain_from_quartic_dummy, u_tensor);
+            
+            // We fix cubic IFCs in the lowest-order QHA.
+            // renormalize_v3_array_from_strain(v3_array_with_strain, v3_array_original, del_v3_strain_from_quartic, u_tensor);
+            
+            // renormalization by displacements
+            renormalize_v1_array(v1_array_renormalized, v1_array_with_strain, delta_v2_array_with_strain, v3_array_original, v4_array_dummy, q0);
+
+            renormalize_v2_array(delta_v2_array_renormalize, delta_v2_array_with_strain, v3_array_original, v4_array_dummy, q0);
+
+            // We fix cubic IFCs in the lowest-order QHA.
+            // renormalize_v3_array(v3_array_renormalized, v3_array_with_strain, v4_array_with_strain, q0);
+
+            renormalize_v0(v0_renormalized, v0_with_strain, v1_array_with_strain, delta_v2_array_with_strain, v3_array_original, v4_array_dummy, q0);
+
+            // copy v0_renormalized to V0 to use in the post process.
+            V0[iT] = v0_renormalized;
+
+            // calculate renormalizations of harmonic IFCs 
+            // and store them in delta_harmonic_dymat_renormalize
+            compute_renormalized_harmonic_frequency(omega2_harm_renormalize[iT],
+                                        evec_harm_renormalize_tmp,
+                                        delta_v2_array_renormalize,
+                                        writes->getVerbosity());
+
+            calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
+                                    omega2_harm_renormalize[iT],
+                                    evec_harm_renormalize_tmp);
+
+            // copy delta_harmonic_dymat_renormalize to dymat_anharm
+            for(is1 = 0; is1 < ns; is1++){
+                for(is2 = 0; is2 < ns; is2++){
+                    for(ik = 0; ik < kmesh_coarse->nk; ik++){
+                        dymat_anharm[iT][is1][is2][ik] = delta_harmonic_dymat_renormalize[iT][is1][is2][ik];
+                    }
+                }
+            }
         }
 
         fout_q0.close();
@@ -2653,16 +2777,33 @@ void Scph::exec_perturbative_QHA()
         fout_u_tensor.close();
     }
 
-    deallocate(v1_array_vib);
     deallocate(del_v0_strain_vib);
+
+    deallocate(v1_array_vib);
     deallocate(v1_array_original);
+    deallocate(v1_array_with_strain);
+    deallocate(v1_array_renormalized);
+
+    deallocate(omega2_harm_renormalize);
+    deallocate(evec_harm_renormalize_tmp);
+    deallocate(delta_v2_array_renormalize);
+    deallocate(delta_v2_array_with_strain);
+
     deallocate(q0);
     deallocate(u0);
     deallocate(u_tensor);
     deallocate(eta_tensor);
+
+    deallocate(v4_array_dummy);
     deallocate(v3_array_original);
+
     deallocate(del_v1_strain_from_harmonic);
+    deallocate(del_v1_strain_from_cubic);
     deallocate(del_v2_strain_from_cubic);
+    deallocate(del_v1_strain_from_quartic_dummy);
+    deallocate(del_v2_strain_from_quartic_dummy);
+    deallocate(del_v3_strain_from_quartic_dummy);
+
     deallocate(C1_array);
     deallocate(C2_array);
     deallocate(C3_array);
@@ -3996,6 +4137,24 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_strain_from_harmon
         }
         std::cout << "  done!" << std::endl;
         timer->print_elapsed();
+
+        // 2nd and 3rd-order derivatives of 1st order IFCs
+        if(renorm_anharmto1st == 0){
+            std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
+            compute_del_v1_strain_from_cubic(del_v1_strain_from_cubic, evec_harmonic);
+            std::cout << "  done!" << std::endl;
+            timer->print_elapsed();
+        }
+        else if(renorm_anharmto1st == 1){
+            std::cout << "  second-order derivatives of first-order IFCs (set zero) ... ";
+            for(i1 = 0; i1 < 81; i1++){
+                for(is1 = 0; is1 < ns; is1++){
+                    del_v1_strain_from_cubic[i1][is1] = complex_zero;
+                }
+            }
+            std::cout << "  done!" << std::endl;
+            timer->print_elapsed();
+        }
 
         // 1st-order derivatives of harmonic IFCs
         if(renorm_3to2nd == 0){
