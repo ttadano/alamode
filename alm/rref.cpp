@@ -210,7 +210,7 @@ void rref_sparse(const size_t ncols,
                 if (it_other != sp_constraint[jrow].end()) {
                     it_other->second -= scaling_factor * it_now.second;
                     // Delete zero elements and remove from map. 
-                    // A smaller threshould is used for better stability.
+                    // A smaller threshold is used for better stability.
                     if (std::abs(it_other->second) < zero_criterion) {
                         sp_constraint[jrow].erase(it_other);
                     }
@@ -220,7 +220,7 @@ void rref_sparse(const size_t ncols,
             }
             // Make sure to erase the icol element from the target row if it exists.
             // When the original pivot element is large, the element after subtraction can sometimes be 
-            // larger than the tolerance value because of the loss of significant digis.
+            // larger than the tolerance value because of the loss of significant digits.
             it_other = sp_constraint[jrow].find(icol);
             if (it_other != sp_constraint[jrow].end()) {
                 sp_constraint[jrow].erase(it_other);
