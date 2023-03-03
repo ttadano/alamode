@@ -1157,7 +1157,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
 
             // Anharmonic cases
 
-            auto intlist(cluster->get_interaction_pair(order, i));
+            auto intlist(cluster->get_atoms_in_cutoff(order, i));
             std::sort(intlist.begin(), intlist.end());
 
             data_vec.clear();
@@ -1420,7 +1420,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
             // Anharmonic cases
 
-            auto intlist(cluster->get_interaction_pair(order, i));
+            auto intlist(cluster->get_atoms_in_cutoff(order, i));
             std::sort(intlist.begin(), intlist.end());
 
             data_vec.clear();
@@ -1888,7 +1888,7 @@ void Constraint::set_rotation_constraints(const std::unique_ptr<System> &system,
 
         if (order == 0) {
 
-            auto interaction_list_now(cluster->get_interaction_pair(order, i));
+            auto interaction_list_now(cluster->get_atoms_in_cutoff(order, i));
             std::sort(interaction_list_now.begin(), interaction_list_now.end());
 
             // Special treatment for harmonic force constants
@@ -1977,8 +1977,8 @@ void Constraint::set_rotation_constraints(const std::unique_ptr<System> &system,
 
             // Constraint between different orders
 
-            auto interaction_list_now(cluster->get_interaction_pair(order, i));
-            auto interaction_list_old(cluster->get_interaction_pair(order - 1, i));
+            auto interaction_list_now(cluster->get_atoms_in_cutoff(order, i));
+            auto interaction_list_old(cluster->get_atoms_in_cutoff(order - 1, i));
             std::sort(interaction_list_now.begin(), interaction_list_now.end());
             std::sort(interaction_list_old.begin(), interaction_list_old.end());
 
@@ -2274,7 +2274,7 @@ void Constraint::set_rotation_constraints_extra(const std::unique_ptr<System> &s
 
         interaction_atom[0] = iat;
 
-        auto interaction_list_now(cluster->get_interaction_pair(order, i));
+        auto interaction_list_now(cluster->get_atoms_in_cutoff(order, i));
         std::sort(interaction_list_now.begin(), interaction_list_now.end());
 
         for (icrd = 0; icrd < 3; ++icrd) {

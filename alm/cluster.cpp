@@ -14,12 +14,14 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "symmetry.h"
 #include "system.h"
 #include "timer.h"
+#include "error.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>
 #include <algorithm>
 #include <set>
 #include <cmath>
+#include <numeric>
 
 using namespace ALM_NS;
 
@@ -52,21 +54,6 @@ void Cluster::init(const std::unique_ptr<System> &system,
         std::cout << " =============\n\n";
     }
 
-    if (distall) {
-        deallocate(distall);
-    }
-    allocate(distall, nat, nat);
-
-    if (mindist_pairs) {
-        deallocate(mindist_pairs);
-    }
-    allocate(mindist_pairs, nat, nat);
-
-    if (interaction_pair) {
-        deallocate(interaction_pair);
-    }
-    allocate(interaction_pair, maxorder, symmetry->get_nat_prim());
-
     if (interaction_cluster) {
         deallocate(interaction_cluster);
     }
@@ -98,13 +85,13 @@ void Cluster::init(const std::unique_ptr<System> &system,
     get_pairs_of_minimum_distance(nat,
                                   system->get_x_image(),
                                   system->get_exist_image(),
-                                  distall,
-                                  mindist_pairs);
+                                  distance_table);
 
     set_interaction_by_cutoff(system->get_supercell().number_of_atoms,
                               system->get_supercell().kind,
                               symmetry->get_nat_prim(),
-                              symmetry->get_map_trueprim_to_super());
+                              symmetry->get_map_trueprim_to_super(),
+                              atoms_in_cutoff);
 
     calc_interaction_clusters(symmetry->get_nat_prim(),
                               system->get_supercell().kind,
@@ -165,7 +152,7 @@ void Cluster::init(const std::unique_ptr<System> &system,
                                       symmetry->get_map_trueprim_to_super(),
                                       system->get_supercell().kind,
                                       system->get_kdname(),
-                                      interaction_pair);
+                                      atoms_in_cutoff);
     }
 
     if (verbosity > 0) {
@@ -526,10 +513,7 @@ void Cluster::set_default_variables()
     maxorder = 0;
     nbody_include = nullptr;
     cutoff_radii = nullptr;
-    distall = nullptr;
-    mindist_pairs = nullptr;
     cluster_list = nullptr;
-    interaction_pair = nullptr;
     interaction_cluster = nullptr;
 }
 
@@ -547,21 +531,14 @@ void Cluster::deallocate_variables()
         deallocate(cluster_list);
         cluster_list = nullptr;
     }
-    if (mindist_pairs) {
-        deallocate(mindist_pairs);
-        mindist_pairs = nullptr;
-    }
-    if (interaction_pair) {
-        deallocate(interaction_pair);
-        interaction_pair = nullptr;
-    }
+    distance_table.clear();
+    distance_table.shrink_to_fit();
+
+    atoms_in_cutoff.clear();
+    atoms_in_cutoff.shrink_to_fit();
     if (interaction_cluster) {
         deallocate(interaction_cluster);
         interaction_cluster = nullptr;
-    }
-    if (distall) {
-        deallocate(distall);
-        distall = nullptr;
     }
 }
 
@@ -574,43 +551,38 @@ double Cluster::distance(const Eigen::MatrixXd &x1,
 void Cluster::get_pairs_of_minimum_distance(const size_t nat,
                                             const std::vector<Eigen::MatrixXd> &xc_in,
                                             const int *exist,
-                                            std::vector<DistInfo> **distall_out,
-                                            std::vector<DistInfo> **mindist_pairs_out) const
+                                            std::vector<std::vector<PairDistances>> &dist_test_out) const
 {
     size_t i, j;
-    double vec[3];
+    int ij;
+    const auto nat2 = nat * nat;
 
-    for (i = 0; i < nat; ++i) {
-        for (j = 0; j < nat; ++j) {
+    dist_test_out.resize(nat, std::vector<PairDistances>(nat));
 
-            distall_out[i][j].clear();
+#pragma omp parallel
+    {
+        std::vector<int> cells;
+        std::vector<double> distances;
+        std::vector<Eigen::Vector3d> relative_vectors;
+
+#pragma omp for private(i, j)
+        for (ij = 0; ij < nat2; ++ij) {
+            i = ij / nat;
+            j = ij % nat;
+            cells.clear();
+            distances.clear();
+            relative_vectors.clear();
 
             for (auto icell = 0; icell < 27; ++icell) {
                 if (exist[icell]) {
-                    const auto dist_tmp = distance(xc_in[0].row(i), xc_in[icell].row(j));
-
-                    for (auto k = 0; k < 3; ++k) vec[k] = xc_in[icell](j, k) - xc_in[0](i, k);
-
-                    distall_out[i][j].emplace_back(DistInfo(icell, dist_tmp, vec));
+                    cells.emplace_back(icell);
+                    distances.emplace_back(distance(xc_in[0].row(i), xc_in[icell].row(j)));
+                    relative_vectors.emplace_back(xc_in[icell].row(j) - xc_in[0].row(i));
                 }
             }
-            std::sort(distall_out[i][j].begin(), distall_out[i][j].end());
-        }
-    }
-
-    // Construct pairs of minimum distance.
-    for (i = 0; i < nat; ++i) {
-        for (j = 0; j < nat; ++j) {
-            mindist_pairs_out[i][j].clear();
-            const auto dist_min = distall_out[i][j][0].dist;
-            for (const auto &it: distall_out[i][j]) {
-                // The tolerance below (1.e-3) should be chosen so that
-                // the mirror images with equal distances are found correctly.
-                // If this fails, the phonon dispersion would be incorrect.
-                if (std::abs(it.dist - dist_min) < 1.0e-3) {
-                    mindist_pairs_out[i][j].emplace_back(DistInfo(it));
-                }
-            }
+            dist_test_out[i][j] = PairDistances(cells,
+                                                distances,
+                                                relative_vectors);
         }
     }
 }
@@ -628,19 +600,38 @@ void Cluster::print_neighborlist(const size_t nat,
     int iat;
     int icount;
 
-    std::vector<DistList> *neighborlist;
+    std::vector<std::vector<double>> distances;
+    std::vector<std::vector<int>> atoms;
 
-    allocate(neighborlist, natmin);
+    std::vector<double> dists_tmp;
+    std::vector<int> atoms_tmp;
+    std::vector<int> indices(nat);
+
+    distances.resize(natmin, std::vector<double>(nat));
+    atoms.resize(natmin, std::vector<int>(nat));
 
     for (i = 0; i < natmin; ++i) {
-        neighborlist[i].clear();
-
         iat = map_p2s[i][0];
+        dists_tmp.clear();
+        atoms_tmp.clear();
+
+        std::iota(indices.begin(), indices.end(), 0);
 
         for (j = 0; j < nat; ++j) {
-            neighborlist[i].emplace_back(DistList(j, mindist_pairs[iat][j][0].dist));
+            atoms_tmp.emplace_back(j);
+            dists_tmp.emplace_back(distance_table[iat][j].distances[0]);
         }
-        std::sort(neighborlist[i].begin(), neighborlist[i].end());
+        std::sort(indices.begin(), indices.end(),
+                  [&dists_tmp, &atoms_tmp](int left, int right)-> bool {
+            if (std::abs(dists_tmp[left] - dists_tmp[right]) > 1.0e-3) {
+                return dists_tmp[left] < dists_tmp[right];
+            }
+            return atoms_tmp[left] < atoms_tmp[right];
+        });
+        for (j = 0; j < nat; ++j) {
+            distances[i][j] = dists_tmp[indices[j]];
+            atoms[i][j] = atoms_tmp[indices[j]];
+        }
     }
 
     std::cout << std::endl;
@@ -663,9 +654,9 @@ void Cluster::print_neighborlist(const size_t nat,
 
         for (j = 0; j < nat; ++j) {
 
-            if (neighborlist[i][j].dist < eps8) continue; // distance is zero
+            if (distances[i][j] < eps8) continue; // distance is zero
 
-            if (std::abs(neighborlist[i][j].dist - dist_tmp) > eps6) {
+            if (std::abs(distances[i][j] - dist_tmp) > 1.0e-3) {
 
                 if (!atomlist.empty()) {
                     nthnearest += 1;
@@ -692,12 +683,11 @@ void Cluster::print_neighborlist(const size_t nat,
                     std::cout << std::endl;
                 }
 
-
-                dist_tmp = neighborlist[i][j].dist;
+                dist_tmp = distances[i][j];
                 atomlist.clear();
-                atomlist.push_back(neighborlist[i][j].atom);
+                atomlist.push_back(atoms[i][j]);
             } else {
-                atomlist.push_back(neighborlist[i][j].atom);
+                atomlist.push_back(atoms[i][j]);
             }
         }
         if (!atomlist.empty()) {
@@ -727,7 +717,6 @@ void Cluster::print_neighborlist(const size_t nat,
         std::cout << std::endl;
     }
     atomlist.clear();
-    deallocate(neighborlist);
 }
 
 
@@ -736,8 +725,10 @@ void Cluster::generate_interaction_information_by_cutoff(const size_t nat,
                                                          const std::vector<int> &kd,
                                                          const std::vector<std::vector<int>> &map_p2s,
                                                          const double *const *rc,
-                                                         std::vector<int> *interaction_list) const
+                                                         std::vector<std::vector<int>> &interaction_list) const
 {
+    interaction_list.resize(natmin);
+
     for (size_t i = 0; i < natmin; ++i) {
 
         interaction_list[i].clear();
@@ -754,7 +745,7 @@ void Cluster::generate_interaction_information_by_cutoff(const size_t nat,
                 // Cutoff 'None'
                 interaction_list[i].push_back(jat);
             } else {
-                if (mindist_pairs[iat][jat][0].dist <= cutoff_tmp) {
+                if (distance_table[iat][jat].distances[0] <= cutoff_tmp) {
                     interaction_list[i].push_back(jat);
                 }
             }
@@ -765,15 +756,17 @@ void Cluster::generate_interaction_information_by_cutoff(const size_t nat,
 void Cluster::set_interaction_by_cutoff(const size_t nat,
                                         const std::vector<int> &kd,
                                         const size_t nat_prim,
-                                        const std::vector<std::vector<int>> &map_p2s) const
+                                        const std::vector<std::vector<int>> &map_p2s,
+                                        std::vector<std::vector<std::vector<int>>> &interaction_pair_out) const
 {
+    interaction_pair_out.resize(maxorder);
     for (auto order = 0; order < maxorder; ++order) {
         generate_interaction_information_by_cutoff(nat,
                                                    nat_prim,
                                                    kd,
                                                    map_p2s,
                                                    cutoff_radii[order],
-                                                   interaction_pair[order]);
+                                                   interaction_pair_out[order]);
     }
 }
 
@@ -838,10 +831,16 @@ const std::set<IntList> &Cluster::get_cluster_list(const unsigned int order) con
     return cluster_list[order];
 }
 
-const std::vector<int> &Cluster::get_interaction_pair(const unsigned int order,
-                                                      const size_t atom_index) const
+const std::vector<int> &Cluster::get_atoms_in_cutoff(const unsigned int order,
+                                                     const size_t atom_index) const
 {
-    return interaction_pair[order][atom_index];
+    if (order >= atoms_in_cutoff.size()) {
+        exit("get_atoms_in_cutoff", "The first index is out of range.");
+    }
+    if (atom_index >= atoms_in_cutoff[0].size()) {
+        exit("get_atoms_in_cutoff", "The second index is out of range.");
+    }
+    return atoms_in_cutoff[order][atom_index];
 }
 
 const std::set<InteractionCluster> &Cluster::get_interaction_cluster(const unsigned int order,
@@ -854,7 +853,7 @@ void Cluster::print_interaction_information(const size_t natmin,
                                             const std::vector<std::vector<int>> &map_p2s,
                                             const std::vector<int> &kd,
                                             const std::vector<std::string> &kdname,
-                                            const std::vector<int> *const *interaction_list) const
+                                            const std::vector<std::vector<std::vector<int>>> &interaction_list) const
 {
     std::vector<int> intlist;
 
@@ -924,7 +923,7 @@ bool Cluster::is_incutoff(const int n,
             const auto cutoff_tmp = cutoff_radii[order][ikd][jkd];
 
             if (cutoff_tmp >= 0.0 &&
-                (mindist_pairs[iat][jat][0].dist > cutoff_tmp)) {
+                (distance_table[iat][jat].distances[0] > cutoff_tmp)) {
                 return false;
             }
         }
@@ -973,7 +972,7 @@ void Cluster::calc_interaction_clusters(const size_t natmin,
                                 natmin,
                                 kd,
                                 map_p2s,
-                                interaction_pair[order],
+                                atoms_in_cutoff[order],
                                 x_image,
                                 exist,
                                 mirror_image_conv,
@@ -987,7 +986,7 @@ void Cluster::set_interaction_cluster(const int order,
                                       const size_t natmin,
                                       const std::vector<int> &kd,
                                       const std::vector<std::vector<int>> &map_p2s,
-                                      const std::vector<int> *interaction_pair_in,
+                                      const std::vector<std::vector<int>> &interaction_pair_in,
                                       const std::vector<Eigen::MatrixXd> &x_image,
                                       const int *exist,
                                       const int mirror_image_conv,
@@ -1051,12 +1050,12 @@ void Cluster::set_interaction_cluster(const int order,
                 atom_tmp.clear();
                 atom_tmp.push_back(jat);
 
-                for (j = 0; j < mindist_pairs[iat][jat].size(); ++j) {
+                for (j = 0; j < distance_table[iat][jat].ncells_minimum_distance; ++j) {
                     cell_tmp.clear();
-                    cell_tmp.push_back(mindist_pairs[iat][jat][j].cell);
+                    cell_tmp.push_back(distance_table[iat][jat].cells[j]);
                     comb_cell_min.push_back(cell_tmp);
                 }
-                distmax = mindist_pairs[iat][jat][0].dist;
+                distmax = distance_table[iat][jat].distances[0];
                 interaction_cluster_out[i].insert(InteractionCluster(atom_tmp,
                                                                      comb_cell_min,
                                                                      distmax));
@@ -1122,11 +1121,9 @@ void Cluster::set_interaction_cluster(const int order,
                     // as a candidate for the cluster.
                     // The periodic images whose distance is larger than the minimum value
                     // of the distance(iat, jat) can be added to the cell_vector list.
-                    for (const auto &it: distall[iat][jat]) {
-                        if (exist[it.cell]) {
-                            if (rc_tmp < 0.0 || it.dist <= rc_tmp) {
-                                cell_vector.push_back(it.cell);
-                            }
+                    for (auto k = 0; k < distance_table[iat][jat].distances.size(); ++k) {
+                        if (rc_tmp < 0.0 || distance_table[iat][jat].distances[k] <= rc_tmp) {
+                            cell_vector.emplace_back(distance_table[iat][jat].cells[k]);
                         }
                     }
                     pairs_icell.push_back(cell_vector);
@@ -1192,8 +1189,8 @@ void Cluster::set_interaction_cluster(const int order,
                             jat = intpair_uniq[j];
                             cell_vector.clear();
 
-                            for (ii = 0; ii < mindist_pairs[iat][jat].size(); ++ii) {
-                                cell_vector.emplace_back(mindist_pairs[iat][jat][ii].cell);
+                            for (ii = 0; ii < distance_table[iat][jat].ncells_minimum_distance; ++ii) {
+                                cell_vector.emplace_back(distance_table[iat][jat].cells[ii]);
                             }
                             pairs_icell.emplace_back(cell_vector);
                         }
