@@ -85,7 +85,7 @@ void Fcs::init(const std::unique_ptr<Cluster> &cluster,
     for (i = 0; i < maxorder; ++i) {
         generate_force_constant_table(i,
                                       supercell.number_of_atoms,
-                                      cluster->get_cluster_list(i),
+                                      cluster->get_unique_clusters(i),
                                       symmetry,
                                       preferred_basis,
                                       fc_table[i],
@@ -390,7 +390,7 @@ void Fcs::get_constraint_symmetry(const size_t nat,
                          use_compatible);
 
     const auto nsym_in_use = rotation.size();
-    if (nsym_in_use == 0)  return;
+    if (nsym_in_use == 0) return;
 
     const_out.clear();
 
@@ -984,7 +984,7 @@ void Fcs::get_available_symmop(const size_t nat,
 
     if (basis == "Cartesian") {
 
-        for (const auto &it : symmetry->get_symmetry_data()) {
+        for (const auto &it: symmetry->get_symmetry_data()) {
             if (it.compatible_with_cartesian == use_compatible) {
                 rotation.emplace_back(it.rotation_cart);
                 isym_to_add.emplace_back(counter);
@@ -994,9 +994,9 @@ void Fcs::get_available_symmop(const size_t nat,
 
     } else if (basis == "Lattice") {
 
-        for (const auto &it : symmetry->get_symmetry_data()) {
+        for (const auto &it: symmetry->get_symmetry_data()) {
             if (it.compatible_with_lattice == use_compatible) {
-                rotation.emplace_back(it.rotation.unaryExpr([](const int x) {return static_cast<double>(x);}));
+                rotation.emplace_back(it.rotation.unaryExpr([](const int x) { return static_cast<double>(x); }));
                 isym_to_add.emplace_back(counter);
             }
             ++counter;
@@ -1025,7 +1025,7 @@ double Fcs::coef_sym(const int n,
     auto tmp = 1.0;
 
     for (auto i = 0; i < n; ++i) {
-        tmp *= rot(arr2[i],arr1[i]);
+        tmp *= rot(arr2[i], arr1[i]);
     }
     return tmp;
 }

@@ -59,11 +59,6 @@ void Cluster::init(const std::unique_ptr<System> &system,
     }
     allocate(interaction_cluster, maxorder, symmetry->get_nat_prim());
 
-    if (cluster_list) {
-        deallocate(cluster_list);
-    }
-    allocate(cluster_list, maxorder);
-
     // Default values of cutoof_radii and nbody_include
     if (!cutoff_radii) {
         allocate(cutoff_radii, maxorder, nkd, nkd);
@@ -100,9 +95,12 @@ void Cluster::init(const std::unique_ptr<System> &system,
                               system->get_exist_image(),
                               mirror_image_conv);
 
-    generate_pairs(symmetry->get_nat_prim(),
-                   symmetry->get_map_trueprim_to_super(),
-                   cluster_list);
+    unique_clusters.clear();
+    unique_clusters.resize(maxorder);
+
+    generate_unique_clusters(symmetry->get_nat_prim(),
+                             symmetry->get_map_trueprim_to_super(),
+                             unique_clusters);
 
     // check permutation symmetry of anharmonic IFC
     if (mirror_image_conv > 0) {
@@ -171,15 +169,15 @@ void Cluster::init(const std::unique_ptr<System> &system,
     timer->stop_clock("cluster");
 }
 
-void Cluster::generate_pairs(const size_t natmin,
-                             const std::vector<std::vector<int>> &map_p2s,
-                             std::set<IntList> *pair_out) const
+void Cluster::generate_unique_clusters(const size_t natmin,
+                                       const std::vector<std::vector<int>> &map_p2s,
+                                       std::vector<std::set<IntList>> &cluster_out) const
 {
     int *pair_tmp;
 
     for (auto order = 0; order < maxorder; ++order) {
 
-        pair_out[order].clear();
+        cluster_out[order].clear();
 
         allocate(pair_tmp, order + 2);
 
@@ -197,7 +195,7 @@ void Cluster::generate_pairs(const size_t natmin,
 
                 // Ignore many-body case
                 // if (!satisfy_nbody_rule(order + 2, pair_tmp, order)) continue;
-                pair_out[order].insert(IntList(order + 2, pair_tmp));
+                cluster_out[order].insert(IntList(order + 2, pair_tmp));
             }
         }
         deallocate(pair_tmp);
@@ -513,7 +511,6 @@ void Cluster::set_default_variables()
     maxorder = 0;
     nbody_include = nullptr;
     cutoff_radii = nullptr;
-    cluster_list = nullptr;
     interaction_cluster = nullptr;
 }
 
@@ -527,10 +524,9 @@ void Cluster::deallocate_variables()
         deallocate(cutoff_radii);
         cutoff_radii = nullptr;
     }
-    if (cluster_list) {
-        deallocate(cluster_list);
-        cluster_list = nullptr;
-    }
+
+    unique_clusters.clear();
+    unique_clusters.shrink_to_fit();
     distance_table.clear();
     distance_table.shrink_to_fit();
 
@@ -610,6 +606,8 @@ void Cluster::print_neighborlist(const size_t nat,
     distances.resize(natmin, std::vector<double>(nat));
     atoms.resize(natmin, std::vector<int>(nat));
 
+    const double dist_tol = distance_table[0][0].tol_distance;
+
     for (i = 0; i < natmin; ++i) {
         iat = map_p2s[i][0];
         dists_tmp.clear();
@@ -622,12 +620,12 @@ void Cluster::print_neighborlist(const size_t nat,
             dists_tmp.emplace_back(distance_table[iat][j].distances[0]);
         }
         std::sort(indices.begin(), indices.end(),
-                  [&dists_tmp, &atoms_tmp](int left, int right)-> bool {
-            if (std::abs(dists_tmp[left] - dists_tmp[right]) > 1.0e-3) {
-                return dists_tmp[left] < dists_tmp[right];
-            }
-            return atoms_tmp[left] < atoms_tmp[right];
-        });
+                  [&dists_tmp, &atoms_tmp, &dist_tol](int left, int right) -> bool {
+                      if (std::abs(dists_tmp[left] - dists_tmp[right]) > dist_tol) {
+                          return dists_tmp[left] < dists_tmp[right];
+                      }
+                      return atoms_tmp[left] < atoms_tmp[right];
+                  });
         for (j = 0; j < nat; ++j) {
             distances[i][j] = dists_tmp[indices[j]];
             atoms[i][j] = atoms_tmp[indices[j]];
@@ -826,9 +824,9 @@ std::string Cluster::get_ordername(const unsigned int order) const
     }
 }
 
-const std::set<IntList> &Cluster::get_cluster_list(const unsigned int order) const
+const std::set<IntList> &Cluster::get_unique_clusters(const unsigned int order) const
 {
-    return cluster_list[order];
+    return unique_clusters[order];
 }
 
 const std::vector<int> &Cluster::get_atoms_in_cutoff(const unsigned int order,
@@ -966,7 +964,6 @@ void Cluster::calc_interaction_clusters(const size_t natmin,
     //
     // Calculate the complete set of clusters for all orders.
     //
-
     for (auto order = 0; order < maxorder; ++order) {
         set_interaction_cluster(order,
                                 natmin,
@@ -977,7 +974,6 @@ void Cluster::calc_interaction_clusters(const size_t natmin,
                                 exist,
                                 mirror_image_conv,
                                 interaction_cluster[order]);
-
     }
 }
 
@@ -1228,7 +1224,8 @@ void Cluster::set_interaction_cluster(const int order,
                         // Additional constraints are imposed in constraint.cpp to make the IFCs satisfy ASR 
                         // after assigning IFCs to the periodic images.
 
-                        std::sort(distance_list.begin(), distance_list.end(), MinDistList::compare_sum_distance);
+                        std::sort(distance_list.begin(), distance_list.end(),
+                                  MinDistList::compare_sum_distance);
                         comb_cell_min.clear();
 
                         double sum_dist_min = 0.0;

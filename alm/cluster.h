@@ -149,39 +149,42 @@ public:
     std::vector<double> distances;
     std::vector<Eigen::Vector3d> relative_vectors; // Cartesian frame
     int ncells_minimum_distance{0};
+    double tol_distance;
 
     PairDistances() = default;
+
     ~PairDistances() = default;
 
     PairDistances(const std::vector<int> &cells_,
                   const std::vector<double> &distances_,
                   const std::vector<Eigen::Vector3d> &relative_vectors_,
-                  const double tolerance=1.0e-3)
+                  const double tolerance = 1.0e-3)
     {
-         std::vector<size_t> indices(distances_.size());
-         std::iota(indices.begin(), indices.end(), 0);
-         std::sort(indices.begin(), indices.end(),
-                   [&distances_](int left, int right)-> bool {
-             return distances_[left] < distances_[right];
-         });
-         cells.resize(cells_.size());
-         distances.resize(distances_.size());
-         relative_vectors.resize(relative_vectors_.size());
+        std::vector<size_t> indices(distances_.size());
+        std::iota(indices.begin(), indices.end(), 0);
+        std::sort(indices.begin(), indices.end(),
+                  [&distances_](int left, int right) -> bool {
+                      return distances_[left] < distances_[right];
+                  });
+        cells.resize(cells_.size());
+        distances.resize(distances_.size());
+        relative_vectors.resize(relative_vectors_.size());
 
-         for (auto i = 0; i < cells_.size(); ++i) {
-             cells[i] = cells_[indices[i]];
-             distances[i] = distances_[indices[i]];
-             relative_vectors[i] = relative_vectors_[indices[i]];
-         }
-         const auto dist_min = distances[0];
-         ncells_minimum_distance = 0;
-         for (const auto &it : distances) {
-             if (std::abs(it - dist_min) < tolerance) {
-                 ++ncells_minimum_distance;
-             } else {
-                 break;
-             }
-         }
+        for (auto i = 0; i < cells_.size(); ++i) {
+            cells[i] = cells_[indices[i]];
+            distances[i] = distances_[indices[i]];
+            relative_vectors[i] = relative_vectors_[indices[i]];
+        }
+        const auto dist_min = distances[0];
+        ncells_minimum_distance = 0;
+        for (const auto &it: distances) {
+            if (std::abs(it - dist_min) < tolerance) {
+                ++ncells_minimum_distance;
+            } else {
+                break;
+            }
+        }
+        tol_distance = tolerance;
     }
 };
 
@@ -279,7 +282,7 @@ public:
 
     std::string get_ordername(const unsigned int order) const;
 
-    const std::set<IntList> &get_cluster_list(const unsigned int order) const;
+    const std::set<IntList> &get_unique_clusters(const unsigned int order) const;
 
     const std::vector<int> &get_atoms_in_cutoff(const unsigned int order,
                                                 const size_t atom_index) const;
@@ -292,7 +295,7 @@ private:
     int maxorder;
     int *nbody_include;
     double ***cutoff_radii;
-    std::set<IntList> *cluster_list;
+    std::vector<std::set<IntList>> unique_clusters;
     std::vector<std::vector<std::vector<int>>> atoms_in_cutoff; // List of atoms inside the cutoff radius for each order
     std::set<InteractionCluster> **interaction_cluster;
     std::vector<std::vector<PairDistances>> distance_table; // Distance of all pairs (i,j) under the PBC.
@@ -360,9 +363,9 @@ private:
                           const std::vector<int> &,
                           std::vector<std::vector<int>> &) const;
 
-    void generate_pairs(const size_t natmin,
-                        const std::vector<std::vector<int>> &map_p2s,
-                        std::set<IntList> *pair_out) const;
+    void generate_unique_clusters(const size_t natmin,
+                                  const std::vector<std::vector<int>> &map_p2s,
+                                  std::vector<std::set<IntList>> &cluster_out) const;
 
     void check_permutation_symmetry(const std::unique_ptr<System> &system,
                                     const std::unique_ptr<Symmetry> &symmetry,

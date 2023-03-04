@@ -95,7 +95,7 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
 
         fcs->generate_force_constant_table(order,
                                            system->get_supercell().number_of_atoms,
-                                           cluster->get_cluster_list(order),
+                                           cluster->get_unique_clusters(order),
                                            symmetry, preferred_basis,
                                            fc_table[order], nequiv[order],
                                            fc_zeros[order], false);

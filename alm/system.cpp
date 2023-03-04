@@ -226,7 +226,7 @@ void System::build_primcell()
             for (auto kk = 0; kk < 3; ++kk) {
                 xf_tmp2[kk] = xf_unique[k][kk];
             }
-            xf_diff = (xf_tmp - xf_tmp2).unaryExpr([](const double x) {return std::fmod(x,1.0);});
+            xf_diff = (xf_tmp - xf_tmp2).unaryExpr([](const double x) { return std::fmod(x, 1.0); });
             for (auto j = 0; j < 3; ++j) {
                 if (xf_diff[j] < -0.5) xf_diff[j] += 1.0;
                 if (xf_diff[j] >= 0.5) xf_diff[j] -= 1.0;
