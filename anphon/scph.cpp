@@ -2911,7 +2911,7 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
         size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
                        + nk_ref * ns * NT * sizeof(double);
 
-        const auto nsize_dble = static_cast<double>(nsize) / 100000000.0;
+        const auto nsize_dble = static_cast<double>(nsize) / 1000000000.0;
         std::cout << "  Estimated memory usage per MPI process: " << std::setw(10)
                   << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
 
