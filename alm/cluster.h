@@ -297,7 +297,7 @@ private:
     double ***cutoff_radii;
     std::vector<std::set<IntList>> unique_clusters;
     std::vector<std::vector<std::vector<int>>> atoms_in_cutoff; // List of atoms inside the cutoff radius for each order
-    std::set<InteractionCluster> **interaction_cluster;
+    std::vector<std::vector<std::set<InteractionCluster>>> interaction_cluster;
     std::vector<std::vector<PairDistances>> distance_table; // Distance of all pairs (i,j) under the PBC.
     // The distances and the corresponding cell indices are sorted in the ascending order in distance
 
@@ -346,7 +346,7 @@ private:
                                    const std::vector<std::vector<int>> &map_p2s,
                                    const std::vector<Eigen::MatrixXd> &x_image,
                                    const int *exist,
-                                   const int mirror_image_conv) const;
+                                   const int mirror_image_conv);
 
     void set_interaction_cluster(const int order,
                                  const size_t natmin,
@@ -356,7 +356,7 @@ private:
                                  const std::vector<Eigen::MatrixXd> &x_image,
                                  const int *exist,
                                  const int mirror_image_conv,
-                                 std::set<InteractionCluster> *interaction_cluster_out) const;
+                                 std::vector<std::set<InteractionCluster>> &interaction_cluster_out) const;
 
     void cell_combination(const std::vector<std::vector<int>> &,
                           const size_t,

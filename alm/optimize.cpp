@@ -2640,11 +2640,9 @@ int Optimize::inprim_index(const int n,
 double Optimize::gamma(const int n,
                        const int *arr) const
 {
-    int *arr_tmp, *nsame;
+    std::vector<int> arr_tmp(n);
+    std::vector<int> nsame(n);
     int i;
-
-    allocate(arr_tmp, n);
-    allocate(nsame, n);
 
     for (i = 0; i < n; ++i) {
         arr_tmp[i] = arr[i];
@@ -2654,7 +2652,7 @@ double Optimize::gamma(const int n,
     const auto ind_front = arr[0];
     auto nsame_to_front = 1;
 
-    insort(n, arr_tmp);
+    insort(n, arr_tmp.data());
 
     auto nuniq = 1;
     auto iuniq = 0;
@@ -2677,9 +2675,6 @@ double Optimize::gamma(const int n,
     for (i = 0; i < nuniq; ++i) {
         denom *= factorial(nsame[i]);
     }
-
-    deallocate(arr_tmp);
-    deallocate(nsame);
 
     return static_cast<double>(nsame_to_front) / static_cast<double>(denom);
 }

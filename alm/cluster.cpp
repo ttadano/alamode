@@ -54,11 +54,6 @@ void Cluster::init(const std::unique_ptr<System> &system,
         std::cout << " =============\n\n";
     }
 
-    if (interaction_cluster) {
-        deallocate(interaction_cluster);
-    }
-    allocate(interaction_cluster, maxorder, symmetry->get_nat_prim());
-
     // Default values of cutoof_radii and nbody_include
     if (!cutoff_radii) {
         allocate(cutoff_radii, maxorder, nkd, nkd);
@@ -87,6 +82,10 @@ void Cluster::init(const std::unique_ptr<System> &system,
                               symmetry->get_nat_prim(),
                               symmetry->get_map_trueprim_to_super(),
                               atoms_in_cutoff);
+
+    interaction_cluster.clear();
+    interaction_cluster.resize(maxorder,
+                               std::vector<std::set<InteractionCluster>>(symmetry->get_nat_prim()));
 
     calc_interaction_clusters(symmetry->get_nat_prim(),
                               system->get_supercell().kind,
@@ -511,7 +510,6 @@ void Cluster::set_default_variables()
     maxorder = 0;
     nbody_include = nullptr;
     cutoff_radii = nullptr;
-    interaction_cluster = nullptr;
 }
 
 void Cluster::deallocate_variables()
@@ -524,18 +522,14 @@ void Cluster::deallocate_variables()
         deallocate(cutoff_radii);
         cutoff_radii = nullptr;
     }
-
     unique_clusters.clear();
     unique_clusters.shrink_to_fit();
     distance_table.clear();
     distance_table.shrink_to_fit();
-
     atoms_in_cutoff.clear();
     atoms_in_cutoff.shrink_to_fit();
-    if (interaction_cluster) {
-        deallocate(interaction_cluster);
-        interaction_cluster = nullptr;
-    }
+    interaction_cluster.clear();
+    interaction_cluster.shrink_to_fit();
 }
 
 double Cluster::distance(const Eigen::MatrixXd &x1,
@@ -959,7 +953,7 @@ void Cluster::calc_interaction_clusters(const size_t natmin,
                                         const std::vector<std::vector<int>> &map_p2s,
                                         const std::vector<Eigen::MatrixXd> &x_image,
                                         const int *exist,
-                                        const int mirror_image_conv) const
+                                        const int mirror_image_conv)
 {
     //
     // Calculate the complete set of clusters for all orders.
@@ -986,37 +980,13 @@ void Cluster::set_interaction_cluster(const int order,
                                       const std::vector<Eigen::MatrixXd> &x_image,
                                       const int *exist,
                                       const int mirror_image_conv,
-                                      std::set<InteractionCluster> *interaction_cluster_out) const
+                                      std::vector<std::set<InteractionCluster>> &interaction_cluster_out) const
 {
     //
     // Calculate a set of clusters for the given order
     //
 
-    size_t j, k;
-    int jat;
-    size_t ii;
-    int jkd;
-    int icount;
-
-    double dist_tmp, rc_tmp;
-    double distmax;
-
-    bool isok;
-
     int *list_now;
-
-    std::vector<int> cell_vector;
-    std::vector<double> dist_vector;
-    std::vector<std::vector<int>> pairs_icell, comb_cell, comb_cell_min;
-    std::vector<std::vector<int>> comb_cell_atom_center;
-    std::vector<int> accum_tmp;
-    std::vector<int> atom_tmp, cell_tmp;
-    std::vector<int> intpair_uniq, cellpair;
-    std::vector<int> group_atom;
-    std::vector<int> data_now;
-    std::vector<MinDistList> distance_list;
-    std::vector<std::vector<int>> data_vec;
-
     allocate(list_now, order + 2);
 
     for (size_t i = 0; i < natmin; ++i) {
@@ -1035,9 +1005,12 @@ void Cluster::set_interaction_cluster(const int order,
 
             // Harmonic term
 
+            std::vector<int> atom_tmp, cell_tmp;
+            std::vector<std::vector<int>> comb_cell_min;
+
             for (auto ielem: intlist) {
 
-                jat = ielem;
+                const auto jat = ielem;
                 list_now[1] = jat;
 
                 if (!satisfy_nbody_rule(2, list_now, 0)) continue;
@@ -1046,20 +1019,20 @@ void Cluster::set_interaction_cluster(const int order,
                 atom_tmp.clear();
                 atom_tmp.push_back(jat);
 
-                for (j = 0; j < distance_table[iat][jat].ncells_minimum_distance; ++j) {
+                for (auto j = 0; j < distance_table[iat][jat].ncells_minimum_distance; ++j) {
                     cell_tmp.clear();
                     cell_tmp.push_back(distance_table[iat][jat].cells[j]);
                     comb_cell_min.push_back(cell_tmp);
                 }
-                distmax = distance_table[iat][jat].distances[0];
                 interaction_cluster_out[i].insert(InteractionCluster(atom_tmp,
                                                                      comb_cell_min,
-                                                                     distmax));
+                                                                     distance_table[iat][jat].distances[0]));
             }
 
         } else if (order > 0) {
 
             // Anharmonic terms
+            std::vector<std::vector<int>> data_vec;
 
             data_vec.clear();
 
@@ -1082,179 +1055,205 @@ void Cluster::set_interaction_cluster(const int order,
 
             const auto ndata = data_vec.size();
 
-            for (size_t idata = 0; idata < ndata; ++idata) {
+#pragma omp parallel
+            {
+                std::vector<int> data_now;
+                std::vector<int> intpair_uniq, cellpair;
+                std::vector<std::vector<int>> comb_cell_atom_center;
+                std::vector<int> cell_vector;
+                std::vector<double> dist_vector;
+                std::vector<int> group_atom;
+                std::vector<int> accum_tmp;
+                std::vector<MinDistList> distance_list;
+                std::vector<std::vector<int>> pairs_icell, comb_cell, comb_cell_min;
+                std::set<InteractionCluster> interaction_cluster_omp;
 
-                data_now = data_vec[idata];
+                int icount;
 
-                // Uniq the list of atoms in data like as follows:
-                // cubic   term : (i, i) --> (i) x 2
-                // quartic term : (i, i, j) --> (i, j) x (2, 1)
-                intpair_uniq.clear();
-                group_atom.clear();
-                icount = 1;
+                interaction_cluster_omp.clear();
 
-                for (auto m = 0; m < order; ++m) {
-                    if (data_now[m] == data_now[m + 1]) {
-                        ++icount;
-                    } else {
-                        group_atom.push_back(icount);
-                        intpair_uniq.push_back(data_now[m]);
-                        icount = 1;
-                    }
-                }
-                group_atom.push_back(icount);
-                intpair_uniq.push_back(data_now[order]);
+#pragma omp for
+                for (size_t idata = 0; idata < ndata; ++idata) {
 
-                pairs_icell.clear();
-                for (j = 0; j < intpair_uniq.size(); ++j) {
-                    jat = intpair_uniq[j];
-                    jkd = kd[jat] - 1;
+                    data_now = data_vec[idata];
 
-                    rc_tmp = cutoff_radii[order][ikd][jkd];
-                    cell_vector.clear();
+                    // Uniq the list of atoms in data like as follows:
+                    // cubic   term : (i, i) --> (i) x 2
+                    // quartic term : (i, i, j) --> (i, j) x (2, 1)
+                    intpair_uniq.clear();
+                    group_atom.clear();
+                    icount = 1;
 
-                    // Loop over the cell images of atom 'jat' and add to the list
-                    // as a candidate for the cluster.
-                    // The periodic images whose distance is larger than the minimum value
-                    // of the distance(iat, jat) can be added to the cell_vector list.
-                    for (auto k = 0; k < distance_table[iat][jat].distances.size(); ++k) {
-                        if (rc_tmp < 0.0 || distance_table[iat][jat].distances[k] <= rc_tmp) {
-                            cell_vector.emplace_back(distance_table[iat][jat].cells[k]);
+                    for (auto m = 0; m < order; ++m) {
+                        if (data_now[m] == data_now[m + 1]) {
+                            ++icount;
+                        } else {
+                            group_atom.push_back(icount);
+                            intpair_uniq.push_back(data_now[m]);
+                            icount = 1;
                         }
                     }
-                    pairs_icell.push_back(cell_vector);
-                }
+                    group_atom.push_back(icount);
+                    intpair_uniq.push_back(data_now[order]);
 
-                accum_tmp.clear();
-                comb_cell.clear();
-                cell_combination(pairs_icell, 0, accum_tmp, comb_cell);
+                    pairs_icell.clear();
+                    for (const int jat : intpair_uniq) {
+                        const auto jkd = kd[jat] - 1;
 
-                distance_list.clear();
-                for (j = 0; j < comb_cell.size(); ++j) {
+                        const auto rc_tmp = cutoff_radii[order][ikd][jkd];
+                        cell_vector.clear();
 
-                    cellpair.clear();
-
-                    for (k = 0; k < group_atom.size(); ++k) {
-                        for (auto m = 0; m < group_atom[k]; ++m) {
-                            cellpair.push_back(comb_cell[j][k]);
-                        }
-                    }
-
-                    dist_vector.clear();
-
-                    for (k = 0; k < cellpair.size(); ++k) {
-                        dist_tmp = distance(x_image[cellpair[k]].row(data_now[k]), x_image[0].row(iat));
-                        dist_vector.push_back(dist_tmp);
-                    }
-
-                    // Flag to check if the distance is smaller than the cutoff radius
-                    isok = true;
-
-                    for (k = 0; k < cellpair.size(); ++k) {
-                        for (ii = k + 1; ii < cellpair.size(); ++ii) {
-                            dist_tmp = distance(x_image[cellpair[k]].row(data_now[k]),
-                                                x_image[cellpair[ii]].row(data_now[ii]));
-                            rc_tmp = cutoff_radii[order][kd[data_now[k]] - 1][kd[data_now[ii]] - 1];
-                            if (rc_tmp >= 0.0 && dist_tmp > rc_tmp) {
-                                isok = false;
-                                break;
+                        // Loop over the cell images of atom 'jat' and add to the list
+                        // as a candidate for the cluster.
+                        // The periodic images whose distance is larger than the minimum value
+                        // of the distance(iat, jat) can be added to the cell_vector list.
+                        for (auto k = 0; k < distance_table[iat][jat].distances.size(); ++k) {
+                            if (rc_tmp < 0.0 || distance_table[iat][jat].distances[k] <= rc_tmp) {
+                                cell_vector.emplace_back(distance_table[iat][jat].cells[k]);
                             }
-                            dist_vector.emplace_back(dist_tmp);
                         }
-                        if (!isok) break;
+                        pairs_icell.push_back(cell_vector);
                     }
-                    if (isok) {
-                        // This combination is a candidate of the minimum distance cluster
-                        distance_list.emplace_back(MinDistList(cellpair, dist_vector));
-                    }
-                } // close loop over the mirror image combination
 
-                if (!distance_list.empty()) {
-                    // If the distance_list is not empty, there is a set of periodic images
-                    // that satisfies the condition of the cluster.
+                    accum_tmp.clear();
+                    comb_cell.clear();
+                    cell_combination(pairs_icell, 0, accum_tmp, comb_cell);
 
-                    if (mirror_image_conv == 0) {
-                        // assign IFCs to periodic images in which the center atom and each of the other atoms
-                        // are nearest.
-                        // The distance between non-center atoms are not considered.
-                        // The IFCs in this convention automatically satisfies the ASR without additional constraint, 
-                        // but does not satisfy the permutation symmetry.
+                    distance_list.clear();
+                    for (const auto &it_comb_cell : comb_cell) {
 
-                        pairs_icell.clear();
-                        for (j = 0; j < intpair_uniq.size(); ++j) {
-                            jat = intpair_uniq[j];
-                            cell_vector.clear();
+                        cellpair.clear();
 
-                            for (ii = 0; ii < distance_table[iat][jat].ncells_minimum_distance; ++ii) {
-                                cell_vector.emplace_back(distance_table[iat][jat].cells[ii]);
+                        for (auto k = 0; k < group_atom.size(); ++k) {
+                            for (auto m = 0; m < group_atom[k]; ++m) {
+                                cellpair.push_back(it_comb_cell[k]);
                             }
-                            pairs_icell.emplace_back(cell_vector);
                         }
 
-                        accum_tmp.clear();
-                        comb_cell.clear();
-                        comb_cell_atom_center.clear();
-                        cell_combination(pairs_icell, 0, accum_tmp, comb_cell);
+                        dist_vector.clear();
 
-                        for (j = 0; j < comb_cell.size(); ++j) {
-                            cellpair.clear();
-                            for (k = 0; k < group_atom.size(); ++k) {
-                                for (auto m = 0; m < group_atom[k]; ++m) {
-                                    cellpair.emplace_back(comb_cell[j][k]);
+                        for (auto k = 0; k < cellpair.size(); ++k) {
+                            dist_vector.push_back(distance(x_image[cellpair[k]].row(data_now[k]),
+                                                           x_image[0].row(iat)));
+                        }
+
+                        // Flag to check if the distance is smaller than the cutoff radius
+                        auto isok = true;
+
+                        for (auto k = 0; k < cellpair.size(); ++k) {
+                            for (auto ii = k + 1; ii < cellpair.size(); ++ii) {
+                                const auto dist_tmp = distance(x_image[cellpair[k]].row(data_now[k]),
+                                                               x_image[cellpair[ii]].row(data_now[ii]));
+                                const auto rc_tmp = cutoff_radii[order][kd[data_now[k]] - 1][kd[data_now[ii]] - 1];
+                                if (rc_tmp >= 0.0 && dist_tmp > rc_tmp) {
+                                    isok = false;
+                                    break;
+                                }
+                                dist_vector.emplace_back(dist_tmp);
+                            }
+                            if (!isok) break;
+                        }
+                        if (isok) {
+                            // This combination is a candidate of the minimum distance cluster
+                            distance_list.emplace_back(cellpair, dist_vector);
+                        }
+                    } // close loop over the mirror image combination
+
+                    if (!distance_list.empty()) {
+                        // If the distance_list is not empty, there is a set of periodic images
+                        // that satisfies the condition of the cluster.
+
+                        if (mirror_image_conv == 0) {
+                            // assign IFCs to periodic images in which the center atom and each of the other atoms
+                            // are nearest.
+                            // The distance between non-center atoms are not considered.
+                            // The IFCs in this convention automatically satisfies the ASR without additional constraint,
+                            // but does not satisfy the permutation symmetry.
+
+                            pairs_icell.clear();
+                            for (const int jat : intpair_uniq) {
+                                cell_vector.clear();
+
+                                for (auto ii = 0; ii < distance_table[iat][jat].ncells_minimum_distance; ++ii) {
+                                    cell_vector.emplace_back(distance_table[iat][jat].cells[ii]);
+                                }
+                                pairs_icell.emplace_back(cell_vector);
+                            }
+
+                            accum_tmp.clear();
+                            comb_cell.clear();
+                            comb_cell_atom_center.clear();
+                            cell_combination(pairs_icell, 0, accum_tmp, comb_cell);
+
+                            for (const auto &it_comb_cell : comb_cell) {
+                                cellpair.clear();
+                                for (auto k = 0; k < group_atom.size(); ++k) {
+                                    for (auto m = 0; m < group_atom[k]; ++m) {
+                                        cellpair.emplace_back(it_comb_cell[k]);
+                                    }
+                                }
+                                comb_cell_atom_center.emplace_back(cellpair);
+                            }
+
+                            std::sort(distance_list.begin(), distance_list.end(),
+                                      MinDistList::compare_max_distance);
+
+                            const auto distmax = *std::max_element(distance_list[0].dist.begin(),
+                                                                   distance_list[0].dist.end());
+
+                            interaction_cluster_omp.insert(InteractionCluster(data_now,
+                                                                              comb_cell_atom_center,
+                                                                              distmax));
+
+                        } else/* if(mirror_image_conv == 1)*/{
+
+                            // assign IFCs to periodic images in which the sum of the distances between the atom pairs
+                            // is the smallest.
+                            // The IFCs made in this convention satisfies the permutation symmetry.
+                            // Additional constraints are imposed in constraint.cpp to make the IFCs satisfy ASR
+                            // after assigning IFCs to the periodic images.
+
+                            std::sort(distance_list.begin(), distance_list.end(),
+                                      MinDistList::compare_sum_distance);
+                            comb_cell_min.clear();
+
+                            double sum_dist_min = 0.0;
+                            for (auto j = 0; j < distance_list[0].dist.size(); ++j) {
+                                sum_dist_min += distance_list[0].dist[j];
+                            }
+                            // std::cout << "sum_dist_min = " << sum_dist_min << std::endl;
+                            double sum_dist;
+                            for (const auto &it_dist : distance_list) {
+                                sum_dist = 0.0;
+
+                                for (const double dist : it_dist.dist) {
+                                    sum_dist += dist;
+                                }
+
+                                // In the following, only pairs having minimum sum of distances
+                                // are stored.
+                                if (std::abs(sum_dist - sum_dist_min) < eps6) {
+                                    // if (sum_dist < sum_dist_min*1.2+eps6) { // This version is not used.
+                                    comb_cell_min.emplace_back(it_dist.cell);
+                                } else {
+                                    // break;
                                 }
                             }
-                            comb_cell_atom_center.emplace_back(cellpair);
+
+                            interaction_cluster_omp.insert(InteractionCluster(data_now,
+                                                                              comb_cell_min,
+                                                                              sum_dist_min));
                         }
-
-                        std::sort(distance_list.begin(), distance_list.end(),
-                                  MinDistList::compare_max_distance);
-
-                        distmax = *std::max_element(distance_list[0].dist.begin(),
-                                                    distance_list[0].dist.end());
-
-                        interaction_cluster_out[i].insert(InteractionCluster(data_now,
-                                                                             comb_cell_atom_center,
-                                                                             distmax));
-
-                    } else/* if(mirror_image_conv == 1)*/{
-
-                        // assign IFCs to periodic images in which the sum of the distances between the atom pairs
-                        // is the smallest.
-                        // The IFCs made in this convention satisfies the permutation symmetry.
-                        // Additional constraints are imposed in constraint.cpp to make the IFCs satisfy ASR 
-                        // after assigning IFCs to the periodic images.
-
-                        std::sort(distance_list.begin(), distance_list.end(),
-                                  MinDistList::compare_sum_distance);
-                        comb_cell_min.clear();
-
-                        double sum_dist_min = 0.0;
-                        for (j = 0; j < distance_list[0].dist.size(); ++j) {
-                            sum_dist_min += distance_list[0].dist[j];
-                        }
-                        // std::cout << "sum_dist_min = " << sum_dist_min << std::endl;
-                        double sum_dist;
-                        for (j = 0; j < distance_list.size(); ++j) {
-                            sum_dist = 0.0;
-
-                            for (k = 0; k < distance_list[j].dist.size(); ++k) {
-                                sum_dist += distance_list[j].dist[k];
-                            }
-
-                            // In the following, only pairs having minimum sum of distances
-                            // are stored.
-                            if (std::abs(sum_dist - sum_dist_min) < eps6) {
-                                // if (sum_dist < sum_dist_min*1.2+eps6) { // This version is not used.
-                                comb_cell_min.emplace_back(distance_list[j].cell);
-                            } else {
-                                // break;
-                            }
-                        }
-                        interaction_cluster_out[i].insert(InteractionCluster(data_now,
-                                                                             comb_cell_min,
-                                                                             sum_dist_min));
                     }
                 }
+
+#pragma omp critical
+                {
+                    for (const auto &it: interaction_cluster_omp) {
+                        interaction_cluster_out[i].insert(it);
+                    }
+                }
+                interaction_cluster_omp.clear();
             }
         }
     }
