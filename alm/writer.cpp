@@ -914,7 +914,7 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
     std::time_t result = std::time(nullptr);
     std::string time_str;
     time_str.resize(100);
-    std::strftime(time_str.data(), time_str.size(), "%Y-%b-%d %T", std::localtime(&result));
+    std::strftime(&time_str[0], time_str.size(), "%Y-%b-%d %T", std::localtime(&result));
     Attribute localtime = file.createAttribute<std::string>("created date",
                                                             DataSpace::From(time_str));
     localtime.write(time_str);

@@ -341,8 +341,8 @@ void Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
                                  const_rotation_self[order].end());
 
         size_t nparams = 0;
-        for (auto order = 0; order < maxorder; ++order) {
-            nparams += fcs->get_nequiv()[order].size();
+        for (auto order2 = 0; order2 < maxorder; ++order2) {
+            nparams += fcs->get_nequiv()[order2].size();
         }
         //test_svd(const_self[order], nparams);
         rref_sparse(nparam, const_self[order], tolerance_constraint);
