@@ -12,6 +12,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include "timer.h"
 #include <Eigen/Core>
 

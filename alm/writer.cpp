@@ -28,7 +28,6 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
 #include <boost/asio/ip/host_name.hpp>
-#include <boost/date_time.hpp>
 
 #define H5_USE_EIGEN 1
 
@@ -912,8 +911,10 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
 
 
     // Finally, save the created date and time as attribute
-    boost::posix_time::ptime timeLocal = boost::posix_time::second_clock::local_time();
-    const auto time_str = boost::posix_time::to_simple_string(timeLocal);
+    std::time_t result = std::time(nullptr);
+    std::string time_str;
+    time_str.resize(100);
+    std::strftime(time_str.data(), time_str.size(), "%Y-%b-%d %T", std::localtime(&result));
     Attribute localtime = file.createAttribute<std::string>("created date",
                                                             DataSpace::From(time_str));
     localtime.write(time_str);

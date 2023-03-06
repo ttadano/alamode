@@ -1042,8 +1042,10 @@ bool Symmetry::is_compatible(const Eigen::MatrixBase<T> &mat,
 
     auto nfinite = 0;
 
-    for (auto it: mat.reshaped()) {
-        if (std::abs(it) > tolerance_zero) ++nfinite;
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            if (std::abs(mat(i,j)) > tolerance_zero) ++nfinite;
+        }
     }
     return (nfinite == 3);
 }
