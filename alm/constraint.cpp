@@ -30,6 +30,8 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <Eigen/Dense>
+
 using namespace ALM_NS;
 
 Constraint::Constraint()
@@ -338,6 +340,11 @@ void Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
                                  const_rotation_self[order].begin(),
                                  const_rotation_self[order].end());
 
+        size_t nparams = 0;
+        for (auto order = 0; order < maxorder; ++order) {
+            nparams += fcs->get_nequiv()[order].size();
+        }
+        //test_svd(const_self[order], nparams);
         rref_sparse(nparam, const_self[order], tolerance_constraint);
     }
 
@@ -2950,4 +2957,142 @@ void Constraint::print_constraint(const ConstraintSparseForm &const_in) const
         std::cout << std::endl;
         ++counter;
     }
+}
+
+
+void Constraint::test_svd(ConstraintSparseForm &const_in,
+                          const int nparams) const
+{
+    const bool use_eigen = false;
+
+    const auto nconsts = const_in.size();
+
+    if (use_eigen) {
+        Eigen::MatrixXd mat_tmp = Eigen::MatrixXd::Zero(nconsts, nparams);
+
+        auto icount = 0;
+        for (const auto &it : const_in) {
+            for (const auto &p2: it) {
+                mat_tmp(icount, p2.first) = p2.second;
+            }
+            ++icount;
+        }
+
+        Eigen::BDCSVD<Eigen::MatrixXd> svd;
+        svd.compute(mat_tmp, Eigen::ComputeThinV);
+
+        Eigen::VectorXd s = svd.singularValues();
+        Eigen::MatrixXd V = svd.matrixV();
+
+        auto nrank = svd.rank();
+//        std::cout << "rank of the constraint matrix = " << nrank << std::endl;
+
+        ConstraintSparseForm const_new;
+
+        MapConstraintElement const_tmp2;
+        auto division_factor = 1.0;
+        int counter;
+
+        const_in.clear();
+
+        Eigen::VectorXd const_entry(nparams);
+
+        for (auto i = 0; i < nrank; ++i) {
+            const_tmp2.clear();
+            for (auto j = 0; j < nparams; ++j) {
+                const_entry(j) = V(j, i);
+            }
+            const auto inv_max_coeff = 1.0 / const_entry.cwiseAbs().maxCoeff();
+            const_entry *= inv_max_coeff;
+
+            for (auto j = 0; j < nparams; ++j) {
+                if (std::abs(const_entry[j]) > tolerance_constraint) {
+                    const_tmp2[j] = const_entry[j];
+                }
+            }
+            const_in.emplace_back(const_tmp2);
+        }
+
+        //std::cout << "S:\n";
+        //std::cout << s / s[0] << std::endl;
+    } else {
+
+        double *mat_tmp;
+        double *u, *vt, *s, *work;
+        allocate(mat_tmp, nconsts*nparams);
+        char jobvt = 'N';
+        char jobu = 'O';
+
+        int m = nparams;
+        int n = nconsts;
+        int lda = m;
+        int ldvt = 1;
+        int min_mn = std::min<int>(m,n);
+        int max_mn = std::max<int>(m,n);
+        int ldu = 1;
+        int lwork = std::max<int>(3*min_mn+max_mn, 5*min_mn);
+        int info;
+
+        allocate(s, min_mn);
+        allocate(u, 1);
+        allocate(vt, 1);
+        allocate(work, lwork);
+
+        for (auto i = 0; i < nparams*nconsts; ++i) mat_tmp[i] = 0.0;
+
+        auto icount = 0;
+        for (const auto &it : const_in) {
+            for (const auto &p2: it) {
+                mat_tmp[nparams*icount + p2.first] = p2.second;
+            }
+            ++icount;
+        }
+
+        dgesvd_(&jobu, &jobvt, &m, &n, mat_tmp, &lda, s, u, &ldu, vt, &ldvt, work, &lwork, &info);
+
+//        std::cout << "info = " << info << std::endl;
+//        for (auto i = 0; i < min_mn; ++i) {
+//            std::cout  << "S = " << s[i] << std::endl;
+//        }
+
+        auto nrank = 0;
+        for (auto i = 0; i < min_mn; ++i) {
+            if (s[i]/s[0] < tolerance_constraint) break;
+            ++nrank;
+        }
+        //std::cout << "rank of the constraint matrix = " << nrank << std::endl;
+
+        MapConstraintElement const_tmp2;
+        Eigen::VectorXd const_entry(nparams);
+
+        const_in.clear();
+
+        auto k = 0;
+        for (auto i = 0; i < nrank; ++i) {
+            const_tmp2.clear();
+            for (auto j = 0; j < nparams; ++j) {
+                const_entry(j) = mat_tmp[k];
+                ++k;
+            }
+            const auto inv_max_coeff = 1.0 / const_entry.cwiseAbs().maxCoeff();
+            const_entry *= inv_max_coeff;
+
+            for (auto j = 0; j < nparams; ++j) {
+                if (std::abs(const_entry[j]) > tolerance_constraint) {
+                    const_tmp2[j] = const_entry[j];
+                }
+            }
+            std::cout << std::endl;
+            const_in.emplace_back(const_tmp2);
+        }
+
+        deallocate(mat_tmp);
+        deallocate(s);
+        deallocate(u);
+        deallocate(vt);
+        deallocate(work);
+
+    }
+
+
 }

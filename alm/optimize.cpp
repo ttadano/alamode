@@ -2191,6 +2191,7 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                               fcs->get_basis_conversion_matrix());
     }
 
+
 #ifdef _OPENMP
 #pragma omp parallel private(irow, i, j)
 #endif
@@ -2303,6 +2304,17 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                     for (j = 0; j < constraint->get_const_relate(order)[i].alpha.size(); ++j) {
 
                         // This part can issue an error when the constraint matrix is deviate from rref.
+
+//                        const auto right_value =  constraint->get_const_relate(order)[i].p_index_orig[j];
+
+//                        std::cout << "right = " << right_value << '\n'<< std::flush;
+
+//                        if (constraint->get_index_bimap(order).right.find(right_value) == constraint->get_index_bimap(order).right.end()) {
+//                            std::cout << "The key not found \n" << std::endl << std::flush;
+//                            std::exit(1);
+//                        }
+
+
                         inew = constraint->get_index_bimap(order).right.at(
                                 constraint->get_const_relate(order)[i].p_index_orig[j]) +
                                iparam;
