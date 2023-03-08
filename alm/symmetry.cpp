@@ -775,7 +775,7 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
     // the primitive cell (symm_prim) and the shift vectors.
     // This operation is performed to keep the order of the input atom indices as much as possible.
 
-    Eigen::Vector3d xtmp, xtmp2, xdiff, tran_d;
+    Eigen::Vector3d xtmp, xtmp2, xtmp3, xdiff, tran_d;
     Eigen::Vector3i tran;
     Eigen::MatrixXd x_super;
     std::vector<int> atom_num_prim;
@@ -786,8 +786,16 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
 
     x_super = cell_super.x_cartesian * invlavec_p;
 
+    std::vector<int> is_done(cell_super.number_of_atoms, 0);
+
+    // Create atomgroup_out for later use
+    atomgroup_out.clear();
+    std::map<int, int> map_index;
+
     for (auto i = 0; i < cell_super.number_of_atoms; ++i) {
         xtmp = x_super.row(i);
+
+        if (is_done[i]) continue;
 
         auto iloc = -1;
         for (auto j = 0; j < cell_prim.number_of_atoms; ++j) {
@@ -817,39 +825,44 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
             std::vector<int> vtmp(&tran[0], tran.data() + tran.cols() * tran.rows());
             trans_vecs.emplace_back(vtmp);
         }
+
+        tran_d = tran.unaryExpr([] (const int x) {return static_cast<double>(x);});
+
+        map_index.clear();
+
+        // Now, we search all atoms in the supercell that can be mapped by the found trans value.
+        for (auto j = 0; j < cell_prim.number_of_atoms; ++j) {
+            xtmp2 = cell_prim.x_fractional.row(j);
+            xtmp2 += tran_d;
+            xtmp2 = transform_basis_primitive_to_super * xtmp2;
+
+            for (auto k = 0; k < cell_super.number_of_atoms; ++k) {
+                if (is_done[k]) continue;
+
+                xtmp3 = cell_super.x_fractional.row(k);
+                xdiff = (xtmp3 - xtmp2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x));});
+
+                if (xdiff.norm() < eps6) {
+                    is_done[k] = 1;
+                    map_index.insert({j, k});
+                }
+            }
+        }
+        atomgroup_out.emplace_back(map_index, tran);
     }
 
     std::set<std::vector<int>> unique_shifts_set;
     std::vector<std::vector<int>> unique_shifts_vec;
 
-    for (auto i = 0; i < cell_super.number_of_atoms; ++i) {
-        if (unique_shifts_set.find(trans_vecs[i]) == unique_shifts_set.end()) {
-            unique_shifts_set.insert(trans_vecs[i]);
-            unique_shifts_vec.emplace_back(trans_vecs[i]);
+    for (const auto &it_tran : trans_vecs) {
+        if (unique_shifts_set.find(it_tran) == unique_shifts_set.end()) {
+            unique_shifts_set.insert(it_tran);
+            unique_shifts_vec.emplace_back(it_tran);
         }
     }
-
     if (unique_shifts_vec.size() != (cell_super.number_of_atoms / cell_prim.number_of_atoms)) {
         exit("update_symmetry_operations_supercell",
              "The number of primitive translations is inconsistent.");
-    }
-
-    // Create atomgroup_out for later use
-    atomgroup_out.clear();
-
-    std::map<int, int> map_index;
-
-    for (auto i = 0; i < unique_shifts_vec.size(); ++i) {
-        map_index.clear();
-
-        for (auto j = 0; j < 3; ++j) tran[j] = unique_shifts_vec[i][j];
-
-        for (auto j = 0; j < cell_super.number_of_atoms; ++j) {
-            if (unique_shifts_vec[i] == trans_vecs[j]) {
-                map_index.insert({atom_num_prim[j], j});
-            }
-        }
-        atomgroup_out.emplace_back(map_index, tran);
     }
 
     // Finally, update symm_super.

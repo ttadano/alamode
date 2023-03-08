@@ -32,6 +32,7 @@
 #define H5_USE_EIGEN 1
 
 #include <highfive/H5File.hpp>
+#include <highfive/H5Easy.hpp>
 
 using namespace ALM_NS;
 
@@ -816,99 +817,73 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
                               const std::string fname_fcs,
                               const int verbosity) const
 {
-
-    using namespace HighFive;
+    using namespace H5Easy;
     int i, j;
     std::vector<int> natom, nkinds;
     std::vector<std::string> kind_names;
 
     natom.resize(1);
     nkinds.resize(1);
+    for (i = 0; i < system->get_supercell().number_of_elems; ++i) {
+        kind_names.push_back(system->get_kdname()[i]);
+    }
 
-    File file(fname_fcs, File::Truncate);
+    File file(fname_fcs, File::ReadWrite | File::Create| File::Truncate);
 
     // Supercell information
-    SystemInfo supercell;
-    const std::string grpname_scell("SuperCell");
-    Group group_scell = file.createGroup(grpname_scell, true);
+    std::string unitname("bohr");
+    dump(file, "/SuperCell/lattice_vector", system->get_supercell().lattice_vector);
+    dumpAttribute(file, "/SuperCell/lattice_vector", "unit", unitname);
+    dump(file, "/SuperCell/number_of_atoms", system->get_supercell().number_of_atoms);
+    dump(file, "/SuperCell/number_of_elements", system->get_supercell().number_of_elems);
+    dump(file, "/SuperCell/fractional_coordinate", system->get_supercell().x_fractional);
+    dump(file, "/SuperCell/atomic_kinds", system->get_supercell().kind);
+    dump(file, "/SuperCell/elements", kind_names);
+    dump(file, "/SuperCell/spin_polarized", system->get_spin().lspin ? 1 : 0);
+    if (system->get_spin().lspin) {
+        dump(file, "/SuperCell/magnetic_moments", system->get_spin().magmom);
+        dumpAttribute(file, "/SuperCell/magnetic_moments", "noncollinear", system->get_spin().noncollinear);
+        dumpAttribute(file, "/SuperCell/magnetic_moments", "time_reversal_symmetry", system->get_spin().time_reversal_symm);
+    }
+    dump(file, "/SuperCell/number_of_primitive_translations", symmetry->get_symnum_tran("super").size());
 
-    Attribute version = file.createAttribute<std::string>("version",
-                                                          DataSpace::From(ALAMODE_VERSION));
-    version.write(ALAMODE_VERSION);
+    // Primitive cell information
+    dump(file, "/PrimitiveCell/lattice_vector", system->get_primcell().lattice_vector);
+    dumpAttribute(file, "/PrimitiveCell/lattice_vector", "unit", unitname);
+    dump(file, "/PrimitiveCell/number_of_atoms", system->get_primcell().number_of_atoms);
+    dump(file, "/PrimitiveCell/number_of_elements", system->get_primcell().number_of_elems);
+    dump(file, "/PrimitiveCell/fractional_coordinate", system->get_primcell().x_fractional);
+    dump(file, "/PrimitiveCell/atomic_kinds", system->get_primcell().kind);
+    dump(file, "/PrimitiveCell/elements", kind_names);
+    dump(file, "/PrimitiveCell/spin_polarized", system->get_spin().lspin ? 1 : 0);
 
+    if (system->get_spin().lspin) {
+        std::string cell = "prim";
+        dump(file, "/PrimitiveCell/magnetic_moments", system->get_spin(cell).magmom);
+        dumpAttribute(file, "/PrimitiveCell/magnetic_moments", "noncollinear", system->get_spin(cell).noncollinear);
+        dumpAttribute(file, "/PrimitiveCell/magnetic_moments", "time_reversal_symmetry", system->get_spin(cell).time_reversal_symm);
+    }
+    dump(file, "/PrimitiveCell/number_of_primitive_translations", symmetry->get_symnum_tran("prim").size());
+
+    // Force Constants
+
+
+
+
+    // ALAMODE version
+    dump(file, "/version", ALAMODE_VERSION);
+//    Attribute version = file.createAttribute<std::string>("version",
+//                                                          DataSpace::From(ALAMODE_VERSION));
+//    version.write(ALAMODE_VERSION);
+    // Hostname
+    // This part necessitates the program to be linked with boost libraries,
+    // so it is deactivated for the moment.
+#ifdef _BOOST_LIBRARY_LINKABLE
     const std::string host_name = static_cast<std::string>(boost::asio::ip::host_name());
     Attribute hostname = file.createAttribute<std::string>("hostname",
                                                            DataSpace::From(host_name));
     hostname.write(host_name);
-
-
-    natom[0] = system->get_supercell().number_of_atoms;
-    nkinds[0] = system->get_supercell().number_of_elems;
-
-    for (i = 0; i < system->get_supercell().number_of_elems; ++i) {
-        kind_names.push_back(system->get_kdname()[i]);
-    }
-    Attribute attr = group_scell.createAttribute<int>("number_of_atoms",
-                                                      DataSpace::From(natom));
-    attr.write(natom);
-    attr = group_scell.createAttribute<int>("number_of_elements",
-                                            DataSpace::From(nkinds));
-    attr.write(nkinds);
-
-    std::vector<size_t> dim{3, 3};
-    double data[3][3];
-    DataSet dataset = group_scell.createDataSet<double>("lattice_vector",
-                                                        DataSpace(dim));
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            data[i][j] = system->get_supercell().lattice_vector(j, i);
-        }
-    }
-    dataset.write(data);
-    std::string attr_name("unit");
-    std::string unitname("bohr");
-    attr = dataset.createAttribute<std::string>(attr_name,
-                                                DataSpace::From(unitname));
-    attr.write(unitname);
-    dataset = group_scell.createDataSet<double>("fractional_coordinate",
-                                                DataSpace::From(system->get_supercell().x_fractional));
-    dataset.write(system->get_supercell().x_fractional);
-    dataset = group_scell.createDataSet<std::string>("elements", DataSpace::From(kind_names));
-    dataset.write(kind_names);
-    dataset = group_scell.createDataSet<int>("atomic_kinds", DataSpace::From(system->get_supercell().kind));
-    dataset.write(system->get_supercell().kind);
-
-    std::vector<int> flag_spin;
-    if (system->get_spin().lspin) {
-        flag_spin.push_back(1);
-        Attribute spin_polarized = group_scell.createAttribute<int>("spin polarized",
-                                                                    DataSpace::From(flag_spin));
-        spin_polarized.write(flag_spin);
-
-        dataset = group_scell.createDataSet<double>("magnetic_moments",
-                                                    DataSpace::From(system->get_spin().magmom));
-        dataset.write(system->get_spin().magmom);
-        std::vector<int> flag_noncol, flag_time_reversal;
-        flag_noncol.push_back(system->get_spin().noncollinear);
-        flag_time_reversal.push_back(system->get_spin().time_reversal_symm);
-        attr = dataset.createAttribute<int>("noncollinear",
-                                            DataSpace::From(flag_noncol));
-        attr.write(flag_noncol);
-
-        attr = dataset.createAttribute<int>("time_reversal_symmetry",
-                                            DataSpace::From(flag_time_reversal));
-        attr.write(flag_time_reversal);
-    } else {
-        flag_spin.push_back(0);
-        Attribute spin_polarized = group_scell.createAttribute<int>("spin polarized",
-                                                                    DataSpace::From(flag_spin));
-        spin_polarized.write(flag_spin);
-    }
-
-    // TODO: Primitive Cell
-
-    // Force Constants
-
+#endif
 
     // Finally, save the created date and time as attribute
     std::time_t result = std::time(nullptr);

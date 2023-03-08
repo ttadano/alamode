@@ -21,9 +21,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
-//#include <filesystem>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <numeric>
 #include <memory>
 #include <boost/algorithm/string.hpp>
@@ -314,7 +312,6 @@ void InputParser::parse_general_vars(ALM *alm)
         structure_file = general_var_dict["STRUCTURE_FILE"];
         struct stat buffer;
         if (stat(structure_file.c_str(), &buffer) != 0) {
-//            if (!std::filesystem::exists(structure_file)) {
             const std::string str_message = "STRUCTURE_FILE is given but the target file ("
                                             + structure_file + ") does not exist.";
             exit("parse_general_vars", str_message.c_str());
