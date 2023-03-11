@@ -869,6 +869,10 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
     time_str.resize(100);
     std::strftime(&time_str[0], time_str.size(), "%Y-%b-%d %T", std::localtime(&result));
     dump(file, "/created date", time_str);
+
+    if (verbosity > 0) {
+        std::cout << " Input data for the phonon code ANPHON      : " << fname_fcs << std::endl;
+    }
 }
 
 void Writer::write_structures_h5(H5Easy::File &file,

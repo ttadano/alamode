@@ -212,7 +212,7 @@ public:
     void set_forceconstant_cartesian(const int maxorder,
                                      double *param_in);
 
-    void set_fc_zero_threshold(const int threshold_in);
+    void set_fc_zero_threshold(const double threshold_in);
 
     double get_fc_zero_threshold() const;
 

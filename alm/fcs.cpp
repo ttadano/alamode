@@ -945,7 +945,7 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
     }
 }
 
-void Fcs::set_fc_zero_threshold(const int threshold_in)
+void Fcs::set_fc_zero_threshold(const double threshold_in)
 {
     fc_zero_threshold = threshold_in;
 }
