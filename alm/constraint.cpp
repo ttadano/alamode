@@ -2720,8 +2720,8 @@ void Constraint::set_forceconstants_to_fix(const std::vector<std::vector<int>> &
 void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmetry,
                                          const std::unique_ptr<Fcs> &fcs)
 {
-    std::unordered_set<FcProperty> list_found;
-    std::unordered_set<FcProperty>::iterator iter_found;
+    //std::unordered_set<FcProperty> list_found;
+    //std::unordered_set<FcProperty>::iterator iter_found;
 
     if (status_constraint_subset["fix2"] == 0) {
         const auto order = 0;
@@ -2729,22 +2729,21 @@ void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmet
 
         fcs->translate_forceconstant_index_to_centercell(symmetry,
                                                          intpair_to_fix);
-        std::vector<ForceConstantTable> fc_fix_table;
+        std::set<ForceConstantTable> fc_fix_table;
 
         const auto nfcs = intpair_to_fix.size();
 
         for (auto i = 0; i < nfcs; ++i) {
-            fc_fix_table.emplace_back(values_fix_fc2[i],
-                                      intpair_to_fix[i]);
+            fc_fix_table.insert(ForceConstantTable(values_fix_fc2[i],
+                                                   intpair_to_fix[i]));
         }
-        std::sort(fc_fix_table.begin(), fc_fix_table.end());
 
         size_t ihead = 0;
 
         std::vector<int> index_tmp;
         double sign;
         size_t mother;
-        std::vector<ForceConstantTable>::iterator it_found;
+        std::set<ForceConstantTable>::iterator it_found;
         bool found_element;
 
         const_fix[order].clear();
@@ -2754,16 +2753,13 @@ void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmet
 
             mother = fcs->get_fc_table()[order][ihead].mother;
             found_element = false;
-            // sign_mother may be -1 (which is confusing and should be fixed in the future),
-            // so keep its sign so that the sign of the fixed parameter becomes consistent.
-            const auto sign_mother = fcs->get_fc_table()[order][ihead].sign;
 
             for (auto j = 0; j < fcs->get_nequiv()[order][ui]; ++j) {
                 index_tmp = fcs->get_fc_table()[order][ihead + j].elems;
 
-                it_found = std::lower_bound(fc_fix_table.begin(),
-                                            fc_fix_table.end(),
-                                            ForceConstantTable(0.0, index_tmp));
+                it_found = std::find(fc_fix_table.begin(),
+                                     fc_fix_table.end(),
+                                     ForceConstantTable(0.0, index_tmp));
 
                 if (it_found != fc_fix_table.end()) {
                     found_element = true;
@@ -2773,8 +2769,8 @@ void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmet
             }
 
             if (found_element) {
-                const_fix[order].emplace_back(ConstraintTypeFix(mother,
-                                                                sign_mother * sign * (*it_found).fc_value));
+                const_fix[order].emplace_back(mother,
+                                              sign * (*it_found).fc_value);
             }
             ihead += fcs->get_nequiv()[order][ui];
         }
@@ -2790,20 +2786,19 @@ void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmet
 
         const auto nfcs = intpair_to_fix.size();
 
-        std::vector<ForceConstantTable> fc_fix_table;
+        std::set<ForceConstantTable> fc_fix_table;
 
         for (auto i = 0; i < nfcs; ++i) {
-            fc_fix_table.emplace_back(values_fix_fc3[i],
-                                      intpair_to_fix[i]);
+            fc_fix_table.insert(ForceConstantTable(values_fix_fc3[i],
+                                                   intpair_to_fix[i]));
         }
-        std::sort(fc_fix_table.begin(), fc_fix_table.end());
 
         size_t ihead = 0;
 
         std::vector<int> index_tmp;
         double sign;
         size_t mother;
-        std::vector<ForceConstantTable>::iterator it_found;
+        std::set<ForceConstantTable>::iterator it_found;
         bool found_element;
 
         const_fix[order].clear();
@@ -2813,15 +2808,12 @@ void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmet
 
             mother = fcs->get_fc_table()[order][ihead].mother;
             found_element = false;
-            // sign_mother may be -1 (which is confusing and should be fixed in the future),
-            // so keep its sign so that the sign of the fixed parameter becomes consistent.
-            const auto sign_mother = fcs->get_fc_table()[order][ihead].sign;
 
             for (auto j = 0; j < fcs->get_nequiv()[order][ui]; ++j) {
                 index_tmp = fcs->get_fc_table()[order][ihead + j].elems;
-                it_found = std::lower_bound(fc_fix_table.begin(),
-                                            fc_fix_table.end(),
-                                            ForceConstantTable(0.0, index_tmp));
+                it_found = std::find(fc_fix_table.begin(),
+                                     fc_fix_table.end(),
+                                     ForceConstantTable(0.0, index_tmp));
 
                 if (it_found != fc_fix_table.end()) {
                     found_element = true;
@@ -2831,8 +2823,8 @@ void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmet
             }
 
             if (found_element) {
-                const_fix[order].emplace_back(ConstraintTypeFix(mother,
-                                                                sign_mother * sign * (*it_found).fc_value));
+                const_fix[order].emplace_back(mother,
+                                              sign * (*it_found).fc_value);
             }
             ihead += fcs->get_nequiv()[order][ui];
         }
@@ -2971,7 +2963,7 @@ void Constraint::test_svd(ConstraintSparseForm &const_in,
         Eigen::MatrixXd mat_tmp = Eigen::MatrixXd::Zero(nconsts, nparams);
 
         auto icount = 0;
-        for (const auto &it : const_in) {
+        for (const auto &it: const_in) {
             for (const auto &p2: it) {
                 mat_tmp(icount, p2.first) = p2.second;
             }
@@ -3019,7 +3011,7 @@ void Constraint::test_svd(ConstraintSparseForm &const_in,
 
         double *mat_tmp;
         double *u, *vt, *s, *work;
-        allocate(mat_tmp, nconsts*nparams);
+        allocate(mat_tmp, nconsts * nparams);
         char jobvt = 'N';
         char jobu = 'O';
 
@@ -3027,10 +3019,10 @@ void Constraint::test_svd(ConstraintSparseForm &const_in,
         int n = nconsts;
         int lda = m;
         int ldvt = 1;
-        int min_mn = std::min<int>(m,n);
-        int max_mn = std::max<int>(m,n);
+        int min_mn = std::min<int>(m, n);
+        int max_mn = std::max<int>(m, n);
         int ldu = 1;
-        int lwork = std::max<int>(3*min_mn+max_mn, 5*min_mn);
+        int lwork = std::max<int>(3 * min_mn + max_mn, 5 * min_mn);
         int info;
 
         allocate(s, min_mn);
@@ -3038,12 +3030,12 @@ void Constraint::test_svd(ConstraintSparseForm &const_in,
         allocate(vt, 1);
         allocate(work, lwork);
 
-        for (auto i = 0; i < nparams*nconsts; ++i) mat_tmp[i] = 0.0;
+        for (auto i = 0; i < nparams * nconsts; ++i) mat_tmp[i] = 0.0;
 
         auto icount = 0;
-        for (const auto &it : const_in) {
+        for (const auto &it: const_in) {
             for (const auto &p2: it) {
-                mat_tmp[nparams*icount + p2.first] = p2.second;
+                mat_tmp[nparams * icount + p2.first] = p2.second;
             }
             ++icount;
         }
@@ -3057,7 +3049,7 @@ void Constraint::test_svd(ConstraintSparseForm &const_in,
 
         auto nrank = 0;
         for (auto i = 0; i < min_mn; ++i) {
-            if (s[i]/s[0] < tolerance_constraint) break;
+            if (s[i] / s[0] < tolerance_constraint) break;
             ++nrank;
         }
         //std::cout << "rank of the constraint matrix = " << nrank << std::endl;

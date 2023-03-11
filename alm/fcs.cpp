@@ -303,8 +303,6 @@ void Fcs::generate_force_constant_table(const int order,
                                     is_searched[ind_mapped[i]] = true;
                                 }
                             }
-
-
                         }
                     }
                 }
@@ -338,15 +336,24 @@ void Fcs::generate_force_constant_table(const int order,
 
     // sort fc_vec
 
-    if (!ndup.empty()) {
-        std::sort(fc_vec.begin(), fc_vec.begin() + ndup[0]);
-        auto nbegin = ndup[0];
-        for (size_t mm = 1; mm < ndup.size(); ++mm) {
-            const auto nend = nbegin + ndup[mm];
-            std::sort(fc_vec.begin() + nbegin, fc_vec.begin() + nend);
-            nbegin += ndup[mm];
-        }
-    }
+    // We don't need here, but commenting out this part will change the pairs printed out in
+    // the harmonic unique section of the xml file.
+//    if (!ndup.empty()) {
+//        std::sort(fc_vec.begin(), fc_vec.begin() + ndup[0]);
+//        auto nbegin = ndup[0];
+//        for (size_t mm = 1; mm < ndup.size(); ++mm) {
+//            const auto nend = nbegin + ndup[mm];
+//            std::sort(fc_vec.begin() + nbegin, fc_vec.begin() + nend);
+//            nbegin += ndup[mm];
+//        }
+//    }
+
+//    size_t counter = 0;
+//    for (auto ii = 0; ii < ndup.size(); ++ii) {
+//        std::cout << std::setw(5) << fc_vec[counter].mother  << std::setw(4) << fc_vec[counter].sign << std::endl;
+//        counter += ndup[ii];
+//    }
+
 }
 
 void Fcs::get_constraint_symmetry(const size_t nat,

@@ -148,6 +148,11 @@ public:
         return std::lexicographical_compare(flattenarray.begin(), flattenarray.end(),
                                             a.flattenarray.begin(), a.flattenarray.end());
     }
+
+    bool operator==(const ForceConstantTable &a) const
+    {
+        return flattenarray == a.flattenarray;
+    }
 };
 
 class Fcs {

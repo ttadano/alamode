@@ -1063,7 +1063,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
 
     const std::vector<std::string> input_list{
             "LMODEL", "SPARSE", "SPARSESOLVER",
-            "ICONST", "ROTAXIS", "FC2XML", "FC3XML",
+            "ICONST", "ROTAXIS", "FC2XML", "FC3XML", "FC2FIX", "FC3FIX",
             "NDATA", "NSTART", "NEND", "SKIP", "DFSET",
             "NDATA_CV", "NSTART_CV", "NEND_CV", "DFSET_CV",
             "L1_RATIO", "STANDARDIZE", "ENET_DNORM",
