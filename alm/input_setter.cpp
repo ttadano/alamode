@@ -107,7 +107,8 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const double tolerance_constraint,
                                    const std::string &basis_force_constant,
                                    const int nmaxsave,
-                                   const double fc_zero_threshold)
+                                   const double fc_zero_threshold,
+                                   const int compression_level)
 {
     size_t i;
 
@@ -128,6 +129,7 @@ void InputSetter::set_general_vars(ALM *alm,
     alm->set_tolerance_constraint(tolerance_constraint);
     alm->set_forceconstant_basis(basis_force_constant);
     alm->set_nmaxsave(nmaxsave);
+    alm->set_compression_level(compression_level);
 
     if (mode == "suggest") {
         alm->set_displacement_basis(str_disp_basis);

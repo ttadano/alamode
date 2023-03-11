@@ -123,6 +123,10 @@ public:
 
     int get_nmaxsave() const;
 
+    void set_compression_level(const int level) const; // COMPRESSION
+
+    int get_compression_level() const;
+
     //void set_fitting_filenames(std::string dfile,
     //                           std::string ffile) const;
     void define(const int maxorder,

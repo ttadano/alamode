@@ -146,6 +146,10 @@ public:
 
     int get_output_maxorder() const;
 
+    void set_compression_level(const int level);
+
+    int get_compression_level() const;
+
     void set_input_vars(const std::map<std::string, std::string> &input_var_dict);
 
     std::string get_input_var(const std::string &key) const;
@@ -220,7 +224,7 @@ private:
                               int nprec = 15) const;
 
     std::map<std::string, int> save_format_flags;
-    int output_maxorder;
+    int output_maxorder, compression_level;
     std::string file_fcs, file_hes;
     std::string filename_fcs;
 

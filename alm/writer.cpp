@@ -34,7 +34,7 @@
 
 using namespace ALM_NS;
 
-Writer::Writer() : output_maxorder(5)
+Writer::Writer() : output_maxorder(5), compression_level(1)
 {
     save_format_flags["alamode"] = 1;
     save_format_flags["alamode_h5"] = 1;
@@ -850,7 +850,7 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
                                               fc_cart,
                                               system->get_x_image(),
                                               symmetry->get_map_super_to_trueprim(),
-                                              cluster, 4);
+                                              cluster, compression_level);
     }
 
     // ALAMODE version
@@ -1359,6 +1359,24 @@ void Writer::set_output_maxorder(const int maxorder)
 int Writer::get_output_maxorder() const
 {
     return output_maxorder;
+}
+
+void Writer::set_compression_level(const int level)
+{
+    if (level > 9) {
+        warn("set_compression_level", "COMPRESSION is set to 9.");
+        compression_level = 9;
+    } else if (level < 0) {
+        warn("set_compression_level", "COMPRESSION is set to 0.");
+        compression_level = 0;
+    } else {
+        compression_level = level;
+    }
+}
+
+int Writer::get_compression_level() const
+{
+    return compression_level;
 }
 
 void Writer::set_filename_fcs(const std::string filename_in)

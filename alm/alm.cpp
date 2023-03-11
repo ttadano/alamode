@@ -232,6 +232,16 @@ int ALM::get_nmaxsave() const
     return writer->get_output_maxorder();
 }
 
+void ALM::set_compression_level(const int level) const
+{
+    writer->set_compression_level(level);
+}
+
+int ALM::get_compression_level() const
+{
+    return writer->get_compression_level();
+}
+
 void ALM::define(const int maxorder,
                  const size_t nkd,
                  const int *nbody_include,

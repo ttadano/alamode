@@ -258,7 +258,7 @@ void InputParser::parse_general_vars(ALM *alm)
     double tolerance;
     double tolerance_constraint;
     double fc_zero_threshold;
-    int verbosity, nmaxsave;
+    int verbosity, nmaxsave, compression_level;
     bool structure_from_file = false;
 
     std::vector<std::string> kdname_v, periodic_v;
@@ -270,7 +270,7 @@ void InputParser::parse_general_vars(ALM *alm)
             "DBASIS", "TRIMEVEN", "VERBOSITY",
             "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FCSYM_BASIS",
             "NMAXSAVE", "FC3_SHENGBTE", "FC2_QEFC", "FCS_ALAMODE", "FC_ZERO_THR",
-            "SUPERCELL", "PRIMCELL", "STRUCTURE_FILE"
+            "SUPERCELL", "PRIMCELL", "STRUCTURE_FILE", "COMPRESSION"
     };
     std::vector<std::string> no_defaults{"PREFIX", "MODE"};
     std::map<std::string, std::string> general_var_dict;
@@ -419,6 +419,11 @@ void InputParser::parse_general_vars(ALM *alm)
     } else {
         assign_val(nmaxsave, "NMAXSAVE", general_var_dict);
     }
+    if (general_var_dict["COMPRESSION"].empty()) {
+        compression_level = 1;
+    } else {
+        assign_val(compression_level, "COMPRESSION", general_var_dict);
+    }
     if (general_var_dict["HESSIAN"].empty()) {
         print_hessian = 0;
     } else {
@@ -479,7 +484,8 @@ void InputParser::parse_general_vars(ALM *alm)
                                    tolerance_constraint,
                                    basis_force_constant,
                                    nmaxsave,
-                                   fc_zero_threshold);
+                                   fc_zero_threshold,
+                                   compression_level);
 
     kdname_v.clear();
     periodic_v.clear();
