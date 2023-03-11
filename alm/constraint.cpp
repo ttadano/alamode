@@ -1059,7 +1059,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
     int **xyzcomponent = nullptr;
 
     int ixyz;
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto nat = supercell.number_of_atoms;
 
     unsigned int isize;
@@ -1357,7 +1357,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     int **xyzcomponent;
 
     int ixyz;
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto nat = supercell.number_of_atoms;
 
     // generate combinations of mirror images
@@ -1829,7 +1829,7 @@ void Constraint::set_rotation_constraints(const std::unique_ptr<System> &system,
                                           std::vector<std::vector<ConstraintDoubleElement>> *const_self_vec,
                                           std::vector<std::vector<ConstraintDoubleElement>> *const_cross_vec)
 {
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto maxorder = cluster->get_maxorder();
 
     int iat, jat;
@@ -2232,7 +2232,7 @@ void Constraint::set_rotation_constraints_extra(const std::unique_ptr<System> &s
     if (order != (maxorder - 1) or status_constraint_subset["rotation_extra"] == -1) return;
 
     int j;
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
 
     int iat;
     int icrd;
@@ -2443,7 +2443,7 @@ void Constraint::setup_rotation_axis(bool flag[3][3])
 //            get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
 //    const auto natmin_ref = nat_ref / ntran_ref;
 //
-//    if (natmin_ref != symmetry->get_nat_prim()) {
+//    if (natmin_ref != symmetry->get_nat_trueprim()) {
 //        exit("fix_forceconstants_to_file",
 //             "The number of atoms in the primitive cell is not consistent.");
 //    }
@@ -2613,7 +2613,7 @@ void Constraint::get_forceconstants_from_file(const int order,
             get_value_from_xml(pt, "Data.Symmetry.NumberOfTranslations"));
     const auto natmin_ref = nat_ref / ntran_ref;
 
-    if (natmin_ref != symmetry->get_nat_prim()) {
+    if (natmin_ref != symmetry->get_nat_trueprim()) {
         exit("fix_forceconstants_to_file",
              "The number of atoms in the primitive cell is not consistent.");
     }

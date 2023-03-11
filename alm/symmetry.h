@@ -132,7 +132,11 @@ public:
 
     const std::vector<Maps> &get_map_super_to_trueprim() const;
 
+    const std::vector<Maps> &get_map_prim_to_trueprim() const;
+
     const std::vector<std::vector<int>> &get_map_trueprim_to_super() const;
+
+    const std::vector<std::vector<int>> &get_map_trueprim_to_prim() const;
 
     const std::vector<SymmetryOperation> &get_symmetry_data(const std::string cell = "super") const;
 
@@ -144,7 +148,7 @@ public:
 
     size_t get_ntran(const std::string cell = "super") const;
 
-    size_t get_nat_prim() const;
+    size_t get_nat_trueprim() const;
 
 private:
     size_t nsym_super, ntran_super;
@@ -157,9 +161,13 @@ private:
     // When nat_trueprim != primcell.number_of_atoms, ntran_prim will be larger
     // than 1.
 
-    std::vector<std::vector<int>> map_sym;   // [nat_base, nsym_super]
+    std::vector<std::vector<int>> map_fullsymmetry_super;   // [nat_base, nsym_super]
+    std::vector<std::vector<int>> map_fullsymmetry_prim;   // [nat_base, nsym_super]
+
     std::vector<std::vector<int>> map_trueprim_to_super;   // [nat_trueprim, ntran_super]
     std::vector<Maps> map_super_to_trueprim;               // [nat_super]
+    std::vector<std::vector<int>> map_trueprim_to_prim; // [nat_trueprim, ntran_prim]
+    std::vector<Maps> map_prim_to_trueprim;             // [nat_prim]
     std::vector<SymmetryOperation> symmetry_data_super; // [nsym_super]
     std::vector<SymmetryOperation> symmetry_data_prim; // [nsym_prim]
     std::vector<int> symnum_tran_super;            // [ntran_super]
@@ -185,7 +193,9 @@ private:
     void gen_mapping_information(const Cell &scell,
                                  const std::vector<std::vector<unsigned int>> &atomtype_group_super,
                                  const std::vector<SymmetryOperation> &symm_super,
-                                 const Cell &pcell);
+                                 const Cell &pcell,
+                                 const std::vector<std::vector<unsigned int>> &atomtype_group_prim,
+                                 const std::vector<SymmetryOperation> &symm_prim);
 
     void findsym_alm(const Cell &,
                      const std::vector<std::vector<unsigned int>> &,

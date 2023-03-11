@@ -207,7 +207,9 @@ void Fcs::generate_force_constant_table(const int order,
 
     for (const auto &pair: pairs) {
 
-        for (i = 0; i < order + 2; ++i) atmn[i] = pair.iarray[i];
+        for (i = 0; i < order + 2; ++i) {
+            atmn[i] = pair.iarray[i];
+        }
 
         for (i1 = 0; i1 < nxyz; ++i1) {
             for (i = 0; i < order + 2; ++i) ind[i] = 3 * atmn[i] + xyzcomponent[i1][i];
@@ -215,7 +217,7 @@ void Fcs::generate_force_constant_table(const int order,
             if (!is_ascending(order + 2, ind)) continue;
 
             i_prim = get_minimum_index_in_primitive(order + 2, ind, nat,
-                                                    symm_in->get_nat_prim(),
+                                                    symm_in->get_nat_trueprim(),
                                                     symm_in->get_map_trueprim_to_super());
             std::swap(ind[0], ind[i_prim]);
             sort_tail(order + 2, ind);
@@ -234,7 +236,7 @@ void Fcs::generate_force_constant_table(const int order,
 
                 if (!is_inprim(order + 2,
                                atmn_mapped,
-                               symm_in->get_nat_prim(),
+                               symm_in->get_nat_trueprim(),
                                symm_in->get_map_trueprim_to_super()))
                     continue;
 
@@ -252,7 +254,7 @@ void Fcs::generate_force_constant_table(const int order,
                         i_prim = get_minimum_index_in_primitive(order + 2,
                                                                 ind_mapped,
                                                                 nat,
-                                                                symm_in->get_nat_prim(),
+                                                                symm_in->get_nat_trueprim(),
                                                                 symm_in->get_map_trueprim_to_super());
                         std::swap(ind_mapped[0], ind_mapped[i_prim]);
                         sort_tail(order + 2, ind_mapped);
@@ -285,7 +287,7 @@ void Fcs::generate_force_constant_table(const int order,
                             is_searched[ind_mapped[0]] = true;
                             for (i = 1; i < order + 2; ++i) {
                                 if ((!is_searched[ind_mapped[i]]) && is_inprim(ind_mapped[i],
-                                                                               symm_in->get_nat_prim(),
+                                                                               symm_in->get_nat_trueprim(),
                                                                                symm_in->get_map_trueprim_to_super())) {
 
                                     for (j = 0; j < order + 2; ++j) ind_mapped_tmp[j] = ind_mapped[j];
@@ -374,7 +376,7 @@ void Fcs::get_constraint_symmetry(const size_t nat,
     std::vector<std::vector<int>> map_sym;
     std::vector<Eigen::Matrix3d> rotation;
     const auto nsym = symmetry->get_symmetry_data().size();
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto nfcs = fc_table_in.size();
     const auto use_compatible = false;
 
@@ -563,7 +565,7 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
     std::vector<std::vector<int>> map_sym;
     std::vector<Eigen::Matrix3d> rotation;
     const auto nsym = symmetry->get_symmetry_data().size();
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto nfcs = fc_table_in.size();
     const auto use_compatible = false;
 
@@ -1187,7 +1189,7 @@ void Fcs::translate_forceconstant_index_to_centercell(const std::unique_ptr<Symm
     const auto symnum_tran = symmetry->get_symnum_tran();
     const auto nfcs = index_inout.size();
     const auto nelems = index_inout[0].size();
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     std::vector<int> atoms, coords;
     std::vector<int> atoms_tran;
     std::vector<int> index_tran;

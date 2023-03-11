@@ -73,7 +73,7 @@ int Optimize::optimize_main(const std::unique_ptr<Symmetry> &symmetry,
 {
     timer->start_clock("optimize");
 
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto ndata_used = filedata_train.nend - filedata_train.nstart + 1
                             - filedata_train.skip_e + filedata_train.skip_s;
     const auto ndata_used_validation = filedata_validation.nend - filedata_validation.nstart + 1;
@@ -2021,7 +2021,7 @@ void Optimize::get_matrix_elements(const int maxorder,
 {
     size_t i, j;
     long irow;
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto natmin3 = 3 * natmin;
     std::vector<std::vector<double>> u_multi, f_multi;
 
@@ -2160,7 +2160,7 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
     }
 
     const auto ndata_fit = u_in.size();
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto natmin3 = 3 * natmin;
     const auto nrows = u_in.size() * u_in[0].size();
     size_t ncols = 0;
@@ -2374,7 +2374,7 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
     }
 
     const auto ndata_fit = u_in.size();
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto natmin3 = 3 * natmin;
     const auto nrows = u_in.size() * u_in[0].size();
 
@@ -2612,7 +2612,7 @@ void Optimize::data_multiplier(const std::vector<std::vector<double>> &data_in,
                                std::vector<std::vector<double>> &data_out,
                                const std::unique_ptr<Symmetry> &symmetry) const
 {
-    const auto nat = symmetry->get_nat_prim() * symmetry->get_ntran();
+    const auto nat = symmetry->get_nat_trueprim() * symmetry->get_ntran();
     const auto ndata_used = data_in.size();
     const auto ntran = symmetry->get_ntran();
 
@@ -2640,7 +2640,7 @@ int Optimize::inprim_index(const int n,
     const auto atmn = n / 3;
     const auto crdn = n % 3;
 
-    for (size_t i = 0; i < symmetry->get_nat_prim(); ++i) {
+    for (size_t i = 0; i < symmetry->get_nat_trueprim(); ++i) {
         if (symmetry->get_map_trueprim_to_super()[i][0] == atmn) {
             in = 3 * i + crdn;
             break;

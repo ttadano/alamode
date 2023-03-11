@@ -64,9 +64,19 @@ const std::vector<Maps> &Symmetry::get_map_super_to_trueprim() const
     return map_super_to_trueprim;
 }
 
+const std::vector<Maps> &Symmetry::get_map_prim_to_trueprim() const
+{
+    return map_prim_to_trueprim;
+}
+
 const std::vector<std::vector<int>> &Symmetry::get_map_trueprim_to_super() const
 {
     return map_trueprim_to_super;
+}
+
+const std::vector<std::vector<int>> &Symmetry::get_map_trueprim_to_prim() const
+{
+    return map_trueprim_to_prim;
 }
 
 const std::vector<SymmetryOperation> &Symmetry::get_symmetry_data(const std::string cell) const
@@ -77,7 +87,7 @@ const std::vector<SymmetryOperation> &Symmetry::get_symmetry_data(const std::str
 
 const std::vector<std::vector<int>> &Symmetry::get_map_sym() const
 {
-    return map_sym;
+    return map_fullsymmetry_super;
 }
 
 const std::vector<int> &Symmetry::get_symnum_tran(const std::string cell) const
@@ -98,7 +108,7 @@ size_t Symmetry::get_ntran(const std::string cell) const
     return ntran_super;
 }
 
-size_t Symmetry::get_nat_prim() const
+size_t Symmetry::get_nat_trueprim() const
 {
     return nat_trueprim;
 }
@@ -127,13 +137,20 @@ void Symmetry::init(const std::unique_ptr<System> &system,
                              verbosity);
 
 
-    map_sym.clear();
-    map_sym.shrink_to_fit();
-    map_sym.resize(system->get_supercell().number_of_atoms, std::vector<int>(nsym_super));
-
+    map_fullsymmetry_super.clear();
+    map_fullsymmetry_super.shrink_to_fit();
+    map_fullsymmetry_super.resize(system->get_supercell().number_of_atoms,
+                                  std::vector<int>(nsym_super));
+    map_fullsymmetry_prim.clear();
+    map_fullsymmetry_prim.shrink_to_fit();
+    map_fullsymmetry_prim.resize(system->get_primcell().number_of_atoms,
+                                 std::vector<int>(nsym_prim));
     map_trueprim_to_super.clear();
     map_trueprim_to_super.shrink_to_fit();
     map_trueprim_to_super.resize(nat_trueprim, std::vector<int>(ntran_super));
+    map_trueprim_to_prim.clear();
+    map_trueprim_to_prim.shrink_to_fit();
+    map_trueprim_to_prim.resize(nat_trueprim, std::vector<int>(ntran_prim));
 
     // symmetry_data_super is updated here.
     update_symmetry_operations_supercell(system->get_primcell(),
@@ -154,7 +171,9 @@ void Symmetry::init(const std::unique_ptr<System> &system,
     gen_mapping_information(system->get_supercell(),
                             system->get_atomtype_group(),
                             symmetry_data_super,
-                            system->get_primcell());
+                            system->get_primcell(),
+                            system->get_atomtype_group("prim"),
+                            symmetry_data_prim);
 
     if (printsymmetry) {
         print_symmetry_infomation(verbosity);
@@ -826,7 +845,7 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
             trans_vecs.emplace_back(vtmp);
         }
 
-        tran_d = tran.unaryExpr([] (const int x) {return static_cast<double>(x);});
+        tran_d = tran.unaryExpr([](const int x) { return static_cast<double>(x); });
 
         map_index.clear();
 
@@ -840,7 +859,7 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
                 if (is_done[k]) continue;
 
                 xtmp3 = cell_super.x_fractional.row(k);
-                xdiff = (xtmp3 - xtmp2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x));});
+                xdiff = (xtmp3 - xtmp2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
 
                 if (xdiff.norm() < eps6) {
                     is_done[k] = 1;
@@ -854,7 +873,7 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
     std::set<std::vector<int>> unique_shifts_set;
     std::vector<std::vector<int>> unique_shifts_vec;
 
-    for (const auto &it_tran : trans_vecs) {
+    for (const auto &it_tran: trans_vecs) {
         if (unique_shifts_set.find(it_tran) == unique_shifts_set.end()) {
             unique_shifts_set.insert(it_tran);
             unique_shifts_vec.emplace_back(it_tran);
@@ -911,67 +930,103 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
 void Symmetry::gen_mapping_information(const Cell &scell,
                                        const std::vector<std::vector<unsigned int>> &atomtype_group_super,
                                        const std::vector<SymmetryOperation> &symm_super,
-                                       const Cell &pcell)
+                                       const Cell &pcell,
+                                       const std::vector<std::vector<unsigned int>> &atomtype_group_prim,
+                                       const std::vector<SymmetryOperation> &symm_prim)
 {
     int isym;
-    size_t iat, jat;
-    size_t i, j;
-    size_t itype;
-    size_t ii, jj;
-    double xnew[3], x_tmp[3];
-    double tmp[3], diff;
-    double rot_double[3][3];
+    size_t iat;
 
-    auto nsym_tmp = symm_super.size();
+    auto nsym_super = symm_super.size();
+    auto nsym_prim = symm_prim.size();
 
     for (iat = 0; iat < scell.number_of_atoms; ++iat) {
         for (isym = 0; isym < symm_super.size(); ++isym) {
-            map_sym[iat][isym] = -1;
+            map_fullsymmetry_super[iat][isym] = -1;
+        }
+    }
+    for (iat = 0; iat < pcell.number_of_atoms; ++iat) {
+        for (isym = 0; isym < symm_prim.size(); ++isym) {
+            map_fullsymmetry_prim[iat][isym] = -1;
         }
     }
 
-    const auto natomtypes = atomtype_group_super.size();
+    auto natomtypes_s = atomtype_group_super.size();
+    auto natomtypes_p = atomtype_group_prim.size();
 
-#ifdef _OPENMP
-#pragma omp parallel for private(i, j, rot_double, itype, ii, iat, x_tmp, xnew, jj, jat, tmp, diff, isym)
-#endif
-    for (isym = 0; isym < nsym_tmp; ++isym) {
+#pragma omp parallel
+    {
+        size_t i, j;
+        size_t itype;
+        size_t ii, jj;
+        size_t jat;
+        Eigen::Vector3d xnew, xdiff;
+        Eigen::Matrix3d rot_double;
 
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                rot_double[i][j] = static_cast<double>(symm_super[isym].rotation(i, j));
+#pragma omp for private(iat, isym)
+        for (isym = 0; isym < nsym_super; ++isym) {
+
+            rot_double = symm_super[isym].rotation.unaryExpr([](const double x) { return static_cast<double>(x); });
+
+            for (itype = 0; itype < natomtypes_s; ++itype) {
+
+                for (ii = 0; ii < atomtype_group_super[itype].size(); ++ii) {
+
+                    iat = atomtype_group_super[itype][ii];
+
+                    xnew = rot_double * scell.x_fractional.row(iat).transpose() + symm_super[isym].tran;
+
+                    for (jj = 0; jj < atomtype_group_super[itype].size(); ++jj) {
+
+                        jat = atomtype_group_super[itype][jj];
+
+                        xdiff = (scell.x_fractional.row(jat).transpose() - xnew).unaryExpr(
+                                [](const double x) { return x - static_cast<double>(nint(x));});
+
+                        if (xdiff.norm() < tolerance) {
+                            map_fullsymmetry_super[iat][isym] = jat;
+                            break;
+                        }
+                    }
+                    if (map_fullsymmetry_super[iat][isym] == -1) {
+                        exit("gen_mapping_information",
+                             "failed find equivalent atom for symmetry operation # ",
+                             isym + 1);
+                    }
+                }
             }
         }
 
-        for (itype = 0; itype < natomtypes; ++itype) {
+#pragma omp for private(iat, isym)
+        for (isym = 0; isym < nsym_prim; ++isym) {
 
-            for (ii = 0; ii < atomtype_group_super[itype].size(); ++ii) {
+            rot_double = symm_prim[isym].rotation.unaryExpr([](const double x) { return static_cast<double>(x); });
 
-                iat = atomtype_group_super[itype][ii];
+            for (itype = 0; itype < natomtypes_p; ++itype) {
 
-                for (i = 0; i < 3; ++i) x_tmp[i] = scell.x_fractional(iat, i);
-                rotvec(xnew, x_tmp, rot_double);
+                for (ii = 0; ii < atomtype_group_prim[itype].size(); ++ii) {
 
-                for (i = 0; i < 3; ++i) xnew[i] += symm_super[isym].tran[i];
+                    iat = atomtype_group_prim[itype][ii];
 
-                for (jj = 0; jj < atomtype_group_super[itype].size(); ++jj) {
+                    xnew = rot_double * pcell.x_fractional.row(iat).transpose() + symm_prim[isym].tran;
 
-                    jat = atomtype_group_super[itype][jj];
+                    for (jj = 0; jj < atomtype_group_prim[itype].size(); ++jj) {
 
-                    for (i = 0; i < 3; ++i) {
-                        tmp[i] = std::fmod(std::abs(scell.x_fractional(jat, i) - xnew[i]), 1.0);
-                        tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
+                        jat = atomtype_group_prim[itype][jj];
+
+                        xdiff = (pcell.x_fractional.row(jat).transpose() - xnew).unaryExpr(
+                                [](const double x) { return x - static_cast<double>(nint(x));});
+
+                        if (xdiff.norm() < tolerance) {
+                            map_fullsymmetry_prim[iat][isym] = jat;
+                            break;
+                        }
                     }
-                    diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-                    if (diff < tolerance * tolerance) {
-                        map_sym[iat][isym] = jat;
-                        break;
+                    if (map_fullsymmetry_prim[iat][isym] == -1) {
+                        exit("gen_mapping_information",
+                             "failed find equivalent atom for symmetry operation # ",
+                             isym + 1);
                     }
-                }
-                if (map_sym[iat][isym] == -1) {
-                    exit("gen_mapping_information",
-                         "cannot find symmetry for operation # ",
-                         isym + 1);
                 }
             }
         }
@@ -979,39 +1034,60 @@ void Symmetry::gen_mapping_information(const Cell &scell,
 
     // Generate map_trueprim_to_super (true primitive --> super)
 
-    bool *is_checked;
-    allocate(is_checked, scell.number_of_atoms);
-
-    for (i = 0; i < scell.number_of_atoms; ++i) is_checked[i] = false;
-
-    jat = 0;
+    std::vector<int> is_checked(scell.number_of_atoms, 0);
+    int jat = 0;
     int atomnum_translated;
     for (iat = 0; iat < scell.number_of_atoms; ++iat) {
 
         if (is_checked[iat]) continue;
-        for (i = 0; i < ntran_super; ++i) {
-            atomnum_translated = map_sym[iat][symnum_tran_super[i]];
+        for (auto i = 0; i < ntran_super; ++i) {
+            atomnum_translated = map_fullsymmetry_super[iat][symnum_tran_super[i]];
             map_trueprim_to_super[jat][i] = atomnum_translated;
-            is_checked[atomnum_translated] = true;
+            is_checked[atomnum_translated] = 1;
         }
         ++jat;
     }
 
-    deallocate(is_checked);
-
     // Generate map_super_to_trueprim (super --> true primitive)
-
     map_super_to_trueprim.clear();
     map_super_to_trueprim.resize(scell.number_of_atoms);
-
     for (iat = 0; iat < nat_trueprim; ++iat) {
-        for (i = 0; i < ntran_super; ++i) {
+        for (auto i = 0; i < ntran_super; ++i) {
             atomnum_translated = map_trueprim_to_super[iat][i];
             map_super_to_trueprim[atomnum_translated].atom_num = iat;
             map_super_to_trueprim[atomnum_translated].tran_num = i;
         }
     }
+
+    jat = 0;
+    is_checked.resize(pcell.number_of_atoms);
+    for (iat = 0; iat < pcell.number_of_atoms; ++iat) {
+        is_checked[iat] = 0;
+    }
+
+    for (iat = 0; iat < pcell.number_of_atoms; ++iat) {
+
+        if (is_checked[iat]) continue;
+        for (auto i = 0; i < ntran_prim; ++i) {
+            atomnum_translated = map_fullsymmetry_prim[iat][symnum_tran_prim[i]];
+            map_trueprim_to_prim[jat][i] = atomnum_translated;
+            is_checked[atomnum_translated] = 1;
+        }
+        ++jat;
+    }
+
+    // Generate map_prim_to_trueprim (input primitive --> true primitive)
+    map_prim_to_trueprim.clear();
+    map_prim_to_trueprim.resize(pcell.number_of_atoms);
+    for (iat = 0; iat < nat_trueprim; ++iat) {
+        for (auto i = 0; i < ntran_prim; ++i) {
+            atomnum_translated = map_trueprim_to_prim[iat][i];
+            map_prim_to_trueprim[atomnum_translated].atom_num = iat;
+            map_prim_to_trueprim[atomnum_translated].tran_num = i;
+        }
+    }
 }
+
 
 bool Symmetry::is_translation(const int rot[3][3]) const
 {
@@ -1057,7 +1133,7 @@ bool Symmetry::is_compatible(const Eigen::MatrixBase<T> &mat,
 
     for (auto i = 0; i < 3; ++i) {
         for (auto j = 0; j < 3; ++j) {
-            if (std::abs(mat(i,j)) > tolerance_zero) ++nfinite;
+            if (std::abs(mat(i, j)) > tolerance_zero) ++nfinite;
         }
     }
     return (nfinite == 3);

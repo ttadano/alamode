@@ -22,6 +22,10 @@
 #include "optimize.h"
 #include "files.h"
 
+#define H5_USE_EIGEN 1
+
+#include <highfive/H5Easy.hpp>
+
 
 namespace ALM_NS {
 class AtomProperty {
@@ -30,7 +34,7 @@ public:
     int kind;
     size_t atom, tran;
 
-    AtomProperty() = default;;
+    AtomProperty() = default;
 
     AtomProperty(const AtomProperty &other) = default;
 
@@ -56,6 +60,38 @@ public:
     size_t nspecies;
 
     SystemInfo() = default;;
+};
+
+class ForceConstantsWithShifts {
+public:
+    std::vector<int> atoms_p;
+    std::vector<int> coords;
+    std::vector<Eigen::Vector3d> shifts;
+    double fcs_value;
+
+    ForceConstantsWithShifts() = default;
+
+    ForceConstantsWithShifts(const std::vector<int> &atoms_p_,
+                             const std::vector<int> &coords_,
+                             const std::vector<Eigen::Vector3d> shifts_,
+                             const double fcs_value_)
+    {
+        coords = coords_;
+        atoms_p = atoms_p_;
+        shifts = shifts_;
+        fcs_value = fcs_value_;
+    }
+
+    bool operator<(const ForceConstantsWithShifts &obj) const
+    {
+        std::vector<int> flatternarray(coords.size()), flatternarray_(coords.size());
+        for (auto i = 0; i < coords.size(); ++i) {
+            flatternarray[i] = 3 * atoms_p[i] + coords[i];
+            flatternarray_[i] = 3 * obj.atoms_p[i] + obj.coords[i];
+        }
+        return std::lexicographical_compare(flatternarray.begin(), flatternarray.end(),
+                                            flatternarray_.begin(), flatternarray_.end());
+    }
 };
 
 class Writer {
@@ -141,6 +177,22 @@ private:
                           const std::string fname_dfset,
                           const std::string fname_fcs,
                           const int verbosity) const;
+
+    void write_structures_h5(H5Easy::File &file,
+                             const Cell &cell,
+                             const Spin &spin,
+                             const std::string &celltype,
+                             const std::vector<std::string> &kdnames,
+                             const size_t ntran,
+                             const std::vector<std::vector<int>> &mapping_info) const;
+
+    void write_forceconstant_at_given_order_h5(H5Easy::File &file,
+                                               const int order,
+                                               const std::vector<ForceConstantTable> &fc_cart,
+                                               const std::vector<Eigen::MatrixXd> &x_image,
+                                               const std::vector<Maps> &map_s2tp,
+                                               const std::unique_ptr<Cluster> &cluster,
+                                               const int compression_level = 9) const;
 
     void write_hessian(const std::unique_ptr<System> &system,
                        const std::unique_ptr<Symmetry> &symmetry,

@@ -79,15 +79,15 @@ void Cluster::init(const std::unique_ptr<System> &system,
 
     set_interaction_by_cutoff(system->get_supercell().number_of_atoms,
                               system->get_supercell().kind,
-                              symmetry->get_nat_prim(),
+                              symmetry->get_nat_trueprim(),
                               symmetry->get_map_trueprim_to_super(),
                               atoms_in_cutoff);
 
     interaction_cluster.clear();
     interaction_cluster.resize(maxorder,
-                               std::vector<std::set<InteractionCluster>>(symmetry->get_nat_prim()));
+                               std::vector<std::set<InteractionCluster>>(symmetry->get_nat_trueprim()));
 
-    calc_interaction_clusters(symmetry->get_nat_prim(),
+    calc_interaction_clusters(symmetry->get_nat_trueprim(),
                               system->get_supercell().kind,
                               symmetry->get_map_trueprim_to_super(),
                               system->get_x_image(),
@@ -97,7 +97,7 @@ void Cluster::init(const std::unique_ptr<System> &system,
     unique_clusters.clear();
     unique_clusters.resize(maxorder);
 
-    generate_unique_clusters(symmetry->get_nat_prim(),
+    generate_unique_clusters(symmetry->get_nat_trueprim(),
                              symmetry->get_map_trueprim_to_super(),
                              unique_clusters);
 
@@ -138,14 +138,14 @@ void Cluster::init(const std::unique_ptr<System> &system,
         }
 
         print_neighborlist(system->get_supercell().number_of_atoms,
-                           symmetry->get_nat_prim(),
+                           symmetry->get_nat_trueprim(),
                            symmetry->get_map_trueprim_to_super(),
                            system->get_supercell().kind,
                            system->get_kdname());
     }
 
     if (verbosity > 1) {
-        print_interaction_information(symmetry->get_nat_prim(),
+        print_interaction_information(symmetry->get_nat_trueprim(),
                                       symmetry->get_map_trueprim_to_super(),
                                       system->get_supercell().kind,
                                       system->get_kdname(),
@@ -206,7 +206,7 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                                          int order)
 {
     const auto nat = system->get_supercell().number_of_atoms;
-    int natmin = symmetry->get_nat_prim();
+    int natmin = symmetry->get_nat_trueprim();
 
     int isym_tran, isym;
     int j, j2;
@@ -476,7 +476,7 @@ void Cluster::make_symnum_tran_to_prim(const std::unique_ptr<System> &system,
 {
 
     const auto nat = system->get_supercell().number_of_atoms;
-    int natmin = symmetry->get_nat_prim();
+    int natmin = symmetry->get_nat_trueprim();
     int isym_tran, isym;
     int iat, jat;
 

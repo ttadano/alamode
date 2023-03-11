@@ -29,8 +29,6 @@
 #include <boost/version.hpp>
 #include <boost/asio/ip/host_name.hpp>
 
-#define H5_USE_EIGEN 1
-
 #include <highfive/H5File.hpp>
 #include <highfive/H5Easy.hpp>
 
@@ -503,7 +501,7 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
     }
 
     system_structure.nat = system->get_supercell().number_of_atoms;
-    system_structure.natmin = symmetry->get_nat_prim();
+    system_structure.natmin = symmetry->get_nat_trueprim();
     system_structure.ntran = symmetry->get_ntran();
     system_structure.nspecies = system->get_supercell().number_of_elems;
 
@@ -819,70 +817,50 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
 {
     using namespace H5Easy;
     int i, j;
-    std::vector<int> natom, nkinds;
-    std::vector<std::string> kind_names;
 
-    natom.resize(1);
-    nkinds.resize(1);
-    for (i = 0; i < system->get_supercell().number_of_elems; ++i) {
-        kind_names.push_back(system->get_kdname()[i]);
-    }
+    File file(fname_fcs, File::ReadWrite | File::Create | File::Truncate);
 
-    File file(fname_fcs, File::ReadWrite | File::Create| File::Truncate);
-
-    // Supercell information
-    std::string unitname("bohr");
-    dump(file, "/SuperCell/lattice_vector", system->get_supercell().lattice_vector);
-    dumpAttribute(file, "/SuperCell/lattice_vector", "unit", unitname);
-    dump(file, "/SuperCell/number_of_atoms", system->get_supercell().number_of_atoms);
-    dump(file, "/SuperCell/number_of_elements", system->get_supercell().number_of_elems);
-    dump(file, "/SuperCell/fractional_coordinate", system->get_supercell().x_fractional);
-    dump(file, "/SuperCell/atomic_kinds", system->get_supercell().kind);
-    dump(file, "/SuperCell/elements", kind_names);
-    dump(file, "/SuperCell/spin_polarized", system->get_spin().lspin ? 1 : 0);
-    if (system->get_spin().lspin) {
-        dump(file, "/SuperCell/magnetic_moments", system->get_spin().magmom);
-        dumpAttribute(file, "/SuperCell/magnetic_moments", "noncollinear", system->get_spin().noncollinear);
-        dumpAttribute(file, "/SuperCell/magnetic_moments", "time_reversal_symmetry", system->get_spin().time_reversal_symm);
-    }
-    dump(file, "/SuperCell/number_of_primitive_translations", symmetry->get_symnum_tran("super").size());
-
-    // Primitive cell information
-    dump(file, "/PrimitiveCell/lattice_vector", system->get_primcell().lattice_vector);
-    dumpAttribute(file, "/PrimitiveCell/lattice_vector", "unit", unitname);
-    dump(file, "/PrimitiveCell/number_of_atoms", system->get_primcell().number_of_atoms);
-    dump(file, "/PrimitiveCell/number_of_elements", system->get_primcell().number_of_elems);
-    dump(file, "/PrimitiveCell/fractional_coordinate", system->get_primcell().x_fractional);
-    dump(file, "/PrimitiveCell/atomic_kinds", system->get_primcell().kind);
-    dump(file, "/PrimitiveCell/elements", kind_names);
-    dump(file, "/PrimitiveCell/spin_polarized", system->get_spin().lspin ? 1 : 0);
-
-    if (system->get_spin().lspin) {
-        std::string cell = "prim";
-        dump(file, "/PrimitiveCell/magnetic_moments", system->get_spin(cell).magmom);
-        dumpAttribute(file, "/PrimitiveCell/magnetic_moments", "noncollinear", system->get_spin(cell).noncollinear);
-        dumpAttribute(file, "/PrimitiveCell/magnetic_moments", "time_reversal_symmetry", system->get_spin(cell).time_reversal_symm);
-    }
-    dump(file, "/PrimitiveCell/number_of_primitive_translations", symmetry->get_symnum_tran("prim").size());
+    // SuperCell
+    write_structures_h5(file,
+                        system->get_supercell(),
+                        system->get_spin(),
+                        "SuperCell",
+                        system->get_kdname(),
+                        symmetry->get_symnum_tran("super").size(),
+                        symmetry->get_map_trueprim_to_super());
+    // PrimitiveCell
+    write_structures_h5(file,
+                        system->get_primcell(),
+                        system->get_spin("prim"),
+                        "PrimitiveCell",
+                        system->get_kdname(),
+                        symmetry->get_symnum_tran("prim").size(),
+                        symmetry->get_map_trueprim_to_prim());
 
     // Force Constants
+    for (auto order = 0; order < cluster->get_maxorder(); ++order) {
 
+        if (order >= get_output_maxorder()) break;
 
+        auto fc_cart = fcs->get_fc_cart()[order];
+        std::sort(fc_cart.begin(), fc_cart.end());
 
+        write_forceconstant_at_given_order_h5(file,
+                                              order,
+                                              fc_cart,
+                                              system->get_x_image(),
+                                              symmetry->get_map_super_to_trueprim(),
+                                              cluster, 4);
+    }
 
     // ALAMODE version
     dump(file, "/version", ALAMODE_VERSION);
-//    Attribute version = file.createAttribute<std::string>("version",
-//                                                          DataSpace::From(ALAMODE_VERSION));
-//    version.write(ALAMODE_VERSION);
+
     // Hostname
     // This part necessitates the program to be linked with boost libraries,
     // so it is deactivated for the moment.
 #ifdef _BOOST_LIBRARY_LINKABLE
-    const std::string host_name = static_cast<std::string>(boost::asio::ip::host_name());
-    Attribute hostname = file.createAttribute<std::string>("hostname",
-                                                           DataSpace::From(host_name));
-    hostname.write(host_name);
+    dump(file, "/hostname", static_cast<std::string>(boost::asio::ip::host_name()));
 #endif
 
     // Finally, save the created date and time as attribute
@@ -890,10 +868,142 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
     std::string time_str;
     time_str.resize(100);
     std::strftime(&time_str[0], time_str.size(), "%Y-%b-%d %T", std::localtime(&result));
-    Attribute localtime = file.createAttribute<std::string>("created date",
-                                                            DataSpace::From(time_str));
-    localtime.write(time_str);
+    dump(file, "/created date", time_str);
 }
+
+void Writer::write_structures_h5(H5Easy::File &file,
+                                 const Cell &cell,
+                                 const Spin &spin,
+                                 const std::string &celltype,
+                                 const std::vector<std::string> &kdnames,
+                                 const size_t ntran,
+                                 const std::vector<std::vector<int>> &mapping_info) const
+{
+    // Write structure information to the hdf5 file object.
+    using namespace H5Easy;
+    std::string unitname("bohr");
+
+    std::vector<std::string> kind_names;
+    for (auto i = 0; i < cell.number_of_elems; ++i) {
+        kind_names.push_back(kdnames[i]);
+    }
+    dump(file, "/" + celltype + "/lattice_vector", cell.lattice_vector);
+    dumpAttribute(file, "/" + celltype + "/lattice_vector", "unit", unitname);
+    dump(file, "/" + celltype + "/number_of_atoms", cell.number_of_atoms);
+    dump(file, "/" + celltype + "/number_of_elements", cell.number_of_elems);
+    dump(file, "/" + celltype + "/fractional_coordinate", cell.x_fractional);
+    dump(file, "/" + celltype + "/atomic_kinds", cell.kind);
+    dump(file, "/" + celltype + "/elements", kind_names);
+    dump(file, "/" + celltype + "/spin_polarized", spin.lspin ? 1 : 0);
+    if (spin.lspin) {
+        dump(file, "/" + celltype + "/magnetic_moments", spin.magmom);
+        dumpAttribute(file, "/" + celltype + "/magnetic_moments", "noncollinear", spin.noncollinear);
+        dumpAttribute(file, "/" + celltype + "/magnetic_moments", "time_reversal_symmetry", spin.time_reversal_symm);
+    }
+    dump(file, "/" + celltype + "/number_of_primitive_translations", ntran);
+    dump(file, "/" + celltype + "/mapping_table", mapping_info);
+}
+
+
+void Writer::write_forceconstant_at_given_order_h5(H5Easy::File &file,
+                                                   const int order,
+                                                   const std::vector<ForceConstantTable> &fc_cart,
+                                                   const std::vector<Eigen::MatrixXd> &x_image,
+                                                   const std::vector<Maps> &map_s2tp,
+                                                   const std::unique_ptr<Cluster> &cluster,
+                                                   const int compression_level) const
+{
+    using namespace H5Easy;
+    std::vector<ForceConstantsWithShifts> fc;
+    std::vector<int> atom_tmp;
+    std::vector<std::vector<int>> cell_dummy;
+
+    Eigen::Vector3d xdiff;
+    std::vector<Eigen::Vector3d> xshifts;
+    double fcs_value_tmp;
+    std::vector<int> atoms_tmp;
+    std::vector<int> index_atoms_trueprim;
+    std::vector<int> index_atoms_prim;
+
+    fc.clear();
+
+    int i, j;
+
+    for (const auto &it: fc_cart) {
+
+        index_atoms_trueprim.clear();
+
+        for (i = 0; i < order + 2; ++i) {
+            index_atoms_trueprim.push_back(map_s2tp[it.atoms[i]].atom_num);
+        }
+
+        j = index_atoms_trueprim[0];
+        atom_tmp.clear();
+        for (i = 0; i < order + 1; ++i) {
+            atom_tmp.push_back(it.atoms[i + 1]);
+        }
+        auto iter_cluster = cluster->get_interaction_cluster(order, j).find(InteractionCluster(atom_tmp,
+                                                                                               cell_dummy));
+
+        if (iter_cluster != cluster->get_interaction_cluster(order, j).end()) {
+            auto multiplicity = (*iter_cluster).cell.size();
+
+            fcs_value_tmp = it.fc_value / static_cast<double>(multiplicity);
+
+            for (auto imulti = 0; imulti < multiplicity; ++imulti) {
+                auto cell_now = (*iter_cluster).cell[imulti];
+
+                xshifts.clear();
+                for (auto ishifts = 0; ishifts < order + 1; ++ishifts) {
+                    xdiff = x_image[cell_now[ishifts]].row(it.atoms[ishifts + 1])
+                            - x_image[0].row(it.atoms[0]);
+                    xshifts.emplace_back(xdiff);
+                }
+
+                fc.emplace_back(index_atoms_trueprim,
+                                it.coords,
+                                xshifts,
+                                fcs_value_tmp);
+            }
+        }
+    }
+
+    std::sort(fc.begin(), fc.end());
+
+    const auto nrows = fc.size();
+    Eigen::MatrixXi atom_indices(nrows, order + 2), coord_indices(nrows, order + 2);
+    Eigen::MatrixXd shift_vectors(nrows, 3 * (order + 1));
+    Eigen::ArrayXd fcs_arrays(nrows);
+
+    auto counter = 0;
+    for (const auto &it: fc) {
+        for (i = 0; i < order + 2; ++i) {
+            atom_indices(counter, i) = it.atoms_p[i];
+            coord_indices(counter, i) = it.coords[i];
+        }
+        for (i = 0; i < order + 1; ++i) {
+            for (j = 0; j < 3; ++j) {
+                shift_vectors(counter, 3 * i + j) = it.shifts[i][j];
+            }
+        }
+        fcs_arrays[counter] = it.fcs_value;
+        ++counter;
+    }
+
+    const std::string str_ordername = "Order" + std::to_string(order + 2);
+    dump(file, "/ForceConstants/" + str_ordername + "/atom_indices", atom_indices, Compression(compression_level));
+    dump(file, "/ForceConstants/" + str_ordername + "/coord_indices", coord_indices, Compression(compression_level));
+    dump(file, "/ForceConstants/" + str_ordername + "/shift_vectors", shift_vectors, Compression(compression_level));
+    std::string unitname = "bohr";
+    const std::string basisname = "Cartesian";
+    dumpAttribute(file, "/ForceConstants/" + str_ordername + "/shift_vectors", "unit", unitname);
+    dumpAttribute(file, "/ForceConstants/" + str_ordername + "/shift_vectors", "basis", basisname);
+    dump(file, "/ForceConstants/" + str_ordername + "/force_constant_values", fcs_arrays,
+         Compression(compression_level));
+    unitname = "Ry/bohr^" + std::to_string(order + 2);
+    dumpAttribute(file, "/ForceConstants/" + str_ordername + "/force_constant_values", "unit", unitname);
+}
+
 
 void Writer::write_hessian(const std::unique_ptr<System> &system,
                            const std::unique_ptr<Symmetry> &symmetry,
@@ -1039,7 +1149,7 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
     int ***has_element;
     size_t nelems = 0;
     const auto nat3 = 3 * system->get_supercell().number_of_atoms;
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto nat = system->get_supercell().number_of_atoms;
     const auto ntran = symmetry->get_ntran();
 
