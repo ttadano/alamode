@@ -110,7 +110,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/alm.h
             ${PROJECT_SOURCE_DIR}/symmetry.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/timer.h
-            ${PROJECT_SOURCE_DIR}/writer.h smith.cpp smith.h)
+            ${PROJECT_SOURCE_DIR}/writer.h smith.cpp smith.h ../include/hdf5_parser.h)
 
 # # Trick to use gcc to compile *.cpp: This doesn't work because of boost
 # SET_SOURCE_FILES_PROPERTIES(${SOURCES} PROPERTIES LANGUAGE C)

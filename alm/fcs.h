@@ -153,6 +153,17 @@ public:
     {
         return flattenarray == a.flattenarray;
     }
+
+    static bool compare_atom_index(const ForceConstantTable &a,
+                                   const ForceConstantTable &b)
+    {
+        const auto n1 = a.atoms.size();
+        const auto n2 = b.atoms.size();
+        if (n1 != n2) return n1 < n2;
+
+        return std::lexicographical_compare(a.atoms.begin(), a.atoms.end(),
+                                            b.atoms.begin(), b.atoms.end());
+    }
 };
 
 class Fcs {
@@ -223,6 +234,10 @@ public:
 
     void translate_forceconstant_index_to_centercell(const std::unique_ptr<Symmetry> &symmetry,
                                                      std::vector<std::vector<int>> &index_inout) const;
+
+    void change_basis_force_constants(const std::vector<ForceConstantTable> &fc_in,
+                                      std::vector<ForceConstantTable> &fc_out,
+                                      const int conversion_direction) const;
 
 private:
     std::vector<size_t> *nequiv;       // stores duplicate number of irreducible force constants

@@ -64,7 +64,7 @@ public:
 
 class ForceConstantsWithShifts {
 public:
-    std::vector<int> atoms_p;
+    std::vector<int> atoms_p, atoms_s;
     std::vector<int> coords;
     std::vector<Eigen::Vector3d> shifts;
     double fcs_value;
@@ -72,12 +72,14 @@ public:
     ForceConstantsWithShifts() = default;
 
     ForceConstantsWithShifts(const std::vector<int> &atoms_p_,
+                             const std::vector<int> &atoms_s_,
                              const std::vector<int> &coords_,
                              const std::vector<Eigen::Vector3d> shifts_,
                              const double fcs_value_)
     {
         coords = coords_;
         atoms_p = atoms_p_;
+        atoms_s = atoms_s_;
         shifts = shifts_;
         fcs_value = fcs_value_;
     }

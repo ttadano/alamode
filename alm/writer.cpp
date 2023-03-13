@@ -891,7 +891,7 @@ void Writer::write_structures_h5(H5Easy::File &file,
     for (auto i = 0; i < cell.number_of_elems; ++i) {
         kind_names.push_back(kdnames[i]);
     }
-    dump(file, "/" + celltype + "/lattice_vector", cell.lattice_vector);
+    dump(file, "/" + celltype + "/lattice_vector", cell.lattice_vector.transpose());
     dumpAttribute(file, "/" + celltype + "/lattice_vector", "unit", unitname);
     dump(file, "/" + celltype + "/number_of_atoms", cell.number_of_atoms);
     dump(file, "/" + celltype + "/number_of_elements", cell.number_of_elems);
@@ -965,6 +965,7 @@ void Writer::write_forceconstant_at_given_order_h5(H5Easy::File &file,
                 }
 
                 fc.emplace_back(index_atoms_trueprim,
+                                it.atoms,
                                 it.coords,
                                 xshifts,
                                 fcs_value_tmp);
@@ -975,7 +976,8 @@ void Writer::write_forceconstant_at_given_order_h5(H5Easy::File &file,
     std::sort(fc.begin(), fc.end());
 
     const auto nrows = fc.size();
-    Eigen::MatrixXi atom_indices(nrows, order + 2), coord_indices(nrows, order + 2);
+    Eigen::MatrixXi atom_indices(nrows, order + 2), atom_indices_super(nrows, order + 2);
+    Eigen::MatrixXi coord_indices(nrows, order + 2);
     Eigen::MatrixXd shift_vectors(nrows, 3 * (order + 1));
     Eigen::ArrayXd fcs_arrays(nrows);
 
@@ -983,6 +985,7 @@ void Writer::write_forceconstant_at_given_order_h5(H5Easy::File &file,
     for (const auto &it: fc) {
         for (i = 0; i < order + 2; ++i) {
             atom_indices(counter, i) = it.atoms_p[i];
+            atom_indices_super(counter, i) = it.atoms_s[i];
             coord_indices(counter, i) = it.coords[i];
         }
         for (i = 0; i < order + 1; ++i) {
@@ -996,6 +999,7 @@ void Writer::write_forceconstant_at_given_order_h5(H5Easy::File &file,
 
     const std::string str_ordername = "Order" + std::to_string(order + 2);
     dump(file, "/ForceConstants/" + str_ordername + "/atom_indices", atom_indices, Compression(compression_level));
+    dump(file, "/ForceConstants/" + str_ordername + "/atom_indices_supercell", atom_indices_super, Compression(compression_level));
     dump(file, "/ForceConstants/" + str_ordername + "/coord_indices", coord_indices, Compression(compression_level));
     dump(file, "/ForceConstants/" + str_ordername + "/shift_vectors", shift_vectors, Compression(compression_level));
     std::string unitname = "bohr";

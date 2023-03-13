@@ -24,6 +24,7 @@
 #include <cmath>
 #include "../external/combination.hpp"
 #include <unordered_set>
+#include <Eigen/LU>
 
 #if defined(_WIN32) || defined(_WIN64)
 #undef min
@@ -950,6 +951,148 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
                                                 [](const ForceConstantTable &obj) { return obj.is_ascending_order; });
         }
     }
+}
+
+void Fcs::change_basis_force_constants(const std::vector<ForceConstantTable> &fc_in,
+                                       std::vector<ForceConstantTable> &fc_out,
+                                       const int conversion_direction) const
+{
+    // Convert the basis of force constants between Cartesian basis and Lattice basis.
+    // When conversion_direction == 0: fc_in is in Lattice and fc_out is in Cartesian
+    // when conversion_direction == 1: fc_in is in Cartesian and fc_out is in Lattice
+
+    if (fc_in.empty()) return;
+
+    const auto nelems = fc_in[0].flattenarray.size();
+
+    std::vector<int> atoms_old, atoms_now;
+    std::vector<int> coords_now;
+    std::vector<std::vector<int>> coord_list;
+    std::vector<double> fc_list;
+    std::vector<std::vector<std::vector<int>>> coord_list_grp;
+    std::vector<std::vector<double>> fc_list_grp;
+    std::vector<std::vector<int>> atoms_grp;
+    std::vector<int> elems_permutation;
+    std::vector<ForceConstantTable> fc_table_copy;
+
+    int **xyzcomponent;
+    double prod_matrix;
+
+    atoms_old.resize(nelems);
+    atoms_now.resize(nelems);
+    coords_now.resize(nelems);
+    coord_list.clear();
+    fc_list.clear();
+
+    const auto nxyz = static_cast<int>(std::pow(3.0, nelems));
+    allocate(xyzcomponent, nxyz, nelems);
+    get_xyzcomponent(nelems, xyzcomponent);
+
+    for (auto j = 0; j < nelems; ++j) atoms_old[j] = -1;
+    auto icount = 0;
+
+    fc_table_copy.clear();
+
+    // Recover all permutationally equivalent terms
+    for (const auto &it: fc_in) {
+        elems_permutation = it.flattenarray;
+        do {
+            fc_table_copy.emplace_back(it.fc_value,
+                                       elems_permutation);
+        } while (std::next_permutation(elems_permutation.begin() + 1,
+                                       elems_permutation.end()));
+    }
+
+    // Sort fc_table_copy in ascending order of atomic indices.
+    std::sort(fc_table_copy.begin(),
+              fc_table_copy.end(),
+              ForceConstantTable::compare_atom_index);
+
+    coord_list_grp.clear();
+    fc_list_grp.clear();
+    atoms_grp.clear();
+
+    Eigen::Matrix3d convmat;
+
+    if (conversion_direction == 0) {
+        // From Lattice basis to Cartesian
+        convmat = basis_conversion_matrix;
+    } else {
+        // From Cartesian basis to Lattice
+        convmat = basis_conversion_matrix.inverse();
+    }
+
+    for (const auto &it: fc_table_copy) {
+
+        atoms_now = it.atoms;
+        coords_now = it.coords;
+
+        if (atoms_now == atoms_old) {
+
+            coord_list.emplace_back(coords_now);
+            fc_list.emplace_back(it.fc_value);
+            ++icount;
+
+        } else {
+
+            if (icount > 0) {
+                coord_list_grp.emplace_back(coord_list);
+                fc_list_grp.emplace_back(fc_list);
+                atoms_grp.emplace_back(atoms_old);
+            }
+
+            atoms_old = atoms_now;
+            coord_list.clear();
+            fc_list.clear();
+            coord_list.push_back(coords_now);
+            fc_list.push_back(it.fc_value);
+            icount = 1;
+        }
+    }
+
+    if (icount > 0) {
+        coord_list_grp.emplace_back(coord_list);
+        fc_list_grp.emplace_back(fc_list);
+        atoms_grp.emplace_back(atoms_old);
+    }
+
+    const auto ngrp = coord_list_grp.size();
+
+#pragma omp parallel
+    {
+        std::vector<ForceConstantTable> fc_omp;
+
+#pragma omp for private(prod_matrix), nowait
+        for (int igrp = 0; igrp < ngrp; ++igrp) {
+            for (auto ixyz = 0; ixyz < nxyz; ++ixyz) {
+
+                auto fcs_tmp = 0.0;
+                const auto nentry = coord_list_grp[igrp].size();
+                for (auto j = 0; j < nentry; ++j) {
+                    prod_matrix = 1.0;
+                    for (auto k = 0; k < nelems; ++k) {
+                        prod_matrix *= convmat(coord_list_grp[igrp][j][k],
+                                               xyzcomponent[ixyz][k]);
+                    }
+                    fcs_tmp += prod_matrix * fc_list_grp[igrp][j];
+                }
+
+                fc_omp.emplace_back(nelems,
+                                    fcs_tmp,
+                                    &atoms_grp[igrp][0],
+                                    xyzcomponent[ixyz]);
+            }
+        }
+
+#pragma omp critical
+        {
+            for (const auto &it: fc_omp) {
+                fc_out.emplace_back(it);
+            }
+        }
+        fc_omp.clear();
+    }
+
 }
 
 void Fcs::set_fc_zero_threshold(const double threshold_in)

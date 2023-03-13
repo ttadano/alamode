@@ -1274,8 +1274,25 @@ void InputParser::parse_optimize_vars(ALM *alm)
         assign_val(constraint_flag, "ICONST", optimize_var_dict);
     }
 
-    auto fc2_file = optimize_var_dict["FC2XML"];
-    auto fc3_file = optimize_var_dict["FC3XML"];
+    std::string fc2_file{}, fc3_file{};
+
+    if (!optimize_var_dict["FC2XML"].empty()) {
+        warn("parse_optimize_vars",
+             "FC2XML is replaced with FC2FIX and will be deprecated in a future release.\n"
+             " So, please use FC2FIX instead.");
+        fc2_file = optimize_var_dict["FC2XML"];
+    } else {
+        fc2_file = optimize_var_dict["FC2FIX"];
+    }
+
+    if (!optimize_var_dict["FC3XML"].empty()) {
+        warn("parse_optimize_vars",
+             "FC3XML is replaced with FC3FIX and will be deprecated in a future release.\n"
+             " So, please use FC3FIX instead.");
+        fc3_file = optimize_var_dict["FC3XML"];
+    } else {
+        fc3_file = optimize_var_dict["FC3FIX"];
+    }
     const auto fix_harmonic = !fc2_file.empty();
     const auto fix_cubic = !fc3_file.empty();
 
