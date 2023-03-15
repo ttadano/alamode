@@ -765,10 +765,6 @@ std::string Fcs::get_forceconstant_basis() const
 void Fcs::set_forceconstant_cartesian(const int maxorder,
                                       double *param_in)
 {
-    // Convert the force constant basis from Lattice to Cartesian.
-    // This operation takes a while for higher-order anharmonic terms.
-    // TODO: Improve performance
-
     auto ishift = 0;
     int j;
 
@@ -870,6 +866,9 @@ void Fcs::change_basis_force_constants(const std::vector<ForceConstantTable> &fc
     // inside this function. For example, (i, j, k) and (i, k, j) must not be included
     // simultaneously (j != k) for the 3rd-order IFCs.
     // This limitation applies only to the 2nd to n-th indices (not to the 1st index).
+
+    // This operation takes a while for higher-order anharmonic terms.
+    // TODO: Improve performance
 
     if (fc_in.empty()) return;
 
