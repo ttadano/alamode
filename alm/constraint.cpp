@@ -2584,7 +2584,7 @@ void Constraint::parse_forceconstants_from_h5(const int order,
 
     H5Easy::File file(file_to_fix, H5Easy::File::ReadOnly);
 
-    const std::string celltype="SuperCell";
+    const std::string celltype = "SuperCell";
 
     std::vector<std::vector<int>> mapping_table;
 
@@ -2613,34 +2613,42 @@ void Constraint::parse_forceconstants_from_h5(const int order,
     // They need to be converted to the lattice basis if the FCSYM_BASIS = Lattice.
 
 
-    std::vector<ForceConstantTable> fc_cart, fc_cart_unique;
+    std::vector<ForceConstantTable> fc_cart, fc_cart_unique, fc_cart_copy;
     std::vector<int> flatten_array(order + 2);
 
+    fc_cart.clear();
     for (auto i = 0; i < atom_indices_super_file.rows(); ++i) {
         for (auto j = 0; j < order + 2; ++j) {
-            flatten_array[j] = atom_indices_super_file(i,j) * 3 + coord_indices_file(i,j);
+            flatten_array[j] = atom_indices_super_file(i, j) * 3 + coord_indices_file(i, j);
         }
         fc_cart.emplace_back(fcs_values_file[i], flatten_array);
     }
 
     // Merge force constant entries having the same flatten arrays
     std::sort(fc_cart.begin(), fc_cart.end());
+
+    fc_cart_unique.clear();
+    fc_cart_copy.clear();
     for (auto i = 0; i < order + 2; ++i) flatten_array[i] = -1;
     double fc_sum = 0.0;
-    for (const auto &it : fc_cart) {
+    for (const auto &it: fc_cart) {
         if (flatten_array == it.flattenarray) {
             fc_sum += it.fc_value;
         } else {
             if (std::abs(fc_sum) > 0.0) {
-                fc_cart_unique.emplace_back(fc_sum, flatten_array);
+                fc_cart_copy.emplace_back(fc_sum, flatten_array);
             }
             fc_sum = it.fc_value;
             flatten_array = it.flattenarray;
         }
     }
     if (std::abs(fc_sum) > 0.0) {
-        fc_cart_unique.emplace_back(fc_sum, flatten_array);
+        fc_cart_copy.emplace_back(fc_sum, flatten_array);
     }
+    fc_cart.clear();
+
+    std::copy_if(fc_cart_copy.begin(), fc_cart_copy.end(), std::back_inserter(fc_cart_unique),
+                 [](const ForceConstantTable &obj) { return obj.is_ascending_order; });
 
     std::vector<int> index_tmp(order + 2);
 
@@ -2649,7 +2657,7 @@ void Constraint::parse_forceconstants_from_h5(const int order,
         std::vector<ForceConstantTable> fc_lattice;
         fcs->change_basis_force_constants(fc_cart_unique, fc_lattice, 1);
 
-        for (const auto &it : fc_lattice) {
+        for (const auto &it: fc_lattice) {
             if (it.is_ascending_order) {
                 for (auto i = 0; i < order + 2; ++i) {
                     index_tmp[i] = it.flattenarray[i];
@@ -2660,14 +2668,12 @@ void Constraint::parse_forceconstants_from_h5(const int order,
         }
 
     } else {
-        for (const auto &it : fc_cart_unique) {
-            if (it.is_ascending_order) {
-                for (auto i = 0; i < order + 2; ++i) {
-                    index_tmp[i] = it.flattenarray[i];
-                }
-                intpair_fcs.emplace_back(index_tmp);
-                fcs_values.emplace_back(it.fc_value);
+        for (const auto &it: fc_cart_unique) {
+            for (auto i = 0; i < order + 2; ++i) {
+                index_tmp[i] = it.flattenarray[i];
             }
+            intpair_fcs.emplace_back(index_tmp);
+            fcs_values.emplace_back(it.fc_value);
         }
     }
 }

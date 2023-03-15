@@ -960,6 +960,12 @@ void Fcs::change_basis_force_constants(const std::vector<ForceConstantTable> &fc
     // Convert the basis of force constants between Cartesian basis and Lattice basis.
     // When conversion_direction == 0: fc_in is in Lattice and fc_out is in Cartesian
     // when conversion_direction == 1: fc_in is in Cartesian and fc_out is in Lattice
+    //
+    // Only the permutationally unique pairs of 2nd to n-th elements (flattened array)
+    // should be included in fc_in because the permutation operation is performed
+    // inside this function. For example, (i, j, k) and (i, k, j) must not be included
+    // simultaneously (j != k) for the 3rd-order IFCs.
+    // This limitation applies only to the 2nd to n-th indices (not to the 1st index).
 
     if (fc_in.empty()) return;
 
