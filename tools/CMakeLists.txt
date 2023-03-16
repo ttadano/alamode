@@ -31,6 +31,19 @@ else ()
     endif ()
 endif ()
 
+find_package(Eigen3)
+if (Eigen3_FOUND)
+    include_directories(${EIGEN3_INCLUDE_DIR})
+else()
+    if (EIGEN3_INCLUDE)
+        include_directories(${EIGEN3_INCLUDE})
+    else()
+        message(FATAL_ERROR "Eigen3 was not found.
+        Please specify the location of boost include directories
+        via -DEIGEN3_INCLUDE option.")
+    endif()
+endif()
+
 # Source code
 include_directories("${PROJECT_SOURCE_DIR}/../include")
 set(SOURCES ${PROJECT_SOURCE_DIR}/alm.cpp

@@ -154,7 +154,7 @@ public:
                              const double *,
                              std::complex<double> **) const;
 
-    void project_degenerate_eigenvectors(const double lavec_p[3][3],
+    void project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
                                          const std::vector<FcsClassExtent> &fc2_ext_in,
                                          double *xk_in,
                                          const std::vector<std::vector<double>> &project_directions,

@@ -133,7 +133,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
         for (j = 0; j < 3; ++j) {
             mat_convert[i][j] = 0.0;
             for (k = 0; k < 3; ++k) {
-                mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s_anharm[k][j];
+                mat_convert[i][j] += system->rlavec_p(i, k) * system->lavec_s_anharm(k, j);
             }
         }
     }
@@ -179,8 +179,8 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
             for (i = 0; i < N - 1; ++i) {
                 for (k = 0; k < 3; ++k) {
-                    vecs[i][k] = system->xr_s_anharm[atm_super[i + 1]][k] + xshift_s[cells[i + 1]][k]
-                                 - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][k];
+                    vecs[i][k] = system->xr_s_anharm(atm_super[i + 1], k) + xshift_s[cells[i + 1]][k]
+                                 - system->xr_s_anharm(system->map_p2s_anharm[atm_prim[i + 1]][0], k);
                 }
                 rotvec(vecs[i], vecs[i], mat_convert);
             }

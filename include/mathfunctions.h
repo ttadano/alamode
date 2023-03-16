@@ -13,6 +13,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <vector>
+#include <Eigen/Core>
+#include <Eigen/LU>
 
 template <typename T>
 inline void matmul3(T ret[3][3], const T amat[3][3], const T bmat[3][3]) {
@@ -100,6 +102,42 @@ inline void rotvec(double vec_out[3], double vec_in[3], double **mat, char mode 
 		std::cout << "Invalid mode " << mode << std::endl;
 		exit(1);
 	}
+}
+
+inline void rotvec(double vec_out[3], double vec_in[3], const Eigen::Matrix3d &mat_in, char mode = 'N')
+{
+    Eigen::Vector3d vec_tmp;
+
+    for (auto i = 0; i < 3; ++i) vec_tmp[i] = vec_in[i];
+
+    if (mode == 'N') {
+        vec_tmp = mat_in * vec_tmp;
+    } else if (mode == 'T') {
+        vec_tmp = mat_in.transpose() * vec_tmp;
+    } else {
+        std::cout << "Invalid mode " << mode << std::endl;
+        exit(1);
+    }
+    for (auto i = 0; i < 3; ++i) vec_out[i] = vec_tmp[i];
+}
+
+inline void rotvec(std::complex<double> vec_out[3],
+                   std::complex<double> vec_in[3],
+                   const Eigen::Matrix3d &mat_in, char mode = 'N')
+{
+    Eigen::Vector3cd vec_tmp;
+
+    for (auto i = 0; i < 3; ++i) vec_tmp[i] = vec_in[i];
+
+    if (mode == 'N') {
+        vec_tmp = mat_in * vec_tmp;
+    } else if (mode == 'T') {
+        vec_tmp = mat_in.transpose() * vec_tmp;
+    } else {
+        std::cout << "Invalid mode " << mode << std::endl;
+        exit(1);
+    }
+    for (auto i = 0; i < 3; ++i) vec_out[i] = vec_tmp[i];
 }
 
 inline void invmat3(double invmat[3][3], const double mat[3][3])

@@ -44,6 +44,9 @@ void Fcs_phonon::set_default_variables()
     maxorder = 0;
     file_fcs = "";
     file_fc2 = "";
+    file_fc3 = "";
+    file_fc4 = "";
+
     update_fc2 = false;
     force_constant_with_cell = nullptr;
 }

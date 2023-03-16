@@ -247,8 +247,8 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
         const auto atm2_s = system->map_p2s_anharm[atm2][tran];
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s_anharm[atm2_s][i] + xshift_s[cell_s][i]
-                     - system->xr_s_anharm[system->map_p2s_anharm[atm2][0]][i];
+            vec[i] = system->xr_s_anharm(atm2_s, i) + xshift_s[cell_s][i]
+                     - system->xr_s_anharm(system->map_p2s_anharm[atm2][0], i);
         }
 
         rotvec(vec, vec, system->lavec_s_anharm);
@@ -355,18 +355,19 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
             set_index_uniq.insert(index_with_cell);
 
             for (i = 0; i < 3; i++) {
-                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_anharm(system->map_p2s_anharm[it.pairs[0].index / 3][0], i);
                 for (j = 1; j < norder - 1; j++) {
                     vec_origin[i] +=
-                            system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                            system->xr_s_anharm(system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran], i)
                             + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= static_cast<double>(norder - 1);
             }
 
             for (i = 0; i < 3; ++i) {
-                vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                                             1].tran]][i]
+                vec[i] = system->xr_s_anharm(system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                                                                                                             1].tran],
+                                             i)
                          // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                          - vec_origin[i]
                          + xshift_s[it.pairs[norder - 1].cell_s][i];
@@ -448,18 +449,19 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
             }
 
             for (i = 0; i < 3; i++) {
-                vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
+                vec_origin[i] = system->xr_s_anharm(system->map_p2s_anharm[it.pairs[0].index / 3][0], i);
                 for (j = 1; j < norder - 1; j++) {
                     vec_origin[i] +=
-                            system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
+                            system->xr_s_anharm(system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran], i)
                             + xshift_s[it.pairs[j].cell_s][i];
                 }
                 vec_origin[i] /= static_cast<double>(norder - 1);
             }
 
             for (i = 0; i < 3; ++i) {
-                vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                                             1].tran]][i]
+                vec[i] = system->xr_s_anharm(system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
+                                                                                                             1].tran],
+                                             i)
                          // - system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i]
                          - vec_origin[i]
                          + xshift_s[it.pairs[norder - 1].cell_s][i];
@@ -575,7 +577,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            lattice_vector[i][j] = (1.0 + change_ratio_of_a) * system->lavec_s[i][j];
+            lattice_vector[i][j] = (1.0 + change_ratio_of_a) * system->lavec_s(i, j);
         }
     }
 
@@ -613,7 +615,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
 
     for (i = 0; i < system->nat; ++i) {
         str_tmp.clear();
-        for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->xr_s[i][j]);
+        for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->xr_s(i, j));
         auto &child = pt.add("Data.Structure.Position.pos", str_tmp);
         child.put("<xmlattr>.index", i + 1);
         child.put("<xmlattr>.element", system->symbol_kd[system->kd[i]]);

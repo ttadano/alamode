@@ -19,6 +19,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/version.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <Eigen/Core>
 
 #include "memory.h"
 #include "xml_parser.h"

@@ -288,7 +288,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            xcrd[0][i][j] = system->xr_s[i][j];
+            xcrd[0][i][j] = system->xr_s(i, j);
         }
     }
     auto icell = 0;
@@ -300,9 +300,9 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
                 ++icell;
                 for (i = 0; i < nat; ++i) {
-                    xcrd[icell][i][0] = system->xr_s[i][0] + static_cast<double>(isize);
-                    xcrd[icell][i][1] = system->xr_s[i][1] + static_cast<double>(jsize);
-                    xcrd[icell][i][2] = system->xr_s[i][2] + static_cast<double>(ksize);
+                    xcrd[icell][i][0] = system->xr_s(i, 0) + static_cast<double>(isize);
+                    xcrd[icell][i][1] = system->xr_s(i, 1) + static_cast<double>(jsize);
+                    xcrd[icell][i][2] = system->xr_s(i, 2) + static_cast<double>(ksize);
                 }
             }
         }
@@ -583,8 +583,8 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                     - system->xr_s[system->map_p2s[atm2_p][0]][i];
+            vec[i] = system->xr_s(atm2_s, i) + xshift_s[icell][i]
+                     - system->xr_s(system->map_p2s[atm2_p][0], i);
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -610,7 +610,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
     double kepsilon[3];
     double kz1[3], kz2[3];
     double born_tmp[3][3];
-    double xk_tmp[3], xdiff[3];
+    Eigen::Vector3d xk_tmp, xdiff;
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -666,9 +666,12 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 //        xk_tmp[i] = xk_in[i] - static_cast<double>(nint(xk_in[i]));
 //    }
 
-    rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
+    for (i = 0; i < 3; ++i) xk_tmp[i] = xk_in[i];
+    xk_tmp = system->rlavec_p.transpose() * xk_tmp;
+    //rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
 //    rotvec(xk_tmp, xk_tmp, system->rlavec_p, 'T');
-    const auto norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
+    //const auto norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
+    const auto norm2 = xk_tmp.squaredNorm();
 
     const auto factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
 
@@ -684,12 +687,13 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
         for (jat = 0; jat < natmin; ++jat) {
 
             for (i = 0; i < 3; ++i) {
-                xdiff[i] = system->xr_s[system->map_p2s[iat][0]][i]
-                           - system->xr_s[system->map_p2s[jat][0]][i];
+                xdiff[i] = system->xr_s(system->map_p2s[iat][0], i)
+                           - system->xr_s(system->map_p2s[jat][0], i);
             }
 
-            rotvec(xdiff, xdiff, system->lavec_s);
-            rotvec(xdiff, xdiff, system->rlavec_p);
+            xdiff = system->rlavec_p * system->lavec_s * xdiff;
+            //rotvec(xdiff, xdiff, system->lavec_s);
+            //rotvec(xdiff, xdiff, system->rlavec_p);
 
             double phase = xk_tmp[0] * xdiff[0] + xk_tmp[1] * xdiff[1] + xk_tmp[2] * xdiff[2];
 
@@ -764,8 +768,8 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                         unsigned int cell = mindist_list[iat][atm_s2][j];
 
                         for (unsigned int k = 0; k < 3; ++k) {
-                            vec[k] = system->xr_s[system->map_p2s[jat][i]][k] + xshift_s[cell][k]
-                                     - system->xr_s[atm_p2][k];
+                            vec[k] = system->xr_s(system->map_p2s[jat][i], k) + xshift_s[cell][k]
+                                     - system->xr_s(atm_p2, k);
                         }
 
                         rotvec(vec, vec, system->lavec_s);
@@ -1053,7 +1057,7 @@ void Dynamical::modify_eigenvectors() const
     //}
 }
 
-void Dynamical::project_degenerate_eigenvectors(const double lavec_p[3][3],
+void Dynamical::project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
                                                 const std::vector<FcsClassExtent> &fc2_ext_in,
                                                 double *xk_in,
                                                 const std::vector<std::vector<double>> &project_directions,

@@ -186,7 +186,7 @@ void Kpoint::kpoint_setups(const std::string mode)
 }
 
 void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
-                                const double rlavec_p[3][3])
+                                const Eigen::Matrix3d &rlavec_p)
 {
     int i;
     double **k, **kdirec;
@@ -231,7 +231,7 @@ void Kpoint::setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
 }
 
 void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
-                               const double rlavec_p[3][3])
+                               const Eigen::Matrix3d &rlavec_p)
 {
     int j, k;
 
@@ -344,7 +344,7 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
 }
 
 void KpointMeshUniform::setup(const std::vector<SymmetryOperation> &symmlist,
-                              const double rlavec_p[3][3],
+                              const Eigen::Matrix3d &rlavec_p,
                               const bool time_reversal_symmetry,
                               const bool niggli_reduce_in)
 {
@@ -392,7 +392,7 @@ void KpointMeshUniform::setup(const std::vector<SymmetryOperation> &symmlist,
 }
 
 void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
-                                  const double rlavec_p[3][3],
+                                  const Eigen::Matrix3d &rlavec_p,
                                   const bool usesym,
                                   const bool time_reversal_symmetry)
 {
@@ -408,7 +408,7 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
     // transpose the input matrix for reciprocal lattice
     for (auto i = 0; i < 3; ++i) {
         for (auto j = 0; j < 3; ++j) {
-            rlat(i, j) = rlavec_p[j][i];
+            rlat(i, j) = rlavec_p(j, i);
         }
     }
     std::vector<std::vector<int>> gvec_shift;
@@ -508,7 +508,7 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
 }
 
 void KpointMeshUniform::gen_kmesh_niggli(const std::vector<SymmetryOperation> &symmlist,
-                                         const double rlavec_p[3][3],
+                                         const Eigen::Matrix3d &rlavec_p,
                                          const bool usesym,
                                          const bool time_reversal_symmetry)
 {
@@ -525,7 +525,7 @@ void KpointMeshUniform::gen_kmesh_niggli(const std::vector<SymmetryOperation> &s
     // transpose the input matrix for reciprocal lattice
     for (auto i = 0; i < 3; ++i) {
         for (auto j = 0; j < 3; ++j) {
-            rlat(i, j) = rlavec_p[j][i];
+            rlat(i, j) = rlavec_p(j, i);
         }
     }
     auto success = niggli_reduction(rlat, rlat_reduced, c_matrix);
@@ -1175,21 +1175,25 @@ void Kpoint::get_symmetrization_matrix_at_k(const double *xk_in,
     }
 }
 
-void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
-                                      const double lavec_prim[3][3],
+void Kpoint::get_commensurate_kpoints(const Eigen::Matrix3d &lavec_super,
+                                      const Eigen::Matrix3d &lavec_prim,
                                       std::vector<std::vector<double>> &klist) const
 {
     int i, j;
-    double inv_lavec_super[3][3];
-    double convmat[3][3];
+    Eigen::Matrix3d inv_lavec_super;
+    Eigen::Matrix3d convmat;
 
-    invmat3(inv_lavec_super, lavec_super);
-    matmul3(convmat, inv_lavec_super, lavec_prim);
-    transpose3(convmat, convmat);
+    inv_lavec_super = lavec_super.inverse();
+    //invmat3(inv_lavec_super, lavec_super);
+    convmat = (inv_lavec_super * lavec_prim).transpose();
+//    matmul3(convmat, inv_lavec_super, lavec_prim);
+    //transpose3(convmat, convmat);
 
-    const auto det = convmat[0][0] * (convmat[1][1] * convmat[2][2] - convmat[2][1] * convmat[1][2])
-                     - convmat[1][0] * (convmat[0][1] * convmat[2][2] - convmat[2][1] * convmat[0][2])
-                     + convmat[2][0] * (convmat[0][1] * convmat[1][2] - convmat[1][1] * convmat[0][2]);
+//    const auto det = convmat[0][0] * (convmat[1][1] * convmat[2][2] - convmat[2][1] * convmat[1][2])
+//                     - convmat[1][0] * (convmat[0][1] * convmat[2][2] - convmat[2][1] * convmat[0][2])
+//                     + convmat[2][0] * (convmat[0][1] * convmat[1][2] - convmat[1][1] * convmat[0][2]);
+
+    const auto det = convmat.determinant();
 
     const auto nkmax = static_cast<int>(std::ceil(1.0 / det));
 
@@ -1200,10 +1204,10 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
 
-            const auto frac = std::abs(convmat[i][j]);
+            const auto frac = std::abs(convmat(i, j));
 
             if (frac < tol) {
-                convmat[i][j] = 0.0;
+                convmat(i, j) = 0.0;
             } else {
                 auto found_denom = false;
                 for (k = 1; k < max_denom; ++k) {
@@ -1213,8 +1217,8 @@ void Kpoint::get_commensurate_kpoints(const double lavec_super[3][3],
                     }
                 }
                 if (found_denom) {
-                    const auto sign = (0.0 < convmat[i][j]) - (convmat[i][j] < 0.0);
-                    convmat[i][j] = static_cast<double>(sign) / static_cast<double>(k);
+                    const auto sign = (0.0 < convmat(i, j)) - (convmat(i, j) < 0.0);
+                    convmat(i, j) = static_cast<double>(sign) / static_cast<double>(k);
                 } else {
                     exit("get_commensurate_kpoints",
                          "The denominator of the conversion matrix > 10000");

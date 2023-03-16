@@ -16,6 +16,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <string>
 #include <vector>
 #include <map>
+#include <Eigen/Core>
 
 namespace PHON_NS {
 class KpointList {
@@ -218,7 +219,7 @@ public:
     bool niggli_reduced = false;
 
     void setup(const std::vector<SymmetryOperation> &symmlist,
-               const double rlavec_p[3][3],
+               const Eigen::Matrix3d &rlavec_p,
                const bool time_reversal_symmetry = true,
                const bool niggli_reduce_in = false);
 
@@ -243,12 +244,12 @@ public:
 private:
 
     void gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
-                   const double rlavec_p[3][3],
+                   const Eigen::Matrix3d &rlavec_p,
                    const bool usesym,
                    const bool time_reversal_symmetry);
 
     void gen_kmesh_niggli(const std::vector<SymmetryOperation> &symmlist,
-                          const double rlavec_p[3][3],
+                          const Eigen::Matrix3d &rlavec_p,
                           const bool usesym,
                           const bool time_reversal_symmetry);
 
@@ -349,9 +350,9 @@ public:
                                         std::vector<int> &sym_list,
                                         double S_avg[3][3]) const;
 
-    void get_commensurate_kpoints(const double [3][3],
-                                  const double [3][3],
-                                  std::vector<std::vector<double>> &) const;
+    void get_commensurate_kpoints(const Eigen::Matrix3d &lavec_super,
+                                  const Eigen::Matrix3d &lavec_prim,
+                                  std::vector<std::vector<double>> &klist) const;
 
 private:
     void set_default_variables();
@@ -359,10 +360,10 @@ private:
     void deallocate_variables();
 
     void setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
-                            const double rlavec_p[3][3]);
+                            const Eigen::Matrix3d &rlavec_p);
 
     void setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
-                           const double rlavec_p[3][3]);
+                           const Eigen::Matrix3d &rlavec_p);
 
     void setup_kpoint_plane(const std::vector<KpointInp> &,
                             unsigned int &,

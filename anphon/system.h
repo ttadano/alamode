@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <boost/property_tree/ptree.hpp>
+#include <Eigen/Core>
 
 namespace PHON_NS {
 class AtomType {
@@ -33,6 +34,38 @@ public:
     }
 };
 
+class Cell {
+public:
+    Eigen::Matrix3d lattice_vector;
+    Eigen::Matrix3d reciprocal_lattice_vector;
+    double volume;
+    size_t number_of_atoms;
+    size_t number_of_elems;
+    std::vector<int> kind;
+    Eigen::MatrixXd x_fractional;
+    Eigen::MatrixXd x_cartesian;
+};
+
+class Spin {
+public:
+    bool lspin;
+    int time_reversal_symm;
+    int noncollinear;
+    std::vector<std::vector<double>> magmom;
+};
+
+class Maps {
+public:
+    unsigned int atom_num;
+    unsigned int tran_num;
+};
+
+class MappingTable {
+public:
+    std::vector<Maps> to_true_primitive;
+    std::vector<std::vector<size_t>> from_true_primitive;
+};
+
 class System : protected Pointers {
 public:
     System(class PHON *);
@@ -41,11 +74,19 @@ public:
 
     void setup();
 
-    double lavec_s[3][3], rlavec_s[3][3];
-    double lavec_p[3][3], rlavec_p[3][3];
-    double lavec_s_anharm[3][3], rlavec_s_anharm[3][3];
-    double **xr_p, **xr_s, **xc;
-    double **xr_s_anharm;
+    Cell supercell_base, supercell_fc2, supercell_fc3, supercell_fc4;
+    Cell primcell_base, primcell_fc2, primcell_fc3, primcell_fc4;
+    Spin spin_base;
+    MappingTable map_scell_base, map_pcell_base;
+    MappingTable map_scell_fc2, map_pcell_fc2;
+    MappingTable map_scell_fc3, map_pcell_fc3;
+    MappingTable map_scell_fc4, map_pcell_fc4;
+
+    Eigen::Matrix3d lavec_s, rlavec_s;
+    Eigen::Matrix3d lavec_p, rlavec_p;
+    Eigen::Matrix3d lavec_s_anharm, rlavec_s_anharm;
+    Eigen::MatrixXd xr_p, xr_s, xc;
+    Eigen::MatrixXd xr_s_anharm;
     double **magmom;
     double volume_p;
 
@@ -59,12 +100,6 @@ public:
 
     unsigned int **map_p2s, **map_p2s_anharm;
     unsigned int **map_p2s_anharm_orig;
-
-    class Maps {
-    public:
-        unsigned int atom_num;
-        unsigned int tran_num;
-    };
 
     Maps *map_s2p, *map_s2p_anharm;
 
@@ -83,6 +118,11 @@ public:
     int get_atomic_number_by_name(const std::string &);
 
 private:
+
+    enum LatticeType {
+        Direct, Reciprocal
+    };
+
     void set_default_variables();
 
     void deallocate_variables();
@@ -93,14 +133,33 @@ private:
 
     void load_system_info_from_XML();
 
+    void load_system_info_from_file();
+
+    void get_structure_and_mapping_table_xml(const std::string &filename,
+                                             Cell &scell_out,
+                                             Cell &pcell_out,
+                                             Spin &spin_super_out,
+                                             Spin &spin_prim_out,
+                                             MappingTable &map_super_out,
+                                             MappingTable &map_prim_out) const;
+
+    void load_system_info_from_h5();
+
     void recips(double [3][3],
                 double [3][3]) const;
+
+    void recips(const Eigen::Matrix3d &mat_in,
+                Eigen::Matrix3d &rmat_out) const;
 
     void setup_atomic_class(unsigned int,
                             const unsigned int *,
                             double **);
 
     void check_consistency_primitive_lattice() const;
+
+
+    double volume(const Eigen::Matrix3d &mat_in,
+                  const LatticeType latttype_in) const;
 
     std::vector<std::string> element_names{
             "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",

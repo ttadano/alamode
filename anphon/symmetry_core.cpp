@@ -40,21 +40,30 @@ void Symmetry::set_default_variables()
 void Symmetry::setup_symmetry()
 {
     const auto natmin = system->natmin;
-    double **xtmp;
+    Eigen::MatrixXd xtmp;
     unsigned int *kdtmp;
 
     MPI_Bcast(&time_reversal_sym_from_alm, 1, MPI_INT, 0, MPI_COMM_WORLD);
     time_reversal_sym = time_reversal_sym_from_alm;
 
-    allocate(xtmp, natmin, 3);
+    xtmp.resize(natmin, 3);
+    //allocate(xtmp, natmin, 3);
     allocate(kdtmp, natmin);
 
     for (auto i = 0; i < natmin; ++i) {
-        rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
-        rotvec(xtmp[i], xtmp[i], system->rlavec_p);
+        for (auto j = 0; j < 3; ++j) {
+            xtmp(i, j) = system->xr_s(system->map_p2s[i][0], j);
+        }
+    }
 
-        for (auto j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
+    xtmp = xtmp * system->lavec_s.transpose();
+    xtmp = xtmp * system->lavec_p.inverse().transpose();
 
+    for (auto i = 0; i < natmin; ++i) {
+//        rotvec(xtmp[i], system->xr_s.row(system->map_p2s[i][0]).data(), system->lavec_s);
+//        rotvec(xtmp[i], xtmp[i], system->rlavec_p);
+//
+//        for (auto j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
         kdtmp[i] = system->kd[system->map_p2s[i][0]];
     }
 
@@ -79,15 +88,15 @@ void Symmetry::setup_symmetry()
                   << nsym << std::endl << std::endl;
         gensym_withmap(xtmp, kdtmp);
     }
-    deallocate(xtmp);
+    //deallocate(xtmp);
     deallocate(kdtmp);
 }
 
 void Symmetry::setup_symmetry_operation(int N,
                                         unsigned int &nsym,
-                                        double aa[3][3],
-                                        double bb[3][3],
-                                        double **x,
+                                        const Eigen::Matrix3d &aa,
+                                        const Eigen::Matrix3d &bb,
+                                        const Eigen::MatrixXd &x,
                                         unsigned int *kd)
 {
     int i, j;
@@ -183,8 +192,8 @@ void Symmetry::setup_symmetry_operation(int N,
 }
 
 void Symmetry::findsym(int N,
-                       double aa[3][3],
-                       double **x,
+                       const Eigen::Matrix3d &aa,
+                       const Eigen::MatrixXd &x,
                        std::vector<SymmetryOperation> &symop_all) const
 {
     std::vector<RotationMatrix> LatticeSymmList;
@@ -195,13 +204,16 @@ void Symmetry::findsym(int N,
 
     // Generate all the space group operations with translational vectors
     symop_all.clear();
-    find_crystal_symmetry(system->nclassatom, system->atomlist_class, x, LatticeSymmList,
+    find_crystal_symmetry(system->nclassatom,
+                          system->atomlist_class,
+                          x,
+                          LatticeSymmList,
                           symop_all);
 
     LatticeSymmList.clear();
 }
 
-void Symmetry::find_lattice_symmetry(double aa[3][3],
+void Symmetry::find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                      std::vector<RotationMatrix> &LatticeSymmList) const
 {
     /*
@@ -216,8 +228,9 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
 
     int nsym_tmp = 0;
     int mat_tmp[3][3];
-    double rot_tmp[3][3];
-    double aa_rot[3][3];
+    //double rot_tmp[3][3];
+    Eigen::Matrix3d aa_rot, rot_tmp;
+    //double aa_rot[3][3];
 
     double metric_tensor[3][3];
     double metric_tensor_rot[3][3];
@@ -226,7 +239,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
         for (j = 0; j < 3; ++j) {
             metric_tensor[i][j] = 0.0;
             for (k = 0; k < 3; ++k) {
-                metric_tensor[i][j] += aa[k][i] * aa[k][j];
+                metric_tensor[i][j] += aa(k, i) * aa(k, j);
             }
         }
     }
@@ -265,24 +278,25 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
 
                                         if (det != 1 && det != -1) continue;
 
-                                        rot_tmp[0][0] = m11;
-                                        rot_tmp[0][1] = m12;
-                                        rot_tmp[0][2] = m13;
-                                        rot_tmp[1][0] = m21;
-                                        rot_tmp[1][1] = m22;
-                                        rot_tmp[1][2] = m23;
-                                        rot_tmp[2][0] = m31;
-                                        rot_tmp[2][1] = m32;
-                                        rot_tmp[2][2] = m33;
+                                        rot_tmp(0, 0) = m11;
+                                        rot_tmp(0, 1) = m12;
+                                        rot_tmp(0, 2) = m13;
+                                        rot_tmp(1, 0) = m21;
+                                        rot_tmp(1, 1) = m22;
+                                        rot_tmp(1, 2) = m23;
+                                        rot_tmp(2, 0) = m31;
+                                        rot_tmp(2, 1) = m32;
+                                        rot_tmp(2, 2) = m33;
 
                                         // Here, aa_rot = aa * rot_tmp is correct.
-                                        matmul3(aa_rot, aa, rot_tmp);
+                                        //matmul3(aa_rot, aa, rot_tmp);
+                                        aa_rot = aa * rot_tmp;
 
                                         for (i = 0; i < 3; ++i) {
                                             for (j = 0; j < 3; ++j) {
                                                 metric_tensor_rot[i][j] = 0.0;
                                                 for (k = 0; k < 3; ++k) {
-                                                    metric_tensor_rot[i][j] += aa_rot[k][i] * aa_rot[k][j];
+                                                    metric_tensor_rot[i][j] += aa_rot(k, i) * aa_rot(k, j);
                                                 }
                                             }
                                         }
@@ -300,7 +314,7 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
                                             ++nsym_tmp;
                                             for (i = 0; i < 3; ++i) {
                                                 for (j = 0; j < 3; ++j) {
-                                                    mat_tmp[i][j] = static_cast<int>(rot_tmp[i][j]);
+                                                    mat_tmp[i][j] = static_cast<int>(rot_tmp(i, j));
                                                 }
                                             }
                                             LatticeSymmList.emplace_back(mat_tmp);
@@ -323,16 +337,18 @@ void Symmetry::find_lattice_symmetry(double aa[3][3],
 
 void Symmetry::find_crystal_symmetry(int nclass,
                                      std::vector<unsigned int> *atomclass,
-                                     double **x,
+                                     const Eigen::MatrixXd &x,
                                      const std::vector<RotationMatrix> &LatticeSymmList,
                                      std::vector<SymmetryOperation> &CrystalSymmList) const
 {
     unsigned int i, j;
     unsigned int jat, kat, lat;
-    double x_rot[3];
-    double rot[3][3], rot_tmp[3][3], rot_cart[3][3];
+    Eigen::Vector3d x_rot;
+    Eigen::Matrix3d rot;
+    Eigen::Matrix3d rot_tmp, rot_cart;
+    const Eigen::Matrix3d identity_matrix = Eigen::Matrix3d::Identity();
     double tran[3];
-    double x_rot_tmp[3];
+    Eigen::Vector3d x_rot_tmp;
     double tmp[3];
     double mag[3], mag_rot[3];
     double diff;
@@ -365,11 +381,12 @@ void Symmetry::find_crystal_symmetry(int nclass,
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                rot[i][j] = static_cast<double>(it_latsym.mat[i][j]);
+                rot(i, j) = static_cast<double>(it_latsym.mat[i][j]);
             }
         }
 
-        rotvec(x_rot, x[iat], rot);
+        x_rot = rot * x.row(iat).transpose();
+        //rotvec(x_rot, x.row(iat).data(), rot);
 
 #ifdef _OPENMP
 #pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff, \
@@ -379,17 +396,13 @@ void Symmetry::find_crystal_symmetry(int nclass,
             jat = atomclass[0][ii];
 
             for (i = 0; i < 3; ++i) {
-                tran[i] = x[jat][i] - x_rot[i];
+                tran[i] = x(jat, i) - x_rot[i];
                 tran[i] = tran[i] - nint(tran[i]);
             }
 
             isok = true;
 
-            is_identity_matrix =
-                    std::pow(rot[0][0] - 1.0, 2) + std::pow(rot[0][1], 2) + std::pow(rot[0][2], 2)
-                    + std::pow(rot[1][0], 2) + std::pow(rot[1][1] - 1.0, 2) + std::pow(rot[1][2], 2)
-                    + std::pow(rot[2][0], 2) + std::pow(rot[2][1], 2) + std::pow(rot[2][2] - 1.0, 2)
-                    + std::pow(tran[0], 2) + std::pow(tran[1], 2) + std::pow(tran[2], 2) < eps12;
+            is_identity_matrix = (rot - identity_matrix).squaredNorm() < eps12;
 
             if (is_identity_matrix) continue;
 
@@ -399,7 +412,8 @@ void Symmetry::find_crystal_symmetry(int nclass,
 
                     kat = atomclass[itype][jj];
 
-                    rotvec(x_rot_tmp, x[kat], rot);
+                    x_rot_tmp = rot * x.row(kat).transpose();
+                    //rotvec(x_rot_tmp, x.row(kat).data(), rot);
 
                     for (i = 0; i < 3; ++i) {
                         x_rot_tmp[i] += tran[i];
@@ -412,7 +426,7 @@ void Symmetry::find_crystal_symmetry(int nclass,
                         lat = atomclass[itype][kk];
 
                         for (i = 0; i < 3; ++i) {
-                            tmp[i] = std::fmod(std::abs(x[lat][i] - x_rot_tmp[i]), 1.0);
+                            tmp[i] = std::fmod(std::abs(x(lat, i) - x_rot_tmp[i]), 1.0);
                             tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
                         }
                         diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
@@ -433,12 +447,19 @@ void Symmetry::find_crystal_symmetry(int nclass,
                     mag_rot[i] = system->magmom[iat][i];
                 }
 
-                matmul3(rot_tmp, rot, system->rlavec_p);
-                matmul3(rot_cart, system->lavec_p, rot_tmp);
+//                for (i = 0; i < 3; ++i) {
+//                    for (j = 0; j < 3; ++j) {
+//                        rot_tmp(i, j) = rot[i][j];
+//                    }
+//                }
+                rot_tmp = rot * system->rlavec_p;
+                rot_cart = system->lavec_p * rot_tmp;
+//                matmul3(rot_tmp, rot, system->rlavec_p);
+//                matmul3(rot_cart, system->lavec_p, rot_tmp);
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
-                        rot_cart[i][j] /= 2.0 * pi;
+                        rot_cart(i, j) /= 2.0 * pi;
                     }
                 }
                 rotvec(mag_rot, mag_rot, rot_cart);
@@ -477,13 +498,13 @@ void Symmetry::find_crystal_symmetry(int nclass,
     }
 }
 
-void Symmetry::gensym_withmap(double **x,
+void Symmetry::gensym_withmap(const Eigen::MatrixXd &x,
                               const unsigned int *kd)
 {
     // Generate symmetry operations in Cartesian coordinate with the atom-mapping information.
 
-    double S[3][3], T[3][3], S_recip[3][3], mat_tmp[3][3];
-    double shift[3], x_mod[3], tmp[3];
+    Eigen::Matrix3d S, T, S_recip, mat_tmp;
+    Eigen::Vector3d shift, x_mod, tmp;
     unsigned int *map_tmp;
     int i, j;
     unsigned int natmin = system->natmin;
@@ -496,7 +517,7 @@ void Symmetry::gensym_withmap(double **x,
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                T[i][j] = static_cast<double>(isym.rot[i][j]);
+                T(i, j) = static_cast<double>(isym.rot[i][j]);
             }
         }
 
@@ -504,19 +525,23 @@ void Symmetry::gensym_withmap(double **x,
             shift[i] = isym.tran[i];
         }
 
-        invmat3(mat_tmp, T);
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                S_recip[i][j] = mat_tmp[j][i];
-            }
-        }
+        //mat_tmp = T.inverse();
+        S_recip = T.inverse().transpose();
+//        invmat3(mat_tmp, T);
+//        for (i = 0; i < 3; ++i) {
+//            for (j = 0; j < 3; ++j) {
+//                S_recip[i][j] = mat_tmp[j][i];
+//            }
+//        }
 
         // Convert to Cartesian coordinate
-        matmul3(mat_tmp, T, system->rlavec_p);
-        matmul3(S, system->lavec_p, mat_tmp);
+        mat_tmp = T * system->rlavec_p;
+        S = system->lavec_p * mat_tmp;
+//        matmul3(mat_tmp, T, system->rlavec_p);
+//        matmul3(S, system->lavec_p, mat_tmp);
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                S[i][j] /= 2.0 * pi;
+                S(i, j) /= 2.0 * pi;
             }
         }
 
@@ -524,7 +549,9 @@ void Symmetry::gensym_withmap(double **x,
 
         for (i = 0; i < natmin; ++i) {
 
-            rotvec(x_mod, x[i], T);
+//            rotvec(x_mod, x[i], T);
+
+            x_mod = T * x.row(i).transpose();
 
             for (j = 0; j < 3; ++j) {
                 x_mod[j] += shift[j];
@@ -537,7 +564,7 @@ void Symmetry::gensym_withmap(double **x,
                 if (kd[j] == kd[i]) {
 
                     for (int k = 0; k < 3; ++k) {
-                        tmp[k] = std::fmod(std::abs(x_mod[k] - x[j][k]), 1.0);
+                        tmp[k] = std::fmod(std::abs(x_mod[k] - x(j, k)), 1.0);
                         tmp[k] = std::min<double>(tmp[k], 1.0 - tmp[k]);
                     }
                     const auto diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
@@ -608,14 +635,11 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym) const
     deallocate(tran_tmp);
 }
 
-bool Symmetry::is_proper(double rot[3][3]) const
+bool Symmetry::is_proper(const Eigen::Matrix3d &rot) const
 {
     auto ret = false;
 
-    const auto det = rot[0][0] * (rot[1][1] * rot[2][2] - rot[2][1] * rot[1][2])
-                     - rot[1][0] * (rot[0][1] * rot[2][2] - rot[2][1] * rot[0][2])
-                     + rot[2][0] * (rot[0][1] * rot[1][2] - rot[1][1] * rot[0][2]);
-
+    const auto det = rot.determinant();
     ret = std::abs(det - 1.0) < eps12;
 
     return ret;

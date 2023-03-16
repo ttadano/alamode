@@ -119,24 +119,24 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
 
     // For calculating Coulombic (dipole-dipole) FCs
     for (icrd = 0; icrd < 3; ++icrd) {
-        lavec_norm[icrd] = std::sqrt(std::pow(system->lavec_s[icrd][0], 2.0)
-                                     + std::pow(system->lavec_s[icrd][1], 2.0)
-                                     + std::pow(system->lavec_s[icrd][2], 2.0));
+        lavec_norm[icrd] = std::sqrt(std::pow(system->lavec_s(icrd, 0), 2.0)
+                                     + std::pow(system->lavec_s(icrd, 1), 2.0)
+                                     + std::pow(system->lavec_s(icrd, 2), 2.0));
 
-        rlavec_norm[icrd] = std::sqrt(std::pow(system->rlavec_s[icrd][0], 2.0)
-                                      + std::pow(system->rlavec_s[icrd][1], 2.0)
-                                      + std::pow(system->rlavec_s[icrd][2], 2.0));
+        rlavec_norm[icrd] = std::sqrt(std::pow(system->rlavec_s(icrd, 0), 2.0)
+                                      + std::pow(system->rlavec_s(icrd, 1), 2.0)
+                                      + std::pow(system->rlavec_s(icrd, 2), 2.0));
 
-        rotvec(e_lavec, system->lavec_s[icrd], epsilon_inv);
-        rotvec(e_rlavec, system->rlavec_s[icrd], epsilon);
+        rotvec(e_lavec, system->lavec_s.row(icrd).data(), epsilon_inv);
+        rotvec(e_rlavec, system->rlavec_s.row(icrd).data(), epsilon);
 
-        lavec_enorm = std::sqrt(system->lavec_s[icrd][0] * e_lavec[0]
-                                + system->lavec_s[icrd][1] * e_lavec[1]
-                                + system->lavec_s[icrd][2] * e_lavec[2]);
+        lavec_enorm = std::sqrt(system->lavec_s(icrd, 0) * e_lavec[0]
+                                + system->lavec_s(icrd, 1) * e_lavec[1]
+                                + system->lavec_s(icrd, 2) * e_lavec[2]);
 
-        rlavec_enorm = std::sqrt(system->rlavec_s[icrd][0] * e_rlavec[0]
-                                 + system->rlavec_s[icrd][1] * e_rlavec[1]
-                                 + system->rlavec_s[icrd][2] * e_rlavec[2]);
+        rlavec_enorm = std::sqrt(system->rlavec_s(icrd, 0) * e_rlavec[0]
+                                 + system->rlavec_s(icrd, 1) * e_rlavec[1]
+                                 + system->rlavec_s(icrd, 2) * e_rlavec[2]);
 
         if (lavec_enorm < lavec_min[0] || icrd == 0) {
             lavec_min[0] = lavec_enorm;
@@ -162,23 +162,23 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
 
     // For calculating Coulombic (dipole-dipole) dynamical matrix
     for (icrd = 0; icrd < 3; ++icrd) {
-        lavec_norm[icrd] = std::sqrt(std::pow(system->lavec_p[icrd][0], 2.0)
-                                     + std::pow(system->lavec_p[icrd][1], 2.0)
-                                     + std::pow(system->lavec_p[icrd][2], 2.0));
+        lavec_norm[icrd] = std::sqrt(std::pow(system->lavec_p(icrd, 0), 2.0)
+                                     + std::pow(system->lavec_p(icrd, 1), 2.0)
+                                     + std::pow(system->lavec_p(icrd, 2), 2.0));
 
-        rlavec_norm[icrd] = std::sqrt(std::pow(system->rlavec_p[icrd][0], 2.0)
-                                      + std::pow(system->rlavec_p[icrd][1], 2.0)
-                                      + std::pow(system->rlavec_p[icrd][2], 2.0));
+        rlavec_norm[icrd] = std::sqrt(std::pow(system->rlavec_p(icrd, 0), 2.0)
+                                      + std::pow(system->rlavec_p(icrd, 1), 2.0)
+                                      + std::pow(system->rlavec_p(icrd, 2), 2.0));
 
-        rotvec(e_lavec, system->lavec_p[icrd], epsilon_inv);
-        lavec_enorm = std::sqrt(system->lavec_p[icrd][0] * e_lavec[0]
-                                + system->lavec_p[icrd][1] * e_lavec[1]
-                                + system->lavec_p[icrd][2] * e_lavec[2]);
+        rotvec(e_lavec, system->lavec_p.row(icrd).data(), epsilon_inv);
+        lavec_enorm = std::sqrt(system->lavec_p(icrd, 0) * e_lavec[0]
+                                + system->lavec_p(icrd, 1) * e_lavec[1]
+                                + system->lavec_p(icrd, 2) * e_lavec[2]);
 
-        rotvec(e_rlavec, system->rlavec_p[icrd], epsilon);
-        rlavec_enorm = std::sqrt(system->rlavec_p[icrd][0] * e_rlavec[0]
-                                 + system->rlavec_p[icrd][1] * e_rlavec[1]
-                                 + system->rlavec_p[icrd][2] * e_rlavec[2]);
+        rotvec(e_rlavec, system->rlavec_p.row(icrd).data(), epsilon);
+        rlavec_enorm = std::sqrt(system->rlavec_p(icrd, 0) * e_rlavec[0]
+                                 + system->rlavec_p(icrd, 1) * e_rlavec[1]
+                                 + system->rlavec_p(icrd, 2) * e_rlavec[2]);
 
         if (lavec_enorm < lavec_min[0] || icrd == 0) {
             lavec_min[0] = lavec_enorm;
@@ -290,7 +290,7 @@ void Ewald::prepare_G()
 
 void Ewald::get_pairs_of_minimum_distance(const int nat,
                                           const int nsize[3],
-                                          double **xf) const
+                                          const Eigen::MatrixXd &xf) const
 {
     // Get pairs and multiplicities
 
@@ -305,7 +305,7 @@ void Ewald::get_pairs_of_minimum_distance(const int nat,
 
     for (iat = 0; iat < nat; ++iat) {
         for (int icrd = 0; icrd < 3; ++icrd) {
-            xcrd[0][iat][icrd] = xf[iat][icrd];
+            xcrd[0][iat][icrd] = xf(iat, icrd);
         }
         rotvec(xcrd[0][iat], xcrd[0][iat], system->lavec_s);
     }
@@ -316,9 +316,9 @@ void Ewald::get_pairs_of_minimum_distance(const int nat,
                 if (isize == 0 && jsize == 0 && ksize == 0) continue;
                 ++icell;
                 for (iat = 0; iat < nat; ++iat) {
-                    xcrd[icell][iat][0] = xf[iat][0] + static_cast<double>(isize);
-                    xcrd[icell][iat][1] = xf[iat][1] + static_cast<double>(jsize);
-                    xcrd[icell][iat][2] = xf[iat][2] + static_cast<double>(ksize);
+                    xcrd[icell][iat][0] = xf(iat, 0) + static_cast<double>(isize);
+                    xcrd[icell][iat][1] = xf(iat, 1) + static_cast<double>(jsize);
+                    xcrd[icell][iat][2] = xf(iat, 2) + static_cast<double>(ksize);
                     rotvec(xcrd[icell][iat], xcrd[icell][iat], system->lavec_s);
                 }
 
@@ -662,7 +662,7 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
 
                             kkd = system->map_s2p[kat].atom_num;
                             for (i = 0; i < 3; ++i) {
-                                x_tmp[i] = system->xr_s[iat][i] - system->xr_s[kat][i];
+                                x_tmp[i] = system->xr_s(iat, i) - system->xr_s(kat, i);
                             }
                             rotvec(x_tmp, x_tmp, system->lavec_s);
                             xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
@@ -701,7 +701,7 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                         for (kat = 0; kat < system->nat; ++kat) {
                             kkd = system->map_s2p[kat].atom_num;
                             for (i = 0; i < 3; ++i) {
-                                x_tmp[i] = system->xr_s[iat][i] - system->xr_s[kat][i];
+                                x_tmp[i] = system->xr_s(iat, i) - system->xr_s(kat, i);
                             }
                             rotvec(x_tmp, x_tmp, system->lavec_s);
                             for (i = 0; i < 3; ++i) {
@@ -732,7 +732,7 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                         }
 
                         for (i = 0; i < 3; ++i) {
-                            x_tmp[i] = system->xr_s[iat][i] - system->xr_s[jat][i];
+                            x_tmp[i] = system->xr_s(iat, i) - system->xr_s(jat, i);
                         }
                         rotvec(x_tmp, x_tmp, system->lavec_s);
                         for (i = 0; i < 3; ++i) {
@@ -770,7 +770,7 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                     trans[2] = static_cast<double>(kcell);
 
                     for (i = 0; i < 3; ++i) {
-                        x_tmp[i] = system->xr_s[iat][i] - system->xr_s[jat][i] - trans[i];
+                        x_tmp[i] = system->xr_s(iat, i) - system->xr_s(jat, i) - trans[i];
                     }
                     rotvec(x_tmp, x_tmp, system->lavec_s);
                     xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
@@ -812,9 +812,7 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
             fc_g_out[icrd][jcrd] = 0.0;
         }
     }
-    double volume = system->volume(system->lavec_s[0],
-                                   system->lavec_s[1],
-                                   system->lavec_s[2]);
+    double volume = system->supercell_base.volume;
 
     int ikd = system->map_s2p[iat].atom_num;
     int jkd = system->map_s2p[jat].atom_num;
@@ -834,7 +832,7 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
                 int kkd = system->map_s2p[kat].atom_num;
 
                 for (i = 0; i < 3; ++i) {
-                    x_tmp[i] = system->xr_s[iat][i] - system->xr_s[kat][i];
+                    x_tmp[i] = system->xr_s(iat, i) - system->xr_s(kat, i);
                 }
                 rotvec(x_tmp, x_tmp, system->lavec_s);
 
@@ -875,7 +873,7 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
                  + g_tmp[2] * epsilon_gvector[2];
 
         for (i = 0; i < 3; ++i) {
-            x_tmp[i] = system->xr_s[iat][i] - system->xr_s[jat][i];
+            x_tmp[i] = system->xr_s(iat, i) - system->xr_s(jat, i);
         }
         rotvec(x_tmp, x_tmp, system->lavec_s);
 
@@ -987,7 +985,7 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
 
                             atm_s3 = system->map_p2s[kat][0];
                             for (i = 0; i < 3; ++i) {
-                                x_tmp[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_s3][i];
+                                x_tmp[i] = system->xr_s(atm_s1, i) - system->xr_s(atm_s3, i);
                             }
                             rotvec(x_tmp, x_tmp, system->lavec_s);
                             xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
@@ -1019,7 +1017,7 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                         for (kat = 0; kat < system->natmin; ++kat) {
                             atm_s3 = system->map_p2s[kat][0];
                             for (i = 0; i < 3; ++i) {
-                                x_tmp[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_s3][i];
+                                x_tmp[i] = system->xr_s(atm_s1, i) - system->xr_s(atm_s3, i);
                             }
                             rotvec(x_tmp, x_tmp, system->lavec_s);
                             for (i = 0; i < 3; ++i) {
@@ -1051,7 +1049,7 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                         }
 
                         for (i = 0; i < 3; ++i) {
-                            x_tmp[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_s2][i];
+                            x_tmp[i] = system->xr_s(atm_s1, i) - system->xr_s(atm_s2, i);
                         }
                         rotvec(x_tmp, x_tmp, system->lavec_s);
                         for (i = 0; i < 3; ++i) {
@@ -1088,7 +1086,7 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                     rotvec(trans, trans, system->lavec_p);
 
                     for (i = 0; i < 3; ++i) {
-                        x_tmp[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_s2][i];
+                        x_tmp[i] = system->xr_s(atm_s1, i) - system->xr_s(atm_s2, i);
                     }
                     rotvec(x_tmp, x_tmp, system->lavec_s);
                     for (i = 0; i < 3; ++i) {
@@ -1143,7 +1141,7 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
     double mj = system->mass[atm_s2];
     double vol_p = system->volume_p;
     for (i = 0; i < 3; ++i) {
-        vec[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_s2][i];
+        vec[i] = system->xr_s(atm_s1, i) - system->xr_s(atm_s2, i);
     }
     rotvec(vec, vec, system->lavec_s);
     double phase = xk_in[0] * vec[0] + xk_in[1] * vec[1] + xk_in[2] * vec[2];
@@ -1222,7 +1220,7 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
                 int atm_s3 = system->map_p2s[kat][0];
 
                 for (i = 0; i < 3; ++i) {
-                    vecl[i] = system->xr_s[atm_s1][i] - system->xr_s[atm_s3][i];
+                    vecl[i] = system->xr_s(atm_s1, i) - system->xr_s(atm_s3, i);
                 }
                 rotvec(vecl, vecl, system->lavec_s);
                 double phase_g1 = g[0] * vecl[0] + g[1] * vecl[1] + g[2] * vecl[2];

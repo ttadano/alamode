@@ -75,8 +75,8 @@ void PhononVelocity::setup_velocity()
 }
 
 void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStructure *kpoint_bs_in,
-                                                             const double lavec_p[3][3],
-                                                             const double rlavec_p[3][3],
+                                                             const Eigen::Matrix3d &lavec_p,
+                                                             const Eigen::Matrix3d &rlavec_p,
                                                              const std::vector<FcsClassExtent> &fc2_ext_in,
                                                              const std::vector<FcsClassExtent> &fc2_without_dipole,
                                                              double **phvel_out) const
@@ -167,7 +167,7 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStr
 }
 
 void PhononVelocity::get_phonon_group_velocity_mesh(const KpointMeshUniform &kmesh_in,
-                                                    const double lavec_p[3][3],
+                                                    const Eigen::Matrix3d &lavec_p,
                                                     const bool irreducible_only,
                                                     double ***phvel3_out) const
 {
@@ -209,7 +209,7 @@ void PhononVelocity::get_phonon_group_velocity_mesh(const KpointMeshUniform &kme
 }
 
 void PhononVelocity::get_phonon_group_velocity_mesh_mpi(const KpointMeshUniform &kmesh_in,
-                                                        const double lavec_p[3][3],
+                                                        const Eigen::Matrix3d &lavec_p,
                                                         double ***phvel3_out) const
 {
     // This routine computes the group velocities for the given uniform k mesh
@@ -725,8 +725,8 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                     - system->xr_s[system->map_p2s[atm2_p][0]][i];
+            vec[i] = system->xr_s(atm2_s, i) + xshift_s[icell][i]
+                     - system->xr_s(system->map_p2s[atm2_p][0], i);
         }
 
         rotvec(vec, vec, system->lavec_s);
@@ -823,10 +823,10 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                     - system->xr_s[system->map_p2s[atm2_p][0]][i];
-            vec2[i] = system->xr_s[atm2_s][i] + xshift_s[icell][i]
-                      - system->xr_s[atm1_s][i];
+            vec[i] = system->xr_s(atm2_s, i) + xshift_s[icell][i]
+                     - system->xr_s(system->map_p2s[atm2_p][0], i);
+            vec2[i] = system->xr_s(atm2_s, i) + xshift_s[icell][i]
+                      - system->xr_s(atm1_s, i);
         }
 
         rotvec(vec, vec, system->lavec_s);

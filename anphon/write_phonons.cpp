@@ -1155,7 +1155,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_anime << std::setw(15) << system->lavec_p[j][i] * Bohr_in_Angstrom;
+            ofs_anime << std::setw(15) << system->lavec_p(j, i) * Bohr_in_Angstrom;
         }
         ofs_anime << std::endl;
     }
@@ -1163,7 +1163,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
     for (i = 0; i < natmin; ++i) {
         k = system->map_p2s[i][0];
         for (j = 0; j < 3; ++j) {
-            xmod[i][j] = system->xc[k][j];
+            xmod[i][j] = system->xc(k, j);
         }
 
         for (j = 0; j < 3; ++j) {
@@ -1266,7 +1266,7 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_evec << std::setw(15) << system->lavec_p[j][i];
+            ofs_evec << std::setw(15) << system->lavec_p(j, i);
         }
         ofs_evec << std::endl;
     }
@@ -1276,7 +1276,7 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_evec << std::setw(15) << system->rlavec_p[i][j];
+            ofs_evec << std::setw(15) << system->rlavec_p(i, j);
         }
         ofs_evec << std::endl;
     }
@@ -1433,7 +1433,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
     double lavec_tmp[3][3];
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            lavec_tmp[i][j] = system->lavec_p[j][i];
+            lavec_tmp[i][j] = system->lavec_p(j, i);
         }
     }
     dataspace = new DataSpace(2, dims);
@@ -1457,7 +1457,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
 
     double xtmp[3];
     for (i = 0; i < system->natmin; ++i) {
-        for (j = 0; j < 3; ++j) xtmp[j] = system->xr_s[system->map_p2s[i][0]][j];
+        for (j = 0; j < 3; ++j) xtmp[j] = system->xr_s(system->map_p2s[i][0], j);
         rotvec(xtmp, xtmp, system->lavec_s);
         rotvec(xtmp, xtmp, system->rlavec_p);
         for (j = 0; j < 3; ++j) xtmp[j] /= 2.0 * pi;
@@ -2237,7 +2237,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     allocate(xtmp, natmin, 3);
 
     for (i = 0; i < natmin; ++i) {
-        rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
+        rotvec(xtmp[i], system->xr_s.row(system->map_p2s[i][0]).data(), system->lavec_s);
         rotvec(xtmp[i], xtmp[i], system->rlavec_p);
         for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
     }
@@ -2276,9 +2276,9 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     // Prepare lattice vectors of the supercell
 
     for (i = 0; i < 3; ++i) {
-        lavec_super[i][0] = system->lavec_p[i][0] * ncell[0] * Bohr_in_Angstrom;
-        lavec_super[i][1] = system->lavec_p[i][1] * ncell[1] * Bohr_in_Angstrom;
-        lavec_super[i][2] = system->lavec_p[i][2] * ncell[2] * Bohr_in_Angstrom;
+        lavec_super[i][0] = system->lavec_p(i, 0) * ncell[0] * Bohr_in_Angstrom;
+        lavec_super[i][1] = system->lavec_p(i, 1) * ncell[1] * Bohr_in_Angstrom;
+        lavec_super[i][2] = system->lavec_p(i, 2) * ncell[2] * Bohr_in_Angstrom;
     }
 
     // Normalize the magnitude of displacements

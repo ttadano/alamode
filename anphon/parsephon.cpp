@@ -107,14 +107,14 @@ void Input::parse_general_vars()
     struct stat st;
     std::string str_tmp;
     const std::vector<std::string> input_list{
-            "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
+            "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM",
             "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
             "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART",  // "TREVSYM",
             "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
-            "VERBOSITY"
+            "VERBOSITY", "FC2FILE", "FC3FILE", "FC4FILE", "FCSFILE"
     };
 
-    std::vector<std::string> no_defaults{"PREFIX", "MODE", "FCSXML", "NKD", "KD"};
+    std::vector<std::string> no_defaults{"PREFIX", "MODE", "NKD", "KD"};
     std::vector<std::string> kdname_v, masskd_v;
     std::map<std::string, std::string> general_var_dict;
 
@@ -143,7 +143,16 @@ void Input::parse_general_vars()
 
     std::transform(mode.begin(), mode.end(), mode.begin(), toupper);
 
-    const auto fcsinfo = general_var_dict["FCSXML"];
+    const auto fcsfile = general_var_dict["FCSFILE"];
+    const auto fc2file = general_var_dict["FC2FILE"];
+    const auto fc3file = general_var_dict["FC3FILE"];
+    const auto fc4file = general_var_dict["FC4FILE"];
+
+    if (fcsfile.empty() && fc2file.empty()) {
+        exit("parse_general_vars",
+             "Either FCSFILE or FC2FILE must be given to start a phonon calculation.");
+    }
+
     assign_val(nkd, "NKD", general_var_dict);
 
     split_str_by_space(general_var_dict["KD"], kdname_v);
@@ -200,7 +209,6 @@ void Input::parse_general_vars()
 
     auto nbands = -1;
     std::string borninfo;
-    std::string fc2info;
 
     auto ismear = -1;
     auto epsilon = 10.0;
@@ -237,7 +245,6 @@ void Input::parse_general_vars()
 
     assign_val(nbands, "NBANDS", general_var_dict);
     assign_val(borninfo, "BORNINFO", general_var_dict);
-    assign_val(fc2info, "FC2XML", general_var_dict);
 
     assign_val(ismear, "ISMEAR", general_var_dict);
     assign_val(epsilon, "EPSILON", general_var_dict);
@@ -326,9 +333,9 @@ void Input::parse_general_vars()
     dynamical->file_born = borninfo;
     dynamical->band_connection = band_connection;
     integration->epsilon = epsilon;
-    fcs_phonon->file_fcs = fcsinfo;
-    fcs_phonon->file_fc2 = fc2info;
-    fcs_phonon->update_fc2 = !fc2info.empty();
+    fcs_phonon->file_fcs = fcsfile;
+    fcs_phonon->file_fc2 = fc2file;
+    fcs_phonon->update_fc2 = !fc2file.empty();
     thermodynamics->classical = classical;
     integration->ismear = ismear;
     anharmonic_core->use_triplet_symmetry = use_triplet_symmetry;
@@ -888,7 +895,7 @@ void Input::parse_cell_parameter()
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            system->lavec_p[i][j] = a * lavec_tmp[i][j];
+            system->lavec_p(i, j) = a * lavec_tmp[i][j];
         }
     }
 }

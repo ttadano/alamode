@@ -1696,8 +1696,8 @@ void Scph::setup_transform_symmetry()
 
                 // Fractional coordinates of x1 and x2
                 for (icrd = 0; icrd < 3; ++icrd) {
-                    x1[icrd] = system->xr_p[system->map_p2s[iat][0]][icrd];
-                    x2[icrd] = system->xr_p[system->map_p2s[jat][0]][icrd];
+                    x1[icrd] = system->xr_p(system->map_p2s[iat][0], icrd);
+                    x2[icrd] = system->xr_p(system->map_p2s[jat][0], icrd);
                 }
 
                 rotvec(xtmp, x1, S_frac_inv);
@@ -1939,7 +1939,7 @@ void Scph::setup_transform_ifc()
     }
 
     for (i = 0; i < nat; ++i) {
-        rotvec(xf_p[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
+        rotvec(xf_p[i], system->xr_s.row(system->map_p2s[i][0]).data(), system->lavec_s);
         rotvec(xf_p[i], xf_p[i], system->rlavec_p);
         for (j = 0; j < 3; ++j) xf_p[i][j] /= 2.0 * pi;
     }
@@ -2442,9 +2442,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     Fmat0.resize(nk_irred_interpolate);
 
     for (ik = 0; ik < nk; ++ik) {
-        dmat_convert[ik].resize(ns,ns);
-        dmat_convert_old[ik].resize(ns,ns);
-        evec_initial[ik].resize(ns,ns);
+        dmat_convert[ik].resize(ns, ns);
+        dmat_convert_old[ik].resize(ns, ns);
+        evec_initial[ik].resize(ns, ns);
     }
     for (ik = 0; ik < nk_irred_interpolate; ++ik) {
         Fmat0[ik].resize(ns, ns);
@@ -2569,7 +2569,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         if (iloop > 0) {
 #pragma omp parallel for
             for (ik = 0; ik < nk; ++ik) {
-                dmat_convert[ik] = alpha * dmat_convert[ik].eval() + (1.0-alpha) * dmat_convert_old[ik];
+                dmat_convert[ik] = alpha * dmat_convert[ik].eval() + (1.0 - alpha) * dmat_convert_old[ik];
             }
         }
 
@@ -2597,7 +2597,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
                         for (ks = 0; ks < ns; ++ks) {
                             ctmp = v4_array_all[kk][i][(ns + 1) * ks]
-                                   * dmat_convert[jk](ks,ks);
+                                   * dmat_convert[jk](ks, ks);
                             re_tmp += ctmp.real();
                             im_tmp += ctmp.imag();
                         }
@@ -2624,7 +2624,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                             for (ks = 0; ks < ns; ++ks) {
                                 for (unsigned int ls = 0; ls < ns; ++ls) {
                                     ctmp = v4_array_all[kk][i][ns * ks + ls]
-                                           * dmat_convert[jk](ks,ls);
+                                           * dmat_convert[jk](ks, ls);
                                     re_tmp += ctmp.real();
                                     im_tmp += ctmp.imag();
                                 }
@@ -3366,14 +3366,14 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     ofs_fc2.precision(10);
 
     for (i = 0; i < system->natmin; ++i) {
-        rotvec(xtmp[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
+        rotvec(xtmp[i], system->xr_s.row(system->map_p2s[i][0]).data(), system->lavec_s);
         rotvec(xtmp[i], xtmp[i], system->rlavec_p);
         for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
     }
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_fc2 << std::setw(20) << system->lavec_p[j][i];
+            ofs_fc2 << std::setw(20) << system->lavec_p(j, i);
         }
         ofs_fc2 << std::endl;
     }

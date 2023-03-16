@@ -13,6 +13,7 @@
 #include "pointers.h"
 #include <string>
 #include <vector>
+#include <Eigen/Core>
 
 namespace PHON_NS {
 class SymmetryOperation {
@@ -110,6 +111,30 @@ public:
             shift[i] = shift_in[i];
         }
     }
+
+    SymmetryOperationWithMapping(const Eigen::Matrix3d &S,
+                                 const Eigen::Matrix3d &T,
+                                 const Eigen::Matrix3d &R,
+                                 unsigned int *mapping_info,
+                                 const unsigned int n,
+                                 const Eigen::Vector3d &shift_in)
+    {
+        unsigned int i, j;
+
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                rot.push_back(S(i, j));
+                rot_real.push_back(T(i, j));
+                rot_reciprocal.push_back(R(i, j));
+            }
+        }
+        for (i = 0; i < n; ++i) {
+            mapping.push_back(mapping_info[i]);
+        }
+        for (i = 0; i < 3; ++i) {
+            shift[i] = shift_in[i];
+        }
+    }
 };
 
 class Symmetry : protected Pointers {
@@ -134,30 +159,30 @@ private:
 
     void set_default_variables();
 
-    void setup_symmetry_operation(int,
-                                  unsigned int &,
-                                  double [3][3],
-                                  double [3][3],
-                                  double **,
-                                  unsigned int *);
+    void setup_symmetry_operation(int N,
+                                  unsigned int &nsym,
+                                  const Eigen::Matrix3d &aa,
+                                  const Eigen::Matrix3d &bb,
+                                  const Eigen::MatrixXd &x,
+                                  unsigned int *kd);
 
     void findsym(int,
-                 double [3][3],
-                 double **,
+                 const Eigen::Matrix3d &aa,
+                 const Eigen::MatrixXd &x,
                  std::vector<SymmetryOperation> &) const;
 
-    void gensym_withmap(double **,
+    void gensym_withmap(const Eigen::MatrixXd &,
                         const unsigned int *);
 
-    bool is_proper(double [3][3]) const;
+    bool is_proper(const Eigen::Matrix3d &rot) const;
 
-    void find_lattice_symmetry(double [3][3],
+    void find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                std::vector<RotationMatrix> &) const;
 
     void find_crystal_symmetry(
             int,
             std::vector<unsigned int> *,
-            double **x,
+            const Eigen::MatrixXd &x,
             const std::vector<RotationMatrix> &,
             std::vector<SymmetryOperation> &) const;
 

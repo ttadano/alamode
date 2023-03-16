@@ -103,7 +103,7 @@ private:
 
     void get_pairs_of_minimum_distance(int,
                                        const int [3],
-                                       double **) const;
+                                       const Eigen::MatrixXd &) const;
 
     void calc_longrange_fcs(int,
                             int,
