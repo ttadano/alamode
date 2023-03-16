@@ -98,24 +98,28 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
     int icrd;
 
     double lavec_norm[3], rlavec_norm[3];
-    double e_lavec[3], e_rlavec[3];
+    Eigen::Vector3d e_lavec, e_rlavec;
     double lavec_enorm, rlavec_enorm, lavec_min[2], rlavec_min[2];
+    Eigen::Matrix3d epsilon_mat, invepsilon_mat;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
         std::cout << "  Preparing for the Ewald summation ..." << std::endl << std::endl;
     }
 
-    double p = -std::log(prec_ewald);
+    const double p = -std::log(prec_ewald);
 
     for (icrd = 0; icrd < 3; ++icrd) {
         for (int jcrd = 0; jcrd < 3; ++jcrd) {
             epsilon[icrd][jcrd] = dielectric[icrd][jcrd];
+            epsilon_mat(icrd, jcrd) = epsilon[icrd][jcrd];
         }
+
     }
 
     // Calculating convergence parameters
     invmat3(epsilon_inv, epsilon);
+    invepsilon_mat = epsilon_mat.inverse();
 
     // For calculating Coulombic (dipole-dipole) FCs
     for (icrd = 0; icrd < 3; ++icrd) {
@@ -127,8 +131,10 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
                                       + std::pow(system->rlavec_s(icrd, 1), 2.0)
                                       + std::pow(system->rlavec_s(icrd, 2), 2.0));
 
-        rotvec(e_lavec, system->lavec_s.row(icrd).data(), epsilon_inv);
-        rotvec(e_rlavec, system->rlavec_s.row(icrd).data(), epsilon);
+        e_lavec = invepsilon_mat * system->lavec_s.row(icrd).transpose();
+        e_rlavec = epsilon_mat * system->rlavec_s.row(icrd).transpose();
+        //rotvec(e_lavec, system->lavec_s.row(icrd).data(), epsilon_inv);
+        //rotvec(e_rlavec, system->rlavec_s.row(icrd).data(), epsilon);
 
         lavec_enorm = std::sqrt(system->lavec_s(icrd, 0) * e_lavec[0]
                                 + system->lavec_s(icrd, 1) * e_lavec[1]
@@ -170,12 +176,14 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
                                       + std::pow(system->rlavec_p(icrd, 1), 2.0)
                                       + std::pow(system->rlavec_p(icrd, 2), 2.0));
 
-        rotvec(e_lavec, system->lavec_p.row(icrd).data(), epsilon_inv);
+        //rotvec(e_lavec, system->lavec_p.row(icrd).data(), epsilon_inv);
+        e_lavec = invepsilon_mat * system->lavec_p.row(icrd).transpose();
         lavec_enorm = std::sqrt(system->lavec_p(icrd, 0) * e_lavec[0]
                                 + system->lavec_p(icrd, 1) * e_lavec[1]
                                 + system->lavec_p(icrd, 2) * e_lavec[2]);
 
-        rotvec(e_rlavec, system->rlavec_p.row(icrd).data(), epsilon);
+        //rotvec(e_rlavec, system->rlavec_p.row(icrd).data(), epsilon);
+        e_rlavec = epsilon_mat * system->rlavec_p.row(icrd).transpose();
         rlavec_enorm = std::sqrt(system->rlavec_p(icrd, 0) * e_rlavec[0]
                                  + system->rlavec_p(icrd, 1) * e_rlavec[1]
                                  + system->rlavec_p(icrd, 2) * e_rlavec[2]);

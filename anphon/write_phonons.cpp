@@ -2172,7 +2172,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     double *eval, **evec_mag, **evec_theta;
     double **disp_mag, *mass;
     double *phase_cell;
-    double ***xmod, **xtmp;
+    double ***xmod;
+    Eigen::MatrixXd xtmp;
 
     std::complex<double> **evec;
 
@@ -2234,13 +2235,15 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     // Get fractional coordinates of atoms in a primitive cell
 
-    allocate(xtmp, natmin, 3);
+    xtmp.resize(natmin, 3);
 
     for (i = 0; i < natmin; ++i) {
-        rotvec(xtmp[i], system->xr_s.row(system->map_p2s[i][0]).data(), system->lavec_s);
-        rotvec(xtmp[i], xtmp[i], system->rlavec_p);
-        for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
+        for (j = 0; j < 3; ++j) {
+            xtmp(i, j) = system->xr_s(system->map_p2s[i][0], j);
+        }
     }
+    xtmp = xtmp * system->lavec_s.transpose();
+    xtmp = xtmp * system->lavec_p.inverse().transpose();
 
     // Prepare fractional coordinates of atoms in the supercell
     unsigned int icell = 0;
@@ -2254,16 +2257,14 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
                                                 + xk_in[2] * static_cast<double>(iz));
 
                 for (i = 0; i < natmin; ++i) {
-                    xmod[icell][i][0] = (xtmp[i][0] + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
-                    xmod[icell][i][1] = (xtmp[i][1] + static_cast<double>(iy)) / static_cast<double>(ncell[1]);
-                    xmod[icell][i][2] = (xtmp[i][2] + static_cast<double>(iz)) / static_cast<double>(ncell[2]);
+                    xmod[icell][i][0] = (xtmp(i,0) + static_cast<double>(ix)) / static_cast<double>(ncell[0]);
+                    xmod[icell][i][1] = (xtmp(i,1) + static_cast<double>(iy)) / static_cast<double>(ncell[1]);
+                    xmod[icell][i][2] = (xtmp(i,2) + static_cast<double>(iz)) / static_cast<double>(ncell[2]);
                 }
                 ++icell;
             }
         }
     }
-
-    deallocate(xtmp);
 
     // Prepare atomic symbols and masses
 

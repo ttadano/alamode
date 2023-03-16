@@ -47,7 +47,6 @@ void Symmetry::setup_symmetry()
     time_reversal_sym = time_reversal_sym_from_alm;
 
     xtmp.resize(natmin, 3);
-    //allocate(xtmp, natmin, 3);
     allocate(kdtmp, natmin);
 
     for (auto i = 0; i < natmin; ++i) {
@@ -60,10 +59,6 @@ void Symmetry::setup_symmetry()
     xtmp = xtmp * system->lavec_p.inverse().transpose();
 
     for (auto i = 0; i < natmin; ++i) {
-//        rotvec(xtmp[i], system->xr_s.row(system->map_p2s[i][0]).data(), system->lavec_s);
-//        rotvec(xtmp[i], xtmp[i], system->rlavec_p);
-//
-//        for (auto j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
         kdtmp[i] = system->kd[system->map_p2s[i][0]];
     }
 
@@ -88,7 +83,6 @@ void Symmetry::setup_symmetry()
                   << nsym << std::endl << std::endl;
         gensym_withmap(xtmp, kdtmp);
     }
-    //deallocate(xtmp);
     deallocate(kdtmp);
 }
 
@@ -228,9 +222,7 @@ void Symmetry::find_lattice_symmetry(const Eigen::Matrix3d &aa,
 
     int nsym_tmp = 0;
     int mat_tmp[3][3];
-    //double rot_tmp[3][3];
     Eigen::Matrix3d aa_rot, rot_tmp;
-    //double aa_rot[3][3];
 
     double metric_tensor[3][3];
     double metric_tensor_rot[3][3];
@@ -289,7 +281,6 @@ void Symmetry::find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                         rot_tmp(2, 2) = m33;
 
                                         // Here, aa_rot = aa * rot_tmp is correct.
-                                        //matmul3(aa_rot, aa, rot_tmp);
                                         aa_rot = aa * rot_tmp;
 
                                         for (i = 0; i < 3; ++i) {
@@ -386,7 +377,6 @@ void Symmetry::find_crystal_symmetry(int nclass,
         }
 
         x_rot = rot * x.row(iat).transpose();
-        //rotvec(x_rot, x.row(iat).data(), rot);
 
 #ifdef _OPENMP
 #pragma omp parallel for private(jat, tran, isok, kat, x_rot_tmp, is_found, lat, tmp, diff, \
@@ -413,7 +403,6 @@ void Symmetry::find_crystal_symmetry(int nclass,
                     kat = atomclass[itype][jj];
 
                     x_rot_tmp = rot * x.row(kat).transpose();
-                    //rotvec(x_rot_tmp, x.row(kat).data(), rot);
 
                     for (i = 0; i < 3; ++i) {
                         x_rot_tmp[i] += tran[i];
@@ -447,15 +436,8 @@ void Symmetry::find_crystal_symmetry(int nclass,
                     mag_rot[i] = system->magmom[iat][i];
                 }
 
-//                for (i = 0; i < 3; ++i) {
-//                    for (j = 0; j < 3; ++j) {
-//                        rot_tmp(i, j) = rot[i][j];
-//                    }
-//                }
                 rot_tmp = rot * system->rlavec_p;
                 rot_cart = system->lavec_p * rot_tmp;
-//                matmul3(rot_tmp, rot, system->rlavec_p);
-//                matmul3(rot_cart, system->lavec_p, rot_tmp);
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {

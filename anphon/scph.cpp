@@ -1893,7 +1893,7 @@ void Scph::setup_transform_ifc()
     unsigned int iat;
 
     int **shift_cell, **shift_cell_super;
-    double **xf_p;
+    Eigen::MatrixXd xf_p;
     double ****x_all;
 
     const int nkx = static_cast<int>(kmesh_coarse->nk_i[0]); // This should be int (must not be unsigned int).
@@ -1905,7 +1905,8 @@ void Scph::setup_transform_ifc()
 
     allocate(shift_cell, ncell, 3);
     allocate(shift_cell_super, ncell_s, 3);
-    allocate(xf_p, nat, 3);
+    //allocate(xf_p, nat, 3);
+    xf_p.resize(nat, 3);
     allocate(x_all, ncell_s, ncell, nat, 3);
 
     unsigned int icell = 0;
@@ -1939,19 +1940,22 @@ void Scph::setup_transform_ifc()
     }
 
     for (i = 0; i < nat; ++i) {
-        rotvec(xf_p[i], system->xr_s.row(system->map_p2s[i][0]).data(), system->lavec_s);
-        rotvec(xf_p[i], xf_p[i], system->rlavec_p);
-        for (j = 0; j < 3; ++j) xf_p[i][j] /= 2.0 * pi;
+        for (j = 0; j < 3; ++j) {
+            xf_p(i,j) = system->xr_s(system->map_p2s[i][0], j);
+        }
     }
+
+    xf_p = xf_p * system->lavec_s.transpose();
+    xf_p = xf_p * system->lavec_p.inverse().transpose();
 
     for (i = 0; i < ncell_s; ++i) {
         for (j = 0; j < ncell; ++j) {
             for (iat = 0; iat < nat; ++iat) {
-                x_all[i][j][iat][0] = xf_p[iat][0] + static_cast<double>(shift_cell[j][0])
+                x_all[i][j][iat][0] = xf_p(iat,0) + static_cast<double>(shift_cell[j][0])
                                       + static_cast<double>(nkx * shift_cell_super[i][0]);
-                x_all[i][j][iat][1] = xf_p[iat][1] + static_cast<double>(shift_cell[j][1])
+                x_all[i][j][iat][1] = xf_p(iat,1) + static_cast<double>(shift_cell[j][1])
                                       + static_cast<double>(nky * shift_cell_super[i][1]);
-                x_all[i][j][iat][2] = xf_p[iat][2] + static_cast<double>(shift_cell[j][2])
+                x_all[i][j][iat][2] = xf_p(iat,2) + static_cast<double>(shift_cell[j][2])
                                       + static_cast<double>(nkz * shift_cell_super[i][2]);
 
                 rotvec(x_all[i][j][iat], x_all[i][j][iat], system->lavec_p);
@@ -2002,7 +2006,7 @@ void Scph::setup_transform_ifc()
 
     deallocate(shift_cell);
     deallocate(shift_cell_super);
-    deallocate(xf_p);
+    //deallocate(xf_p);
     deallocate(x_all);
 }
 
@@ -3334,7 +3338,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     const auto Tmin = system->Tmin;
     const auto dT = system->dT;
     double ***delta_fc2;
-    double **xtmp;
+    Eigen::MatrixXd xtmp;
     const auto ns = dynamical->neval;
     unsigned int is, js, icell;
     unsigned int iat, jat;
@@ -3361,15 +3365,18 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
 
     allocate(delta_fc2, ns, ns, ncell);
 
-    allocate(xtmp, system->natmin, 3);
+    xtmp.resize(system->natmin, 3);
+    //allocate(xtmp, system->natmin, 3);
 
     ofs_fc2.precision(10);
 
     for (i = 0; i < system->natmin; ++i) {
-        rotvec(xtmp[i], system->xr_s.row(system->map_p2s[i][0]).data(), system->lavec_s);
-        rotvec(xtmp[i], xtmp[i], system->rlavec_p);
-        for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
+        for (j = 0; j < 3; ++j) {
+            xtmp(i, j) = system->xr_s(system->map_p2s[i][0], j);
+        }
     }
+    xtmp = xtmp * system->lavec_s.transpose();
+    xtmp = xtmp * system->lavec_p.inverse().transpose();
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -3385,12 +3392,12 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
 
     for (i = 0; i < system->natmin; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_fc2 << std::setw(20) << xtmp[i][j];
+            ofs_fc2 << std::setw(20) << xtmp(i,j);
         }
         ofs_fc2 << std::setw(5) << system->kd[system->map_p2s[i][0]] + 1 << std::endl;
     }
 
-    deallocate(xtmp);
+    //deallocate(xtmp);
 
     for (unsigned int iT = 0; iT < NT; ++iT) {
         const auto temp = Tmin + dT * static_cast<double>(iT);
