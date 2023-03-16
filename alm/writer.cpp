@@ -119,8 +119,8 @@ void Writer::write_input_vars(const std::unique_ptr<System> &system,
 
         std::cout << "  ICONST = " << constraint->get_constraint_mode() << '\n';
         std::cout << "  ROTAXIS = " << constraint->get_rotation_axis() << '\n';
-        std::cout << "  FC2XML = " << constraint->get_fc_file(2) << '\n';
-        std::cout << "  FC3XML = " << constraint->get_fc_file(3) << "\n\n";
+        std::cout << "  FC2FIX = " << constraint->get_fc_file(2) << '\n';
+        std::cout << "  FC3FIX = " << constraint->get_fc_file(3) << "\n\n";
         std::cout << "  SPARSE = " << optctrl.use_sparse_solver << '\n';
         std::cout << "  SPARSESOLVER = " << optctrl.sparsesolver << '\n';
         std::cout << "  CONV_TOL = " << optctrl.tolerance_iteration << '\n';

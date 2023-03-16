@@ -95,8 +95,9 @@ int Optimize::optimize_main(const std::unique_ptr<Symmetry> &symmetry,
 
     if (verbosity > 0) {
         std::vector<std::string> str_linearmodel{"least-squares", "elastic-net", "adaptive-lasso"};
-        std::cout << " OPTIMIZATION\n";
-        std::cout << " ============\n\n";
+        std::cout << " ==============\n";
+        std::cout << "  OPTIMIZATION \n";
+        std::cout << " ==============\n\n";
         std::cout << "  LMODEL = " << str_linearmodel[optcontrol.linear_model - 1] << "\n\n";
         if (!filedata_train.filename.empty()) {
             std::cout << "  Training data file (DFSET) : " << filedata_train.filename << "\n\n";
