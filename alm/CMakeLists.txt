@@ -95,7 +95,8 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/alm.cpp
             ${PROJECT_SOURCE_DIR}/symmetry.cpp
             ${PROJECT_SOURCE_DIR}/system.cpp
             ${PROJECT_SOURCE_DIR}/timer.cpp
-            ${PROJECT_SOURCE_DIR}/writer.cpp)
+            ${PROJECT_SOURCE_DIR}/writer.cpp
+            ${PROJECT_SOURCE_DIR}/smith.cpp)
 
 set(HEADERS ${PROJECT_SOURCE_DIR}/alm.h
             ${PROJECT_SOURCE_DIR}/cluster.h
@@ -110,7 +111,8 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/alm.h
             ${PROJECT_SOURCE_DIR}/symmetry.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/timer.h
-            ${PROJECT_SOURCE_DIR}/writer.h smith.cpp smith.h ../include/hdf5_parser.h)
+            ${PROJECT_SOURCE_DIR}/writer.h
+            ${PROJECT_SOURCE_DIR}/smith.h)
 
 # # Trick to use gcc to compile *.cpp: This doesn't work because of boost
 # SET_SOURCE_FILES_PROPERTIES(${SOURCES} PROPERTIES LANGUAGE C)

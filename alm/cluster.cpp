@@ -1097,7 +1097,7 @@ void Cluster::set_interaction_cluster(const int order,
                     intpair_uniq.push_back(data_now[order]);
 
                     pairs_icell.clear();
-                    for (const int jat : intpair_uniq) {
+                    for (const int jat: intpair_uniq) {
                         const auto jkd = kd[jat] - 1;
 
                         const auto rc_tmp = cutoff_radii[order][ikd][jkd];
@@ -1120,7 +1120,7 @@ void Cluster::set_interaction_cluster(const int order,
                     cell_combination(pairs_icell, 0, accum_tmp, comb_cell);
 
                     distance_list.clear();
-                    for (const auto &it_comb_cell : comb_cell) {
+                    for (const auto &it_comb_cell: comb_cell) {
 
                         cellpair.clear();
 
@@ -1171,7 +1171,7 @@ void Cluster::set_interaction_cluster(const int order,
                             // but does not satisfy the permutation symmetry.
 
                             pairs_icell.clear();
-                            for (const int jat : intpair_uniq) {
+                            for (const int jat: intpair_uniq) {
                                 cell_vector.clear();
 
                                 for (auto ii = 0; ii < distance_table[iat][jat].ncells_minimum_distance; ++ii) {
@@ -1185,7 +1185,7 @@ void Cluster::set_interaction_cluster(const int order,
                             comb_cell_atom_center.clear();
                             cell_combination(pairs_icell, 0, accum_tmp, comb_cell);
 
-                            for (const auto &it_comb_cell : comb_cell) {
+                            for (const auto &it_comb_cell: comb_cell) {
                                 cellpair.clear();
                                 for (auto k = 0; k < group_atom.size(); ++k) {
                                     for (auto m = 0; m < group_atom[k]; ++m) {
@@ -1223,10 +1223,10 @@ void Cluster::set_interaction_cluster(const int order,
                             }
                             // std::cout << "sum_dist_min = " << sum_dist_min << std::endl;
                             double sum_dist;
-                            for (const auto &it_dist : distance_list) {
+                            for (const auto &it_dist: distance_list) {
                                 sum_dist = 0.0;
 
-                                for (const double dist : it_dist.dist) {
+                                for (const double dist: it_dist.dist) {
                                     sum_dist += dist;
                                 }
 

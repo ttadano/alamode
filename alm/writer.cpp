@@ -999,7 +999,8 @@ void Writer::write_forceconstant_at_given_order_h5(H5Easy::File &file,
 
     const std::string str_ordername = "Order" + std::to_string(order + 2);
     dump(file, "/ForceConstants/" + str_ordername + "/atom_indices", atom_indices, Compression(compression_level));
-    dump(file, "/ForceConstants/" + str_ordername + "/atom_indices_supercell", atom_indices_super, Compression(compression_level));
+    dump(file, "/ForceConstants/" + str_ordername + "/atom_indices_supercell", atom_indices_super,
+         Compression(compression_level));
     dump(file, "/ForceConstants/" + str_ordername + "/coord_indices", coord_indices, Compression(compression_level));
     dump(file, "/ForceConstants/" + str_ordername + "/shift_vectors", shift_vectors, Compression(compression_level));
     std::string unitname = "bohr";

@@ -798,13 +798,13 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
             fc_latt.clear();
             fc_cart_tmp.clear();
 
-            for (const auto &it : fc_table[i]) {
+            for (const auto &it: fc_table[i]) {
                 fc_latt.emplace_back(param_in[it.mother + ishift] * it.sign,
                                      it.elems);
             }
 
             change_basis_force_constants(fc_latt, fc_cart_tmp, 0);
-            for (const auto &it : fc_cart_tmp) {
+            for (const auto &it: fc_cart_tmp) {
                 if (std::abs(it.fc_value) >= fc_zero_threshold) {
                     fc_cart[i].emplace_back(it);
                 }

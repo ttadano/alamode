@@ -981,7 +981,7 @@ void Symmetry::gen_mapping_information(const Cell &scell,
                         jat = atomtype_group_super[itype][jj];
 
                         xdiff = (scell.x_fractional.row(jat).transpose() - xnew).unaryExpr(
-                                [](const double x) { return x - static_cast<double>(nint(x));});
+                                [](const double x) { return x - static_cast<double>(nint(x)); });
 
                         if (xdiff.norm() < tolerance) {
                             map_fullsymmetry_super[iat][isym] = jat;
@@ -1015,7 +1015,7 @@ void Symmetry::gen_mapping_information(const Cell &scell,
                         jat = atomtype_group_prim[itype][jj];
 
                         xdiff = (pcell.x_fractional.row(jat).transpose() - xnew).unaryExpr(
-                                [](const double x) { return x - static_cast<double>(nint(x));});
+                                [](const double x) { return x - static_cast<double>(nint(x)); });
 
                         if (xdiff.norm() < tolerance) {
                             map_fullsymmetry_prim[iat][isym] = jat;
