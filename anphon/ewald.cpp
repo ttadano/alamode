@@ -133,8 +133,6 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
 
         e_lavec = invepsilon_mat * system->lavec_s.row(icrd).transpose();
         e_rlavec = epsilon_mat * system->rlavec_s.row(icrd).transpose();
-        //rotvec(e_lavec, system->lavec_s.row(icrd).data(), epsilon_inv);
-        //rotvec(e_rlavec, system->rlavec_s.row(icrd).data(), epsilon);
 
         lavec_enorm = std::sqrt(system->lavec_s(icrd, 0) * e_lavec[0]
                                 + system->lavec_s(icrd, 1) * e_lavec[1]
@@ -176,13 +174,11 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
                                       + std::pow(system->rlavec_p(icrd, 1), 2.0)
                                       + std::pow(system->rlavec_p(icrd, 2), 2.0));
 
-        //rotvec(e_lavec, system->lavec_p.row(icrd).data(), epsilon_inv);
         e_lavec = invepsilon_mat * system->lavec_p.row(icrd).transpose();
         lavec_enorm = std::sqrt(system->lavec_p(icrd, 0) * e_lavec[0]
                                 + system->lavec_p(icrd, 1) * e_lavec[1]
                                 + system->lavec_p(icrd, 2) * e_lavec[2]);
 
-        //rotvec(e_rlavec, system->rlavec_p.row(icrd).data(), epsilon);
         e_rlavec = epsilon_mat * system->rlavec_p.row(icrd).transpose();
         rlavec_enorm = std::sqrt(system->rlavec_p(icrd, 0) * e_rlavec[0]
                                  + system->rlavec_p(icrd, 1) * e_rlavec[1]

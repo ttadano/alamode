@@ -37,9 +37,9 @@ inline void get_structures_from_h5(const H5Easy::File &file,
     }
 
     lavec = load<Eigen::Matrix3d>(file, "/" + search_cell + "/lattice_vector");
-    lavec = lavec.transpose();
+    lavec.transposeInPlace();
     x_fractional = load<Eigen::MatrixXd>(file, "/" + search_cell + "/fractional_coordinate");
-    kind_index = load<std::vector<int>>(file, "/" + search_cell + "/kind_index");
+    kind_index = load<std::vector<int>>(file, "/" + search_cell + "/atomic_kinds");
     element_names = load<std::vector<std::string>>(file, "/" + search_cell + "/elements");
 }
 

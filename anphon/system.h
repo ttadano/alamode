@@ -48,7 +48,7 @@ public:
 
 class Spin {
 public:
-    bool lspin;
+    int lspin;
     int time_reversal_symm;
     int noncollinear;
     std::vector<std::vector<double>> magmom;
@@ -63,7 +63,7 @@ public:
 class MappingTable {
 public:
     std::vector<Maps> to_true_primitive;
-    std::vector<std::vector<size_t>> from_true_primitive;
+    std::vector<std::vector<unsigned int>> from_true_primitive;
 };
 
 class System : protected Pointers {
@@ -141,12 +141,19 @@ private:
                                              Spin &spin_super_out,
                                              Spin &spin_prim_out,
                                              MappingTable &map_super_out,
-                                             MappingTable &map_prim_out) const;
+                                             MappingTable &map_prim_out,
+                                             std::vector<std::string> &elements) const;
+
+    void get_structure_and_mapping_table_h5(const std::string &filename,
+                                            Cell &scell_out,
+                                            Cell &pcell_out,
+                                            Spin &spin_super_out,
+                                            Spin &spin_prim_out,
+                                            MappingTable &map_super_out,
+                                            MappingTable &map_prim_out,
+                                            std::vector<std::string> &elements) const;
 
     void load_system_info_from_h5();
-
-    void recips(double [3][3],
-                double [3][3]) const;
 
     void recips(const Eigen::Matrix3d &mat_in,
                 Eigen::Matrix3d &rmat_out) const;

@@ -20,6 +20,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <iomanip>
 #include "mathfunctions.h"
 #include "xml_parser.h"
+#include "hdf5_parser.h"
 #include <sstream>
 #include <map>
 #include <boost/property_tree/ptree.hpp>
@@ -28,6 +29,8 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/lexical_cast.hpp>
 #include <Eigen/LU>
 #include <Eigen/Geometry>
+
+#include <highfive/H5Easy.hpp>
 
 using namespace PHON_NS;
 
@@ -64,18 +67,6 @@ void System::set_default_variables()
 
 void System::deallocate_variables()
 {
-//    if (xr_p) {
-//        deallocate(xr_p);
-//    }
-//    if (xr_s) {
-//        deallocate(xr_s);
-//    }
-//    if (xc) {
-//        deallocate(xc);
-//    }
-//    if (xr_s_anharm) {
-//        deallocate(xr_s_anharm);
-//    }
     if (kd) {
         deallocate(kd);
     }
@@ -124,7 +115,6 @@ void System::setup()
     unsigned int i, j;
     double vec_tmp[3][3];
     unsigned int *kd_prim;
-    double **xtmp;
 
     if (mympi->my_rank == 0) {
 
@@ -146,13 +136,6 @@ void System::setup()
     xc = xr_s * lavec_s.transpose();
     xr_p = xc * lavec_p.inverse().transpose();
 
-//    for (i = 0; i < nat; ++i) {
-//        rotvec(xc[i], xr_s[i], lavec_s);
-//        rotvec(xr_p[i], xc[i], rlavec_p);
-//        for (j = 0; j < 3; ++j) {
-//            xr_p[i][j] /= 2.0 * pi;
-//        }
-//    }
 
     if (mympi->my_rank == 0) {
         cout << " -----------------------------------------------------------------" << endl;
@@ -290,8 +273,6 @@ void System::setup()
 
         Eigen::MatrixXd xtmp(natmin, 3);
 
-//        allocate(xtmp, natmin, 3);
-
         for (i = 0; i < natmin; ++i) {
             for (j = 0; j < 3; ++j) {
                 xtmp(i, j) = xr_s(map_p2s[i][0], j);
@@ -299,12 +280,6 @@ void System::setup()
         }
         xtmp = xtmp * lavec_s.transpose();
         xtmp = xtmp * lavec_p.transpose().inverse();
-
-//        for (i = 0; i < natmin; ++i) {
-//            rotvec(xtmp[i], xr_s[map_p2s[i][0]], lavec_s);
-//            rotvec(xtmp[i], xtmp[i], rlavec_p);
-//            for (j = 0; j < 3; ++j) xtmp[i][j] /= 2.0 * pi;
-//        }
 
         cout << "  Atomic positions in the primitive cell (fractional):" << endl;
         for (i = 0; i < natmin; ++i) {
@@ -315,8 +290,6 @@ void System::setup()
             cout << setw(4) << symbol_kd[kd[map_p2s[i][0]]] << endl;
         }
         cout << endl;
-
-//        deallocate(xtmp);
 
         if (lspin) {
             cout << "  MagneticMoments entry found in the XML file. " << endl;
@@ -421,6 +394,7 @@ void System::load_system_info_from_file()
     }
 
     Spin spin_fc2;
+    std::vector<std::string> elements_base, elements_fc2, elements_tmp;
 
     for (auto i = 0; i < 4; ++i) {
 
@@ -431,11 +405,17 @@ void System::load_system_info_from_file()
         if (filetype[i] == -1) continue;
 
         if (filetype[i] == 0) {
-            get_structure_and_mapping_table_xml(filename_list[i], scell, pcell,
+            get_structure_and_mapping_table_xml(filename_list[i],
+                                                scell, pcell,
                                                 spin_s, spin_p,
-                                                map_s, map_p);
+                                                map_s, map_p,
+                                                elements_tmp);
         } else if (filetype[i] == 1) {
-
+            get_structure_and_mapping_table_h5(filename_list[i],
+                                               scell, pcell,
+                                               spin_s, spin_p,
+                                               map_s, map_p,
+                                               elements_tmp);
         } else {
             exit("load_system_info_from_file", "This cannot happen.");
         }
@@ -446,6 +426,7 @@ void System::load_system_info_from_file()
             map_scell_base = map_s;
             map_pcell_base = map_p;
             spin_base = spin_s;
+            elements_base = elements_tmp;
 
         } else if (i == 1) {
             supercell_fc2 = scell;
@@ -453,6 +434,7 @@ void System::load_system_info_from_file()
             map_scell_fc2 = map_s;
             map_pcell_fc2 = map_p;
             spin_fc2 = spin_s;
+            elements_fc2 = elements_tmp;
 
         } else if (i == 2) {
             supercell_fc3 = scell;
@@ -465,6 +447,7 @@ void System::load_system_info_from_file()
             primcell_fc4 = pcell;
             map_scell_fc4 = map_s;
             map_pcell_fc4 = map_p;
+
         }
     }
 
@@ -474,6 +457,7 @@ void System::load_system_info_from_file()
         map_scell_base = map_scell_fc2;
         map_pcell_base = map_pcell_fc2;
         spin_base = spin_fc2;
+        elements_base = elements_fc2;
     }
 
 }
@@ -484,7 +468,8 @@ void System::get_structure_and_mapping_table_xml(const std::string &filename,
                                                  Spin &spin_super_out,
                                                  Spin &spin_prim_out,
                                                  MappingTable &map_super_out,
-                                                 MappingTable &map_prim_out) const
+                                                 MappingTable &map_prim_out,
+                                                 std::vector<std::string> &elements) const
 {
     unsigned int nat_tmp, nkd_tmp, ntran_tmp, natmin_tmp;
     double lavec_s_tmp[3][3];
@@ -494,6 +479,8 @@ void System::get_structure_and_mapping_table_xml(const std::string &filename,
     Maps *map_s2p_tmp = nullptr;
     double **magmom_tmp = nullptr;
     int lspin_tmp, noncollinear_tmp, time_reversal_symmetry_tmp;
+
+    elements.clear();
 
     if (mympi->my_rank == 0) {
 
@@ -546,6 +533,7 @@ void System::get_structure_and_mapping_table_xml(const std::string &filename,
                         const auto &child = child_.second;
                         const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
                         dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+                        elements.emplace_back(child_.second.data());
                     }
 
         unsigned int index;
@@ -684,10 +672,16 @@ void System::get_structure_and_mapping_table_xml(const std::string &filename,
         if (lspin_tmp) {
             allocate(magmom_tmp, natmin_tmp, 3);
         }
+        elements.resize(nkd_tmp);
     }
 
     MPI_Bcast(&xr_s_tmp[0][0], 3 * nat_tmp, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kd_tmp[0], nat_tmp, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    for (auto i = 0; i < nkd_tmp; ++i) {
+        mympi->MPI_Bcast_string(elements[i], 0, MPI_COMM_WORLD);
+    }
+
     MPI_Bcast(&map_p2s_tmp[0][0], natmin_tmp * ntran_tmp, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_s2p_tmp[0], nat_tmp * sizeof map_s2p_tmp[0], MPI_BYTE, 0, MPI_COMM_WORLD);
     if (lspin_tmp) MPI_Bcast(&magmom_tmp[0][0], 3 * natmin_tmp, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -734,7 +728,7 @@ void System::get_structure_and_mapping_table_xml(const std::string &filename,
 
     // Mapping table
     map_super_out.to_true_primitive.resize(nat_tmp);
-    map_super_out.from_true_primitive.resize(natmin_tmp, std::vector<size_t>(ntran_tmp));
+    map_super_out.from_true_primitive.resize(natmin_tmp, std::vector<unsigned int>(ntran_tmp));
 
     for (auto i = 0; i < nat_tmp; ++i) {
         map_super_out.to_true_primitive[i] = map_s2p_tmp[i];
@@ -751,6 +745,119 @@ void System::get_structure_and_mapping_table_xml(const std::string &filename,
     if (magmom_tmp) deallocate(magmom_tmp);
     if (map_p2s_tmp) deallocate(map_p2s_tmp);
     if (map_s2p_tmp) deallocate(map_s2p_tmp);
+}
+
+void System::get_structure_and_mapping_table_h5(const std::string &filename,
+                                                Cell &scell_out,
+                                                Cell &pcell_out,
+                                                Spin &spin_super_out,
+                                                Spin &spin_prim_out,
+                                                MappingTable &map_super_out,
+                                                MappingTable &map_prim_out,
+                                                std::vector<std::string> &elements) const
+{
+    using namespace H5Easy;
+
+    int natmin_tmp, ntran_tmp;
+
+    if (mympi->my_rank == 0) {
+        File file(filename, File::ReadOnly);
+
+        const std::string celltype_s = "SuperCell";
+        const std::string celltype_p = "PrimitiveCell";
+
+        get_structures_from_h5(file,
+                               celltype_s,
+                               scell_out.lattice_vector,
+                               scell_out.x_fractional,
+                               scell_out.kind,
+                               elements);
+
+        get_structures_from_h5(file,
+                               celltype_p,
+                               pcell_out.lattice_vector,
+                               pcell_out.x_fractional,
+                               pcell_out.kind,
+                               elements);
+
+        get_magnetism_from_h5(file,
+                              celltype_s,
+                              spin_super_out.lspin,
+                              spin_super_out.magmom,
+                              spin_super_out.noncollinear,
+                              spin_super_out.time_reversal_symm);
+
+        get_magnetism_from_h5(file,
+                              celltype_p,
+                              spin_prim_out.lspin,
+                              spin_prim_out.magmom,
+                              spin_prim_out.noncollinear,
+                              spin_prim_out.time_reversal_symm);
+
+        std::vector<std::vector<int>> mapping_table;
+        get_mapping_table_from_h5(file, celltype_s, mapping_table);
+
+        natmin_tmp = mapping_table.size();
+        ntran_tmp = mapping_table[0].size();
+
+        map_super_out.from_true_primitive.resize(natmin_tmp, std::vector<unsigned int>(ntran_tmp));
+        map_super_out.to_true_primitive.resize(natmin_tmp * ntran_tmp);
+
+        size_t atom_s;
+
+        for (auto i = 0; i < natmin_tmp; ++i) {
+            for (auto j = 0; j < ntran_tmp; ++j) {
+                atom_s = mapping_table[i][j];
+                map_super_out.from_true_primitive[i][j] = atom_s;
+                map_super_out.to_true_primitive[atom_s].atom_num = i;
+                map_super_out.to_true_primitive[atom_s].tran_num = j;
+            }
+        }
+
+        mapping_table.clear();
+        get_mapping_table_from_h5(file, celltype_p, mapping_table);
+
+        natmin_tmp = mapping_table.size();
+        ntran_tmp = mapping_table[0].size();
+
+        map_prim_out.from_true_primitive.resize(natmin_tmp, std::vector<unsigned int>(ntran_tmp));
+        map_prim_out.to_true_primitive.resize(natmin_tmp * ntran_tmp);
+
+        for (auto i = 0; i < natmin_tmp; ++i) {
+            for (auto j = 0; j < ntran_tmp; ++j) {
+                atom_s = mapping_table[i][j];
+                map_prim_out.from_true_primitive[i][j] = atom_s;
+                map_prim_out.to_true_primitive[atom_s].atom_num = i;
+                map_prim_out.to_true_primitive[atom_s].tran_num = j;
+            }
+        }
+    }
+
+    // Broadcast data
+    mympi->MPI_Bcast_CellClass(scell_out, 0, MPI_COMM_WORLD);
+    mympi->MPI_Bcast_CellClass(pcell_out, 0, MPI_COMM_WORLD);
+    mympi->MPI_Bcast_SpinClass(spin_super_out, 0, MPI_COMM_WORLD);
+    mympi->MPI_Bcast_SpinClass(spin_prim_out, 0, MPI_COMM_WORLD);
+    mympi->MPI_Bcast_MappingTable(map_super_out, 0, MPI_COMM_WORLD);
+    mympi->MPI_Bcast_MappingTable(map_prim_out, 0, MPI_COMM_WORLD);
+
+    int nkd_tmp;
+    if (mympi->my_rank == 0) {
+        nkd_tmp = elements.size();
+    }
+    MPI_Bcast(&nkd_tmp, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    if (mympi->my_rank != 0) {
+        elements.resize(nkd_tmp);
+    }
+    for (auto i = 0; i < nkd_tmp; ++i) {
+        mympi->MPI_Bcast_string(elements[i], 0, MPI_COMM_WORLD);
+    }
+
+    // Fill in missing data
+    scell_out.reciprocal_lattice_vector = scell_out.lattice_vector.inverse();
+    pcell_out.reciprocal_lattice_vector = pcell_out.lattice_vector.inverse();
+    scell_out.x_cartesian = scell_out.x_fractional * scell_out.lattice_vector.transpose();
+    pcell_out.x_cartesian = pcell_out.x_fractional * pcell_out.lattice_vector.transpose();
 }
 
 
@@ -939,19 +1046,14 @@ void System::load_system_info_from_XML()
         int j;
         nat_anharm = nat;
         ntran_anharm = ntran;
-        //allocate(xr_s_anharm, nat_anharm, 3);
         xr_s_anharm.resize(nat_anharm, 3);
         allocate(kd_anharm, nat_anharm);
         allocate(map_p2s_anharm, natmin, ntran_anharm);
         allocate(map_s2p_anharm, nat_anharm);
 
         lavec_s_anharm = lavec_s;
-//        for (i = 0; i < 3; ++i) {
-//            for (j = 0; j < 3; ++j) lavec_s_anharm[i][j] = lavec_s[i][j];
-//        }
         xr_s_anharm = xr_s;
         for (i = 0; i < nat_anharm; ++i) {
-//            for (j = 0; j < 3; ++j) xr_s_anharm[i][j] = xr_s[i][j];
             kd_anharm[i] = kd[i];
             map_s2p_anharm[i] = map_s2p[i];
         }
@@ -998,7 +1100,6 @@ void System::load_system_info_from_XML()
                 exit("load_system_info_from_XML",
                      "Number of atoms in a primitive cell is different in FCSXML and FC2XML.");
 
-            //deallocate(xr_s);
             deallocate(kd);
             deallocate(map_p2s);
             deallocate(map_s2p);
@@ -1019,7 +1120,6 @@ void System::load_system_info_from_XML()
 
             // Parse atomic elements and coordinates
 
-            //allocate(xr_s, nat, 3);
             xr_s.resize(nat, 3);
             allocate(kd, nat);
 
@@ -1090,9 +1190,7 @@ void System::load_system_info_from_XML()
 
     if (mympi->my_rank > 0) {
         allocate(mass_kd, nkd);
-        //allocate(xr_s, nat, 3);
         xr_s.resize(nat, 3);
-        //allocate(xr_s_anharm, nat_anharm, 3);
         xr_s_anharm.resize(nat_anharm, 3);
         allocate(kd, nat);
         allocate(kd_anharm, nat_anharm);
@@ -1128,34 +1226,6 @@ void System::recips(const Eigen::Matrix3d &mat_in,
     rmat_out = tpi * mat_in.inverse();
 }
 
-void System::recips(double vec[3][3],
-                    double inverse[3][3]) const
-{
-    const auto det = vec[0][0] * vec[1][1] * vec[2][2]
-                     + vec[1][0] * vec[2][1] * vec[0][2]
-                     + vec[2][0] * vec[0][1] * vec[1][2]
-                     - vec[0][0] * vec[2][1] * vec[1][2]
-                     - vec[2][0] * vec[1][1] * vec[0][2]
-                     - vec[1][0] * vec[0][1] * vec[2][2];
-
-    if (std::abs(det) < eps12) {
-        exit("recips", "Lattice Vector is singular");
-    }
-
-    const auto factor = 2.0 * pi / det;
-
-    inverse[0][0] = (vec[1][1] * vec[2][2] - vec[1][2] * vec[2][1]) * factor;
-    inverse[0][1] = (vec[0][2] * vec[2][1] - vec[0][1] * vec[2][2]) * factor;
-    inverse[0][2] = (vec[0][1] * vec[1][2] - vec[0][2] * vec[1][1]) * factor;
-
-    inverse[1][0] = (vec[1][2] * vec[2][0] - vec[1][0] * vec[2][2]) * factor;
-    inverse[1][1] = (vec[0][0] * vec[2][2] - vec[0][2] * vec[2][0]) * factor;
-    inverse[1][2] = (vec[0][2] * vec[1][0] - vec[0][0] * vec[1][2]) * factor;
-
-    inverse[2][0] = (vec[1][0] * vec[2][1] - vec[1][1] * vec[2][0]) * factor;
-    inverse[2][1] = (vec[0][1] * vec[2][0] - vec[0][0] * vec[2][1]) * factor;
-    inverse[2][2] = (vec[0][0] * vec[1][1] - vec[0][1] * vec[1][0]) * factor;
-}
 
 double System::volume(const double vec1[3],
                       const double vec2[3],
@@ -1238,19 +1308,10 @@ void System::check_consistency_primitive_lattice() const
             x_harm(i, j) = xr_s(map_p2s[i][0], j);
             x_anharm(i, j) = xr_s_anharm(map_p2s_anharm[i][0], j);
         }
-//        rotvec(x_harm[i], xr_s[map_p2s[i][0]], lavec_s);
-//        rotvec(x_harm[i], x_harm[i], rlavec_p);
-//        for (j = 0; j < 3; ++j) x_harm[i][j] /= 2.0 * pi;
     }
 
     x_harm = x_harm * lavec_s.transpose() * lavec_p.inverse().transpose();
     x_anharm = x_anharm * lavec_s_anharm.transpose() * lavec_p.inverse().transpose();
-//
-//    for (i = 0; i < natmin; ++i) {
-//        rotvec(x_anharm[i], xr_s_anharm[map_p2s_anharm[i][0]], lavec_s_anharm);
-//        rotvec(x_anharm[i], x_anharm[i], rlavec_p);
-//        for (j = 0; j < 3; ++j) x_anharm[i][j] /= 2.0 * pi;
-//    }
 
     for (i = 0; i < natmin; ++i) {
 
@@ -1260,11 +1321,6 @@ void System::check_consistency_primitive_lattice() const
 
             xdiff = (x_anharm.row(i) - x_harm.row(j)).unaryExpr(
                     [](const double x) { return x - static_cast<double>(nint(x)); });
-
-//            for (k = 0; k < 3; ++k) {
-//                xdiff[k] = x_anharm[i][k] - x_harm[j][k];
-//                xdiff[k] = xdiff[k] - static_cast<double>(nint(xdiff[k]));
-//            }
 
             //const auto norm = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
             const auto norm = xdiff.squaredNorm();
@@ -1281,9 +1337,6 @@ void System::check_consistency_primitive_lattice() const
 
         map_anh2harm[i] = iloc;
     }
-
-    //deallocate(x_harm);
-    //deallocate(x_anharm);
 
     // Rebuild the mapping information for anharmonic terms.
 
