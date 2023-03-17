@@ -898,6 +898,7 @@ void Input::parse_cell_parameter()
             system->lavec_p(i, j) = a * lavec_tmp[i][j];
         }
     }
+    system->load_primitive_from_file = 1;
 }
 
 void Input::parse_kpoints()

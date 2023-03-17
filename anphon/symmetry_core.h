@@ -11,6 +11,7 @@
 #pragma once
 
 #include "pointers.h"
+#include "system.h"
 #include <string>
 #include <vector>
 #include <Eigen/Core>
@@ -137,6 +138,23 @@ public:
     }
 };
 
+class AtomType {
+public:
+    int element;
+    double magmom;
+
+    bool operator<(const AtomType &a) const
+    {
+        if (this->element < a.element) {
+            return true;
+        }
+        if (this->element == a.element) {
+            return this->magmom < a.magmom;
+        }
+        return false;
+    }
+};
+
 class Symmetry : protected Pointers {
 public:
     Symmetry(class PHON *);
@@ -145,7 +163,6 @@ public:
 
     unsigned int nsym;
     bool time_reversal_sym;
-    int time_reversal_sym_from_alm;
     bool printsymmetry;
     double tolerance;
     std::vector<SymmetryOperation> SymmList;
@@ -159,32 +176,40 @@ private:
 
     void set_default_variables();
 
-    void setup_symmetry_operation(int N,
-                                  unsigned int &nsym,
+    void setup_symmetry_operation(unsigned int &nsym,
                                   const Eigen::Matrix3d &aa,
                                   const Eigen::Matrix3d &bb,
                                   const Eigen::MatrixXd &x,
-                                  unsigned int *kd);
+                                  const std::vector<int> &kd,
+                                  const Spin &spin_prim_in);
 
-    void findsym(int,
-                 const Eigen::Matrix3d &aa,
+    void findsym(const Eigen::Matrix3d &aa,
                  const Eigen::MatrixXd &x,
-                 std::vector<SymmetryOperation> &) const;
+                 const std::vector<int> &kd,
+                 const Spin &spin_prim_in,
+                 std::vector<SymmetryOperation> &symop_all) const;
 
-    void gensym_withmap(const Eigen::MatrixXd &,
-                        const unsigned int *);
+    void setup_atomic_class(const std::vector<int> &kd,
+                            const int lspin,
+                            const std::vector<std::vector<double>> &magmom_in,
+                            const int noncollinear,
+                            std::vector<std::vector<unsigned int>> &atomgroup_out) const;
+
+    void gensym_withmap(const Eigen::Matrix3d &aa,
+                        const Eigen::MatrixXd &x,
+                        const std::vector<int> &kd);
 
     bool is_proper(const Eigen::Matrix3d &rot) const;
 
     void find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                std::vector<RotationMatrix> &) const;
 
-    void find_crystal_symmetry(
-            int,
-            std::vector<unsigned int> *,
-            const Eigen::MatrixXd &x,
-            const std::vector<RotationMatrix> &,
-            std::vector<SymmetryOperation> &) const;
+    void find_crystal_symmetry(const Eigen::Matrix3d &aa,
+                               const Eigen::MatrixXd &x,
+                               const std::vector<std::vector<unsigned int>> &,
+                               const Spin &spin_prim_in,
+                               const std::vector<RotationMatrix> &,
+                               std::vector<SymmetryOperation> &) const;
 
     void broadcast_symmlist(std::vector<SymmetryOperation> &) const;
 };

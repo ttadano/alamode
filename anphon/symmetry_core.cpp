@@ -39,40 +39,21 @@ void Symmetry::set_default_variables()
 
 void Symmetry::setup_symmetry()
 {
-    const auto natmin = system->natmin;
-    Eigen::MatrixXd xtmp;
-    unsigned int *kdtmp;
-
-    MPI_Bcast(&time_reversal_sym_from_alm, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    time_reversal_sym = time_reversal_sym_from_alm;
-
-    xtmp.resize(natmin, 3);
-    allocate(kdtmp, natmin);
-
-    for (auto i = 0; i < natmin; ++i) {
-        for (auto j = 0; j < 3; ++j) {
-            xtmp(i, j) = system->xr_s(system->map_p2s[i][0], j);
-        }
-    }
-
-    xtmp = xtmp * system->lavec_s.transpose();
-    xtmp = xtmp * system->lavec_p.inverse().transpose();
-
-    for (auto i = 0; i < natmin; ++i) {
-        kdtmp[i] = system->kd[system->map_p2s[i][0]];
-    }
-
+    time_reversal_sym = system->get_spin("prim").time_reversal_symm;
     SymmList.clear();
 
     if (mympi->my_rank == 0) {
-        std::cout << " Symmetry" << std::endl;
-        std::cout << " ========" << std::endl << std::endl;
-        setup_symmetry_operation(natmin,
-                                 nsym,
-                                 system->lavec_p,
-                                 system->rlavec_p,
-                                 xtmp,
-                                 kdtmp);
+        std::cout << " ==========\n";
+        std::cout << "  Symmetry \n";
+        std::cout << " ==========\n\n";
+
+        const auto cell_tmp = system->get_cell("prim", "base");
+        setup_symmetry_operation(nsym,
+                                 cell_tmp.lattice_vector,
+                                 cell_tmp.reciprocal_lattice_vector,
+                                 cell_tmp.x_fractional,
+                                 cell_tmp.kind,
+                                 system->get_spin("prim"));
     }
 
     MPI_Bcast(&nsym, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -81,17 +62,18 @@ void Symmetry::setup_symmetry()
     if (mympi->my_rank == 0) {
         std::cout << "  Number of symmetry operations : "
                   << nsym << std::endl << std::endl;
-        gensym_withmap(xtmp, kdtmp);
+        gensym_withmap(system->get_cell("prim", "base").lattice_vector,
+                       system->get_cell("prim", "base").x_fractional,
+                       system->get_cell("prim", "base").kind);
     }
-    deallocate(kdtmp);
 }
 
-void Symmetry::setup_symmetry_operation(int N,
-                                        unsigned int &nsym,
+void Symmetry::setup_symmetry_operation(unsigned int &nsym,
                                         const Eigen::Matrix3d &aa,
                                         const Eigen::Matrix3d &bb,
                                         const Eigen::MatrixXd &x,
-                                        unsigned int *kd)
+                                        const std::vector<int> &kd,
+                                        const Spin &spin_prim_in)
 {
     int i, j;
     std::ofstream ofs_sym;
@@ -102,9 +84,9 @@ void Symmetry::setup_symmetry_operation(int N,
 
         // Automatically find symmetries.
 
-        std::cout << "  NSYM = 0 is given: Trying to find symmetry operations." << std::endl;
+        std::cout << "  NSYM = 0: Automatic detection of symmetry operations." << std::endl;
 
-        findsym(N, aa, x, SymmList);
+        findsym(aa, x, kd, spin_prim_in, SymmList);
 
         std::sort(SymmList.begin() + 1, SymmList.end());
         nsym = SymmList.size();
@@ -124,7 +106,7 @@ void Symmetry::setup_symmetry_operation(int N,
                 }
                 ofs_sym << "  ";
                 for (i = 0; i < 3; ++i) {
-                    ofs_sym << std::setprecision(15) << std::setw(20) << p.tran[i];
+                    ofs_sym << std::setprecision(15) << std::setw(24) << p.tran[i];
                 }
                 ofs_sym << std::endl;
             }
@@ -136,7 +118,7 @@ void Symmetry::setup_symmetry_operation(int N,
 
         // Identity operation only !
 
-        std::cout << "  NSYM = 1 is given: Only the identity matrix will be considered."
+        std::cout << "  NSYM = 1 : Only the identity matrix will be considered."
                   << std::endl << std::endl;
 
         int rot_tmp[3][3];
@@ -158,7 +140,7 @@ void Symmetry::setup_symmetry_operation(int N,
     } else {
 
         std::cout
-                << "  NSYM > 1 is given: Symmetry operations will be read from SYMM_INFO_PRIM file"
+                << "  NSYM > 1: Symmetry operations will be read from SYMM_INFO_PRIM file"
                 << std::endl << std::endl;
 
         int nsym2;
@@ -185,9 +167,10 @@ void Symmetry::setup_symmetry_operation(int N,
     }
 }
 
-void Symmetry::findsym(int N,
-                       const Eigen::Matrix3d &aa,
+void Symmetry::findsym(const Eigen::Matrix3d &aa,
                        const Eigen::MatrixXd &x,
+                       const std::vector<int> &kd,
+                       const Spin &spin_prim_in,
                        std::vector<SymmetryOperation> &symop_all) const
 {
     std::vector<RotationMatrix> LatticeSymmList;
@@ -196,11 +179,19 @@ void Symmetry::findsym(int N,
     LatticeSymmList.clear();
     find_lattice_symmetry(aa, LatticeSymmList);
 
+    std::vector<std::vector<unsigned int>> atomgroup;
+
+    setup_atomic_class(kd,
+                       spin_prim_in.lspin,
+                       spin_prim_in.magmom,
+                       spin_prim_in.noncollinear,
+                       atomgroup);
+
     // Generate all the space group operations with translational vectors
     symop_all.clear();
-    find_crystal_symmetry(system->nclassatom,
-                          system->atomlist_class,
-                          x,
+    find_crystal_symmetry(aa, x,
+                          atomgroup,
+                          spin_prim_in,
                           LatticeSymmList,
                           symop_all);
 
@@ -326,9 +317,10 @@ void Symmetry::find_lattice_symmetry(const Eigen::Matrix3d &aa,
     }
 }
 
-void Symmetry::find_crystal_symmetry(int nclass,
-                                     std::vector<unsigned int> *atomclass,
+void Symmetry::find_crystal_symmetry(const Eigen::Matrix3d &aa,
                                      const Eigen::MatrixXd &x,
+                                     const std::vector<std::vector<unsigned int>> &atomclass,
+                                     const Spin &spin_prim_in,
                                      const std::vector<RotationMatrix> &LatticeSymmList,
                                      std::vector<SymmetryOperation> &CrystalSymmList) const
 {
@@ -351,6 +343,7 @@ void Symmetry::find_crystal_symmetry(int nclass,
     bool mag_sym1, mag_sym2;
     bool is_identity_matrix;
 
+    const auto nclass = atomclass.size();
 
     // Add identity matrix first.
     for (i = 0; i < 3; ++i) {
@@ -393,7 +386,7 @@ void Symmetry::find_crystal_symmetry(int nclass,
             isok = true;
 
             is_identity_matrix = (rot - identity_matrix).squaredNorm() < eps12;
-
+            is_identity_matrix = is_identity_matrix & ((tran[0]*tran[0] + tran[1]*tran[1] + tran[2]*tran[2]) < eps12);
             if (is_identity_matrix) continue;
 
             for (unsigned int itype = 0; itype < nclass; ++itype) {
@@ -430,20 +423,15 @@ void Symmetry::find_crystal_symmetry(int nclass,
                 }
             }
 
-            if (isok && system->lspin && system->noncollinear) {
+            if (isok && (spin_prim_in.lspin == 1) && (spin_prim_in.noncollinear == 1)) {
                 for (i = 0; i < 3; ++i) {
-                    mag[i] = system->magmom[jat][i];
-                    mag_rot[i] = system->magmom[iat][i];
+                    mag[i] = spin_prim_in.magmom[jat][i];
+                    mag_rot[i] = spin_prim_in.magmom[iat][i];
                 }
 
-                rot_tmp = rot * system->rlavec_p;
-                rot_cart = system->lavec_p * rot_tmp;
+                rot_tmp = rot * aa.inverse();
+                rot_cart = aa * rot_tmp;
 
-                for (i = 0; i < 3; ++i) {
-                    for (j = 0; j < 3; ++j) {
-                        rot_cart(i, j) /= 2.0 * pi;
-                    }
-                }
                 rotvec(mag_rot, mag_rot, rot_cart);
 
                 // In the case of improper rotation, the factor -1 should be multiplied
@@ -464,7 +452,7 @@ void Symmetry::find_crystal_symmetry(int nclass,
 
                 if (!mag_sym1 && !mag_sym2) {
                     isok = false;
-                } else if (!mag_sym1 && mag_sym2 && !time_reversal_sym) {
+                } else if (!mag_sym1 && mag_sym2 && !spin_prim_in.time_reversal_symm) {
                     isok = false;
                 }
             }
@@ -480,8 +468,9 @@ void Symmetry::find_crystal_symmetry(int nclass,
     }
 }
 
-void Symmetry::gensym_withmap(const Eigen::MatrixXd &x,
-                              const unsigned int *kd)
+void Symmetry::gensym_withmap(const Eigen::Matrix3d &aa,
+                              const Eigen::MatrixXd &x,
+                              const std::vector<int> &kd)
 {
     // Generate symmetry operations in Cartesian coordinate with the atom-mapping information.
 
@@ -507,31 +496,15 @@ void Symmetry::gensym_withmap(const Eigen::MatrixXd &x,
             shift[i] = isym.tran[i];
         }
 
-        //mat_tmp = T.inverse();
         S_recip = T.inverse().transpose();
-//        invmat3(mat_tmp, T);
-//        for (i = 0; i < 3; ++i) {
-//            for (j = 0; j < 3; ++j) {
-//                S_recip[i][j] = mat_tmp[j][i];
-//            }
-//        }
 
         // Convert to Cartesian coordinate
-        mat_tmp = T * system->rlavec_p;
-        S = system->lavec_p * mat_tmp;
-//        matmul3(mat_tmp, T, system->rlavec_p);
-//        matmul3(S, system->lavec_p, mat_tmp);
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                S(i, j) /= 2.0 * pi;
-            }
-        }
+        mat_tmp = T * aa.inverse();
+        S = aa * mat_tmp;
 
         // Generate mapping information
 
         for (i = 0; i < natmin; ++i) {
-
-//            rotvec(x_mod, x[i], T);
 
             x_mod = T * x.row(i).transpose();
 
@@ -625,4 +598,58 @@ bool Symmetry::is_proper(const Eigen::Matrix3d &rot) const
     ret = std::abs(det - 1.0) < eps12;
 
     return ret;
+}
+
+void Symmetry::setup_atomic_class(const std::vector<int> &kd,
+                                  const int lspin,
+                                  const std::vector<std::vector<double>> &magmom_in,
+                                  const int noncollinear,
+                                  std::vector<std::vector<unsigned int>> &atomgroup_out) const
+{
+    // In the case of collinear calculation, spin moments are considered as scalar
+    // variables. Therefore, the same elements with different magnetic moments are
+    // considered as different types.
+
+    unsigned int i;
+    AtomType type_tmp;
+    std::set<AtomType> set_type;
+    set_type.clear();
+
+    const auto natmin_prim = kd.size();
+
+    for (i = 0; i < natmin_prim; ++i) {
+        type_tmp.element = kd[i];
+        if ((lspin == 0) || (noncollinear == 1)) {
+            type_tmp.magmom = 0.0;
+        } else {
+            type_tmp.magmom = magmom_in[i][2];
+        }
+        set_type.insert(type_tmp);
+    }
+
+    const auto natomgroup = set_type.size();
+
+    atomgroup_out.resize(natomgroup);
+
+    for (i = 0; i < natomgroup; ++i) {
+        atomgroup_out[i].clear();
+    }
+
+    for (i = 0; i < natmin_prim; ++i) {
+        int count = 0;
+        for (const auto &it: set_type) {
+            if ((lspin == 0) || (noncollinear == 1)) {
+                if (kd[i] == it.element) {
+                    atomgroup_out[count].push_back(i);
+                }
+            } else {
+                if (kd[i] == it.element &&
+                    std::abs(magmom_in[i][2] - it.magmom) < eps6) {
+                    atomgroup_out[count].push_back(i);
+                }
+            }
+            ++count;
+        }
+    }
+    set_type.clear();
 }

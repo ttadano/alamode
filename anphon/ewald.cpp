@@ -816,7 +816,7 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
             fc_g_out[icrd][jcrd] = 0.0;
         }
     }
-    double volume = system->supercell_base.volume;
+    double volume = system->get_cell("super","base").volume;
 
     int ikd = system->map_s2p[iat].atom_num;
     int jkd = system->map_s2p[jat].atom_num;

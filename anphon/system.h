@@ -17,22 +17,7 @@
 #include <Eigen/Core>
 
 namespace PHON_NS {
-class AtomType {
-public:
-    int element;
-    double magmom;
 
-    bool operator<(const AtomType &a) const
-    {
-        if (this->element < a.element) {
-            return true;
-        }
-        if (this->element == a.element) {
-            return this->magmom < a.magmom;
-        }
-        return false;
-    }
-};
 
 class Cell {
 public:
@@ -44,6 +29,7 @@ public:
     std::vector<int> kind;
     Eigen::MatrixXd x_fractional;
     Eigen::MatrixXd x_cartesian;
+    int has_entry{0};
 };
 
 class Spin {
@@ -74,19 +60,19 @@ public:
 
     void setup();
 
-    Cell supercell_base, supercell_fc2, supercell_fc3, supercell_fc4;
-    Cell primcell_base, primcell_fc2, primcell_fc3, primcell_fc4;
-    Spin spin_base;
-    MappingTable map_scell_base, map_pcell_base;
-    MappingTable map_scell_fc2, map_pcell_fc2;
-    MappingTable map_scell_fc3, map_pcell_fc3;
-    MappingTable map_scell_fc4, map_pcell_fc4;
+    const Cell &get_cell(const std::string celltype, const std::string filetype) const;
+
+    const Spin &get_spin(const std::string celltype) const;
+
+    const MappingTable &get_mapping_table(const std::string celltype, const std::string filetype) const;
 
     Eigen::Matrix3d lavec_s, rlavec_s;
     Eigen::Matrix3d lavec_p, rlavec_p;
     Eigen::Matrix3d lavec_s_anharm, rlavec_s_anharm;
     Eigen::MatrixXd xr_p, xr_s, xc;
     Eigen::MatrixXd xr_s_anharm;
+
+    int load_primitive_from_file;
     double **magmom;
     double volume_p;
 
@@ -95,8 +81,8 @@ public:
     unsigned int *kd, nkd;
     unsigned int *kd_anharm;
 
-    unsigned int nclassatom;
-    std::vector<unsigned int> *atomlist_class;
+//    unsigned int nclassatom;
+//    std::vector<unsigned int> *atomlist_class;
 
     unsigned int **map_p2s, **map_p2s_anharm;
     unsigned int **map_p2s_anharm_orig;
@@ -122,6 +108,14 @@ private:
     enum LatticeType {
         Direct, Reciprocal
     };
+
+    Cell supercell_base, supercell_fc2, supercell_fc3, supercell_fc4;
+    Cell primcell_base, primcell_fc2, primcell_fc3, primcell_fc4;
+    Spin spin_super_base, spin_prim_base;
+    MappingTable map_scell_base, map_pcell_base;
+    MappingTable map_scell_fc2, map_pcell_fc2;
+    MappingTable map_scell_fc3, map_pcell_fc3;
+    MappingTable map_scell_fc4, map_pcell_fc4;
 
     void set_default_variables();
 
@@ -155,12 +149,10 @@ private:
 
     void load_system_info_from_h5();
 
+    void update_primitive_lattice();
+
     void recips(const Eigen::Matrix3d &mat_in,
                 Eigen::Matrix3d &rmat_out) const;
-
-    void setup_atomic_class(unsigned int,
-                            const unsigned int *,
-                            double **);
 
     void check_consistency_primitive_lattice() const;
 
