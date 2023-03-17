@@ -57,8 +57,6 @@ void System::set_default_variables()
     map_p2s_anharm_orig = nullptr;
     map_s2p = nullptr;
     map_s2p_anharm = nullptr;
-    magmom = nullptr;
-//    atomlist_class = nullptr;
     load_primitive_from_file = 0;
 }
 
@@ -94,15 +92,9 @@ void System::deallocate_variables()
     if (map_s2p_anharm) {
         deallocate(map_s2p_anharm);
     }
-    if (magmom) {
-        deallocate(magmom);
-    }
     if (map_p2s_anharm_orig) {
         deallocate(map_p2s_anharm_orig);
     }
-//    if (atomlist_class) {
-//        deallocate(atomlist_class);
-//    }
 }
 
 void System::setup()
@@ -305,15 +297,6 @@ void System::setup()
     for (i = 0; i < natmin; ++i) {
         kd_prim[i] = kd[map_p2s[i][0]];
     }
-    MPI_Bcast(&lspin, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
-    if (mympi->my_rank > 0) {
-        allocate(magmom, natmin, 3);
-    }
-    MPI_Bcast(&magmom[0][0], 3 * natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&noncollinear, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-    //setup_atomic_class(natmin, kd_prim, magmom);
-
     deallocate(kd_prim);
 }
 
@@ -881,7 +864,6 @@ void System::load_system_info_from_XML()
 
         // Parse atomic elements and coordinates
 
-        //allocate(xr_s, nat, 3);
         xr_s.resize(nat, 3);
         allocate(kd, nat);
 
@@ -942,9 +924,8 @@ void System::load_system_info_from_XML()
 
         double **magmom_tmp;
         allocate(magmom_tmp, nat, 3);
-        allocate(magmom, natmin, 3);
 
-        lspin = true;
+        //lspin = true;
         try {
             BOOST_FOREACH(const ptree::value_type &child_, pt.get_child("Data.MagneticMoments")) {
                             if (child_.first == "mag") {
@@ -969,42 +950,9 @@ void System::load_system_info_from_XML()
 
         }
         catch (...) {
-            lspin = false;
+        //    lspin = false;
         }
 
-        if (lspin) {
-            for (i = 0; i < natmin; ++i) {
-                for (int j = 0; j < 3; ++j) {
-                    magmom[i][j] = magmom_tmp[map_p2s[i][0]][j];
-                }
-            }
-
-            try {
-                noncollinear = boost::lexical_cast<int>(
-                        get_value_from_xml(pt,
-                                           "Data.MagneticMoments.Noncollinear"));
-            }
-            catch (...) {
-                noncollinear = 0;
-            }
-
-            try {
-//                symmetry->time_reversal_sym_from_alm = boost::lexical_cast<int>(
-//                        get_value_from_xml(pt,
-//                                           "Data.MagneticMoments.TimeReversalSymmetry"));
-            }
-            catch (...) {
-//                symmetry->time_reversal_sym_from_alm = true;
-            }
-        } else {
-            for (i = 0; i < natmin; ++i) {
-                for (int j = 0; j < 3; ++j) {
-                    magmom[i][j] = 0.0;
-                }
-            }
-            noncollinear = 0;
-//            symmetry->time_reversal_sym_from_alm = true;
-        }
         deallocate(magmom_tmp);
 
         // Now, replicate the information for anharmonic terms.
@@ -1152,7 +1100,6 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&ntran_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&lspin, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank > 0) {
         allocate(mass_kd, nkd);
@@ -1164,9 +1111,6 @@ void System::load_system_info_from_XML()
         allocate(map_p2s_anharm, natmin, ntran_anharm);
         allocate(map_s2p, nat);
         allocate(map_s2p_anharm, nat_anharm);
-        if (lspin) {
-            allocate(magmom, natmin, 3);
-        }
     }
 
     MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -1178,7 +1122,6 @@ void System::load_system_info_from_XML()
     MPI_Bcast(&map_p2s_anharm[0][0], natmin * ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_s2p[0], nat * sizeof map_s2p[0], MPI_BYTE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_s2p_anharm[0], nat_anharm * sizeof map_s2p_anharm[0], MPI_BYTE, 0, MPI_COMM_WORLD);
-    if (lspin) MPI_Bcast(&magmom[0][0], 3 * natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 void System::update_primitive_lattice()

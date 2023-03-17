@@ -152,7 +152,7 @@ std::complex<double> ***DymatEigenValue::get_eigenvectors() const
 
 void Dynamical::setup_dynamical()
 {
-    neval = 3 * system->natmin;
+    neval = 3 * system->get_cell("prim", "base").number_of_atoms;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -260,7 +260,9 @@ void Dynamical::setup_dynamical()
 
         MPI_Bcast(&na_sigma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-        allocate(mindist_list, system->natmin, system->nat);
+        allocate(mindist_list,
+                 system->get_cell("prim").number_of_atoms,
+                 system->get_cell("super").number_of_atoms); // should use fc2 cell?
         prepare_mindist_list(mindist_list);
     }
 
@@ -278,8 +280,10 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
     double ***xcrd;
 
-    const auto nat = system->nat;
-    const auto natmin = system->natmin;
+    const auto scell_tmp = system->get_cell("super");
+    const auto pcell_tmp = system->get_cell("prim");
+    const auto nat = scell_tmp.number_of_atoms;
+    const auto natmin = pcell_tmp.number_of_atoms;
 
     std::vector<DistWithCell> **distall;
 
@@ -288,7 +292,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            xcrd[0][i][j] = system->xr_s(i, j);
+            xcrd[0][i][j] = scell_tmp.x_fractional(i, j);
         }
     }
     auto icell = 0;
@@ -300,9 +304,9 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
                 ++icell;
                 for (i = 0; i < nat; ++i) {
-                    xcrd[icell][i][0] = system->xr_s(i, 0) + static_cast<double>(isize);
-                    xcrd[icell][i][1] = system->xr_s(i, 1) + static_cast<double>(jsize);
-                    xcrd[icell][i][2] = system->xr_s(i, 2) + static_cast<double>(ksize);
+                    xcrd[icell][i][0] = scell_tmp.x_fractional(i, 0) + static_cast<double>(isize);
+                    xcrd[icell][i][1] = scell_tmp.x_fractional(i, 1) + static_cast<double>(jsize);
+                    xcrd[icell][i][2] = scell_tmp.x_fractional(i, 2) + static_cast<double>(ksize);
                 }
             }
         }
@@ -310,11 +314,12 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
     for (icell = 0; icell < nneib; ++icell) {
         for (i = 0; i < nat; ++i) {
-            rotvec(xcrd[icell][i], xcrd[icell][i], system->lavec_s);
+            rotvec(xcrd[icell][i], xcrd[icell][i], scell_tmp.lattice_vector);
         }
     }
 
     for (i = 0; i < natmin; ++i) {
+        // TODO: replace map_p2s
         const auto iat = system->map_p2s[i][0];
         for (j = 0; j < nat; ++j) {
             distall[i][j].clear();
@@ -399,8 +404,8 @@ void Dynamical::eval_k(const double *xk_in,
                   + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
                   + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
 
-        for (i = 0; i < 3 * system->natmin; ++i) {
-            for (j = 0; j < 3 * system->natmin; ++j) {
+        for (i = 0; i < neval; ++i) {
+            for (j = 0; j < neval; ++j) {
                 dymat_k[i][j] = std::complex<double>(dymat_k[i][j].real(), 0.0);
             }
         }
@@ -477,10 +482,11 @@ void Dynamical::eval_k_ewald(const double *xk_in,
     // Calculate Coulombic contributions including long-range interactions
     ewald->add_longrange_matrix(xk_in, kvec_in, mat_longrange);
 
+    const auto nat_prim = system->get_cell("prim").number_of_atoms;
     // Add calculated dynamical matrix of Coulomb parts
-    for (i = 0; i < system->natmin; ++i) {
+    for (i = 0; i < nat_prim; ++i) {
         for (icrd = 0; icrd < 3; ++icrd) {
-            for (j = 0; j < system->natmin; ++j) {
+            for (j = 0; j < nat_prim; ++j) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
                     dymat_k[3 * i + icrd][3 * j + jcrd] += mat_longrange[3 * i + icrd][3 * j + jcrd];
                 }
@@ -490,12 +496,13 @@ void Dynamical::eval_k_ewald(const double *xk_in,
 
     // Check acoustic sum rule
     if (xk_in[0] == 0.0 && xk_in[1] == 0.0 && xk_in[2] == 0.0) {
-        for (i = 0; i < system->natmin; ++i) {
+        for (i = 0; i < nat_prim; ++i) {
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
                     auto check = std::complex<double>(0.0, 0.0);
                     auto count = 0;
-                    for (j = 0; j < system->natmin; ++j) {
+                    for (j = 0; j < nat_prim; ++j) {
+                        // TODO; replace below (map_p2s)
                         const auto mass = system->mass[system->map_p2s[i][0]] * system->mass[system->map_p2s[j][0]];
                         check += std::sqrt(mass) * dymat_k[3 * i + icrd][3 * j + jcrd];
                         count += 1;
@@ -562,11 +569,10 @@ void Dynamical::calc_analytic_k(const double *xk_in,
                                 std::complex<double> **dymat_out) const
 {
     int i;
-    const auto nmode = 3 * system->natmin;
     double vec[3];
 
-    for (i = 0; i < nmode; ++i) {
-        for (auto j = 0; j < nmode; ++j) {
+    for (i = 0; i < neval; ++i) {
+        for (auto j = 0; j < neval; ++j) {
             dymat_out[i][j] = std::complex<double>(0.0, 0.0);
         }
     }
@@ -606,7 +612,8 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 
     unsigned int i, j;
     unsigned int iat, jat;
-    const auto natmin = system->natmin;
+    const auto pcell = system->get_cell("prim");
+    const auto nat_prim = pcell.number_of_atoms;
     double kepsilon[3];
     double kz1[3], kz2[3];
     double born_tmp[3][3];
@@ -625,7 +632,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 
     if (denom > eps) {
 
-        for (iat = 0; iat < natmin; ++iat) {
+        for (iat = 0; iat < nat_prim; ++iat) {
             const auto atm_p1 = system->map_p2s[iat][0];
 
             for (i = 0; i < 3; ++i) {
@@ -636,7 +643,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 
             rotvec(kz1, kvec_na_in, born_tmp, 'T');
 
-            for (jat = 0; jat < natmin; ++jat) {
+            for (jat = 0; jat < nat_prim; ++jat) {
                 const auto atm_p2 = system->map_p2s[jat][0];
 
                 for (i = 0; i < 3; ++i) {
@@ -667,10 +674,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 //    }
 
     for (i = 0; i < 3; ++i) xk_tmp[i] = xk_in[i];
-    xk_tmp = system->rlavec_p.transpose() * xk_tmp;
-    //rotvec(xk_tmp, xk_in, system->rlavec_p, 'T');
-//    rotvec(xk_tmp, xk_tmp, system->rlavec_p, 'T');
-    //const auto norm2 = xk_tmp[0] * xk_tmp[0] + xk_tmp[1] * xk_tmp[1] + xk_tmp[2] * xk_tmp[2];
+    xk_tmp = pcell.reciprocal_lattice_vector.transpose() * xk_tmp;
     const auto norm2 = xk_tmp.squaredNorm();
 
     const auto factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
@@ -683,19 +687,17 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 
     // Multiply an additional phase factor for the non-analytic term.
 
-    for (iat = 0; iat < natmin; ++iat) {
-        for (jat = 0; jat < natmin; ++jat) {
+    for (iat = 0; iat < nat_prim; ++iat) {
+        for (jat = 0; jat < nat_prim; ++jat) {
 
             for (i = 0; i < 3; ++i) {
-                xdiff[i] = system->xr_s(system->map_p2s[iat][0], i)
-                           - system->xr_s(system->map_p2s[jat][0], i);
+                xdiff[i] = system->get_cell("super").x_fractional(system->map_p2s[iat][0], i)
+                           - system->get_cell("super").x_fractional(system->map_p2s[jat][0], i);
             }
 
-            xdiff = system->rlavec_p * system->lavec_s * xdiff;
-            //rotvec(xdiff, xdiff, system->lavec_s);
-            //rotvec(xdiff, xdiff, system->rlavec_p);
+            xdiff = pcell.reciprocal_lattice_vector * system->get_cell("super").lattice_vector * xdiff;
 
-            double phase = xk_tmp[0] * xdiff[0] + xk_tmp[1] * xdiff[1] + xk_tmp[2] * xdiff[2];
+            const double phase = xk_tmp[0] * xdiff[0] + xk_tmp[1] * xdiff[1] + xk_tmp[2] * xdiff[2];
 
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
@@ -714,7 +716,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
     // by the mixed-space approach.
 
     unsigned int i, j;
-    unsigned int natmin = system->natmin;
+    const auto natmin = system->get_cell("prim").number_of_atoms;
     double kepsilon[3];
     double kz1[3], kz2[3];
     double born_tmp[3][3];
@@ -768,12 +770,12 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                         unsigned int cell = mindist_list[iat][atm_s2][j];
 
                         for (unsigned int k = 0; k < 3; ++k) {
-                            vec[k] = system->xr_s(system->map_p2s[jat][i], k) + xshift_s[cell][k]
-                                     - system->xr_s(atm_p2, k);
+                            vec[k] = system->get_cell("super").x_fractional(system->map_p2s[jat][i], k) + xshift_s[cell][k]
+                                     - system->get_cell("super").x_fractional(atm_p2, k);
                         }
 
-                        rotvec(vec, vec, system->lavec_s);
-                        rotvec(vec, vec, system->rlavec_p);
+                        rotvec(vec, vec, system->get_cell("super").lattice_vector);
+                        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
 
                         double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
@@ -1104,8 +1106,8 @@ void Dynamical::project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
                   + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
                   + std::pow(std::fmod(xk_in[2], 0.5), 2.0)) < eps) {
 
-        for (i = 0; i < 3 * system->natmin; ++i) {
-            for (j = 0; j < 3 * system->natmin; ++j) {
+        for (i = 0; i < neval; ++i) {
+            for (j = 0; j < neval; ++j) {
                 dymat_tmp[i][j] = std::complex<double>(dymat_tmp[i][j].real(), 0.0);
             }
         }
@@ -1354,11 +1356,12 @@ void Dynamical::setup_dielectric(const unsigned int verbosity) // maybe, this sh
 {
     if (borncharge) deallocate(borncharge);
 
-    allocate(borncharge, system->natmin, 3, 3);
+    allocate(borncharge, system->get_cell("prim").number_of_atoms, 3, 3);
     if (mympi->my_rank == 0) load_born(symmetrize_borncharge, verbosity);
 
     MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&borncharge[0][0][0], 9 * system->natmin, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&borncharge[0][0][0], 9 * system->get_cell("prim").number_of_atoms,
+              MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 void Dynamical::load_born(const unsigned int flag_symmborn,
@@ -1370,6 +1373,8 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
     double sum_born[3][3];
     std::ifstream ifs_born;
 
+    const auto natmin_tmp = system->get_cell("prim").number_of_atoms;
+
     ifs_born.open(file_born.c_str(), std::ios::in);
     if (!ifs_born) exit("load_born", "cannot open file_born");
 
@@ -1379,7 +1384,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         }
     }
 
-    for (i = 0; i < system->natmin; ++i) {
+    for (i = 0; i < natmin_tmp; ++i) {
         for (j = 0; j < 3; ++j) {
             for (k = 0; k < 3; ++k) {
                 ifs_born >> borncharge[i][j][k];
@@ -1401,7 +1406,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         std::cout << std::endl;
 
         std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
-        for (i = 0; i < system->natmin; ++i) {
+        for (i = 0; i < natmin_tmp; ++i) {
             std::cout << "  Atom" << std::setw(5) << i + 1 << "("
                       << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
 
@@ -1421,7 +1426,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             sum_born[i][j] = 0.0;
-            for (k = 0; k < system->natmin; ++k) {
+            for (k = 0; k < natmin_tmp; ++k) {
                 sum_born[i][j] += borncharge[k][i][j];
             }
         }
@@ -1441,7 +1446,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
             std::cout << "           The born effective charges are modified to satisfy the ASR." << std::endl;
         }
 
-        for (i = 0; i < system->natmin; ++i) {
+        for (i = 0; i < natmin_tmp; ++i) {
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
                     borncharge[i][j][k] -= sum_born[j][k] / static_cast<double>(system->natmin);
@@ -1459,9 +1464,9 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         double ***born_sym;
         double rot[3][3];
 
-        allocate(born_sym, system->natmin, 3, 3);
+        allocate(born_sym, natmin_tmp, 3, 3);
 
-        for (iat = 0; iat < system->natmin; ++iat) {
+        for (iat = 0; iat < natmin_tmp; ++iat) {
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
                     born_sym[iat][i][j] = 0.0;
@@ -1476,7 +1481,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
                 }
             }
 
-            for (iat = 0; iat < system->natmin; ++iat) {
+            for (iat = 0; iat < natmin_tmp; ++iat) {
                 int iat_sym = symmetry->SymmListWithMap[isym].mapping[iat];
 
                 for (i = 0; i < 3; ++i) {
@@ -1491,7 +1496,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
             }
         }
 
-        for (iat = 0; iat < system->natmin; ++iat) {
+        for (iat = 0; iat < natmin_tmp; ++iat) {
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
                     born_sym[iat][i][j] /= static_cast<double>(symmetry->SymmListWithMap.size());
@@ -1502,7 +1507,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         // Check if the Born effective charges given by the users satisfy the symmetry.
 
         auto diff_sym = 0.0;
-        for (iat = 0; iat < system->natmin; ++iat) {
+        for (iat = 0; iat < natmin_tmp; ++iat) {
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
                     diff_sym = std::max<double>(diff_sym, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
@@ -1515,7 +1520,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
             std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry." << std::endl;
         }
 
-        for (iat = 0; iat < system->natmin; ++iat) {
+        for (iat = 0; iat < natmin_tmp; ++iat) {
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
                     borncharge[iat][i][j] = born_sym[iat][i][j];
@@ -1528,7 +1533,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
             if (diff_sym > eps8 || res > eps10) {
                 std::cout << std::endl;
                 std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
-                for (i = 0; i < system->natmin; ++i) {
+                for (i = 0; i < natmin_tmp; ++i) {
                     std::cout << "  Atom" << std::setw(5) << i + 1 << "("
                               << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :"
                               << std::endl;
@@ -1567,7 +1572,7 @@ void Dynamical::calc_participation_ratio_all(const unsigned int nk_in,
                                              double ***ret_all) const
 {
     const auto ns = dynamical->neval;
-    const auto natmin = system->natmin;
+    const auto natmin = system->get_cell("prim").number_of_atoms;
 
     double *atomic_pr;
 
@@ -1595,7 +1600,7 @@ void Dynamical::calc_atomic_participation_ratio(const std::complex<double> *evec
                                                 double *ret) const
 {
     unsigned int iat;
-    const auto natmin = system->natmin;
+    const auto natmin = system->get_cell("prim").number_of_atoms;
 
     for (iat = 0; iat < natmin; ++iat) ret[iat] = 0.0;
 

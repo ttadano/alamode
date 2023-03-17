@@ -376,7 +376,7 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
         for (auto j = 0; j < ns; ++j) {
             for (auto k = 0; k < ns; ++k) {
                 rotvec(velmat_loc[i][j][k], velmat_loc[i][j][k], symmetrizer_k, 'T');
-                rotvec(velmat_loc[i][j][k], velmat_loc[i][j][k], system->lavec_p);
+                rotvec(velmat_loc[i][j][k], velmat_loc[i][j][k], system->get_cell("prim").lattice_vector);
                 for (auto mu = 0; mu < 3; ++mu) {
                     velmat_loc[i][j][k][mu] *= factor;
                 }
@@ -456,8 +456,8 @@ void PhononVelocity::phonon_vel_k(const double *xk_in,
             kvec_na_tmp[0][j] = xk_shift[0][j];
             kvec_na_tmp[1][j] = xk_shift[1][j];
         }
-        rotvec(kvec_na_tmp[0], kvec_na_tmp[0], system->rlavec_p, 'T');
-        rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->rlavec_p, 'T');
+        rotvec(kvec_na_tmp[0], kvec_na_tmp[0], system->get_cell("prim").reciprocal_lattice_vector, 'T');
+        rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->get_cell("prim").reciprocal_lattice_vector, 'T');
 
         auto norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0]
                               + kvec_na_tmp[0][1] * kvec_na_tmp[0][1]
@@ -543,8 +543,8 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
 
     if (dynamical->nonanalytic) {
         exit("phonon_vel_k2",
-             "Sorry. Analytic calculation of \
-            group velocity is not supported for NONANALYTIC>0.");
+             "Sorry. Analytic calculation of "
+             "group velocity is not supported for NONANALYTIC>0.");
     }
 
     allocate(ddyn, 3, nmode, nmode);
@@ -700,7 +700,7 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
 {
     unsigned int i, j, k;
 
-    const auto nmode = 3 * system->natmin;
+    const auto nmode = dynamical->neval;
 
     double vec[3];
     const std::complex<double> im(0.0, 1.0);
@@ -725,12 +725,12 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s(atm2_s, i) + xshift_s[icell][i]
-                     - system->xr_s(system->map_p2s[atm2_p][0], i);
+            vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
+                     - system->get_cell("super").x_fractional(system->map_p2s[atm2_p][0], i);
         }
 
-        rotvec(vec, vec, system->lavec_s);
-        rotvec(vec, vec, system->rlavec_p);
+        rotvec(vec, vec, system->get_cell("super").lattice_vector);
+        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
 
         auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
@@ -794,7 +794,7 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
 
     unsigned int i, j, k;
 
-    const auto nmode = 3 * system->natmin;
+    const auto nmode = dynamical->neval;
 
     double vec[3], vec2[3];
     const std::complex<double> im(0.0, 1.0);
@@ -823,16 +823,16 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s(atm2_s, i) + xshift_s[icell][i]
-                     - system->xr_s(system->map_p2s[atm2_p][0], i);
-            vec2[i] = system->xr_s(atm2_s, i) + xshift_s[icell][i]
-                      - system->xr_s(atm1_s, i);
+            vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
+                     - system->get_cell("super").x_fractional(system->map_p2s[atm2_p][0], i);
+            vec2[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
+                      - system->get_cell("super").x_fractional(atm1_s, i);
         }
 
-        rotvec(vec, vec, system->lavec_s);
-        rotvec(vec, vec, system->rlavec_p);
-        rotvec(vec2, vec2, system->lavec_s);
-        rotvec(vec2, vec2, system->rlavec_p);
+        rotvec(vec, vec, system->get_cell("super").lattice_vector);
+        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
+        rotvec(vec2, vec2, system->get_cell("super").lattice_vector);
+        rotvec(vec2, vec2, system->get_cell("prim").reciprocal_lattice_vector);
 
         auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 

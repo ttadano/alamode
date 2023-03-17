@@ -330,24 +330,11 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
     // Return zero if any of the involving phonon has imaginary frequency
     if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8) return 0.0;
 
-//    for (i = 0; i < ngroup_v3; ++i) {
-//        std::cout << "invmass_v3[i] = " << invmass_v3[i] << std::endl;
-//    }
-//
-//    for (i = 0; i < ngroup_v3; ++i) {
-//        std::cout << "evec_index_v3 = " << evec_index_v3[i][0]
-//        << evec_index_v3[i][1] <<  evec_index_v3[i][2] << std::endl;
-//    }
-
     if (kn[1] != kindex_phi3_stored[0] || kn[2] != kindex_phi3_stored[1]) {
         calc_phi3_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
                              phase_storage_in,
                              phi3_reciprocal);
-
-//        for (i = 0; i < ngroup_v3; ++i) {
-//            std::cout << phi3_reciprocal[i] << std::endl;
-//        }
         kindex_phi3_stored[0] = kn[1];
         kindex_phi3_stored[1] = kn[2];
     }
@@ -1085,6 +1072,7 @@ void AnharmonicCore::setup_cubic()
 {
     int i;
     double *invsqrt_mass_p;
+    const auto natmin_tmp = system->get_cell("prim").number_of_atoms;
 
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
     // This sorting is necessary.
@@ -1104,9 +1092,9 @@ void AnharmonicCore::setup_cubic()
                             fcs_group_v3,
                             relvec_v3);
 
-    allocate(invsqrt_mass_p, system->natmin);
+    allocate(invsqrt_mass_p, natmin_tmp);
 
-    for (i = 0; i < system->natmin; ++i) {
+    for (i = 0; i < natmin_tmp; ++i) {
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
     }
 
@@ -1129,6 +1117,8 @@ void AnharmonicCore::setup_quartic()
 {
     int i;
     double *invsqrt_mass_p;
+    const auto natmin_tmp = system->get_cell("prim").number_of_atoms;
+
     std::sort(fcs_phonon->force_constant_with_cell[2].begin(),
               fcs_phonon->force_constant_with_cell[2].end());
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2],
@@ -1145,9 +1135,9 @@ void AnharmonicCore::setup_quartic()
                             fcs_group_v4,
                             relvec_v4);
 
-    allocate(invsqrt_mass_p, system->natmin);
+    allocate(invsqrt_mass_p, natmin_tmp);
 
-    for (i = 0; i < system->natmin; ++i) {
+    for (i = 0; i < natmin_tmp; ++i) {
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
     }
 

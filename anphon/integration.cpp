@@ -332,45 +332,12 @@ void Integration::calc_weight_smearing(const unsigned int nk,
     for (i = 0; i < nk_irreducible; ++i) weight[i] *= invnk;
 }
 
-//
-//double Integration::volume(const int *klist) const
-//{
-//    double k1[3], k2[3], k3[3];
-//
-//    for (int i = 0; i < 3; ++i) {
-//        k1[i] = refold(kpoint->xk[klist[1]][i] - kpoint->xk[klist[0]][i]);
-//        k2[i] = refold(kpoint->xk[klist[2]][i] - kpoint->xk[klist[0]][i]);
-//        k3[i] = refold(kpoint->xk[klist[3]][i] - kpoint->xk[klist[0]][i]);
-//    }
-//
-//    rotvec(k1, k1, system->rlavec_p, 'T');
-//    rotvec(k2, k2, system->rlavec_p, 'T');
-//    rotvec(k3, k3, system->rlavec_p, 'T');
-//
-//    const auto vol = std::abs(k1[0] * (k2[1] * k3[2] - k2[2] * k3[1])
-//                              + k1[1] * (k2[2] * k3[0] - k2[0] * k3[2])
-//                              + k1[2] * (k2[0] * k3[1] - k2[1] * k3[0]));
-//
-//    return vol;
-//}
-
 double Integration::fij(const double ei,
                         const double ej,
                         const double e) const
 {
     return (e - ej) / (ei - ej);
 }
-
-//double Integration::refold(double x) const
-//{
-//    if (std::abs(x) > 0.5) {
-//        if (x < 0.0) {
-//            return x + 1.0;
-//        }
-//        return x - 1.0;
-//    }
-//    return x;
-//}
 
 void Integration::insertion_sort(double *a,
                                  int *ind,

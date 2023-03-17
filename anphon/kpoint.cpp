@@ -63,9 +63,6 @@ void Kpoint::deallocate_variables()
 
 void Kpoint::kpoint_setups(const std::string mode)
 {
-    unsigned int i, j;
-    std::string str_tmp;
-
     MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
@@ -80,14 +77,15 @@ void Kpoint::kpoint_setups(const std::string mode)
                 std::cout << "  KPMODE = 0 : Calculation on given k points" << std::endl;
             }
 
-            setup_kpoint_given(kpInp, system->rlavec_p);
+            setup_kpoint_given(kpInp,
+                               system->get_cell("prim", "base").reciprocal_lattice_vector);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  Number of k points : " << kpoint->kpoint_general->nk << std::endl << std::endl;
                 std::cout << "  List of k points : " << std::endl;
-                for (i = 0; i < kpoint->kpoint_general->nk; ++i) {
+                for (auto i = 0; i < kpoint->kpoint_general->nk; ++i) {
                     std::cout << std::setw(5) << i + 1 << ":";
-                    for (j = 0; j < 3; ++j) {
+                    for (auto j = 0; j < 3; ++j) {
                         std::cout << std::setw(15) << kpoint->kpoint_general->xk[i][j];
                     }
                     std::cout << std::endl;
@@ -103,12 +101,13 @@ void Kpoint::kpoint_setups(const std::string mode)
                 std::cout << "  KPMODE = 1: Band structure calculation" << std::endl;
             }
 
-            setup_kpoint_band(kpInp, system->rlavec_p);
+            setup_kpoint_band(kpInp,
+                              system->get_cell("prim", "base").reciprocal_lattice_vector);
             if (mympi->my_rank == 0) {
                 std::cout << "  Number of paths : " << kpInp.size() << std::endl << std::endl;
                 std::cout << "  List of k paths : " << std::endl;
 
-                for (i = 0; i < kpInp.size(); ++i) {
+                for (auto i = 0; i < kpInp.size(); ++i) {
                     std::cout << std::setw(4) << i + 1 << ":";
                     std::cout << std::setw(3) << kpInp[i].kpelem[0];
                     std::cout << " (";
@@ -144,14 +143,14 @@ void Kpoint::kpoint_setups(const std::string mode)
             nk_tmp[1] = 0;
             nk_tmp[2] = 0;
             if (mympi->my_rank == 0) {
-                for (i = 0; i < 3; ++i) {
+                for (auto i = 0; i < 3; ++i) {
                     nk_tmp[i] = std::atoi(kpInp[0].kpelem[i].c_str());
                 }
             }
             MPI_Bcast(&nk_tmp[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
             dos->kmesh_dos = new KpointMeshUniform(nk_tmp);
             dos->kmesh_dos->setup(symmetry->SymmList,
-                                  system->rlavec_p,
+                                  system->get_cell("prim", "base").reciprocal_lattice_vector,
                                   symmetry->time_reversal_sym,
                                   true);
 
@@ -166,9 +165,9 @@ void Kpoint::kpoint_setups(const std::string mode)
                           std::endl;
                 std::cout << "  List of irreducible k points (reciprocal coordinate, weight) : " << std::endl;
 
-                for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
+                for (auto i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
                     std::cout << "  " << std::setw(5) << i + 1 << ":";
-                    for (j = 0; j < 3; ++j) {
+                    for (auto j = 0; j < 3; ++j) {
                         std::cout << std::setprecision(5) << std::setw(14)
                                   << std::scientific << dos->kmesh_dos->kpoint_irred_all[i][0].kval[j];
                     }

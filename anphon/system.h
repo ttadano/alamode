@@ -60,11 +60,11 @@ public:
 
     void setup();
 
-    const Cell &get_cell(const std::string celltype, const std::string filetype) const;
+    const Cell &get_cell(const std::string celltype, const std::string filetype="base") const;
 
     const Spin &get_spin(const std::string celltype) const;
 
-    const MappingTable &get_mapping_table(const std::string celltype, const std::string filetype) const;
+    const MappingTable &get_mapping_table(const std::string celltype, const std::string filetype="base") const;
 
     Eigen::Matrix3d lavec_s, rlavec_s;
     Eigen::Matrix3d lavec_p, rlavec_p;
@@ -73,16 +73,12 @@ public:
     Eigen::MatrixXd xr_s_anharm;
 
     int load_primitive_from_file;
-    double **magmom;
     double volume_p;
 
     unsigned int nat, natmin, ntran;
     unsigned int nat_anharm, ntran_anharm;
     unsigned int *kd, nkd;
     unsigned int *kd_anharm;
-
-//    unsigned int nclassatom;
-//    std::vector<unsigned int> *atomlist_class;
 
     unsigned int **map_p2s, **map_p2s_anharm;
     unsigned int **map_p2s_anharm_orig;
@@ -97,9 +93,6 @@ public:
     double volume(const double [3],
                   const double [3],
                   const double [3]) const;
-
-    bool lspin, trevsym_mag;
-    int noncollinear;
 
     int get_atomic_number_by_name(const std::string &);
 
@@ -146,8 +139,6 @@ private:
                                             MappingTable &map_super_out,
                                             MappingTable &map_prim_out,
                                             std::vector<std::string> &elements) const;
-
-    void load_system_info_from_h5();
 
     void update_primitive_lattice();
 
