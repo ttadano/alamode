@@ -1336,7 +1336,6 @@ double System::volume(const double vec1[3],
 }
 
 
-
 void System::check_consistency_primitive_lattice() const
 {
     // Check if the ordering of atoms in the primitive cells derived 
@@ -1521,9 +1520,8 @@ const Cell &System::get_cell(const std::string celltype,
         return supercell_fc4;
     } else if (celltype_tmp == "prim" && filetype_tmp == "fc4") {
         return primcell_fc4;
-    } else {
-        exit("get_cell", "This cannot happen");
     }
+    return supercell_base; // dummy for supressing compiler warning
 }
 
 const Spin &System::get_spin(const std::string celltype) const
@@ -1541,9 +1539,8 @@ const Spin &System::get_spin(const std::string celltype) const
         return spin_super_base;
     } else if (celltype_tmp == "prim") {
         return spin_prim_base;
-    } else {
-        exit("get_spin", "This cannot happen");
     }
+    return spin_super_base; // dummy for supressing compiler warning
 }
 
 const MappingTable &System::get_mapping_table(const std::string celltype,
@@ -1586,7 +1583,7 @@ const MappingTable &System::get_mapping_table(const std::string celltype,
         return map_scell_fc4;
     } else if (celltype_tmp == "prim" && filetype_tmp == "fc4") {
         return map_pcell_fc4;
-    } else {
-        exit("get_mapping_table", "This cannot happen");
     }
+
+    return map_scell_base; // dummy for supressing compiler warning
 }

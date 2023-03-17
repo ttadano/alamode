@@ -255,9 +255,9 @@ void Symmetry::find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                             m31 == 0 && m32 == 0 && m33 == 1)
                                             continue;
 
-                                        double det = m11 * (m22 * m33 - m32 * m23)
-                                                     - m21 * (m12 * m33 - m32 * m13)
-                                                     + m31 * (m12 * m23 - m22 * m13);
+                                        double const det = m11 * (m22 * m33 - m32 * m23)
+                                                           - m21 * (m12 * m33 - m32 * m13)
+                                                           + m31 * (m12 * m23 - m22 * m13);
 
                                         if (det != 1 && det != -1) continue;
 
@@ -361,7 +361,7 @@ void Symmetry::find_crystal_symmetry(const Eigen::Matrix3d &aa,
 
     for (const auto &it_latsym: LatticeSymmList) {
 
-        unsigned int iat = atomclass[0][0];
+        const auto iat = atomclass[0][0];
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -386,7 +386,8 @@ void Symmetry::find_crystal_symmetry(const Eigen::Matrix3d &aa,
             isok = true;
 
             is_identity_matrix = (rot - identity_matrix).squaredNorm() < eps12;
-            is_identity_matrix = is_identity_matrix & ((tran[0]*tran[0] + tran[1]*tran[1] + tran[2]*tran[2]) < eps12);
+            is_identity_matrix =
+                    is_identity_matrix & ((tran[0] * tran[0] + tran[1] * tran[1] + tran[2] * tran[2]) < eps12);
             if (is_identity_matrix) continue;
 
             for (unsigned int itype = 0; itype < nclass; ++itype) {
@@ -478,7 +479,7 @@ void Symmetry::gensym_withmap(const Eigen::Matrix3d &aa,
     Eigen::Vector3d shift, x_mod, tmp;
     unsigned int *map_tmp;
     int i, j;
-    unsigned int natmin = system->natmin;
+    unsigned int natmin = x.rows();
 
     SymmListWithMap.clear();
 
