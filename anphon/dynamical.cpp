@@ -589,12 +589,12 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->xr_s(atm2_s, i) + xshift_s[icell][i]
-                     - system->xr_s(system->map_p2s[atm2_p][0], i);
+            vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
+                     - system->get_cell("super").x_fractional(system->map_p2s[atm2_p][0], i);
         }
 
-        rotvec(vec, vec, system->lavec_s);
-        rotvec(vec, vec, system->rlavec_p);
+        rotvec(vec, vec, system->get_cell("super").lattice_vector);
+        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
 
         const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
@@ -770,7 +770,8 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                         unsigned int cell = mindist_list[iat][atm_s2][j];
 
                         for (unsigned int k = 0; k < 3; ++k) {
-                            vec[k] = system->get_cell("super").x_fractional(system->map_p2s[jat][i], k) + xshift_s[cell][k]
+                            vec[k] = system->get_cell("super").x_fractional(system->map_p2s[jat][i], k) +
+                                     xshift_s[cell][k]
                                      - system->get_cell("super").x_fractional(atm_p2, k);
                         }
 
@@ -1408,7 +1409,8 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
         for (i = 0; i < natmin_tmp; ++i) {
             std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                      << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :" << std::endl;
+                      << std::setw(3) << system->symbol_kd[system->get_cell("super").kind[system->map_p2s[i][0]]]
+                      << ") :" << std::endl;
 
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
@@ -1449,7 +1451,8 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         for (i = 0; i < natmin_tmp; ++i) {
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
-                    borncharge[i][j][k] -= sum_born[j][k] / static_cast<double>(system->natmin);
+                    borncharge[i][j][k] -=
+                            sum_born[j][k] / static_cast<double>(system->get_cell("prim").number_of_atoms);
                 }
             }
         }
@@ -1535,7 +1538,8 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
                 std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
                 for (i = 0; i < natmin_tmp; ++i) {
                     std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                              << std::setw(3) << system->symbol_kd[system->kd[system->map_p2s[i][0]]] << ") :"
+                              << std::setw(3) << system->symbol_kd[system->get_cell("prim").kind[system->map_p2s[i][0]]]
+                              << ") :"
                               << std::endl;
 
                     for (j = 0; j < 3; ++j) {

@@ -124,10 +124,7 @@ void System::setup()
     recips(lavec_p, rlavec_p);
 
     xr_p.resize(nat, 3);
-    xc.resize(nat, 3);
-
-    xc = xr_s * lavec_s.transpose();
-    xr_p = xc * lavec_p.inverse().transpose();
+    xr_p = xr_s * lavec_s.transpose() * lavec_p.inverse().transpose();
 
 
     if (mympi->my_rank == 0) {
@@ -399,6 +396,20 @@ void System::load_system_info_from_file()
         spin_super_base = spin_super_fc2;
         spin_prim_base = spin_prim_fc2;
         elements_base = elements_fc2;
+    }
+
+    if (filetype[2] == -1) {
+        supercell_fc3 = supercell_base;
+        primcell_fc2 = primcell_base;
+        map_scell_fc3 = map_scell_base;
+        map_pcell_fc3 = map_pcell_base;
+    }
+
+    if (filetype[3] == -1) {
+        supercell_fc4 = supercell_base;
+        primcell_fc4 = primcell_base;
+        map_scell_fc4 = map_scell_base;
+        map_pcell_fc4 = map_pcell_base;
     }
 }
 
@@ -950,7 +961,7 @@ void System::load_system_info_from_XML()
 
         }
         catch (...) {
-        //    lspin = false;
+            //    lspin = false;
         }
 
         deallocate(magmom_tmp);
@@ -1265,19 +1276,6 @@ void System::recips(const Eigen::Matrix3d &mat_in,
     }
     rmat_out = tpi * mat_in.inverse();
 }
-
-
-double System::volume(const double vec1[3],
-                      const double vec2[3],
-                      const double vec3[3]) const
-{
-    const auto vol = std::abs(vec1[0] * (vec2[1] * vec3[2] - vec2[2] * vec3[1])
-                              + vec1[1] * (vec2[2] * vec3[0] - vec2[0] * vec3[2])
-                              + vec1[2] * (vec2[0] * vec3[1] - vec2[1] * vec3[0]));
-
-    return vol;
-}
-
 
 void System::check_consistency_primitive_lattice() const
 {

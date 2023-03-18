@@ -128,7 +128,7 @@ void Fcs_phonon::setup(std::string mode)
         allocate(maxdev, maxorder);
         examine_translational_invariance(maxorder,
                                          system->nat_anharm,
-                                         system->natmin,
+                                         system->get_cell("prim").number_of_atoms,
                                          maxdev,
                                          fc2_ext,
                                          force_constant_with_cell);

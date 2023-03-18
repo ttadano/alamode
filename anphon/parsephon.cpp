@@ -786,8 +786,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     if (include_isotope) {
         if (!analysis_var_dict["ISOFACT"].empty()) {
-            allocate(isotope->isotope_factor, system->nkd);
-            for (i = 0; i < system->nkd; ++i) {
+            allocate(isotope->isotope_factor, system->get_cell("prim").number_of_elems);
+            for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
                 isotope->isotope_factor[i] = isotope_factor[i];
             }
         }

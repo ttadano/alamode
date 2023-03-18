@@ -531,7 +531,7 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
 {
     unsigned int i, j, l, m;
     unsigned int icrd;
-    const auto nmode = 3 * system->natmin;
+    const auto nmode = 3 * system->get_cell("prim").number_of_atoms;
 
     std::complex<double> ***ddyn;
     std::complex<double> ctmp;

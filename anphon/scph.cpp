@@ -1627,7 +1627,7 @@ void Scph::setup_transform_symmetry()
     std::complex<double> **gamma_tmp;
     bool *flag;
 
-    const auto natmin = system->natmin;
+    const auto natmin = system->get_cell("prim").number_of_atoms;
     const auto ns = dynamical->neval;
     const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
 
@@ -1889,7 +1889,7 @@ void Scph::setup_transform_ifc()
     int i, j;
     int ix, iy, iz;
     const auto nk = kmesh_coarse->nk;
-    const auto nat = system->natmin;
+    const auto nat = system->get_cell("prim").number_of_atoms;
     unsigned int iat;
 
     int **shift_cell, **shift_cell_super;
@@ -1941,24 +1941,24 @@ void Scph::setup_transform_ifc()
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            xf_p(i,j) = system->xr_s(system->map_p2s[i][0], j);
+            xf_p(i, j) = system->get_cell("super").x_fractional(system->map_p2s[i][0], j);
         }
     }
 
-    xf_p = xf_p * system->lavec_s.transpose();
-    xf_p = xf_p * system->lavec_p.inverse().transpose();
+    xf_p = xf_p * system->get_cell("super").lattice_vector.transpose();
+    xf_p = xf_p * system->get_cell("prim").lattice_vector.inverse().transpose();
 
     for (i = 0; i < ncell_s; ++i) {
         for (j = 0; j < ncell; ++j) {
             for (iat = 0; iat < nat; ++iat) {
-                x_all[i][j][iat][0] = xf_p(iat,0) + static_cast<double>(shift_cell[j][0])
+                x_all[i][j][iat][0] = xf_p(iat, 0) + static_cast<double>(shift_cell[j][0])
                                       + static_cast<double>(nkx * shift_cell_super[i][0]);
-                x_all[i][j][iat][1] = xf_p(iat,1) + static_cast<double>(shift_cell[j][1])
+                x_all[i][j][iat][1] = xf_p(iat, 1) + static_cast<double>(shift_cell[j][1])
                                       + static_cast<double>(nky * shift_cell_super[i][1]);
-                x_all[i][j][iat][2] = xf_p(iat,2) + static_cast<double>(shift_cell[j][2])
+                x_all[i][j][iat][2] = xf_p(iat, 2) + static_cast<double>(shift_cell[j][2])
                                       + static_cast<double>(nkz * shift_cell_super[i][2]);
 
-                rotvec(x_all[i][j][iat], x_all[i][j][iat], system->lavec_p);
+                rotvec(x_all[i][j][iat], x_all[i][j][iat], system->get_cell("prim").lattice_vector);
             }
         }
     }
@@ -3365,36 +3365,37 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
 
     allocate(delta_fc2, ns, ns, ncell);
 
-    xtmp.resize(system->natmin, 3);
-    //allocate(xtmp, system->natmin, 3);
+    xtmp.resize(system->get_cell("prim").number_of_atoms, 3);
+    //allocate(xtmp, system->get_cell("prim").number_of_atoms, 3);
 
     ofs_fc2.precision(10);
 
-    for (i = 0; i < system->natmin; ++i) {
+    for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
         for (j = 0; j < 3; ++j) {
-            xtmp(i, j) = system->xr_s(system->map_p2s[i][0], j);
+            xtmp(i, j) = system->get_cell("super").x_fractional(system->map_p2s[i][0], j);
         }
     }
-    xtmp = xtmp * system->lavec_s.transpose();
-    xtmp = xtmp * system->lavec_p.inverse().transpose();
+    xtmp = xtmp * system->get_cell("super").lattice_vector.transpose();
+    xtmp = xtmp * system->get_cell("prim").lattice_vector.inverse().transpose();
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_fc2 << std::setw(20) << system->lavec_p(j, i);
+            ofs_fc2 << std::setw(20) << system->get_cell("prim").lattice_vector(j, i);
         }
         ofs_fc2 << std::endl;
     }
-    ofs_fc2 << std::setw(5) << system->natmin << std::setw(5) << system->nkd << std::endl;
-    for (i = 0; i < system->nkd; ++i) {
+    ofs_fc2 << std::setw(5) << system->get_cell("prim").number_of_atoms << std::setw(5)
+            << system->get_cell("prim").number_of_elems << std::endl;
+    for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
         ofs_fc2 << std::setw(5) << system->symbol_kd[i];
     }
     ofs_fc2 << std::endl;
 
-    for (i = 0; i < system->natmin; ++i) {
+    for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_fc2 << std::setw(20) << xtmp(i,j);
+            ofs_fc2 << std::setw(20) << xtmp(i, j);
         }
-        ofs_fc2 << std::setw(5) << system->kd[system->map_p2s[i][0]] + 1 << std::endl;
+        ofs_fc2 << std::setw(5) << system->get_cell("prim").kind[system->map_p2s[i][0]] + 1 << std::endl;
     }
 
     //deallocate(xtmp);

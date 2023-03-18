@@ -179,8 +179,9 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
             for (i = 0; i < N - 1; ++i) {
                 for (k = 0; k < 3; ++k) {
-                    vecs[i][k] = system->xr_s_anharm(atm_super[i + 1], k) + xshift_s[cells[i + 1]][k]
-                                 - system->xr_s_anharm(system->map_p2s_anharm[atm_prim[i + 1]][0], k);
+                    // TODO: replace below with fc3 or fc4 Cell data
+                    vecs[i][k] = system->get_cell("super").x_fractional(atm_super[i + 1], k) + xshift_s[cells[i + 1]][k]
+                                 - system->get_cell("super").x_fractional(system->map_p2s_anharm[atm_prim[i + 1]][0], k);
                 }
                 rotvec(vecs[i], vecs[i], mat_convert);
             }

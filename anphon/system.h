@@ -60,16 +60,16 @@ public:
 
     void setup();
 
-    const Cell &get_cell(const std::string celltype, const std::string filetype="base") const;
+    const Cell &get_cell(const std::string celltype, const std::string filetype = "base") const;
 
     const Spin &get_spin(const std::string celltype) const;
 
-    const MappingTable &get_mapping_table(const std::string celltype, const std::string filetype="base") const;
+    const MappingTable &get_mapping_table(const std::string celltype, const std::string filetype = "base") const;
 
     Eigen::Matrix3d lavec_s, rlavec_s;
     Eigen::Matrix3d lavec_p, rlavec_p;
     Eigen::Matrix3d lavec_s_anharm, rlavec_s_anharm;
-    Eigen::MatrixXd xr_p, xr_s, xc;
+    Eigen::MatrixXd xr_p, xr_s;
     Eigen::MatrixXd xr_s_anharm;
 
     int load_primitive_from_file;
@@ -89,10 +89,6 @@ public:
     double *mass_kd, *mass, *mass_anharm;
 
     double Tmin, Tmax, dT;
-
-    double volume(const double [3],
-                  const double [3],
-                  const double [3]) const;
 
     int get_atomic_number_by_name(const std::string &);
 
