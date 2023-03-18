@@ -1643,7 +1643,9 @@ void Scph::setup_transform_symmetry()
     }
 
     const Eigen::Matrix3d convmat = system->get_cell("prim").lattice_vector.inverse()
-            * system->get_cell("super").lattice_vector;
+                                    * system->get_cell("super").lattice_vector;
+
+    const auto xf_tmp = system->get_cell("super").x_fractional;
 
     for (ik = 0; ik < nk_irred_interpolate; ++ik) {
 
@@ -1662,9 +1664,9 @@ void Scph::setup_transform_symmetry()
 
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
-                    S_cart(icrd,jcrd) = it.rot[3 * icrd + jcrd];
-                    S_frac(icrd,jcrd) = it.rot_real[3 * icrd + jcrd];
-                    S_recip(icrd,jcrd) = it.rot_reciprocal[3 * icrd + jcrd];
+                    S_cart(icrd, jcrd) = it.rot[3 * icrd + jcrd];
+                    S_frac(icrd, jcrd) = it.rot_real[3 * icrd + jcrd];
+                    S_recip(icrd, jcrd) = it.rot_reciprocal[3 * icrd + jcrd];
                 }
             }
 
@@ -1701,8 +1703,8 @@ void Scph::setup_transform_symmetry()
 
                 // Fractional coordinates of x1 and x2
                 for (icrd = 0; icrd < 3; ++icrd) {
-                    x1[icrd] = system->get_cell("super").x_fractional(system->map_p2s[iat][0], icrd);
-                    x2[icrd] = system->get_cell("super").x_fractional(system->map_p2s[jat][0], icrd);
+                    x1[icrd] = xf_tmp(system->map_p2s[iat][0], icrd);
+                    x2[icrd] = xf_tmp(system->map_p2s[jat][0], icrd);
                 }
                 // Convert to fractional basis of the primitive cell
                 x1 = convmat * x1;
@@ -1710,17 +1712,12 @@ void Scph::setup_transform_symmetry()
 
                 xtmp = S_frac_inv * x1 - x2;
 
-                //rotvec(xtmp, x1, S_frac_inv);
-                //for (icrd = 0; icrd < 3; ++icrd) {
-                 //   xtmp[icrd] = xtmp[icrd] - x2[icrd];
-                //}
-
                 auto phase = 2.0 * pi * (k[0] * xtmp[0] + k[1] * xtmp[1] + k[2] * xtmp[2]);
 
                 for (icrd = 0; icrd < 3; ++icrd) {
                     for (jcrd = 0; jcrd < 3; ++jcrd) {
                         gamma_tmp[3 * iat + icrd][3 * jat + jcrd]
-                                = S_cart(icrd,jcrd) * std::exp(im * phase);
+                                = S_cart(icrd, jcrd) * std::exp(im * phase);
                     }
                 }
             }
@@ -1948,16 +1945,18 @@ void Scph::setup_transform_ifc()
             }
         }
     }
+    const auto xf_tmp = system->get_cell("super").x_fractional;
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            xf_p(i, j) = system->get_cell("super").x_fractional(system->map_p2s[i][0], j);
+            xf_p(i, j) = xf_tmp(system->map_p2s[i][0], j);
         }
     }
 
     xf_p = xf_p * system->get_cell("super").lattice_vector.transpose();
     xf_p = xf_p * system->get_cell("prim").lattice_vector.inverse().transpose();
 
+    const auto pcell_lavec = system->get_cell("prim").lattice_vector;
     for (i = 0; i < ncell_s; ++i) {
         for (j = 0; j < ncell; ++j) {
             for (iat = 0; iat < nat; ++iat) {
@@ -1968,7 +1967,7 @@ void Scph::setup_transform_ifc()
                 x_all[i][j][iat][2] = xf_p(iat, 2) + static_cast<double>(shift_cell[j][2])
                                       + static_cast<double>(nkz * shift_cell_super[i][2]);
 
-                rotvec(x_all[i][j][iat], x_all[i][j][iat], system->get_cell("prim").lattice_vector);
+                rotvec(x_all[i][j][iat], x_all[i][j][iat], pcell_lavec);
             }
         }
     }
