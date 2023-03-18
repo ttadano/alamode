@@ -123,10 +123,6 @@ void System::setup()
     recips(lavec_s_anharm, rlavec_s_anharm);
     recips(lavec_p, rlavec_p);
 
-    xr_p.resize(nat, 3);
-    xr_p = xr_s * lavec_s.transpose() * lavec_p.inverse().transpose();
-
-
     if (mympi->my_rank == 0) {
         cout << " -----------------------------------------------------------------" << endl;
         cout << endl;

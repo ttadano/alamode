@@ -69,7 +69,7 @@ public:
     Eigen::Matrix3d lavec_s, rlavec_s;
     Eigen::Matrix3d lavec_p, rlavec_p;
     Eigen::Matrix3d lavec_s_anharm, rlavec_s_anharm;
-    Eigen::MatrixXd xr_p, xr_s;
+    Eigen::MatrixXd xr_s;
     Eigen::MatrixXd xr_s_anharm;
 
     int load_primitive_from_file;

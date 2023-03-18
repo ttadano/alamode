@@ -1620,10 +1620,9 @@ void Scph::setup_transform_symmetry()
     unsigned int ik;
     unsigned int is, js;
     unsigned int icrd, jcrd;
-    double x1[3], x2[3], k[3], k_minus[3], Sk[3], xtmp[3];
-    double S_cart[3][3], S_frac[3][3], S_frac_inv[3][3];
-    double S_recip[3][3];
-    std::complex<double> im(0.0, 1.0);
+    Eigen::Vector3d x1, x2, xtmp;
+    Eigen::Vector3d k, k_minus, Sk;
+    Eigen::Matrix3d S_cart, S_frac, S_frac_inv, S_recip;
     std::complex<double> **gamma_tmp;
     bool *flag;
 
@@ -1643,6 +1642,9 @@ void Scph::setup_transform_symmetry()
         flag[ik] = false;
     }
 
+    const Eigen::Matrix3d convmat = system->get_cell("prim").lattice_vector.inverse()
+            * system->get_cell("super").lattice_vector;
+
     for (ik = 0; ik < nk_irred_interpolate; ++ik) {
 
         symop_minus_at_k[ik].clear();
@@ -1660,18 +1662,21 @@ void Scph::setup_transform_symmetry()
 
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
-                    S_cart[icrd][jcrd] = it.rot[3 * icrd + jcrd];
-                    S_frac[icrd][jcrd] = it.rot_real[3 * icrd + jcrd];
-                    S_recip[icrd][jcrd] = it.rot_reciprocal[3 * icrd + jcrd];
+                    S_cart(icrd,jcrd) = it.rot[3 * icrd + jcrd];
+                    S_frac(icrd,jcrd) = it.rot_real[3 * icrd + jcrd];
+                    S_recip(icrd,jcrd) = it.rot_reciprocal[3 * icrd + jcrd];
                 }
             }
 
-            invmat3(S_frac_inv, S_frac);
-            rotvec(Sk, k, S_recip);
+            S_frac_inv = S_frac.inverse();
+            //invmat3(S_frac_inv, S_frac);
+
+            Sk = S_recip * k;
+            //rotvec(Sk, k, S_recip);
 
             for (auto i = 0; i < 3; ++i) Sk[i] = Sk[i] - nint(Sk[i]);
 
-            const auto knum_sym = kmesh_coarse->get_knum(Sk);
+            const auto knum_sym = kmesh_coarse->get_knum(&Sk[0]);
             if (knum_sym == -1)
                 exit("setup_transform_symmetry",
                      "kpoint not found");
@@ -1696,21 +1701,26 @@ void Scph::setup_transform_symmetry()
 
                 // Fractional coordinates of x1 and x2
                 for (icrd = 0; icrd < 3; ++icrd) {
-                    x1[icrd] = system->xr_p(system->map_p2s[iat][0], icrd);
-                    x2[icrd] = system->xr_p(system->map_p2s[jat][0], icrd);
+                    x1[icrd] = system->get_cell("super").x_fractional(system->map_p2s[iat][0], icrd);
+                    x2[icrd] = system->get_cell("super").x_fractional(system->map_p2s[jat][0], icrd);
                 }
+                // Convert to fractional basis of the primitive cell
+                x1 = convmat * x1;
+                x2 = convmat * x2;
 
-                rotvec(xtmp, x1, S_frac_inv);
-                for (icrd = 0; icrd < 3; ++icrd) {
-                    xtmp[icrd] = xtmp[icrd] - x2[icrd];
-                }
+                xtmp = S_frac_inv * x1 - x2;
+
+                //rotvec(xtmp, x1, S_frac_inv);
+                //for (icrd = 0; icrd < 3; ++icrd) {
+                 //   xtmp[icrd] = xtmp[icrd] - x2[icrd];
+                //}
 
                 auto phase = 2.0 * pi * (k[0] * xtmp[0] + k[1] * xtmp[1] + k[2] * xtmp[2]);
 
                 for (icrd = 0; icrd < 3; ++icrd) {
                     for (jcrd = 0; jcrd < 3; ++jcrd) {
                         gamma_tmp[3 * iat + icrd][3 * jat + jcrd]
-                                = S_cart[icrd][jcrd] * std::exp(im * phase);
+                                = S_cart(icrd,jcrd) * std::exp(im * phase);
                     }
                 }
             }
