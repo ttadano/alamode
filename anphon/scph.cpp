@@ -4921,7 +4921,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(const std::co
     
 
         // make mapping information
-        allocate(symm_mapping_s, symmetry->SymmListWithMap.size(), nat);
+        allocate(symm_mapping_s, symmetry->SymmListWithMap_ref.size(), nat);
         make_supercell_mapping_by_symmetry_operations(symm_mapping_s);
 
         allocate(inv_translation_mapping, ntran, ntran);
@@ -4938,23 +4938,23 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(const std::co
         //     }
         // }
 
-        std::cout << "number of symmetry operations : " << symmetry->SymmListWithMap.size() << std::endl;
+        std::cout << "number of symmetry operations : " << symmetry->SymmListWithMap_ref.size() << std::endl;
         // symmetrize and replicate
-        for(isymm = 0; isymm < symmetry->SymmListWithMap.size(); isymm++){
+        for(isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++){
 
             // debug
             // std::cout << "isymm = " << isymm << std::endl;
             // std::cout << "rotation matrix" << std::endl;
             // for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
             //     for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            //         std::cout << symmetry->SymmListWithMap[isymm].rot[ixyz1*3+ixyz2] << " ";
+            //         std::cout << symmetry->SymmListWithMap_ref[isymm].rot[ixyz1*3+ixyz2] << " ";
             //     }std::cout << std::endl;
             // }
 
             // make mapping of xyz by the rotation matrix
             for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
                 for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                    if(std::fabs(std::fabs(symmetry->SymmListWithMap[isymm].rot[ixyz1*3+ixyz2])- 1.0) < eps6){
+                    if(std::fabs(std::fabs(symmetry->SymmListWithMap_ref[isymm].rot[ixyz1*3+ixyz2])- 1.0) < eps6){
                         mapping_xyz[ixyz2] = ixyz1;
                     }
                 }
@@ -4976,12 +4976,12 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(const std::co
                     for(iat1 = 0; iat1 < natmin; iat1++){
                         // skip if the center atom is not included in the original primitive cell
                         // if(symm_mapping_s[isymm][system->map_p2s[iat1][0]] != 
-                        //       system->map_p2s[symmetry->SymmListWithMap[isymm].mapping[iat1]][0]){
+                        //       system->map_p2s[symmetry->SymmListWithMap_ref[isymm].mapping[iat1]][0]){
                         //     std::cout << "center atom is not included in the original primitive cell" << std::endl;
                         //     continue;
                         // }
                         
-                        iat1_2 = symmetry->SymmListWithMap[isymm].mapping[iat1];
+                        iat1_2 = symmetry->SymmListWithMap_ref[isymm].mapping[iat1];
                         // std::cout << "iat1_2: " << iat1_2 << std::endl;
                         ixyz1_2 = mapping_xyz[ixyz1];
                         ixyz2_2 = mapping_xyz[ixyz2];
@@ -5006,10 +5006,10 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(const std::co
 
                                     B_array_real_space_symmetrized[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2]
                                         += B_array_real_space_in[ixyz1][ixyz2][iat1*3+ixyz3][iat2*3+ixyz4]
-                                            * symmetry->SymmListWithMap[isymm].rot[ixyz1_2*3+ixyz1]
-                                            * symmetry->SymmListWithMap[isymm].rot[ixyz2_2*3+ixyz2]
-                                            * symmetry->SymmListWithMap[isymm].rot[ixyz3_2*3+ixyz3]
-                                            * symmetry->SymmListWithMap[isymm].rot[ixyz4_2*3+ixyz4];
+                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz1_2*3+ixyz1]
+                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz2_2*3+ixyz2]
+                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz3_2*3+ixyz3]
+                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz4_2*3+ixyz4];
                                     // std::cout << "before: " << count_tmp[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2];
                                     count_tmp[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2]++;
                                     // std::cout << " after: " << count_tmp[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2] << std::endl;
@@ -5434,9 +5434,9 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
         }
     }
 
-    for(isymm = 0; isymm < symmetry->SymmListWithMap.size(); isymm++){
+    for(isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++){
         for(iat1 = 0; iat1 < natmin; iat1++){
-            iat2 = symmetry->SymmListWithMap[isymm].mapping[iat1];
+            iat2 = symmetry->SymmListWithMap_ref[isymm].mapping[iat1];
             
             for(i1 = 0; i1 < 27; i1++){
                 ixyz1 = i1/9;
@@ -5449,9 +5449,9 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
 
                     del_v1_strain_from_harmonic_in_real_space_symm[ixyz12*3+ixyz22][iat2*3+ixyz32]
                         += del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3]
-                           * symmetry->SymmListWithMap[isymm].rot[ixyz12*3+ixyz1]
-                           * symmetry->SymmListWithMap[isymm].rot[ixyz22*3+ixyz2]
-                           * symmetry->SymmListWithMap[isymm].rot[ixyz32*3+ixyz3];
+                           * symmetry->SymmListWithMap_ref[isymm].rot[ixyz12*3+ixyz1]
+                           * symmetry->SymmListWithMap_ref[isymm].rot[ixyz22*3+ixyz2]
+                           * symmetry->SymmListWithMap_ref[isymm].rot[ixyz32*3+ixyz3];
                 }
             }
         }
@@ -5459,7 +5459,7 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
 
     for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
         for(is1 = 0; is1 < ns; is1++){
-            del_v1_strain_from_harmonic_in_real_space_symm[ixyz1][is1] /= symmetry->SymmListWithMap.size();
+            del_v1_strain_from_harmonic_in_real_space_symm[ixyz1][is1] /= symmetry->SymmListWithMap_ref.size();
         }
     }
 
@@ -5640,15 +5640,15 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     }
 
     // make mapping information
-    allocate(symm_mapping_s, symmetry->SymmListWithMap.size(), nat);
+    allocate(symm_mapping_s, symmetry->SymmListWithMap_ref.size(), nat);
     make_supercell_mapping_by_symmetry_operations(symm_mapping_s);
 
     allocate(inv_translation_mapping, ntran, ntran);
     make_inverse_translation_mapping(inv_translation_mapping); 
 
-    std::cout << "number of symmetry operations : " << symmetry->SymmListWithMap.size() << std::endl;
+    std::cout << "number of symmetry operations : " << symmetry->SymmListWithMap_ref.size() << std::endl;
     // symmetrize and replicate
-    for(isymm = 0; isymm < symmetry->SymmListWithMap.size(); isymm++){
+    for(isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++){
 
         for(iat1 = 0; iat1 < natmin; iat1++){
 
@@ -5663,7 +5663,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
                     ixyz3_2 = (ixyz_comb2/3)%3;
                     ixyz4_2 = ixyz_comb2%3;
                     
-                    iat1_2 = symmetry->SymmListWithMap[isymm].mapping[iat1];
+                    iat1_2 = symmetry->SymmListWithMap_ref[isymm].mapping[iat1];
 
                     for(i1 = 0; i1 < ntran; i1++){
                         if(system->map_p2s[iat1_2][i1] == symm_mapping_s[isymm][system->map_p2s[iat1][0]]){
@@ -5680,10 +5680,10 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
 
                         B_array_real_space_symmetrized[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2]
                             += B_array_real_space_in[ixyz1][ixyz2][iat1*3+ixyz3][iat2*3+ixyz4]
-                                * symmetry->SymmListWithMap[isymm].rot[ixyz1_2*3+ixyz1]
-                                * symmetry->SymmListWithMap[isymm].rot[ixyz2_2*3+ixyz2]
-                                * symmetry->SymmListWithMap[isymm].rot[ixyz3_2*3+ixyz3]
-                                * symmetry->SymmListWithMap[isymm].rot[ixyz4_2*3+ixyz4];
+                                * symmetry->SymmListWithMap_ref[isymm].rot[ixyz1_2*3+ixyz1]
+                                * symmetry->SymmListWithMap_ref[isymm].rot[ixyz2_2*3+ixyz2]
+                                * symmetry->SymmListWithMap_ref[isymm].rot[ixyz3_2*3+ixyz3]
+                                * symmetry->SymmListWithMap_ref[isymm].rot[ixyz4_2*3+ixyz4];
                     }
                 }
             }
@@ -5694,7 +5694,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             for(i1 = 0; i1 < natmin*3; i1++){
                 for(i2 = 0; i2 < nat*3; i2++){
-                    B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] /= symmetry->SymmListWithMap.size();
+                    B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] /= symmetry->SymmListWithMap_ref.size();
                 }
             }
         }
@@ -5868,7 +5868,7 @@ void Scph::make_supercell_mapping_by_symmetry_operations(int **symm_mapping_s)
     int atm_found, iflag;
     double dtmp, dtmp2;
 
-    // allocate(symm_mapping_s, symmetry->SymmListWithMap.size(), nat);
+    // allocate(symm_mapping_s, symmetry->SymmListWithMap_ref.size(), nat);
 
     // atomici positions in cartesian coordinate
     allocate(xtmp, nat, 3);
@@ -5878,7 +5878,7 @@ void Scph::make_supercell_mapping_by_symmetry_operations(int **symm_mapping_s)
 
     // make mapping
     isymm = -1;
-    for (const auto &it: symmetry->SymmListWithMap) {
+    for (const auto &it: symmetry->SymmListWithMap_ref) {
 
         isymm++;
 
@@ -5946,7 +5946,7 @@ void Scph::make_supercell_mapping_by_symmetry_operations(int **symm_mapping_s)
 
     std::cout << "check one-to-one correspondence." << std::endl;
 
-    for(isymm = 0; isymm < symmetry->SymmListWithMap.size(); isymm++){
+    for(isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++){
         // initialize
         for(iat1 = 0; iat1 < nat; iat1++){
             map_tmp[iat1] = 0;

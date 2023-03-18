@@ -34,6 +34,7 @@ void Symmetry::set_default_variables()
     file_sym = "SYMM_INFO_PRIM";
     time_reversal_sym = true;
     nsym = 0;
+    nsym_ref = 0;
     printsymmetry = false;
     tolerance = 1.0e-3;
 }
@@ -116,11 +117,20 @@ void Symmetry::setup_symmetry()
             std::cout << " Symmetry" << std::endl;
             std::cout << " ========" << std::endl << std::endl;
             setup_symmetry_operation(natmin,
-                                    nsym,
-                                    lavec_p_strain,
-                                    rlavec_p_strain,
-                                    xtmp_disp,
-                                    kdtmp);
+                                     nsym,
+                                     lavec_p_strain,
+                                     rlavec_p_strain,
+                                     xtmp_disp,
+                                     kdtmp,
+                                     SymmList);
+
+            setup_symmetry_operation(natmin,
+                                     nsym_ref,
+                                     system->lavec_p,
+                                     system->rlavec_p,
+                                     xtmp,
+                                     kdtmp,
+                                     SymmList_ref);
             
         }
 
@@ -135,19 +145,34 @@ void Symmetry::setup_symmetry()
                                     system->lavec_p,
                                     system->rlavec_p,
                                     xtmp,
-                                    kdtmp);
+                                    kdtmp,
+                                    SymmList);
 
+            setup_symmetry_operation(natmin,
+                                    nsym_ref,
+                                    system->lavec_p,
+                                    system->rlavec_p,
+                                    xtmp,
+                                    kdtmp,
+                                    SymmList_ref);
         }
     }
 
     MPI_Bcast(&nsym, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     broadcast_symmlist(SymmList);
+    broadcast_symmlist(SymmList_ref);
 
     if (mympi->my_rank == 0) {
+        std::cout << std::endl;
         std::cout << "  Number of symmetry operations : "
-                  << nsym << std::endl << std::endl;
-        gensym_withmap(xtmp, kdtmp);
+                  << nsym << std::endl;
+        std::cout << "  Number of symmetry operations in reference structure : "
+                  << nsym_ref << std::endl << std::endl;
+
+        gensym_withmap(xtmp, kdtmp, SymmList, SymmListWithMap);
+        gensym_withmap(xtmp, kdtmp, SymmList_ref, SymmListWithMap_ref);
     }
+
     deallocate(xtmp);
     deallocate(kdtmp);
 }
@@ -157,7 +182,8 @@ void Symmetry::setup_symmetry_operation(int N,
                                         double aa[3][3],
                                         double bb[3][3],
                                         double **x,
-                                        unsigned int *kd)
+                                        unsigned int *kd,
+                                        std::vector<SymmetryOperation> &SymmList)
 {
     int i, j;
     std::ofstream ofs_sym;
@@ -547,7 +573,9 @@ void Symmetry::find_crystal_symmetry(int nclass,
 }
 
 void Symmetry::gensym_withmap(double **x,
-                              const unsigned int *kd)
+                              const unsigned int *kd,
+                              std::vector<SymmetryOperation> &SymmList,
+                              std::vector<SymmetryOperationWithMapping> &SymmListWithMap)
 {
     // Generate symmetry operations in Cartesian coordinate with the atom-mapping information.
 
