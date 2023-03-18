@@ -569,7 +569,11 @@ void Dynamical::calc_analytic_k(const double *xk_in,
                                 std::complex<double> **dymat_out) const
 {
     int i;
-    double vec[3];
+    Eigen::Vector3d vec;
+    Eigen::Matrix3d convmat = system->get_cell("prim").reciprocal_lattice_vector
+            * system->get_cell("super").lattice_vector;
+
+    const auto xf_tmp = system->get_cell("super").x_fractional;
 
     for (i = 0; i < neval; ++i) {
         for (auto j = 0; j < neval; ++j) {
@@ -588,13 +592,16 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto atm1_s = system->map_p2s[atm1_p][0];
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
+        // TODO: This part is slow. should be modified.
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
-                     - system->get_cell("super").x_fractional(system->map_p2s[atm2_p][0], i);
+            vec[i] = xf_tmp(atm2_s, i) + xshift_s[icell][i]
+                     - xf_tmp(system->map_p2s[atm2_p][0], i);
         }
 
-        rotvec(vec, vec, system->get_cell("super").lattice_vector);
-        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
+//        rotvec(vec, vec, system->get_cell("super").lattice_vector);
+//        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
+
+        vec = convmat * vec;
 
         const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
@@ -687,15 +694,18 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 
     // Multiply an additional phase factor for the non-analytic term.
 
+    const auto xf_tmp = system->get_cell("super").x_fractional;
+    const auto convmat = pcell.reciprocal_lattice_vector * system->get_cell("super").lattice_vector;
+
     for (iat = 0; iat < nat_prim; ++iat) {
         for (jat = 0; jat < nat_prim; ++jat) {
 
             for (i = 0; i < 3; ++i) {
-                xdiff[i] = system->get_cell("super").x_fractional(system->map_p2s[iat][0], i)
-                           - system->get_cell("super").x_fractional(system->map_p2s[jat][0], i);
+                xdiff[i] = xf_tmp(system->map_p2s[iat][0], i)
+                           - xf_tmp(system->map_p2s[jat][0], i);
             }
 
-            xdiff = pcell.reciprocal_lattice_vector * system->get_cell("super").lattice_vector * xdiff;
+            xdiff = convmat * xdiff;
 
             const double phase = xk_tmp[0] * xdiff[0] + xk_tmp[1] * xdiff[1] + xk_tmp[2] * xdiff[2];
 
@@ -720,7 +730,11 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
     double kepsilon[3];
     double kz1[3], kz2[3];
     double born_tmp[3][3];
-    double vec[3];
+    Eigen::Vector3d vec;
+    Eigen::Matrix3d convmat = system->get_cell("prim").reciprocal_lattice_vector
+            * system->get_cell("super").lattice_vector;
+
+    const auto xf_tmp = system->get_cell("super").x_fractional;
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -770,14 +784,16 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                         unsigned int cell = mindist_list[iat][atm_s2][j];
 
                         for (unsigned int k = 0; k < 3; ++k) {
-                            vec[k] = system->get_cell("super").x_fractional(system->map_p2s[jat][i], k) +
+                            vec[k] = xf_tmp(system->map_p2s[jat][i], k) +
                                      xshift_s[cell][k]
-                                     - system->get_cell("super").x_fractional(atm_p2, k);
+                                     - xf_tmp(atm_p2, k);
                         }
 
-                        rotvec(vec, vec, system->get_cell("super").lattice_vector);
-                        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
 
+//                        rotvec(vec, vec, system->get_cell("super").lattice_vector);
+//                        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
+
+                        vec = convmat * vec;
                         double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
                         exp_phase_tmp += std::exp(im * phase);

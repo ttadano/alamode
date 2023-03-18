@@ -1420,6 +1420,9 @@ double System::volume(const Eigen::Matrix3d &mat_in,
 const Cell &System::get_cell(const std::string celltype,
                              const std::string filetype) const
 {
+    // This function returns Cell object of the given celltype and filetype.
+    // It is very general but the overhead is high.
+    // So, this function should NOT be called from the inside the loop.
     std::string celltype_tmp, filetype_tmp;
     if (celltype == "SuperCell" || celltype == "Super" || celltype == "super") {
         celltype_tmp = "super";
