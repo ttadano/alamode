@@ -161,22 +161,9 @@ void Fcs_phonon::setup(std::string mode)
 
         const auto map_tmp = system->get_mapping_table("super");
 
-        std::cout << "mapping_table\n";
-
-        for (const auto &it : map_tmp.to_true_primitive) {
-            std::cout << it.atom_num << " " << it.tran_num << '\n';
-        }
-
         for (auto &it : force_constant_with_cell[order]) {
 
             relvecs.clear();
-//            atoms_prim_tmp.clear();
-//            coords_tmp.clear();
-
-            for (auto i = 0; i < order + 2; ++i) {
-//                atoms_prim_tmp.emplace_back(map_tmp.to_true_primitive[it.pairs[i].index/3].atom_num);
-//                coords_tmp.emplace_back(it.pairs[i].index % 3);
-            }
 
             for (auto i = 1; i < order + 2; ++i) {
                 const auto atom1_s = map_tmp.from_true_primitive[it.pairs[i].index / 3][it.pairs[i].tran];
@@ -192,8 +179,6 @@ void Fcs_phonon::setup(std::string mode)
             }
 
             it.relvecs = relvecs;
-//            it.atoms_p = atoms_prim_tmp;
-//            it.coords = coords_tmp;
         }
 
 //        for (const auto &it : force_constant_with_cell[order]) {

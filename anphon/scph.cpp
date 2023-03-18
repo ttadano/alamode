@@ -1847,8 +1847,6 @@ void Scph::setup_eigvecs()
                           evec_harmonic[ik], true);
 
         for (auto is = 0; is < ns; ++is) {
-
-            std::cout << "omega2_harmonic = " << omega2_harmonic[ik][is] << '\n';
             if (std::abs(omega2_harmonic[ik][is]) < eps) {
                 omega2_harmonic[ik][is] = 1.0e-30;
             }
@@ -3407,7 +3405,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
         for (j = 0; j < 3; ++j) {
             ofs_fc2 << std::setw(20) << xtmp(i, j);
         }
-        ofs_fc2 << std::setw(5) << system->get_cell("prim").kind[system->map_p2s[i][0]] + 1 << std::endl;
+        ofs_fc2 << std::setw(5) << system->get_cell("prim").kind[i] + 1 << std::endl;
     }
 
     //deallocate(xtmp);
