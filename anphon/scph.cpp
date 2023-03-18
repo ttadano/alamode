@@ -4758,6 +4758,7 @@ void Scph::compute_del_v3_strain_from_quartic(std::complex<double> ****del_v3_st
 
 // for cubic structure (BTO)
 // not for arbitrary crystal structures.
+
 void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(const std::complex<double> * const* const* const evec_harmonic,
                                                                    std::complex<double> ***del_v2_strain_from_cubic)
 {   
@@ -5486,7 +5487,6 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
     deallocate(del_v1_strain_from_harmonic_in_real_space_symm);
 
 }
-
 // for arbitrary crystal structures.
 // use finite difference for all 6 strains
 void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(const std::complex<double> * const* const* const evec_harmonic,
@@ -5507,7 +5507,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     int **symm_mapping_s;
     int **inv_translation_mapping;
 
-    std::vector<FcsClassExtent> fc2_deformed[3][3];
+    // std::vector<FcsClassExtent> fc2_deformed[3][3];
     std::vector<FcsClassExtent> fc2_tmp;
     FcsClassExtent fce_tmp;
 
@@ -5520,6 +5520,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     int ik;
     int is1, is2, is, js;
     int isymm;
+    int imode;
 
     std::complex<double> ***dymat_q, **dymat_tmp;
     std::complex<double> ***dymat_new;
@@ -5536,17 +5537,30 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     std::fstream fin_strain_mode_coupling;
     std::fstream fin_strain_mode_coupling_symmetrized;
 
-    double ****B_array_real_space_in;
-    int **exist_in;
-    double ****B_array_real_space_symmetrized;
+    // information on the finite strain
+    int nmode;
+    std::vector<std::string> mode_list;
+    std::vector<double> smag_list;
+    std::vector<double> weight_list;
+    std::vector<std::string> filename_list;
+    double smag_tmp, weight_tmp;
+    std::string mode_tmp, filename_tmp;
 
-    allocate(exist_in, 3, 3);
+
+    double ****B_array_real_space_in;
+    double ****B_array_real_space_symmetrized;
+    double **B_array_real_space_tmp;
+    int exist_in[3][3];
+    double weight_sum[3][3];
+
+    allocate(B_array_real_space_tmp, natmin*3, nat*3);
     allocate(B_array_real_space_in, 3, 3, natmin*3, nat*3);
     allocate(B_array_real_space_symmetrized, 3, 3, natmin*3, nat*3);
 
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             exist_in[ixyz1][ixyz2] = 0;
+            weight_sum[ixyz1][ixyz2] = 0.0;
             for(i1 = 0; i1 < natmin*3; i1++){
                 for(i2 = 0; i2 < nat*3; i2++){
                     B_array_real_space_in[ixyz1][ixyz2][i1][i2] = 0.0;
@@ -5559,16 +5573,41 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     // calculate B array by finite difference method and symmetrize.
     std::cout << "calculate B array by finite difference method and symmetrize." << std::endl;
 
-    fin_strain_mode_coupling.open("strain_mode.in");
+    std::string strainIFC_dir = "results/";
+
+    fin_strain_mode_coupling.open(strainIFC_dir + "strain_harmonic.in");
 
     if(!fin_strain_mode_coupling){
         std::cout << "Warning in Scph::calculate_del_v2_strain_from_cubic_by_finite_difference: file strain_mode.in could not open." << std::endl;
         std::cout << "all q0 is set 0." << std::endl;
         exit("calculate_del_v2_strain_from_cubic_by_finite_difference",
-                    "strain_mode.in not found");
+                    "strain_harmonic.in not found");
     }
 
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+    mode_list.clear();
+    smag_list.clear();
+    weight_list.clear();
+    filename_list.clear();
+
+    nmode = 0;
+    while(1){
+        if(fin_strain_mode_coupling >> mode_tmp >> smag_tmp >> weight_tmp >> filename_tmp){
+            mode_list.push_back(mode_tmp);
+            smag_list.push_back(smag_tmp);
+            weight_list.push_back(weight_tmp);
+            filename_list.push_back(filename_tmp);
+            nmode++;
+
+            std::cout << "mode : " << mode_tmp << ", smag = " 
+                << smag_tmp << ", weight = " << weight_tmp << ", filename : " << filename_tmp << std::endl;
+        }
+        else{
+            std::cout << "file reading done." << std::endl;
+            break;
+        }
+    }
+
+/*    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             if(ixyz1 > ixyz2){
                 continue;
@@ -5577,8 +5616,8 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
             fin_strain_mode_coupling >> deform_filenames[ixyz1][ixyz2] >> deform_amps[ixyz1][ixyz2];
         }
     }
-
-    // debug
+*/
+/*    // debug
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             if(ixyz1 > ixyz2){
@@ -5588,8 +5627,19 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
             std::cout << deform_filenames[ixyz1][ixyz2] << " " << deform_amps[ixyz1][ixyz2] << std::endl;
         }
     }
+*/
 
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+    std::vector<std::vector<FcsClassExtent>> fc2_deformed(nmode);
+
+    std::cout << "fc2_deformed prepared" << std::endl;
+
+    for(imode = 0; imode < nmode; imode++){
+        std::cout << strainIFC_dir + filename_list[imode] << std::endl;
+        std::cout << "load_fc2_xml_tmp" << std::endl;
+        fcs_phonon->load_fc2_xml_tmp(strainIFC_dir + filename_list[imode], fc2_deformed[imode]);
+    }
+
+/*    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             fc2_deformed[ixyz1][ixyz2].clear();
             if(ixyz1 > ixyz2){
@@ -5599,9 +5649,97 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
             fcs_phonon->load_fc2_xml_tmp(deform_filenames[ixyz1][ixyz2], fc2_deformed[ixyz1][ixyz2]);
         }
     }
+*/
 
     // calculate finite difference
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+            weight_sum[ixyz1][ixyz2] = 0.0;
+        }
+    }
+
+    for(imode = 0; imode < nmode; imode++){
+        if(mode_list[imode] == "xx"){
+            ixyz1 = ixyz2 = 0;
+        }
+        else if(mode_list[imode] == "yy"){
+            ixyz1 = ixyz2 = 1;
+        }
+        else if(mode_list[imode] == "zz"){
+            ixyz1 = ixyz2 = 2;
+        }
+        else if(mode_list[imode] == "xy"){
+            ixyz1 = 0;
+            ixyz2 = 1;
+        }
+        else if(mode_list[imode] == "yz"){
+            ixyz1 = 1;
+            ixyz2 = 2;
+        }
+        else if(mode_list[imode] == "zx"){
+            ixyz1 = 2;
+            ixyz2 = 0;
+        }
+        else{
+            exit("Scph::calculate_del_v2_strain_from_cubic_by_finite_difference",
+                 "Invalid name of the strain mode.");
+        }
+        std::cout << mode_list[imode] << " " << ixyz1 << " " << ixyz2 << std::endl;
+
+        for(i1 = 0; i1 < natmin*3; i1++){
+            for(i2 = 0; i2 < nat*3; i2++){
+                B_array_real_space_tmp[i1][i2] = 0.0;
+            }
+        }
+        std::cout << "make B_array_real_space_tmp" << std::endl;
+        for (const auto &it: fc2_deformed[imode]){
+            B_array_real_space_tmp[it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] += it.fcs_val;
+        }
+        for (const auto &it: fcs_phonon->fc2_ext){
+            B_array_real_space_tmp[it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] -= it.fcs_val;
+        }
+
+        if(ixyz1 == ixyz2){
+            for(i1 = 0; i1 < natmin*3; i1++){
+                for(i2 = 0; i2 < nat*3; i2++){
+                    B_array_real_space_in[ixyz1][ixyz2][i1][i2] += B_array_real_space_tmp[i1][i2]/smag_list[imode] * weight_list[imode];
+                }
+            }
+            weight_sum[ixyz1][ixyz2] += weight_list[imode];
+            std::cout << ixyz1 << ixyz2 << " " << weight_sum[ixyz1][ixyz2];
+        }
+        else{
+            for(i1 = 0; i1 < natmin*3; i1++){
+                for(i2 = 0; i2 < nat*3; i2++){
+                    B_array_real_space_in[ixyz1][ixyz2][i1][i2] += B_array_real_space_tmp[i1][i2]/smag_list[imode] * weight_list[imode];
+                    B_array_real_space_in[ixyz2][ixyz1][i1][i2] += B_array_real_space_in[ixyz1][ixyz2][i1][i2];
+                }
+            }
+            weight_sum[ixyz1][ixyz2] += weight_list[imode];
+            weight_sum[ixyz2][ixyz1] += weight_list[imode];
+
+            std::cout << ixyz1 << ixyz2 << " " << weight_sum[ixyz1][ixyz2];
+
+        }
+    }
+
+    // check weight_sum
+    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+            if(std::fabs(weight_sum[ixyz1][ixyz2] - 1.0) < eps6){
+                exist_in[ixyz1][ixyz2] = 1;
+            }
+            else if(std::fabs(weight_sum[ixyz1][ixyz2]) < eps6){
+                exist_in[ixyz1][ixyz2] = 0;
+            }
+            else{
+                exit("calculate_del_v2_strain_from_cubic_by_finite_difference",
+                     "Sum of weights must be 1 or 0 for each mode.");
+            }
+        }
+    }
+    // calculate finite difference
+/*    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             if(ixyz1 > ixyz2){
                 continue;
@@ -5615,8 +5753,8 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
             }
         }
     }
-
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+*/
+/*    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
             if(ixyz1 > ixyz2){
                 continue;
@@ -5628,7 +5766,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
                     }
                 }
             }
-            else /*if(ixyz1 < ixyz2)*/{
+            else{
                 for(i1 = 0; i1 < natmin*3; i1++){
                     for(i2 = 0; i2 < nat*3; i2++){
                         B_array_real_space_in[ixyz1][ixyz2][i1][i2] /= deform_amps[ixyz1][ixyz2];
@@ -5638,7 +5776,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
             }
         }
     }
-
+*/
     // make mapping information
     allocate(symm_mapping_s, symmetry->SymmListWithMap_ref.size(), nat);
     make_supercell_mapping_by_symmetry_operations(symm_mapping_s);
@@ -5837,9 +5975,9 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
         }
     }
 
-    deallocate(exist_in);
-    deallocate(B_array_real_space_in);
+    deallocate(B_array_real_space_tmp);
     deallocate(B_array_real_space_symmetrized);
+    deallocate(B_array_real_space_in);
     
     deallocate(dymat_q);
     deallocate(dymat_tmp);
@@ -5848,7 +5986,6 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     deallocate(is_acoustic);
 
 }
-
 
 
 
