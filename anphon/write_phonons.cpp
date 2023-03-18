@@ -86,14 +86,14 @@ void Writes::write_input_vars()
     }
     std::cout << std::endl;
 
-    std::cout << "  NKD = " << system->get_cell("prim").number_of_elems << "; KD = ";
-    for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
+    std::cout << "  NKD = " << system->nkd << "; KD = ";
+    for (i = 0; i < system->nkd; ++i) {
         std::cout << std::setw(4) << system->symbol_kd[i];
     }
     std::cout << std::endl;
     std::cout << "  MASS = ";
     if (system->mass_kd) {
-        for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
+        for (i = 0; i < system->nkd; ++i) {
             std::cout << std::setw(10) << system->mass_kd[i];
         }
     }
@@ -196,7 +196,7 @@ void Writes::write_input_vars()
         if (isotope->include_isotope) {
             std::cout << "  ISOFACT = ";
             if (isotope->isotope_factor) {
-                for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
+                for (i = 0; i < system->nkd; ++i) {
                     std::cout << std::scientific
                               << std::setw(13) << isotope->isotope_factor[i];
                 }
@@ -2226,7 +2226,8 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     // Get eigenvalues and eigenvectors at xk
 
-    dynamical->eval_k(xk, kvec, fcs_phonon->fc2_ext, eval, evec, true);
+    dynamical->eval_k(xk, kvec, fcs_phonon->fc2_ext, fcs_phonon->force_constant_with_cell[0],
+                      eval, evec, true);
 
     for (i = 0; i < ns; ++i) {
         for (j = 0; j < ns; ++j) {

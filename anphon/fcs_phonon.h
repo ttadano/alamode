@@ -84,7 +84,7 @@ public:
 };
 
 struct AtomCellSuper {
-    unsigned int index;
+    unsigned int index;// flattened array of atom_s * 3 + coord
     unsigned int tran;
     unsigned int cell_s;
 };
@@ -98,7 +98,10 @@ inline bool operator<(const AtomCellSuper &a,
 class FcsArrayWithCell {
 public:
     std::vector<AtomCellSuper> pairs;
+    std::vector<int> atoms_p;
+    std::vector<int> coords;
     double fcs_val;
+    std::vector<Eigen::Vector3d> relvecs;
 
     FcsArrayWithCell() {};
 
@@ -121,8 +124,11 @@ public:
             index_b.push_back(obj.pairs[i].tran);
             index_b.push_back(obj.pairs[i].cell_s);
         }
-        return lexicographical_compare(index_a.begin(), index_a.end(), index_b.begin(), index_b.end());
+        return lexicographical_compare(index_a.begin(), index_a.end(),
+                                       index_b.begin(), index_b.end());
     }
+
+
 };
 
 class Fcs_phonon : protected Pointers {
@@ -152,6 +158,10 @@ private:
     void load_fc2_xml();
 
     void load_fcs_xml() const;
+
+    void load_fcs_from_file() const;
+
+    void parse_fcs_from_h5() const;
 
     void examine_translational_invariance(int,
                                           unsigned int,

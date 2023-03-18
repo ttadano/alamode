@@ -120,6 +120,7 @@ public:
     void eval_k(const double *,
                 const double *,
                 const std::vector<FcsClassExtent> &,
+                const std::vector<FcsArrayWithCell> &,
                 double *,
                 std::complex<double> **,
                 const bool) const;
@@ -146,6 +147,10 @@ public:
                          const std::vector<FcsClassExtent> &,
                          std::complex<double> **) const;
 
+    void calc_analytic_k(const double *,
+                         const std::vector<FcsArrayWithCell> &,
+                         std::complex<double> **) const;
+
     void calc_nonanalytic_k(const double *,
                             const double *,
                             std::complex<double> **) const;
@@ -163,6 +168,9 @@ public:
     std::vector<std::vector<double>> get_projection_directions() const;
 
     void set_projection_directions(const std::vector<std::vector<double>> projections_in);
+
+    double **get_xrs_image() const;
+
 
 private:
     void set_default_variables();
@@ -191,6 +199,7 @@ private:
                                const double *const *xk_in,
                                const double *const *kvec_na_in,
                                const std::vector<FcsClassExtent> &fc2_ext_in,
+                               const std::vector<FcsArrayWithCell> &fc2,
                                const std::vector<FcsClassExtent> &fc2_without_dipole_in,
                                const bool require_evec,
                                double **eval_ret,

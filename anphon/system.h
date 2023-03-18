@@ -92,6 +92,8 @@ public:
 
     int get_atomic_number_by_name(const std::string &);
 
+    const std::vector<double> &get_invsqrt_mass() const;
+
 private:
 
     enum LatticeType {
@@ -105,6 +107,8 @@ private:
     MappingTable map_scell_fc2, map_pcell_fc2;
     MappingTable map_scell_fc3, map_pcell_fc3;
     MappingTable map_scell_fc4, map_pcell_fc4;
+
+    std::vector<double> invsqrt_mass_p;
 
     void set_default_variables();
 

@@ -160,8 +160,8 @@ void PHON::setup_base() const
     system->setup();
     symmetry->setup_symmetry();
     kpoint->kpoint_setups(mode);
-    fcs_phonon->setup(mode);
     dynamical->setup_dynamical();
+    fcs_phonon->setup(mode);
     phonon_velocity->setup_velocity();
     integration->setup_integration();
     dos->setup();

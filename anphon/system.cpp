@@ -280,6 +280,13 @@ void System::setup()
     for (i = 0; i < nat_anharm; ++i) {
         mass_anharm[i] = mass_kd[kd_anharm[i]] * amu_ry;
     }
+
+    invsqrt_mass_p.resize(primcell_base.number_of_atoms);
+    for (i = 0; i < primcell_base.number_of_atoms; ++i) {
+        invsqrt_mass_p[i]
+        = 1.0 / std::sqrt(mass_kd[primcell_base.kind[i]] * amu_ry);
+    }
+
     MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -1526,4 +1533,9 @@ const MappingTable &System::get_mapping_table(const std::string celltype,
     }
 
     return map_scell_base; // dummy for supressing compiler warning
+}
+
+const std::vector<double> &System::get_invsqrt_mass() const
+{
+    return invsqrt_mass_p;
 }

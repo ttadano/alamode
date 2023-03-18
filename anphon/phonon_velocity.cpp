@@ -142,6 +142,7 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStr
                 dynamical->eval_k(xk_shift[idiff],
                                   kpoint_bs_in->kvec_na[ik],
                                   fc2_ext_in,
+                                  fcs_phonon->force_constant_with_cell[0],
                                   omega_shift[idiff],
                                   evec_tmp, false);
             }
@@ -487,6 +488,7 @@ void PhononVelocity::phonon_vel_k(const double *xk_in,
                 dynamical->eval_k(xk_shift[idiff],
                                   kvec_na_tmp[idiff],
                                   fcs_phonon->fc2_ext,
+                                  fcs_phonon->force_constant_with_cell[0],
                                   omega_shift[idiff],
                                   evec_tmp,
                                   false);

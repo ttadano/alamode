@@ -362,6 +362,7 @@ double Dynamical::distance(double *x1,
 void Dynamical::eval_k(const double *xk_in,
                        const double *kvec_in,
                        const std::vector<FcsClassExtent> &fc2_ext,
+                       const std::vector<FcsArrayWithCell> &fc2,
                        double *eval_out,
                        std::complex<double> **evec_out,
                        const bool require_evec) const
@@ -373,7 +374,8 @@ void Dynamical::eval_k(const double *xk_in,
 
     allocate(dymat_k, neval, neval);
 
-    calc_analytic_k(xk_in, fc2_ext, dymat_k);
+    //calc_analytic_k(xk_in, fc2_ext, dymat_k);
+    calc_analytic_k(xk_in, fc2, dymat_k);
 
     if (nonanalytic) {
 
@@ -571,7 +573,7 @@ void Dynamical::calc_analytic_k(const double *xk_in,
     int i;
     Eigen::Vector3d vec;
     Eigen::Matrix3d convmat = system->get_cell("prim").reciprocal_lattice_vector
-            * system->get_cell("super").lattice_vector;
+                              * system->get_cell("super").lattice_vector;
 
     const auto xf_tmp = system->get_cell("super").x_fractional;
 
@@ -592,14 +594,10 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto atm1_s = system->map_p2s[atm1_p][0];
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
-        // TODO: This part is slow. should be modified.
         for (i = 0; i < 3; ++i) {
             vec[i] = xf_tmp(atm2_s, i) + xshift_s[icell][i]
                      - xf_tmp(system->map_p2s[atm2_p][0], i);
         }
-
-//        rotvec(vec, vec, system->get_cell("super").lattice_vector);
-//        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
 
         vec = convmat * vec;
 
@@ -607,6 +605,29 @@ void Dynamical::calc_analytic_k(const double *xk_in,
 
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
                 += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass[atm1_s] * system->mass[atm2_s]);
+    }
+}
+
+void Dynamical::calc_analytic_k(const double *xk_in,
+                                const std::vector<FcsArrayWithCell> &fc2_in,
+                                std::complex<double> **dymat_out) const
+{
+    for (auto i = 0; i < neval; ++i) {
+        for (auto j = 0; j < neval; ++j) {
+            dymat_out[i][j] = std::complex<double>(0.0, 0.0);
+        }
+    }
+
+    const auto invsqrt_mass = system->get_invsqrt_mass();
+
+    for (const auto &it: fc2_in) {
+        const auto phase = tpi * (it.relvecs[0][0] * xk_in[0]
+                                  + it.relvecs[0][1] * xk_in[1]
+                                  + it.relvecs[0][2] * xk_in[2]);
+        dymat_out[it.pairs[0].index][it.pairs[1].index]
+                += it.fcs_val * std::exp(im * phase)
+                        * invsqrt_mass[it.pairs[0].index/3]
+                        * invsqrt_mass[it.pairs[1].index/3];
     }
 }
 
@@ -732,7 +753,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
     double born_tmp[3][3];
     Eigen::Vector3d vec;
     Eigen::Matrix3d convmat = system->get_cell("prim").reciprocal_lattice_vector
-            * system->get_cell("super").lattice_vector;
+                              * system->get_cell("super").lattice_vector;
 
     const auto xf_tmp = system->get_cell("super").x_fractional;
 
@@ -847,6 +868,7 @@ void Dynamical::diagonalize_dynamical_all()
                               kpoint->kpoint_general->xk,
                               kpoint->kpoint_general->kvec_na,
                               fcs_phonon->fc2_ext,
+                              fcs_phonon->force_constant_with_cell[0],
                               ewald->fc2_without_dipole,
                               eigenvectors,
                               eval_tmp,
@@ -889,6 +911,7 @@ void Dynamical::diagonalize_dynamical_all()
                               kpoint->kpoint_bs->xk,
                               kpoint->kpoint_bs->kvec_na,
                               fcs_phonon->fc2_ext,
+                              fcs_phonon->force_constant_with_cell[0],
                               ewald->fc2_without_dipole,
                               eigenvectors,
                               eval_tmp,
@@ -931,6 +954,7 @@ void Dynamical::diagonalize_dynamical_all()
                               dos->kmesh_dos->xk,
                               dos->kmesh_dos->kvec_na,
                               fcs_phonon->fc2_ext,
+                              fcs_phonon->force_constant_with_cell[0],
                               ewald->fc2_without_dipole,
                               eigenvectors,
                               eval_tmp,
@@ -980,6 +1004,7 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
                                       const double *const *xk_in,
                                       const double *const *kvec_na_in,
                                       const std::vector<FcsClassExtent> &fc2_ext_in,
+                                      const std::vector<FcsArrayWithCell> &fc2,
                                       const std::vector<FcsClassExtent> &fc2_without_dipole_in,
                                       const bool require_evec,
                                       double **eval_ret,
@@ -1006,6 +1031,7 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
             eval_k(&xk_in[ik][0],
                    &kvec_na_in[ik][0],
                    fc2_ext_in,
+                   fc2,
                    eval_ret[ik],
                    evec_ret[ik],
                    require_evec);
@@ -1796,4 +1822,9 @@ void Dynamical::set_projection_directions(const std::vector<std::vector<double>>
 std::vector<std::vector<double>> Dynamical::get_projection_directions() const
 {
     return projection_directions;
+}
+
+double **Dynamical::get_xrs_image() const
+{
+    return xshift_s;
 }

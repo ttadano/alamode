@@ -1842,10 +1842,13 @@ void Scph::setup_eigvecs()
         dynamical->eval_k(kmesh_dense->xk[ik],
                           kmesh_dense->kvec_na[ik],
                           fcs_phonon->fc2_ext,
+                          fcs_phonon->force_constant_with_cell[0],
                           omega2_harmonic[ik],
                           evec_harmonic[ik], true);
 
         for (auto is = 0; is < ns; ++is) {
+
+            std::cout << "omega2_harmonic = " << omega2_harmonic[ik][is] << '\n';
             if (std::abs(omega2_harmonic[ik][is]) < eps) {
                 omega2_harmonic[ik][is] = 1.0e-30;
             }

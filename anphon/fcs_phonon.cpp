@@ -11,6 +11,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mpi_common.h"
 #include "fcs_phonon.h"
 #include "constants.h"
+#include "dynamical.h"
 #include "error.h"
 #include "gruneisen.h"
 #include "memory.h"
@@ -26,6 +27,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <Eigen/LU>
 
 using namespace PHON_NS;
 
@@ -144,6 +146,67 @@ void Fcs_phonon::setup(std::string mode)
 
     MPI_Bcast_fc2_ext();
     MPI_Bcast_fcs_array(maxorder);
+
+
+    std::vector<Eigen::Vector3d> relvecs;
+    Eigen::Vector3d relvec_tmp;
+    std::vector<int> atoms_prim_tmp, coords_tmp;
+
+    const auto xf_image = dynamical->get_xrs_image();
+    const auto xf_tmp = system->get_cell("super").x_fractional;
+    Eigen::Matrix3d convmat = system->get_cell("prim").lattice_vector.inverse()
+                              * system->get_cell("super").lattice_vector;
+
+    for (auto order = 0; order < maxorder; ++order) {
+
+        const auto map_tmp = system->get_mapping_table("super");
+
+        std::cout << "mapping_table\n";
+
+        for (const auto &it : map_tmp.to_true_primitive) {
+            std::cout << it.atom_num << " " << it.tran_num << '\n';
+        }
+
+        for (auto &it : force_constant_with_cell[order]) {
+
+            relvecs.clear();
+//            atoms_prim_tmp.clear();
+//            coords_tmp.clear();
+
+            for (auto i = 0; i < order + 2; ++i) {
+//                atoms_prim_tmp.emplace_back(map_tmp.to_true_primitive[it.pairs[i].index/3].atom_num);
+//                coords_tmp.emplace_back(it.pairs[i].index % 3);
+            }
+
+            for (auto i = 1; i < order + 2; ++i) {
+                const auto atom1_s = map_tmp.from_true_primitive[it.pairs[i].index / 3][it.pairs[i].tran];
+                const auto atom2_s = map_tmp.from_true_primitive[it.pairs[i].index / 3][0];
+                for (auto j = 0; j < 3; ++j) {
+                    relvec_tmp[j] = xf_tmp(atom1_s, j) + xf_image[it.pairs[i].cell_s][j]
+                            - xf_tmp(atom2_s, j);
+                }
+
+                relvec_tmp = convmat * relvec_tmp;
+
+                relvecs.emplace_back(relvec_tmp);
+            }
+
+            it.relvecs = relvecs;
+//            it.atoms_p = atoms_prim_tmp;
+//            it.coords = coords_tmp;
+        }
+
+//        for (const auto &it : force_constant_with_cell[order]) {
+//            for (auto i = 0; i < order + 2; ++i) {
+//                std::cout << std::setw(4) << it.pairs[i].index;
+//            }
+//            for (auto i = 0; i < order + 1; ++i) {
+//                std::cout << std::setw(10) << it.relvecs[i].transpose();
+//            }
+//            std::cout << std::setw(15) << it.fcs_val << '\n';
+//        }
+    }
+
 }
 
 void Fcs_phonon::load_fc2_xml()
@@ -217,6 +280,9 @@ void Fcs_phonon::load_fcs_xml() const
 
     AtomCellSuper ivec_tmp{};
     std::vector<AtomCellSuper> ivec_with_cell, ivec_copy;
+    std::vector<Eigen::Vector3d> relvecs;
+
+    Eigen::Vector3d relvec1, relvec2, relvec3;
 
     std::cout << "  Reading force constants from the XML file ... ";
 
@@ -286,7 +352,6 @@ void Fcs_phonon::load_fcs_xml() const
                             do {
 
                                 ivec_copy.clear();
-
                                 for (i = 0; i < ivec_with_cell.size(); ++i) {
                                     atmn = ivec_with_cell[i].index / 3;
                                     xyz = ivec_with_cell[i].index % 3;
