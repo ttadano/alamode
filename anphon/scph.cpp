@@ -1572,8 +1572,8 @@ void Scph::setup_kmesh()
 
     kmesh_coarse = new KpointMeshUniform(kmesh_interpolate);
     kmesh_dense = new KpointMeshUniform(kmesh_scph);
-    kmesh_coarse->setup(symmetry->SymmList, system->rlavec_p, false);
-    kmesh_dense->setup(symmetry->SymmList, system->rlavec_p, false);
+    kmesh_coarse->setup(symmetry->SymmList, system->get_primcell().reciprocal_lattice_vector, false);
+    kmesh_dense->setup(symmetry->SymmList, system->get_primcell().reciprocal_lattice_vector, false);
 
     if (mympi->my_rank == 0) {
 //        if (verbosity > 0) {
@@ -3424,8 +3424,8 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                 for (icell = 0; icell < ncell; ++icell) {
                     delta_fc2[is][js][icell]
                             = delta_dymat[iT][is][js][icell].real()
-                              * std::sqrt(system->mass[system->map_p2s[iat][0]]
-                                          * system->mass[system->map_p2s[jat][0]]);
+                              * std::sqrt(system->mass_s[system->map_p2s[iat][0]]
+                                          * system->mass_s[system->map_p2s[jat][0]]);
                 }
 
             }

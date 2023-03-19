@@ -1083,7 +1083,7 @@ bool Kpoint::in_first_BZ(const double *xk_in) const
 
     for (i = 0; i < 3; ++i) tmp[i] = xk_in[i];
 
-    rotvec(tmp, tmp, system->rlavec_p, 'T');
+    rotvec(tmp, tmp, system->get_primcell().reciprocal_lattice_vector, 'T');
 
     const auto dist_min = std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
 
@@ -1103,7 +1103,7 @@ bool Kpoint::in_first_BZ(const double *xk_in) const
                 tmp[1] = xk_in[1] - static_cast<double>(j);
                 tmp[2] = xk_in[2] - static_cast<double>(k);
 
-                rotvec(tmp, tmp, system->rlavec_p, 'T');
+                rotvec(tmp, tmp, system->get_primcell().reciprocal_lattice_vector, 'T');
                 const auto dist = std::sqrt(tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2]);
 
                 if (dist < dist_min) {

@@ -251,8 +251,8 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
                      - system->get_cell("super", "fc3").x_fractional(system->map_p2s_anharm[atm2][0], i);
         }
 
-        rotvec(vec, vec, system->lavec_s_anharm);
-        rotvec(vec, vec, system->rlavec_p);
+        rotvec(vec, vec, system->get_cell("super", "fc3").lattice_vector);
+        rotvec(vec, vec, system->get_primcell().reciprocal_lattice_vector);
 
         double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
@@ -376,7 +376,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                          + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec, vec, system->lavec_s_anharm);
+            rotvec(vec, vec, system->get_cell("super", "fc3").lattice_vector);
 
             fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
         }
@@ -473,7 +473,7 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                          + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec, vec, system->lavec_s_anharm);
+            rotvec(vec, vec, system->get_cell("super", "fc3").lattice_vector);
 
             fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
         }

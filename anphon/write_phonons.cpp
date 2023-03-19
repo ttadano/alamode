@@ -779,8 +779,8 @@ void Writes::write_phonon_vel() const
     allocate(phvel_bs, nk, dynamical->neval);
 
     phonon_velocity->get_phonon_group_velocity_bandstructure(kpoint->kpoint_bs,
-                                                             system->lavec_p,
-                                                             system->rlavec_p,
+                                                             system->get_primcell().lattice_vector,
+                                                             system->get_primcell().reciprocal_lattice_vector,
                                                              fcs_phonon->fc2_ext,
                                                              ewald->fc2_without_dipole,
                                                              phvel_bs);
@@ -837,7 +837,7 @@ void Writes::write_phonon_vel_all() const
     allocate(phvel_xyz, nk, ns, 3);
 
     phonon_velocity->get_phonon_group_velocity_mesh(*dos->kmesh_dos,
-                                                    system->lavec_p,
+                                                    system->get_primcell().lattice_vector,
                                                     false,
                                                     phvel_xyz);
     unsigned int ik, is;
@@ -1201,7 +1201,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
                 for (k = 0; k < 3; ++k) {
                     ofs_anime << std::setw(15)
                               << evec_in[ik][imode][3 * j + k].real()
-                                 / (std::sqrt(system->mass[m]) * norm);
+                                 / (std::sqrt(system->mass_s[m]) * norm);
                 }
                 ofs_anime << std::endl;
             }
@@ -1278,7 +1278,7 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_evec << std::setw(15) << system->rlavec_p(i, j);
+            ofs_evec << std::setw(15) << system->get_primcell().reciprocal_lattice_vector(i, j);
         }
         ofs_evec << std::endl;
     }
@@ -1461,7 +1461,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
     for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
         for (j = 0; j < 3; ++j) xtmp[j] = system->get_cell("super").x_fractional(system->map_p2s[i][0], j);
         rotvec(xtmp, xtmp, system->get_cell("super").lattice_vector);
-        rotvec(xtmp, xtmp, system->rlavec_p);
+        rotvec(xtmp, xtmp, system->get_primcell().reciprocal_lattice_vector);
         for (j = 0; j < 3; ++j) xtmp[j] /= 2.0 * pi;
         for (j = 0; j < 3; ++j) {
             while (xtmp[j] >= 1.0) {
@@ -2206,7 +2206,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
              "The supercell size is not commensurate with given k point.");
     }
 
-    rotvec(kvec, xk, system->rlavec_p, 'T');
+    rotvec(kvec, xk, system->get_primcell().reciprocal_lattice_vector, 'T');
     const auto norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
     if (norm > eps) {
         for (i = 0; i < 3; ++i) kvec[i] /= norm;
@@ -2246,7 +2246,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
         }
     }
     xtmp = xtmp * system->get_cell("super").lattice_vector.transpose();
-    xtmp = xtmp * system->lavec_p.inverse().transpose();
+    xtmp = xtmp * system->get_primcell().lattice_vector.inverse().transpose();
 
     // Prepare fractional coordinates of atoms in the supercell
     unsigned int icell = 0;
@@ -2274,7 +2274,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     for (i = 0; i < natmin; ++i) {
         k = system->map_p2s[i][0];
         kd_tmp[i] = system->symbol_kd[system->get_cell("prim").kind[k]];
-        mass[i] = system->mass[k];
+        mass[i] = system->mass_s[k];
     }
 
     // Prepare lattice vectors of the supercell

@@ -739,7 +739,7 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
         for (k = 0; k < 3; ++k) {
             ddyn_out[k][3 * atm1_p + xyz1][3 * atm2_p + xyz2]
                     += it.fcs_val * std::exp(im * phase) * vec[k] / std::sqrt(
-                    system->mass[atm1_s] * system->mass[atm2_s]);
+                    system->mass_s[atm1_s] * system->mass_s[atm2_s]);
         }
 
     }
@@ -842,7 +842,7 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
         for (k = 0; k < 3; ++k) {
             ddymat[3 * atm1_p + xyz1][3 * atm2_p + xyz2][k]
                     += it.fcs_val * std::exp(im * phase) * vec2[k] / std::sqrt(
-                    system->mass[atm1_s] * system->mass[atm2_s]);
+                    system->mass_s[atm1_s] * system->mass_s[atm2_s]);
         }
     }
 

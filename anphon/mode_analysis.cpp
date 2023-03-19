@@ -1101,7 +1101,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             xk_norm[j] = xk_vec1[j];
         }
 
-        rotvec(xk_norm, xk_norm, system->rlavec_p, 'T');
+        rotvec(xk_norm, xk_norm, system->get_primcell().reciprocal_lattice_vector, 'T');
         const auto norm_ref = std::sqrt(xk_norm[0] * xk_norm[0]
                                         + xk_norm[1] * xk_norm[1]
                                         + xk_norm[2] * xk_norm[2]);
@@ -1131,7 +1131,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
         for (j = 0; j < nk_plane; ++j) {
             for (k = 0; k < 3; ++k) kvec_plane[j][k] = dynamical->fold(xk_plane[j][k]);
-            rotvec(kvec_plane[j], kvec_plane[j], system->rlavec_p, 'T');
+            rotvec(kvec_plane[j], kvec_plane[j], system->get_primcell().reciprocal_lattice_vector, 'T');
             norm = std::sqrt(kvec_plane[j][0] * kvec_plane[j][0]
                              + kvec_plane[j][1] * kvec_plane[j][1]
                              + kvec_plane[j][2] * kvec_plane[j][2]);
@@ -1161,7 +1161,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             mode = kslist_fstate_k[j].nmode;
 
             for (k = 0; k < 3; ++k) kvec[k] = kslist_fstate_k[j].xk[k];
-            rotvec(kvec, kvec, system->rlavec_p, 'T');
+            rotvec(kvec, kvec, system->get_primcell().reciprocal_lattice_vector, 'T');
             norm = std::sqrt(kvec[0] * kvec[0]
                              + kvec[1] * kvec[1]
                              + kvec[2] * kvec[2]);
@@ -1193,7 +1193,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
             for (k = 0; k < nk_plane; ++k) {
                 for (l = 0; l < 3; ++l) kvec_plane[k][l] = xk_plane2[k][l];
-                rotvec(kvec_plane[k], kvec_plane[k], system->rlavec_p, 'T');
+                rotvec(kvec_plane[k], kvec_plane[k], system->get_primcell().reciprocal_lattice_vector, 'T');
                 norm = std::sqrt(kvec_plane[k][0] * kvec_plane[k][0]
                                  + kvec_plane[k][1] * kvec_plane[k][1]
                                  + kvec_plane[k][2] * kvec_plane[k][2]);
@@ -1329,7 +1329,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                         for (k = 0; k < 3; ++k) {
                             xk_tmp[k] = (*it2)[k];
                         }
-                        rotvec(xk_tmp, xk_tmp, system->rlavec_p, 'T');
+                        rotvec(xk_tmp, xk_tmp, system->get_primcell().reciprocal_lattice_vector, 'T');
 
                         norm1 = 0.0;
                         dprod = 0.0;
@@ -1350,7 +1350,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                         for (k = 0; k < 3; ++k) {
                             xk_tmp[k] = (*it2)[k];
                         }
-                        rotvec(xk_tmp, xk_tmp, system->rlavec_p, 'T');
+                        rotvec(xk_tmp, xk_tmp, system->get_primcell().reciprocal_lattice_vector, 'T');
 
                         norm1 = 0.0;
                         dprod = 0.0;
@@ -1380,8 +1380,8 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         deallocate(eval_tmp);
         deallocate(evec);
 
-        rotvec(xk_vec1, xk_vec1, system->rlavec_p, 'T');
-        rotvec(xk_vec2, xk_vec2, system->rlavec_p, 'T');
+        rotvec(xk_vec1, xk_vec1, system->get_primcell().reciprocal_lattice_vector, 'T');
+        rotvec(xk_vec2, xk_vec2, system->get_primcell().reciprocal_lattice_vector, 'T');
 
         norm1 = 0.0;
         double norm2 = 0.0;
@@ -1421,7 +1421,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         mode = kslist_fstate_k[i].nmode;
 
         for (j = 0; j < 3; ++j) kvec[j] = dynamical->fold(xk1[j]);
-        rotvec(kvec, kvec, system->rlavec_p, 'T');
+        rotvec(kvec, kvec, system->get_primcell().reciprocal_lattice_vector, 'T');
         norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
 
         if (norm > eps) for (j = 0; j < 3; ++j) kvec[j] /= norm;
@@ -1514,7 +1514,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                         for (l = 0; l < 3; ++l) xk3[l] = dynamical->fold(-xk1[l] - xk_sym[l]);
 
                         for (l = 0; l < 3; ++l) kvec[l] = xk_sym[l];
-                        rotvec(kvec, kvec, system->rlavec_p, 'T');
+                        rotvec(kvec, kvec, system->get_primcell().reciprocal_lattice_vector, 'T');
                         norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
 
                         if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;
@@ -1523,7 +1523,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
                                           eval[1], evec[1], true);
 
                         for (l = 0; l < 3; ++l) kvec[l] = xk3[l];
-                        rotvec(kvec, kvec, system->rlavec_p, 'T');
+                        rotvec(kvec, kvec, system->get_primcell().reciprocal_lattice_vector, 'T');
                         norm = std::sqrt(kvec[0] * kvec[0] + kvec[1] * kvec[1] + kvec[2] * kvec[2]);
 
                         if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;

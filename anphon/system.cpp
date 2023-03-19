@@ -49,7 +49,7 @@ void System::set_default_variables()
     kd = nullptr;
     kd_anharm = nullptr;
     mass_kd = nullptr;
-    mass = nullptr;
+    mass_s = nullptr;
     mass_anharm = nullptr;
     symbol_kd = nullptr;
     map_p2s = nullptr;
@@ -71,8 +71,8 @@ void System::deallocate_variables()
     if (mass_kd) {
         deallocate(mass_kd);
     }
-    if (mass) {
-        deallocate(mass);
+    if (mass_s) {
+        deallocate(mass_s);
     }
     if (mass_anharm) {
         deallocate(mass_anharm);
@@ -118,10 +118,6 @@ void System::setup()
     update_primitive_lattice();
 
     load_system_info_from_XML();
-
-    recips(lavec_s, rlavec_s);
-    recips(lavec_s_anharm, rlavec_s_anharm);
-    recips(lavec_p, rlavec_p);
 
     if (mympi->my_rank == 0) {
         cout << " -----------------------------------------------------------------" << endl;
@@ -266,16 +262,16 @@ void System::setup()
 
     // Check the consistency of FCSXML and FC2XML
     MPI_Bcast(&fcs_phonon->update_fc2, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
-    if (fcs_phonon->update_fc2) {
-        allocate(map_p2s_anharm_orig, natmin, ntran_anharm);
-        check_consistency_primitive_lattice();
-    }
+//    if (fcs_phonon->update_fc2) {
+//        allocate(map_p2s_anharm_orig, natmin, ntran_anharm);
+//        check_consistency_primitive_lattice();
+//    }
     // Atomic masses in Rydberg unit
 
-    allocate(mass, nat);
+    allocate(mass_s, nat);
     allocate(mass_anharm, nat_anharm);
     for (i = 0; i < nat; ++i) {
-        mass[i] = mass_kd[kd[i]] * amu_ry;
+        mass_s[i] = mass_kd[kd[i]] * amu_ry;
     }
     for (i = 0; i < nat_anharm; ++i) {
         mass_anharm[i] = mass_kd[kd_anharm[i]] * amu_ry;
@@ -873,12 +869,12 @@ void System::load_system_info_from_XML()
             ss << get_value_from_xml(pt,
                                      "Data.Structure.LatticeVector.a"
                                      + std::to_string(i + 1));
-            ss >> lavec_s(0, i) >> lavec_s(1, i) >> lavec_s(2, i);
+//            ss >> lavec_s(0, i) >> lavec_s(1, i) >> lavec_s(2, i);
         }
 
         // Parse atomic elements and coordinates
 
-        xr_s.resize(nat, 3);
+        //xr_s.resize(nat, 3);
         allocate(kd, nat);
 
         BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
@@ -905,7 +901,7 @@ void System::load_system_info_from_XML()
                                  "index is out of range");
 
                         kd[index] = dict_atomic_kind[str_element];
-                        ss >> xr_s(index, 0) >> xr_s(index, 1) >> xr_s(index, 2);
+//                        ss >> xr_s(index, 0) >> xr_s(index, 1) >> xr_s(index, 2);
                     }
 
         dict_atomic_kind.clear();
@@ -974,13 +970,13 @@ void System::load_system_info_from_XML()
         int j;
         nat_anharm = nat;
         ntran_anharm = ntran;
-        xr_s_anharm.resize(nat_anharm, 3);
+        //xr_s_anharm.resize(nat_anharm, 3);
         allocate(kd_anharm, nat_anharm);
         allocate(map_p2s_anharm, natmin, ntran_anharm);
         allocate(map_s2p_anharm, nat_anharm);
 
-        lavec_s_anharm = lavec_s;
-        xr_s_anharm = xr_s;
+        //lavec_s_anharm = lavec_s;
+        //xr_s_anharm = xr_s;
         for (i = 0; i < nat_anharm; ++i) {
             kd_anharm[i] = kd[i];
             map_s2p_anharm[i] = map_s2p[i];
@@ -1043,12 +1039,12 @@ void System::load_system_info_from_XML()
                 ss << get_value_from_xml(pt,
                                          "Data.Structure.LatticeVector.a"
                                          + std::to_string(i + 1));
-                ss >> lavec_s(0, i) >> lavec_s(1, i) >> lavec_s(2, i);
+//                ss >> lavec_s(0, i) >> lavec_s(1, i) >> lavec_s(2, i);
             }
 
             // Parse atomic elements and coordinates
 
-            xr_s.resize(nat, 3);
+            //xr_s.resize(nat, 3);
             allocate(kd, nat);
 
             BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
@@ -1073,7 +1069,7 @@ void System::load_system_info_from_XML()
                                      "index is out of range");
 
                             kd[index_kd] = dict_atomic_kind[str_element];
-                            ss >> xr_s(index_kd, 0) >> xr_s(index_kd, 1) >> xr_s(index_kd, 2);
+//                            ss >> xr_s(index_kd, 0) >> xr_s(index_kd, 1) >> xr_s(index_kd, 2);
                         }
 
             dict_atomic_kind.clear();
@@ -1104,9 +1100,9 @@ void System::load_system_info_from_XML()
 
     }
 
-    MPI_Bcast(lavec_s.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(lavec_s.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(lavec_p.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(lavec_s_anharm.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    //MPI_Bcast(lavec_s_anharm.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     MPI_Bcast(&nkd, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&nat, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -1117,8 +1113,8 @@ void System::load_system_info_from_XML()
 
     if (mympi->my_rank > 0) {
         allocate(mass_kd, nkd);
-        xr_s.resize(nat, 3);
-        xr_s_anharm.resize(nat_anharm, 3);
+//        xr_s.resize(nat, 3);
+//        xr_s_anharm.resize(nat_anharm, 3);
         allocate(kd, nat);
         allocate(kd_anharm, nat_anharm);
         allocate(map_p2s, natmin, ntran);
@@ -1128,8 +1124,8 @@ void System::load_system_info_from_XML()
     }
 
     MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(xr_s.data(), 3 * nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(xr_s_anharm.data(), 3 * nat_anharm, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(xr_s.data(), 3 * nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(xr_s_anharm.data(), 3 * nat_anharm, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kd_anharm[0], nat_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&map_p2s[0][0], natmin * ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -1297,13 +1293,13 @@ void System::check_consistency_primitive_lattice() const
 
     for (i = 0; i < natmin; ++i) {
         for (j = 0; j < 3; ++j) {
-            x_harm(i, j) = xr_s(map_p2s[i][0], j);
-            x_anharm(i, j) = xr_s_anharm(map_p2s_anharm[i][0], j);
+//            x_harm(i, j) = xr_s(map_p2s[i][0], j);
+//            x_anharm(i, j) = xr_s_anharm(map_p2s_anharm[i][0], j);
         }
     }
 
-    x_harm = x_harm * lavec_s.transpose() * lavec_p.inverse().transpose();
-    x_anharm = x_anharm * lavec_s_anharm.transpose() * lavec_p.inverse().transpose();
+//    x_harm = x_harm * lavec_s.transpose() * lavec_p.inverse().transpose();
+    //x_anharm = x_anharm * lavec_s_anharm.transpose() * lavec_p.inverse().transpose();
 
     for (i = 0; i < natmin; ++i) {
 
@@ -1421,6 +1417,11 @@ double System::volume(const Eigen::Matrix3d &mat_in,
 
     const auto vol = std::abs(v1.dot(v2.cross(v3)));
     return vol;
+}
+
+const Cell &System::get_primcell() const
+{
+    return primcell_base;
 }
 
 

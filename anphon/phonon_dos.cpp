@@ -204,7 +204,7 @@ void Dos::calc_dos_all()
     if (longitudinal_projected_dos) {
         allocate(longitude_dos, n_energy);
         calc_longitudinal_projected_dos(nk, kmesh_dos->xk,
-                                        system->rlavec_p,
+                                        system->get_primcell().reciprocal_lattice_vector,
                                         eval, n_energy, energy_dos,
                                         longitude_dos, neval, system->get_cell("prim").number_of_atoms,
                                         integration->ismear,

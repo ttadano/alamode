@@ -127,16 +127,8 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
     std::vector<unsigned int> atm_super, atm_prim;
     std::vector<unsigned int> cells;
 
-    double mat_convert[3][3];
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            mat_convert[i][j] = 0.0;
-            for (k = 0; k < 3; ++k) {
-                mat_convert[i][j] += system->rlavec_p(i, k) * system->lavec_s_anharm(k, j);
-            }
-        }
-    }
+    Eigen::Matrix3d mat_convert = system->get_cell("prim").reciprocal_lattice_vector
+                                    * system->get_cell("super", "fc3").lattice_vector;
 
     allocate(xshift_s, 27, 3);
 
@@ -164,6 +156,8 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
     unsigned int icount = 0;
 
+    const auto xf_tmp = system->get_cell("super").x_fractional;
+
     for (auto igroup = 0; igroup < number_of_groups; ++igroup) {
 
         unsigned int nsize_group = fcs_group[igroup].size();
@@ -180,8 +174,8 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
             for (i = 0; i < N - 1; ++i) {
                 for (k = 0; k < 3; ++k) {
                     // TODO: replace below with fc3 or fc4 Cell data
-                    vecs[i][k] = system->get_cell("super").x_fractional(atm_super[i + 1], k) + xshift_s[cells[i + 1]][k]
-                                 - system->get_cell("super").x_fractional(system->map_p2s_anharm[atm_prim[i + 1]][0], k);
+                    vecs[i][k] = xf_tmp(atm_super[i + 1], k) + xshift_s[cells[i + 1]][k]
+                                 - xf_tmp(system->map_p2s_anharm[atm_prim[i + 1]][0], k);
                 }
                 rotvec(vecs[i], vecs[i], mat_convert);
             }
@@ -1096,7 +1090,7 @@ void AnharmonicCore::setup_cubic()
     allocate(invsqrt_mass_p, natmin_tmp);
 
     for (i = 0; i < natmin_tmp; ++i) {
-        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
+        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass_s[system->map_p2s[i][0]]);
     }
 
     int k = 0;
@@ -1139,7 +1133,7 @@ void AnharmonicCore::setup_quartic()
     allocate(invsqrt_mass_p, natmin_tmp);
 
     for (i = 0; i < natmin_tmp; ++i) {
-        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
+        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass_s[system->map_p2s[i][0]]);
     }
 
     int k = 0;

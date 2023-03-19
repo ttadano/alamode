@@ -62,15 +62,13 @@ public:
 
     const Cell &get_cell(const std::string celltype, const std::string filetype = "base") const;
 
+    const Cell &get_primcell() const;
+
     const Spin &get_spin(const std::string celltype) const;
 
     const MappingTable &get_mapping_table(const std::string celltype, const std::string filetype = "base") const;
 
-    Eigen::Matrix3d lavec_s, rlavec_s;
-    Eigen::Matrix3d lavec_p, rlavec_p;
-    Eigen::Matrix3d lavec_s_anharm, rlavec_s_anharm;
-    Eigen::MatrixXd xr_s;
-    Eigen::MatrixXd xr_s_anharm;
+    Eigen::Matrix3d lavec_p;
 
     int load_primitive_from_file;
     double volume_p;
@@ -86,7 +84,7 @@ public:
     Maps *map_s2p, *map_s2p_anharm;
 
     std::string *symbol_kd;
-    double *mass_kd, *mass, *mass_anharm;
+    double *mass_kd, *mass_s, *mass_anharm;
 
     double Tmin, Tmax, dT;
 
