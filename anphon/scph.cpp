@@ -4159,15 +4159,15 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_strain_from_harmon
             std::cout << "  first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
             compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
         }
-        else if(renorm_3to2nd == 1){
-            std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method) ... ";
-            calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
-        }
-        else if(renorm_3to2nd == 2){
-            std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
-            std::cout << "  (finite displacement method for cubic material with O_h point group) ... ";
-            calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
-                                                                del_v2_strain_from_cubic);
+        else if(renorm_3to2nd == 1 || renorm_3to2nd == 2){
+            std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method)" << std::endl;
+            if(renorm_3to2nd == 1){
+                std::cout << "  use inputs with all strain patterns ..." << std::endl;
+            }
+            else if(renorm_3to2nd == 2){
+                std::cout << "  use inputs with specified strain patterns ..." << std::endl;
+            }
+            calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic, del_v2_strain_from_cubic);
         }
         else if(renorm_3to2nd == 3){
             std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
@@ -4236,15 +4236,15 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_strain_from_harmon
             std::cout << "  first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
             compute_del_v2_strain_from_cubic(del_v2_strain_from_cubic, evec_harmonic);
         }
-        else if(renorm_3to2nd == 1){
-            std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method) ... ";
-            calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(evec_harmonic, del_v2_strain_from_cubic);
-        }
-        else if(renorm_3to2nd == 2){
-            std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
-            std::cout << "  (finite displacement method for cubic material with O_h point group) ... ";
-            calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic,
-                                                                del_v2_strain_from_cubic);
+        else if(renorm_3to2nd == 1 || renorm_3to2nd == 2){
+            std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method)" << std::endl;
+            if(renorm_3to2nd == 1){
+                std::cout << "  use inputs with all strain patterns ..." << std::endl;
+            }
+            else if(renorm_3to2nd == 2){
+                std::cout << "  use inputs with specified strain patterns ..." << std::endl;
+            }
+            calculate_del_v2_strain_from_cubic_by_finite_difference(evec_harmonic, del_v2_strain_from_cubic);
         }
         else if(renorm_3to2nd == 3){
             std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
@@ -4755,471 +4755,6 @@ void Scph::compute_del_v3_strain_from_quartic(std::complex<double> ****del_v3_st
 }
 
 
-
-// for cubic structure (BTO)
-// not for arbitrary crystal structures.
-
-void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(const std::complex<double> * const* const* const evec_harmonic,
-                                                                   std::complex<double> ***del_v2_strain_from_cubic)
-{   
-    using namespace Eigen;
-
-    int natmin = system->natmin;
-    int nat = system->nat;
-    int ntran = system->ntran;
-    int nk_interpolate = kmesh_coarse->nk;
-    int nk = kmesh_dense->nk;
-    int ns = dynamical->neval;
-
-    double dzz, dxy;
-    std::string filename_zz_plus, filename_zz_minus, filename_xy;
-
-    int **symm_mapping_s;
-    int **inv_translation_mapping;
-
-    std::vector<FcsClassExtent> fc2_zz_plus;
-    std::vector<FcsClassExtent> fc2_zz_minus;
-    std::vector<FcsClassExtent> fc2_xy;
-    std::vector<FcsClassExtent> fc2_tmp;
-    FcsClassExtent fce_tmp;
-
-    int ixyz1, ixyz2, ixyz3, ixyz4;
-    int ixyz1_2, ixyz2_2, ixyz3_2, ixyz4_2;
-    int i1, i2;
-    int iat1, iat2, iat1_2, iat2_2, iat2_2_prim;
-    int itran1, itran2, itran3;
-    int ik;
-    int is1, is2, is, js;
-    int isymm;
-
-    std::complex<double> ***dymat_q, **dymat_tmp;
-    std::complex<double> ***dymat_new;
-
-    const auto nk1 = kmesh_interpolate[0];
-    const auto nk2 = kmesh_interpolate[1];
-    const auto nk3 = kmesh_interpolate[2];
-    
-    MatrixXcd dymat_tmp_mode(ns, ns);
-    MatrixXcd dymat_tmp_alphamu(ns, ns);
-    MatrixXcd evec_tmp(ns, ns);
-
-    // read input 
-    std::fstream fin_strain_mode_coupling;
-    std::fstream fin_strain_mode_coupling_symmetrized;
-
-    double ****B_array_real_space_in;
-    int **exist_in;
-    double ****B_array_real_space_symmetrized;
-    int ****count_tmp;
-    int mapping_xyz[3];
-
-    int *is_acoustic;
-
-    allocate(exist_in, 3, 3);
-    allocate(B_array_real_space_in, 3, 3, natmin*3, nat*3);
-    allocate(B_array_real_space_symmetrized, 3, 3, natmin*3, nat*3);
-    allocate(count_tmp, 3, 3, natmin*3, nat*3);
-
-    allocate(is_acoustic, 3*natmin);
-
-    // temporary 
-    // (alpha,mu) representation in k-space
-    std::complex<double> ***del_v2_strain_from_cubic_alphamu;
-    allocate(del_v2_strain_from_cubic_alphamu, 9, nk, ns*ns);
-
-    const auto complex_zero = std::complex<double>(0.0, 0.0);
-
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            exist_in[ixyz1][ixyz2] = 0;
-            for(i1 = 0; i1 < natmin*3; i1++){
-                for(i2 = 0; i2 < nat*3; i2++){
-                    B_array_real_space_in[ixyz1][ixyz2][i1][i2] = 0.0;
-                    B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] = 0.0;
-                    count_tmp[ixyz1][ixyz2][i1][i2] = 0;
-                }
-            }
-        }
-    }
-
-    fin_strain_mode_coupling_symmetrized.open("B_array.txt");
-
-    if(fin_strain_mode_coupling_symmetrized){
-        // read symmetrized B array from input
-        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                for(i1 = 0; i1 < natmin*3; i1++){
-                    for(i2 = 0; i2 < nat*3; i2++){
-                        fin_strain_mode_coupling_symmetrized >> B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2];
-                    }
-                }
-            }
-        }
-
-        fin_strain_mode_coupling_symmetrized.close();
-    }
-    else{
-        // calculate B array by finite difference method and symmetrize.
-        std::cout << "calculate B array by finite difference method and symmetrize." << std::endl;
-
-        fin_strain_mode_coupling.open("strain_mode.in");
-
-        if(!fin_strain_mode_coupling){
-            std::cout << "Warning in Scph::calculate_del_v2_strain_from_cubic_by_finite_difference: file strain_mode.in could not open." << std::endl;
-            std::cout << "all q0 is set 0." << std::endl;
-            exit("calculate_del_v2_strain_from_cubic_by_finite_difference",
-                        "strain_mode.in not found");
-        }
-
-        fin_strain_mode_coupling >> dzz >> dxy;
-        fin_strain_mode_coupling >> filename_zz_plus;
-        fin_strain_mode_coupling >> filename_zz_minus;
-        fin_strain_mode_coupling >> filename_xy;
-
-        // debug
-        std::cout << "dzz = " << dzz << ", dxy = " << dxy << std::endl;
-        std::cout << "filename_zz_plus: " << filename_zz_plus << std::endl;
-        std::cout << "filename_zz_minus: " << filename_zz_minus << std::endl;
-        std::cout << "filename_xy: " << filename_xy << std::endl;
-
-        fcs_phonon->load_fc2_xml_tmp(filename_zz_plus, fc2_zz_plus);
-        fcs_phonon->load_fc2_xml_tmp(filename_zz_minus, fc2_zz_minus);
-        fcs_phonon->load_fc2_xml_tmp(filename_xy, fc2_xy);
-
-
-        // calculate input B_array in real space
-        exist_in[2][2] = 1; // zz component
-
-        for (const auto &it: fc2_zz_plus){
-            B_array_real_space_in[2][2][it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] += it.fcs_val;
-        }
-        for (const auto &it: fc2_zz_minus){
-            B_array_real_space_in[2][2][it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] -= it.fcs_val;
-        }
-        
-        for(i1 = 0; i1 < natmin*3; i1++){
-            for(i2 = 0; i2 < nat*3; i2++){
-                B_array_real_space_in[2][2][i1][i2] /= (2.0*dzz);
-            }
-        }
-    
-        exist_in[0][1] = exist_in[1][0] = 1;
-        for (const auto &it: fc2_zz_plus){
-            B_array_real_space_in[1][0][it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] += it.fcs_val;
-            B_array_real_space_in[0][1][it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] += it.fcs_val;
-        }
-        for (const auto &it: fcs_phonon->fc2_ext){
-            B_array_real_space_in[1][0][it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] -= it.fcs_val;
-            B_array_real_space_in[0][1][it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] -= it.fcs_val;
-        }
-        
-        for(i1 = 0; i1 < natmin*3; i1++){
-            for(i2 = 0; i2 < nat*3; i2++){
-                B_array_real_space_in[0][1][i1][i2] /= (2.0*dxy);
-                B_array_real_space_in[1][0][i1][i2] /= (2.0*dxy);
-            }
-        }
-    
-
-        // make mapping information
-        allocate(symm_mapping_s, symmetry->SymmListWithMap_ref.size(), nat);
-        make_supercell_mapping_by_symmetry_operations(symm_mapping_s);
-
-        allocate(inv_translation_mapping, ntran, ntran);
-        make_inverse_translation_mapping(inv_translation_mapping); 
-
-        // debug: no symmetrization
-        // for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        //     for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-        //         for(i1 = 0; i1 < natmin*3; i1++){
-        //             for(i2 = 0; i2 < nat*3; i2++){
-        //                 B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] = B_array_real_space_in[ixyz1][ixyz2][i1][i2];
-        //             }
-        //         }
-        //     }
-        // }
-
-        std::cout << "number of symmetry operations : " << symmetry->SymmListWithMap_ref.size() << std::endl;
-        // symmetrize and replicate
-        for(isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++){
-
-            // debug
-            // std::cout << "isymm = " << isymm << std::endl;
-            // std::cout << "rotation matrix" << std::endl;
-            // for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            //     for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            //         std::cout << symmetry->SymmListWithMap_ref[isymm].rot[ixyz1*3+ixyz2] << " ";
-            //     }std::cout << std::endl;
-            // }
-
-            // make mapping of xyz by the rotation matrix
-            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                    if(std::fabs(std::fabs(symmetry->SymmListWithMap_ref[isymm].rot[ixyz1*3+ixyz2])- 1.0) < eps6){
-                        mapping_xyz[ixyz2] = ixyz1;
-                    }
-                }
-            }
-
-            // debug
-            // std::cout << "mapping_xyz" << std::endl;
-            // for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            //     std::cout << mapping_xyz[ixyz1] << " ";
-            // }std::cout << std::endl;
-
-            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-                for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                    // skip if B_array[ixyz1][ixyz2] is not included in the input
-                    if(exist_in[ixyz1][ixyz2] == 0){
-                        continue;
-                    }
-
-                    for(iat1 = 0; iat1 < natmin; iat1++){
-                        // skip if the center atom is not included in the original primitive cell
-                        // if(symm_mapping_s[isymm][system->map_p2s[iat1][0]] != 
-                        //       system->map_p2s[symmetry->SymmListWithMap_ref[isymm].mapping[iat1]][0]){
-                        //     std::cout << "center atom is not included in the original primitive cell" << std::endl;
-                        //     continue;
-                        // }
-                        
-                        iat1_2 = symmetry->SymmListWithMap_ref[isymm].mapping[iat1];
-                        // std::cout << "iat1_2: " << iat1_2 << std::endl;
-                        ixyz1_2 = mapping_xyz[ixyz1];
-                        ixyz2_2 = mapping_xyz[ixyz2];
-
-                        for(i1 = 0; i1 < ntran; i1++){
-                            if(system->map_p2s[iat1_2][i1] == symm_mapping_s[isymm][system->map_p2s[iat1][0]]){
-                                itran1 = i1;
-                            }
-                        }
-
-                        for(iat2 = 0; iat2 < nat; iat2++){
-                            iat2_2 = symm_mapping_s[isymm][iat2]; // temporary
-                            iat2_2_prim = system->map_s2p[iat2_2].atom_num;
-                            itran2 = system->map_s2p[iat2_2].tran_num;
-                            
-                            iat2_2 = system->map_p2s[iat2_2_prim][inv_translation_mapping[itran1][itran2]];
-
-                            for(ixyz3 = 0; ixyz3 < 3; ixyz3++){
-                                for(ixyz4 = 0; ixyz4 < 3; ixyz4++){
-                                    ixyz3_2 = mapping_xyz[ixyz3];
-                                    ixyz4_2 = mapping_xyz[ixyz4];
-
-                                    B_array_real_space_symmetrized[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2]
-                                        += B_array_real_space_in[ixyz1][ixyz2][iat1*3+ixyz3][iat2*3+ixyz4]
-                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz1_2*3+ixyz1]
-                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz2_2*3+ixyz2]
-                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz3_2*3+ixyz3]
-                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz4_2*3+ixyz4];
-                                    // std::cout << "before: " << count_tmp[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2];
-                                    count_tmp[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2]++;
-                                    // std::cout << " after: " << count_tmp[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2] << std::endl;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        std::cout << "count_tmp " << std::endl;
-
-        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                for(i1 = 0; i1 < natmin*3; i1++){
-                    for(i2 = 0; i2 < nat*3; i2++){
-                        if(count_tmp[ixyz1][ixyz2][i1][i2] == 0){
-                            std::cout << "Warning: B_array[" << ixyz1 << "][" << ixyz2 << "][" << i1 << "][" << i2 << "] is not given" << std::endl;
-                            std::cout << "The corresponding component is set zero." << std::endl;
-                            B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] = 0.0;
-                        }
-                        else{
-                            B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] /= count_tmp[ixyz1][ixyz2][i1][i2];
-                        }
-                        // debug
-                        std::cout << ixyz1 << " " << ixyz2 << " " << i1 << " " << i2 << " " << count_tmp[ixyz1][ixyz2][i1][i2] << std::endl;
-                    }
-                }
-            }
-        }
-
-        deallocate(symm_mapping_s);
-        deallocate(inv_translation_mapping); 
-        
-        // write B_array_real_space_symmetrized to an output file
-        std::ofstream fout_B_array;
-        fout_B_array.open("B_array.txt");
-        fout_B_array << std::setprecision(15) << std::scientific;
-
-        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-                for(i1 = 0; i1 < natmin*3; i1++){
-                    for(i2 = 0; i2 < nat*3; i2++){
-                        fout_B_array << B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] << " ";
-                    }fout_B_array << std::endl;
-                }
-            }
-        }
-
-        fout_B_array.close();
-    }
-
-    // std::cout << "symmetrize and replicate B_array is done." << std::endl;
-
-    // Fourier transform and interpolate
-    allocate(dymat_q, ns, ns, nk_interpolate);
-    allocate(dymat_new, ns, ns, nk_interpolate);
-    allocate(dymat_tmp, ns, ns);
-
-    // std::cout << "start interpolation." << std::endl;
-
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-
-            // std::cout << "ixyz1 = " << ixyz1 << ", ixyz2 = " << ixyz2 << std::endl;
-
-            // put B_array to std::vector<FcsClassExtent> format
-            fc2_tmp.clear();
-            for(i1 = 0; i1 < natmin*3; i1++){
-                for(i2 = 0; i2 < nat*3; i2++){
-                    fce_tmp.atm1 = i1/3;
-                    fce_tmp.atm2 = i2/3;
-                    fce_tmp.xyz1 = i1%3;
-                    fce_tmp.xyz2 = i2%3;
-                    fce_tmp.cell_s = 0;
-                    fce_tmp.fcs_val = B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2];
-                    fc2_tmp.push_back(fce_tmp);
-                }
-            }
-
-            // std::cout << "fc2_tmp is prepared." << std::endl;
-
-            // Fourier transform
-            for(ik = 0; ik < nk_interpolate; ik++){
-                
-                dynamical->calc_analytic_k(kmesh_coarse->xk[ik],
-                                    fc2_tmp,
-                                    dymat_tmp);
-
-                for(is1 = 0; is1 < ns; is1++){
-                    for(is2 = 0; is2 < ns; is2++){
-                        dymat_q[is1][is2][ik] = dymat_tmp[is1][is2];
-                    }
-                }
-            }
-            // std::cout << "Fourier transformation to k space is done." << std::endl;
-
-            // interpolation
-            for (is1 = 0; is1 < ns; is1++) {
-                for (is2 = 0; is2 < ns; is2++) {
-                    fftw_plan plan = fftw_plan_dft_3d(nk1, nk2, nk3,
-                                                    reinterpret_cast<fftw_complex *>(dymat_q[is1][is2]),
-                                                    reinterpret_cast<fftw_complex *>(dymat_new[is1][is2]),
-                                                    FFTW_FORWARD, FFTW_ESTIMATE);
-                    fftw_execute(plan);
-                    fftw_destroy_plan(plan);
-
-                    for (ik = 0; ik < nk_interpolate; ++ik){
-                        dymat_new[is1][is2][ik] /= static_cast<double>(nk_interpolate);
-                    }
-                }
-            }
-
-            for(ik = 0; ik < nk; ik++){
-                r2q(kmesh_dense->xk[ik], nk1, nk2, nk3, ns, dymat_new, dymat_tmp);
-
-                // std::cout << "r2q is done." << std::endl;
-
-                // (alpha,mu) representation in k-space (this is temporary)
-                for(is = 0; is < ns; is++){
-                    for(js = 0; js < ns; js++){
-                        del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is*ns+js] = dymat_tmp[is][js];
-                    }
-                }
-
-                // transform to mode-representation
-                for(is = 0; is < ns; is++){
-                    for(js = 0; js < ns; js++){
-                        evec_tmp(is, js) = evec_harmonic[ik][js][is]; // transpose
-                        dymat_tmp_alphamu(is, js) = dymat_tmp[is][js];
-                    }
-                }
-                dymat_tmp_mode = evec_tmp.adjoint() * dymat_tmp_alphamu * evec_tmp;
-
-                // std::cout << "substitute to del_v2_strain_from_cubic." << std::endl;
-
-                for(is = 0; is < ns; is++){
-                    for(js = 0; js < ns; js++){
-                        del_v2_strain_from_cubic[ixyz1*3+ixyz2][ik][is*ns+js] = dymat_tmp_mode(is, js);
-                    }
-                }
-            }
-
-        }
-    }
-
-    // set elements of acoustic mode at Gamma point exactly zero
-
-    double threshold_acoustic = 1.0e-16;
-    int count_acoustic = 0;
-    for(is = 0; is < ns; is++){
-        if(std::fabs(omega2_harmonic[0][is]) < threshold_acoustic){
-            is_acoustic[is] = 1;
-            count_acoustic++;
-        }
-        else{
-            is_acoustic[is] = 0;
-        }
-    }
-
-    // check number of acoustic modes
-    if(count_acoustic != 3){
-        std::cout << "Warning in calculate_del_v2_strain_from_cubic_by_finite_difference: ";
-        std::cout << count_acoustic << " acoustic modes are detected in Gamma point." << std::endl << std::endl; 
-    }
-
-    // set acoustic sum rule (ASR)
-    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
-        for(is = 0; is < ns; is++){
-            // mode is is an acoustic mode at Gamma point
-            if(is_acoustic[is] == 0){
-                continue;
-            }
-            for(js = 0; js < ns; js++){
-                del_v2_strain_from_cubic[ixyz1][0][is*ns+js] = complex_zero;
-                del_v2_strain_from_cubic[ixyz1][0][js*ns+is] = complex_zero;
-            }
-        }
-    }
-
-    // write the result in k-space and (alpha,mu) representation in a file
-    std::ofstream fout_B_array_kspace;
-    fout_B_array_kspace.open("B_array_kspace.txt");
-
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            for(ik = 0; ik < nk; ik++){
-                for(is = 0; is < ns*ns; is++){
-                    fout_B_array_kspace << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].real() << " " << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].imag() << std::endl;
-                }
-            }
-        }
-    }
-    fout_B_array_kspace.close();
-
-    deallocate(exist_in);
-    deallocate(B_array_real_space_in);
-    deallocate(B_array_real_space_symmetrized);
-    
-    deallocate(count_tmp);
-    deallocate(dymat_q);
-    deallocate(dymat_tmp);
-    deallocate(dymat_new);
-
-    // temporaray
-    deallocate(del_v2_strain_from_cubic_alphamu);
-}
-
 void Scph::read_del_v2_strain_from_cubic_in_kspace(const std::complex<double> * const* const* const evec_harmonic,
                                                    std::complex<double> ***del_v2_strain_from_cubic)
 {   
@@ -5487,9 +5022,9 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
     deallocate(del_v1_strain_from_harmonic_in_real_space_symm);
 
 }
+
 // for arbitrary crystal structures.
-// use finite difference for all 6 strains
-void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(const std::complex<double> * const* const* const evec_harmonic,
+void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(const std::complex<double> * const* const* const evec_harmonic,
                                                                                 std::complex<double> ***del_v2_strain_from_cubic)
 {   
     using namespace Eigen;
@@ -5501,13 +5036,9 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     int nk = kmesh_dense->nk;
     int ns = dynamical->neval;
 
-    double deform_amps[3][3];
-    std::string deform_filenames[3][3];
-
     int **symm_mapping_s;
     int **inv_translation_mapping;
 
-    // std::vector<FcsClassExtent> fc2_deformed[3][3];
     std::vector<FcsClassExtent> fc2_tmp;
     FcsClassExtent fce_tmp;
 
@@ -5552,10 +5083,13 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     double **B_array_real_space_tmp;
     int exist_in[3][3];
     double weight_sum[3][3];
+    int mapping_xyz[3];
+    int ****count_tmp;
 
     allocate(B_array_real_space_tmp, natmin*3, nat*3);
     allocate(B_array_real_space_in, 3, 3, natmin*3, nat*3);
     allocate(B_array_real_space_symmetrized, 3, 3, natmin*3, nat*3);
+    allocate(count_tmp, 3, 3, natmin*3, nat*3);
 
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
@@ -5565,13 +5099,14 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
                 for(i2 = 0; i2 < nat*3; i2++){
                     B_array_real_space_in[ixyz1][ixyz2][i1][i2] = 0.0;
                     B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] = 0.0;
+                    count_tmp[ixyz1][ixyz2][i1][i2] = 0.0;
                 }
             }
         }
     }
 
     // calculate B array by finite difference method and symmetrize.
-    std::cout << "calculate B array by finite difference method and symmetrize." << std::endl;
+    // std::cout << "calculate B array by finite difference method and symmetrize." << std::endl;
 
     fin_strain_mode_coupling.open(strain_IFC_dir + "strain_harmonic.in");
 
@@ -5594,58 +5129,20 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
             filename_list.push_back(filename_tmp);
             nmode++;
 
-            std::cout << "mode : " << mode_tmp << ", smag = " 
-                << smag_tmp << ", weight = " << weight_tmp << ", filename : " << filename_tmp << std::endl;
+            // std::cout << "mode : " << mode_tmp << ", smag = " << smag_tmp;
+            // std::cout << ", weight = " << weight_tmp << ", filename : " << filename_tmp << std::endl;
         }
         else{
-            std::cout << "done." << std::endl;
+            // std::cout << "done." << std::endl;
             break;
         }
     }
 
-/*    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            if(ixyz1 > ixyz2){
-                continue;
-            }
-
-            fin_strain_mode_coupling >> deform_filenames[ixyz1][ixyz2] >> deform_amps[ixyz1][ixyz2];
-        }
-    }
-*/
-/*    // debug
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            if(ixyz1 > ixyz2){
-                continue;
-            }
-            std::cout << "ixyz1, ixyz2 = " << ixyz1 << " " << ixyz2 << std::endl;
-            std::cout << deform_filenames[ixyz1][ixyz2] << " " << deform_amps[ixyz1][ixyz2] << std::endl;
-        }
-    }
-*/
-
     std::vector<std::vector<FcsClassExtent>> fc2_deformed(nmode);
 
-    std::cout << "fc2_deformed prepared" << std::endl;
-
     for(imode = 0; imode < nmode; imode++){
-        std::cout << strain_IFC_dir + filename_list[imode] << std::endl;
-        std::cout << "load_fc2_xml_tmp" << std::endl;
         fcs_phonon->load_fc2_xml_tmp(strain_IFC_dir + filename_list[imode], fc2_deformed[imode]);
     }
-
-/*    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            fc2_deformed[ixyz1][ixyz2].clear();
-            if(ixyz1 > ixyz2){
-                continue;
-            }
-
-            fcs_phonon->load_fc2_xml_tmp(deform_filenames[ixyz1][ixyz2], fc2_deformed[ixyz1][ixyz2]);
-        }
-    }
-*/
 
     // calculate finite difference
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
@@ -5680,14 +5177,14 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
             exit("Scph::calculate_del_v2_strain_from_cubic_by_finite_difference",
                  "Invalid name of the strain mode.");
         }
-        std::cout << mode_list[imode] << " " << ixyz1 << " " << ixyz2 << std::endl;
+        // std::cout << mode_list[imode] << " " << ixyz1 << " " << ixyz2 << std::endl;
 
         for(i1 = 0; i1 < natmin*3; i1++){
             for(i2 = 0; i2 < nat*3; i2++){
                 B_array_real_space_tmp[i1][i2] = 0.0;
             }
         }
-        std::cout << "make B_array_real_space_tmp" << std::endl;
+
         for (const auto &it: fc2_deformed[imode]){
             B_array_real_space_tmp[it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] += it.fcs_val;
         }
@@ -5702,77 +5199,55 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
                 }
             }
             weight_sum[ixyz1][ixyz2] += weight_list[imode];
-            std::cout << ixyz1 << ixyz2 << " " << weight_sum[ixyz1][ixyz2];
         }
         else{
             for(i1 = 0; i1 < natmin*3; i1++){
                 for(i2 = 0; i2 < nat*3; i2++){
                     B_array_real_space_in[ixyz1][ixyz2][i1][i2] += B_array_real_space_tmp[i1][i2]/smag_list[imode] * weight_list[imode];
-                    B_array_real_space_in[ixyz2][ixyz1][i1][i2] += B_array_real_space_in[ixyz1][ixyz2][i1][i2];
+                    B_array_real_space_in[ixyz2][ixyz1][i1][i2] += B_array_real_space_tmp[i1][i2]/smag_list[imode] * weight_list[imode];
                 }
             }
             weight_sum[ixyz1][ixyz2] += weight_list[imode];
             weight_sum[ixyz2][ixyz1] += weight_list[imode];
 
-            std::cout << ixyz1 << ixyz2 << " " << weight_sum[ixyz1][ixyz2];
-
         }
     }
 
     // check weight_sum
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            if(std::fabs(weight_sum[ixyz1][ixyz2] - 1.0) < eps6){
-                exist_in[ixyz1][ixyz2] = 1;
-            }
-            else if(std::fabs(weight_sum[ixyz1][ixyz2]) < eps6){
-                exist_in[ixyz1][ixyz2] = 0;
-            }
-            else{
-                exit("calculate_del_v2_strain_from_cubic_by_finite_difference",
-                     "Sum of weights must be 1 or 0 for each mode.");
-            }
-        }
-    }
-    // calculate finite difference
-/*    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            if(ixyz1 > ixyz2){
-                continue;
-            }
-
-            for (const auto &it: fc2_deformed[ixyz1][ixyz2]){
-                B_array_real_space_in[ixyz1][ixyz2][it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] += it.fcs_val;
-            }
-            for (const auto &it: fcs_phonon->fc2_ext){
-                B_array_real_space_in[ixyz1][ixyz2][it.atm1*3 + it.xyz1][it.atm2*3+it.xyz2] -= it.fcs_val;
-            }
-        }
-    }
-*/
-/*    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            if(ixyz1 > ixyz2){
-                continue;
-            }
-            if(ixyz1 == ixyz2){
-                for(i1 = 0; i1 < natmin*3; i1++){
-                    for(i2 = 0; i2 < nat*3; i2++){
-                        B_array_real_space_in[ixyz1][ixyz2][i1][i2] /= deform_amps[ixyz1][ixyz2];
-                    }
+    if(renorm_3to2nd == 1){ 
+        // finite difference method.
+        // read input from all strain modes.
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                if(std::fabs(weight_sum[ixyz1][ixyz2] - 1.0) < eps6){
+                    exist_in[ixyz1][ixyz2] = 1;
                 }
-            }
-            else{
-                for(i1 = 0; i1 < natmin*3; i1++){
-                    for(i2 = 0; i2 < nat*3; i2++){
-                        B_array_real_space_in[ixyz1][ixyz2][i1][i2] /= deform_amps[ixyz1][ixyz2];
-                        B_array_real_space_in[ixyz2][ixyz1][i1][i2] = B_array_real_space_in[ixyz1][ixyz2][i1][i2];
-                    }
+                else{
+                    exit("calculate_del_v2_strain_from_cubic_by_finite_difference",
+                        "Sum of weights must be 1.");
                 }
             }
         }
     }
-*/
+    else if(renorm_3to2nd == 2){ 
+        // finite difference method.
+        // read input from particular strain modes.
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                if(std::fabs(weight_sum[ixyz1][ixyz2] - 1.0) < eps6){
+                    exist_in[ixyz1][ixyz2] = 1;
+                }
+                else if(std::fabs(weight_sum[ixyz1][ixyz2]) < eps6){
+                    exist_in[ixyz1][ixyz2] = 0;
+                }
+                else{
+                    exit("calculate_del_v2_strain_from_cubic_by_finite_difference",
+                        "Sum of weights must be 1 or 0 for each mode.");
+                }
+            }
+        }
+    }
+    
     // make mapping information
     allocate(symm_mapping_s, symmetry->SymmListWithMap_ref.size(), nat);
     make_supercell_mapping_by_symmetry_operations(symm_mapping_s);
@@ -5780,55 +5255,147 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     allocate(inv_translation_mapping, ntran, ntran);
     make_inverse_translation_mapping(inv_translation_mapping); 
 
-    std::cout << "number of symmetry operations : " << symmetry->SymmListWithMap_ref.size() << std::endl;
     // symmetrize and replicate
-    for(isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++){
+    if(renorm_3to2nd == 1){
+        // input is given for all strain modes.
+        for(isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++){
 
-        for(iat1 = 0; iat1 < natmin; iat1++){
+            for(iat1 = 0; iat1 < natmin; iat1++){
 
-            for(ixyz_comb1 = 0; ixyz_comb1 < 81; ixyz_comb1++){
-                ixyz1 = ixyz_comb1/27;
-                ixyz2 = (ixyz_comb1/9)%3;
-                ixyz3 = (ixyz_comb1/3)%3;
-                ixyz4 = ixyz_comb1%3;
-                for(ixyz_comb2 = 0; ixyz_comb2 < 81; ixyz_comb2++){
-                    ixyz1_2 = ixyz_comb2/27;
-                    ixyz2_2 = (ixyz_comb2/9)%3;
-                    ixyz3_2 = (ixyz_comb2/3)%3;
-                    ixyz4_2 = ixyz_comb2%3;
-                    
-                    iat1_2 = symmetry->SymmListWithMap_ref[isymm].mapping[iat1];
+                for(ixyz_comb1 = 0; ixyz_comb1 < 81; ixyz_comb1++){
+                    ixyz1 = ixyz_comb1/27;
+                    ixyz2 = (ixyz_comb1/9)%3;
+                    ixyz3 = (ixyz_comb1/3)%3;
+                    ixyz4 = ixyz_comb1%3;
+                    for(ixyz_comb2 = 0; ixyz_comb2 < 81; ixyz_comb2++){
+                        ixyz1_2 = ixyz_comb2/27;
+                        ixyz2_2 = (ixyz_comb2/9)%3;
+                        ixyz3_2 = (ixyz_comb2/3)%3;
+                        ixyz4_2 = ixyz_comb2%3;
+                        
+                        iat1_2 = symmetry->SymmListWithMap_ref[isymm].mapping[iat1];
 
-                    for(i1 = 0; i1 < ntran; i1++){
-                        if(system->map_p2s[iat1_2][i1] == symm_mapping_s[isymm][system->map_p2s[iat1][0]]){
-                            itran1 = i1;
+                        for(i1 = 0; i1 < ntran; i1++){
+                            if(system->map_p2s[iat1_2][i1] == symm_mapping_s[isymm][system->map_p2s[iat1][0]]){
+                                itran1 = i1;
+                            }
+                        }
+
+                        for(iat2 = 0; iat2 < nat; iat2++){
+                            iat2_2 = symm_mapping_s[isymm][iat2]; // temporary
+                            iat2_2_prim = system->map_s2p[iat2_2].atom_num;
+                            itran2 = system->map_s2p[iat2_2].tran_num;
+                            
+                            iat2_2 = system->map_p2s[iat2_2_prim][inv_translation_mapping[itran1][itran2]];
+
+                            B_array_real_space_symmetrized[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2]
+                                += B_array_real_space_in[ixyz1][ixyz2][iat1*3+ixyz3][iat2*3+ixyz4]
+                                    * symmetry->SymmListWithMap_ref[isymm].rot[ixyz1_2*3+ixyz1]
+                                    * symmetry->SymmListWithMap_ref[isymm].rot[ixyz2_2*3+ixyz2]
+                                    * symmetry->SymmListWithMap_ref[isymm].rot[ixyz3_2*3+ixyz3]
+                                    * symmetry->SymmListWithMap_ref[isymm].rot[ixyz4_2*3+ixyz4];
                         }
                     }
+                }
+            }
+        }
 
-                    for(iat2 = 0; iat2 < nat; iat2++){
-                        iat2_2 = symm_mapping_s[isymm][iat2]; // temporary
-                        iat2_2_prim = system->map_s2p[iat2_2].atom_num;
-                        itran2 = system->map_s2p[iat2_2].tran_num;
-                        
-                        iat2_2 = system->map_p2s[iat2_2_prim][inv_translation_mapping[itran1][itran2]];
-
-                        B_array_real_space_symmetrized[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2]
-                            += B_array_real_space_in[ixyz1][ixyz2][iat1*3+ixyz3][iat2*3+ixyz4]
-                                * symmetry->SymmListWithMap_ref[isymm].rot[ixyz1_2*3+ixyz1]
-                                * symmetry->SymmListWithMap_ref[isymm].rot[ixyz2_2*3+ixyz2]
-                                * symmetry->SymmListWithMap_ref[isymm].rot[ixyz3_2*3+ixyz3]
-                                * symmetry->SymmListWithMap_ref[isymm].rot[ixyz4_2*3+ixyz4];
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                for(i1 = 0; i1 < natmin*3; i1++){
+                    for(i2 = 0; i2 < nat*3; i2++){
+                        B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] /= symmetry->SymmListWithMap_ref.size();
                     }
                 }
             }
         }
     }
+    else if(renorm_3to2nd == 2){
+        for(isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++){
 
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            for(i1 = 0; i1 < natmin*3; i1++){
-                for(i2 = 0; i2 < nat*3; i2++){
-                    B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] /= symmetry->SymmListWithMap_ref.size();
+            // make mapping of xyz by the rotation matrix
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                mapping_xyz[ixyz1] = -1;
+            }
+
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                    if(std::fabs(std::fabs(symmetry->SymmListWithMap_ref[isymm].rot[ixyz1*3+ixyz2])- 1.0) < eps6){
+                        mapping_xyz[ixyz2] = ixyz1;
+                    }
+                }
+            }
+
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                if(mapping_xyz[ixyz1] == -1){
+                    exit("calculate_del_v2_strain_from_cubic_by_finite_difference",
+                         "RENORM_3TO2ND == 2 cannot be used for this material.");
+                }
+            }
+
+            for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+                for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                    // skip if B_array[ixyz1][ixyz2] is not included in the input
+                    if(exist_in[ixyz1][ixyz2] == 0){
+                        continue;
+                    }
+
+                    for(iat1 = 0; iat1 < natmin; iat1++){
+                        
+                        iat1_2 = symmetry->SymmListWithMap_ref[isymm].mapping[iat1];
+                        // std::cout << "iat1_2: " << iat1_2 << std::endl;
+                        ixyz1_2 = mapping_xyz[ixyz1];
+                        ixyz2_2 = mapping_xyz[ixyz2];
+
+                        for(i1 = 0; i1 < ntran; i1++){
+                            if(system->map_p2s[iat1_2][i1] == symm_mapping_s[isymm][system->map_p2s[iat1][0]]){
+                                itran1 = i1;
+                            }
+                        }
+
+                        for(iat2 = 0; iat2 < nat; iat2++){
+                            iat2_2 = symm_mapping_s[isymm][iat2]; // temporary
+                            iat2_2_prim = system->map_s2p[iat2_2].atom_num;
+                            itran2 = system->map_s2p[iat2_2].tran_num;
+                            
+                            iat2_2 = system->map_p2s[iat2_2_prim][inv_translation_mapping[itran1][itran2]];
+
+                            for(ixyz3 = 0; ixyz3 < 3; ixyz3++){
+                                for(ixyz4 = 0; ixyz4 < 3; ixyz4++){
+                                    ixyz3_2 = mapping_xyz[ixyz3];
+                                    ixyz4_2 = mapping_xyz[ixyz4];
+
+                                    B_array_real_space_symmetrized[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2]
+                                        += B_array_real_space_in[ixyz1][ixyz2][iat1*3+ixyz3][iat2*3+ixyz4]
+                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz1_2*3+ixyz1]
+                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz2_2*3+ixyz2]
+                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz3_2*3+ixyz3]
+                                            * symmetry->SymmListWithMap_ref[isymm].rot[ixyz4_2*3+ixyz4];
+
+                                    count_tmp[ixyz1_2][ixyz2_2][iat1_2*3+ixyz3_2][iat2_2*3+ixyz4_2]++;
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+            for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+                for(i1 = 0; i1 < natmin*3; i1++){
+                    for(i2 = 0; i2 < nat*3; i2++){
+                        if(count_tmp[ixyz1][ixyz2][i1][i2] == 0){
+                            std::cout << "Warning: B_array[" << ixyz1 << "][" << ixyz2 << "][" << i1 << "][" << i2 << "] is not given" << std::endl;
+                            std::cout << "The corresponding component is set zero." << std::endl;
+                            B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] = 0.0;
+                        }
+                        else{
+                            B_array_real_space_symmetrized[ixyz1][ixyz2][i1][i2] /= count_tmp[ixyz1][ixyz2][i1][i2];
+                        }
+                    }
                 }
             }
         }
@@ -5974,6 +5541,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     deallocate(B_array_real_space_tmp);
     deallocate(B_array_real_space_symmetrized);
     deallocate(B_array_real_space_in);
+    deallocate(count_tmp);
     
     deallocate(dymat_q);
     deallocate(dymat_tmp);
@@ -6015,7 +5583,7 @@ void Scph::make_supercell_mapping_by_symmetry_operations(int **symm_mapping_s)
 
         isymm++;
 
-        std::cout << "isymm = " << isymm << std::endl;
+       //  std::cout << "isymm = " << isymm << std::endl;
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -6077,7 +5645,7 @@ void Scph::make_supercell_mapping_by_symmetry_operations(int **symm_mapping_s)
     int *map_tmp;
     allocate(map_tmp, nat);
 
-    std::cout << "check one-to-one correspondence." << std::endl;
+    // std::cout << "check one-to-one correspondence." << std::endl;
 
     for(isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++){
         // initialize
@@ -6088,11 +5656,11 @@ void Scph::make_supercell_mapping_by_symmetry_operations(int **symm_mapping_s)
         for(iat1 = 0; iat1 < nat; iat1++){
             map_tmp[symm_mapping_s[isymm][iat1]] = 1;
         }
-        for(iat1 = 0; iat1 < nat; iat1++){
-            if(map_tmp[iat1] == 0){
-                std::cout << "no atom is moved to atom " << iat1 << " by symmetry operation " << isymm << ". " << std::endl;
-            }
-        }
+        // for(iat1 = 0; iat1 < nat; iat1++){
+        //     if(map_tmp[iat1] == 0){
+        //         std::cout << "no atom is moved to atom " << iat1 << " by symmetry operation " << isymm << ". " << std::endl;
+        //     }
+        // }
     }
 
 
