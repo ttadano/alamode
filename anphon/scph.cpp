@@ -5573,13 +5573,9 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     // calculate B array by finite difference method and symmetrize.
     std::cout << "calculate B array by finite difference method and symmetrize." << std::endl;
 
-    std::string strainIFC_dir = "results/";
-
-    fin_strain_mode_coupling.open(strainIFC_dir + "strain_harmonic.in");
+    fin_strain_mode_coupling.open(strain_IFC_dir + "strain_harmonic.in");
 
     if(!fin_strain_mode_coupling){
-        std::cout << "Warning in Scph::calculate_del_v2_strain_from_cubic_by_finite_difference: file strain_mode.in could not open." << std::endl;
-        std::cout << "all q0 is set 0." << std::endl;
         exit("calculate_del_v2_strain_from_cubic_by_finite_difference",
                     "strain_harmonic.in not found");
     }
@@ -5602,7 +5598,7 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
                 << smag_tmp << ", weight = " << weight_tmp << ", filename : " << filename_tmp << std::endl;
         }
         else{
-            std::cout << "file reading done." << std::endl;
+            std::cout << "done." << std::endl;
             break;
         }
     }
@@ -5634,9 +5630,9 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(
     std::cout << "fc2_deformed prepared" << std::endl;
 
     for(imode = 0; imode < nmode; imode++){
-        std::cout << strainIFC_dir + filename_list[imode] << std::endl;
+        std::cout << strain_IFC_dir + filename_list[imode] << std::endl;
         std::cout << "load_fc2_xml_tmp" << std::endl;
-        fcs_phonon->load_fc2_xml_tmp(strainIFC_dir + filename_list[imode], fc2_deformed[imode]);
+        fcs_phonon->load_fc2_xml_tmp(strain_IFC_dir + filename_list[imode], fc2_deformed[imode]);
     }
 
 /*    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){

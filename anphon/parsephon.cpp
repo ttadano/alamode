@@ -363,7 +363,7 @@ void Input::parse_scph_vars()
           "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
           "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
           "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_ANHARMTO1ST",
-          "NAT_PRIM"
+          "NAT_PRIM", "STRAIN_IFC_DIR"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -426,6 +426,7 @@ void Input::parse_scph_vars()
     int renorm_anharmto1st = 1;
 
     int nat_prim = 0;
+    std::string strain_IFC_dir("");
 
     // Assign given values
 
@@ -471,6 +472,12 @@ void Input::parse_scph_vars()
         exit("parse_scph_vars",
              "NAT_PRIM must be specified when RELAX_COORDINATE != 0.");
     }
+
+    assign_val(strain_IFC_dir, "STRAIN_IFC_DIR", scph_var_dict);
+    if(strain_IFC_dir != "" && strain_IFC_dir.at(strain_IFC_dir.length()-1) != '/'){
+        strain_IFC_dir = strain_IFC_dir + "/";
+    }
+
 
     // The order to determine parameters is irregular here.
     // This is because the restart files depend on relax_coordinate.
@@ -586,6 +593,7 @@ void Input::parse_scph_vars()
     scph->renorm_anharmto1st = renorm_anharmto1st;
 
     scph->natmin_tmp = nat_prim;
+    scph->strain_IFC_dir = strain_IFC_dir;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();

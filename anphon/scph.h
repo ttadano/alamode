@@ -101,6 +101,7 @@ public:
     int renorm_3to2nd;
     int renorm_2to1st;
     int renorm_anharmto1st;
+    std::string strain_IFC_dir;
 
     // initial strain and displacement
     double **init_u_tensor = nullptr;
