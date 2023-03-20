@@ -157,7 +157,7 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
 
     for (auto i = 0; i < ns; ++i) {
         for (auto j = 0; j < ns; ++j) {
-            evec_in[i][j] /= std::sqrt(system->get_mass_super()[system->map_p2s[j / 3][0]]);
+            evec_in[i][j] /= std::sqrt(system->get_mass_super()[system->get_map_p2s(0)[j / 3][0]]);
         }
     }
 
@@ -295,7 +295,7 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
     // Divide by sqrt of atomic mass to get normal coordinate
     for (auto i = 0; i < ns; ++i) {
         for (auto j = 0; j < ns; ++j) {
-            evec[i][j] /= std::sqrt(system->get_mass_super()[system->map_p2s[j / 3][0]] / amu_ry);
+            evec[i][j] /= std::sqrt(system->get_mass_super()[system->get_map_p2s(0)[j / 3][0]] / amu_ry);
 //            evec[i][j] /= std::sqrt(system->mass[system->map_trueprim_to_super[j / 3][0]]);
         }
     }

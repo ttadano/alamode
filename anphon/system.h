@@ -78,19 +78,15 @@ public:
     int load_primitive_from_file;
     double volume_p;
 
-    unsigned int ntran;
-    unsigned int nat_anharm, ntran_anharm;
-    unsigned int *kd, nkd;
-    unsigned int *kd_anharm;
+    unsigned int nkd;
 
-    unsigned int **map_p2s, **map_p2s_anharm;
+    unsigned int **map_p2s_anharm;
     unsigned int **map_p2s_anharm_orig;
 
     Maps *map_s2p, *map_s2p_anharm;
 
     std::string *symbol_kd;
     double *mass_kd;
-//    double *mass_s, *mass_anharm;
 
     double Tmin, Tmax, dT;
 

@@ -118,7 +118,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
                              * evec_in[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->get_cell("prim").kind[system->map_p2s[iat][0]]] * std::norm(dprod);
+                prod += isotope_factor[system->get_cell("prim").kind[system->get_map_p2s(0)[iat][0]]] * std::norm(dprod);
             }
 
             const auto omega1 = eval_in[ik][is];
@@ -171,7 +171,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
                              * evec_in[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->get_cell("prim").kind[system->map_p2s[iat][0]]] * std::norm(dprod);
+                prod += isotope_factor[system->get_cell("prim").kind[system->get_map_p2s(0)[iat][0]]] * std::norm(dprod);
             }
 
             weight[ik] = prod * eval_in[ik][is];

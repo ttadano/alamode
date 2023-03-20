@@ -129,7 +129,7 @@ void Fcs_phonon::setup(std::string mode)
 
         allocate(maxdev, maxorder);
         examine_translational_invariance(maxorder,
-                                         system->nat_anharm,
+                                         system->get_cell("super").number_of_atoms,
                                          system->get_cell("prim").number_of_atoms,
                                          maxdev,
                                          fc2_ext,
@@ -180,18 +180,7 @@ void Fcs_phonon::setup(std::string mode)
 
             it.relvecs = relvecs;
         }
-
-//        for (const auto &it : force_constant_with_cell[order]) {
-//            for (auto i = 0; i < order + 2; ++i) {
-//                std::cout << std::setw(4) << it.pairs[i].index;
-//            }
-//            for (auto i = 0; i < order + 1; ++i) {
-//                std::cout << std::setw(10) << it.relvecs[i].transpose();
-//            }
-//            std::cout << std::setw(15) << it.fcs_val << '\n';
-//        }
     }
-
 }
 
 void Fcs_phonon::load_fc2_xml()
@@ -438,7 +427,7 @@ void Fcs_phonon::examine_translational_invariance(const int n,
                         for (m = 0; m < 3; ++m) {
                             fc2_tmp.atm1 = j;
                             fc2_tmp.xyz1 = k;
-                            fc2_tmp.atm2 = system->map_p2s[j][0];
+                            fc2_tmp.atm2 = system->get_map_p2s(0)[j][0];
                             fc2_tmp.xyz2 = m;
                             fc2_tmp.cell_s = 0;
                             fc2_tmp.fcs_val = sum2[3 * j + k][m];

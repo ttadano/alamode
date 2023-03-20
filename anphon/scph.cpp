@@ -1703,8 +1703,8 @@ void Scph::setup_transform_symmetry()
 
                 // Fractional coordinates of x1 and x2
                 for (icrd = 0; icrd < 3; ++icrd) {
-                    x1[icrd] = xf_tmp(system->map_p2s[iat][0], icrd);
-                    x2[icrd] = xf_tmp(system->map_p2s[jat][0], icrd);
+                    x1[icrd] = xf_tmp(system->get_map_p2s(0)[iat][0], icrd);
+                    x2[icrd] = xf_tmp(system->get_map_p2s(0)[jat][0], icrd);
                 }
                 // Convert to fractional basis of the primitive cell
                 x1 = convmat * x1;
@@ -1950,7 +1950,7 @@ void Scph::setup_transform_ifc()
 
     for (i = 0; i < nat; ++i) {
         for (j = 0; j < 3; ++j) {
-            xf_p(i, j) = xf_tmp(system->map_p2s[i][0], j);
+            xf_p(i, j) = xf_tmp(system->get_map_p2s(0)[i][0], j);
         }
     }
 
@@ -3382,7 +3382,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
 
     for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
         for (j = 0; j < 3; ++j) {
-            xtmp(i, j) = system->get_cell("super").x_fractional(system->map_p2s[i][0], j);
+            xtmp(i, j) = system->get_cell("super").x_fractional(system->get_map_p2s(0)[i][0], j);
         }
     }
     xtmp = xtmp * system->get_cell("super").lattice_vector.transpose();
@@ -3424,8 +3424,8 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                 for (icell = 0; icell < ncell; ++icell) {
                     delta_fc2[is][js][icell]
                             = delta_dymat[iT][is][js][icell].real()
-                              * std::sqrt(system->get_mass_super()[system->map_p2s[iat][0]]
-                                          * system->get_mass_super()[system->map_p2s[jat][0]]);
+                              * std::sqrt(system->get_mass_super()[system->get_map_p2s(0)[iat][0]]
+                                          * system->get_mass_super()[system->get_map_p2s(0)[jat][0]]);
                 }
 
             }

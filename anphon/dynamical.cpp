@@ -320,7 +320,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
     for (i = 0; i < natmin; ++i) {
         // TODO: replace map_p2s
-        const auto iat = system->map_p2s[i][0];
+        const auto iat = system->get_map_p2s(0)[i][0];
         for (j = 0; j < nat; ++j) {
             distall[i][j].clear();
             for (icell = 0; icell < nneib; ++icell) {
@@ -505,7 +505,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
                     auto count = 0;
                     for (j = 0; j < nat_prim; ++j) {
                         // TODO; replace below (map_p2s)
-                        const auto mass = system->get_mass_super()[system->map_p2s[i][0]] * system->get_mass_super()[system->map_p2s[j][0]];
+                        const auto mass = system->get_mass_super()[system->get_map_p2s(0)[i][0]] * system->get_mass_super()[system->get_map_p2s(0)[j][0]];
                         check += std::sqrt(mass) * dymat_k[3 * i + icrd][3 * j + jcrd];
                         count += 1;
                     }
@@ -591,12 +591,12 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto xyz2 = it.xyz2;
         const auto icell = it.cell_s;
 
-        const auto atm1_s = system->map_p2s[atm1_p][0];
+        const auto atm1_s = system->get_map_p2s(0)[atm1_p][0];
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
             vec[i] = xf_tmp(atm2_s, i) + xshift_s[icell][i]
-                     - xf_tmp(system->map_p2s[atm2_p][0], i);
+                     - xf_tmp(system->get_map_p2s(0)[atm2_p][0], i);
         }
 
         vec = convmat * vec;
@@ -661,7 +661,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
     if (denom > eps) {
 
         for (iat = 0; iat < nat_prim; ++iat) {
-            const auto atm_p1 = system->map_p2s[iat][0];
+            const auto atm_p1 = system->get_map_p2s(0)[iat][0];
 
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
@@ -672,7 +672,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
             rotvec(kz1, kvec_na_in, born_tmp, 'T');
 
             for (jat = 0; jat < nat_prim; ++jat) {
-                const auto atm_p2 = system->map_p2s[jat][0];
+                const auto atm_p2 = system->get_map_p2s(0)[jat][0];
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
@@ -722,8 +722,8 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
         for (jat = 0; jat < nat_prim; ++jat) {
 
             for (i = 0; i < 3; ++i) {
-                xdiff[i] = xf_tmp(system->map_p2s[iat][0], i)
-                           - xf_tmp(system->map_p2s[jat][0], i);
+                xdiff[i] = xf_tmp(system->get_map_p2s(0)[iat][0], i)
+                           - xf_tmp(system->get_map_p2s(0)[jat][0], i);
             }
 
             xdiff = convmat * xdiff;
@@ -771,7 +771,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
     if (denom > eps) {
 
         for (unsigned int iat = 0; iat < natmin; ++iat) {
-            unsigned int atm_p1 = system->map_p2s[iat][0];
+            unsigned int atm_p1 = system->get_map_p2s(0)[iat][0];
 
             for (i = 0; i < 3; ++i) {
                 for (j = 0; j < 3; ++j) {
@@ -782,7 +782,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
             rotvec(kz1, kvec_na_in, born_tmp, 'T');
 
             for (unsigned int jat = 0; jat < natmin; ++jat) {
-                unsigned int atm_p2 = system->map_p2s[jat][0];
+                unsigned int atm_p2 = system->get_map_p2s(0)[jat][0];
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
@@ -794,10 +794,10 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
 
                 std::complex<double> exp_phase = std::complex<double>(0.0, 0.0);
 
-                for (i = 0; i < system->ntran; ++i) {
+                for (i = 0; i < system->get_map_p2s(1)[0].size(); ++i) {
 
                     std::complex<double> exp_phase_tmp = std::complex<double>(0.0, 0.0);
-                    unsigned int atm_s2 = system->map_p2s[jat][i];
+                    unsigned int atm_s2 = system->get_map_p2s(0)[jat][i];
 
                     // Average over mirror atoms
 
@@ -805,7 +805,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                         unsigned int cell = mindist_list[iat][atm_s2][j];
 
                         for (unsigned int k = 0; k < 3; ++k) {
-                            vec[k] = xf_tmp(system->map_p2s[jat][i], k) +
+                            vec[k] = xf_tmp(system->get_map_p2s(0)[jat][i], k) +
                                      xshift_s[cell][k]
                                      - xf_tmp(atm_p2, k);
                         }
@@ -821,7 +821,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                     }
                     exp_phase += exp_phase_tmp / static_cast<double>(mindist_list[iat][atm_s2].size());
                 }
-                exp_phase /= static_cast<double>(system->ntran);
+                exp_phase /= static_cast<double>(system->get_map_p2s(1)[0].size());
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
@@ -1451,7 +1451,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
         for (i = 0; i < natmin_tmp; ++i) {
             std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                      << std::setw(3) << system->symbol_kd[system->get_cell("super").kind[system->map_p2s[i][0]]]
+                      << std::setw(3) << system->symbol_kd[system->get_cell("super").kind[system->get_map_p2s(0)[i][0]]]
                       << ") :" << std::endl;
 
             for (j = 0; j < 3; ++j) {
@@ -1580,7 +1580,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
                 std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
                 for (i = 0; i < natmin_tmp; ++i) {
                     std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                              << std::setw(3) << system->symbol_kd[system->get_cell("prim").kind[system->map_p2s[i][0]]]
+                              << std::setw(3) << system->symbol_kd[system->get_cell("prim").kind[system->get_map_p2s(0)[i][0]]]
                               << ") :"
                               << std::endl;
 
@@ -1653,7 +1653,7 @@ void Dynamical::calc_atomic_participation_ratio(const std::complex<double> *evec
     for (iat = 0; iat < natmin; ++iat) {
         ret[iat] = (std::norm(evec_in[3 * iat])
                     + std::norm(evec_in[3 * iat + 1])
-                    + std::norm(evec_in[3 * iat + 2])) / system->get_mass_super()[system->map_p2s[iat][0]];
+                    + std::norm(evec_in[3 * iat + 2])) / system->get_mass_super()[system->get_map_p2s(0)[iat][0]];
     }
 
     auto sum = 0.0;

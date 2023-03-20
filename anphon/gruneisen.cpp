@@ -623,19 +623,23 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
     pt.put("Data.Structure.Position", "");
     std::string str_tmp;
 
-    for (i = 0; i < system->get_cell("super").number_of_atoms; ++i) {
+    const auto cell_tmp = system->get_cell("super");
+    const auto map_tmp = system->get_map_p2s(0);
+    const auto nat_prim_tmp = system->get_cell("prim").number_of_atoms;
+
+    for (i = 0; i < cell_tmp.number_of_atoms; ++i) {
         str_tmp.clear();
-        for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->get_cell("super").x_fractional(i, j));
+        for (j = 0; j < 3; ++j) str_tmp += " " + double2string(cell_tmp.x_fractional(i, j));
         auto &child = pt.add("Data.Structure.Position.pos", str_tmp);
         child.put("<xmlattr>.index", i + 1);
-        child.put("<xmlattr>.element", system->symbol_kd[system->get_cell("prim").kind[i]]);
+        child.put("<xmlattr>.element", system->symbol_kd[cell_tmp.kind[i]]);
     }
 
-    pt.put("Data.Symmetry.NumberOfTranslations", system->ntran);
-    for (i = 0; i < system->ntran; ++i) {
-        for (j = 0; j < system->get_cell("prim").number_of_atoms; ++j) {
+    pt.put("Data.Symmetry.NumberOfTranslations", map_tmp[0].size());
+    for (i = 0; i < map_tmp[0].size(); ++i) {
+        for (j = 0; j < nat_prim_tmp; ++j) {
             auto &child = pt.add("Data.Symmetry.Translations.map",
-                                 system->map_p2s[j][i] + 1);
+                                 map_tmp[j][i] + 1);
             child.put("<xmlattr>.tran", i + 1);
             child.put("<xmlattr>.atom", j + 1);
         }
@@ -652,7 +656,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
                   std::to_string(it.pairs[0].index / 3 + 1)
                   + " " + std::to_string(it.pairs[0].index % 3 + 1));
         child.put("<xmlattr>.pair2",
-                  std::to_string(system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
+                  std::to_string(map_tmp[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
                   + " " + std::to_string(it.pairs[1].index % 3 + 1)
                   + " " + std::to_string(it.pairs[1].cell_s + 1));
     }
@@ -668,7 +672,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
                   std::to_string(it.pairs[0].index / 3 + 1)
                   + " " + std::to_string(it.pairs[0].index % 3 + 1));
         child.put("<xmlattr>.pair2",
-                  std::to_string(system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
+                  std::to_string(map_tmp[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
                   + " " + std::to_string(it.pairs[1].index % 3 + 1)
                   + " " + std::to_string(it.pairs[1].cell_s + 1));
     }
@@ -685,11 +689,11 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
                       std::to_string(it.pairs[0].index / 3 + 1)
                       + " " + std::to_string(it.pairs[0].index % 3 + 1));
             child.put("<xmlattr>.pair2",
-                      std::to_string(system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
+                      std::to_string(map_tmp[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
                       + " " + std::to_string(it.pairs[1].index % 3 + 1)
                       + " " + std::to_string(it.pairs[1].cell_s + 1));
             child.put("<xmlattr>.pair3",
-                      std::to_string(system->map_p2s[it.pairs[2].index / 3][it.pairs[2].tran] + 1)
+                      std::to_string(map_tmp[it.pairs[2].index / 3][it.pairs[2].tran] + 1)
                       + " " + std::to_string(it.pairs[2].index % 3 + 1)
                       + " " + std::to_string(it.pairs[2].cell_s + 1));
         }
@@ -707,11 +711,11 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
                       std::to_string(it.pairs[0].index / 3 + 1)
                       + " " + std::to_string(it.pairs[0].index % 3 + 1));
             child.put("<xmlattr>.pair2",
-                      std::to_string(system->map_p2s[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
+                      std::to_string(map_tmp[it.pairs[1].index / 3][it.pairs[1].tran] + 1)
                       + " " + std::to_string(it.pairs[1].index % 3 + 1)
                       + " " + std::to_string(it.pairs[1].cell_s + 1));
             child.put("<xmlattr>.pair3",
-                      std::to_string(system->map_p2s[it.pairs[2].index / 3][it.pairs[2].tran] + 1)
+                      std::to_string(map_tmp[it.pairs[2].index / 3][it.pairs[2].tran] + 1)
                       + " " + std::to_string(it.pairs[2].index % 3 + 1)
                       + " " + std::to_string(it.pairs[2].cell_s + 1));
         }

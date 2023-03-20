@@ -360,7 +360,7 @@ void Ewald::compute_ewald_fcs()
     allocate(fc_ewald_long, 3, 3);
 
     for (iat = 0; iat < natmin; ++iat) {
-        atm_s = system->map_p2s[iat][0];
+        atm_s = system->get_map_p2s(0)[iat][0];
         for (jat = 0; jat < nat; ++jat) {
             calc_short_term_ewald_fcs(atm_s, jat, fc_ewald_short);
             calc_long_term_ewald_fcs(atm_s, jat, fc_ewald_long);
@@ -398,7 +398,7 @@ void Ewald::compute_ewald_fcs()
     FcsClassExtent fcext_tmp;
 
     for (iat = 0; iat < natmin; ++iat) {
-        atm_s = system->map_p2s[iat][0];
+        atm_s = system->get_map_p2s(0)[iat][0];
 
         for (icrd = 0; icrd < 3; ++icrd) {
             for (jat = 0; jat < nat; ++jat) {
@@ -497,7 +497,7 @@ void Ewald::compute_ewald_fcs2()
     allocate(fc_ewald_long, 3, 3);
 
     for (iat = 0; iat < natmin; ++iat) {
-        atm_s = system->map_p2s[iat][0];
+        atm_s = system->get_map_p2s(0)[iat][0];
         for (jat = 0; jat < nat; ++jat) {
             calc_short_term_ewald_fcs(atm_s, jat, fc_ewald_short);
             calc_long_term_ewald_fcs(atm_s, jat, fc_ewald_long);
@@ -535,7 +535,7 @@ void Ewald::compute_ewald_fcs2()
     FcsClassExtent fcext_tmp;
 
     for (iat = 0; iat < natmin; ++iat) {
-        atm_s = system->map_p2s[iat][0];
+        atm_s = system->get_map_p2s(0)[iat][0];
 
         for (icrd = 0; icrd < 3; ++icrd) {
             for (jat = 0; jat < nat; ++jat) {
@@ -943,8 +943,8 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
     std::vector<std::vector<double>> func_L(3, std::vector<double>(3, 0.0));
 
     // Substitute quantities into variables
-    int atm_s1 = system->map_p2s[iat][0];
-    int atm_s2 = system->map_p2s[jat][0];
+    int atm_s1 = system->get_map_p2s(0)[iat][0];
+    int atm_s2 = system->get_map_p2s(0)[jat][0];
 
     for (i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
@@ -970,7 +970,7 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                         for (kat = 0; kat < system->get_cell("prim").number_of_atoms; ++kat) {
                             if (kat == iat) continue;
 
-                            atm_s3 = system->map_p2s[kat][0];
+                            atm_s3 = system->get_map_p2s(0)[kat][0];
                             for (i = 0; i < 3; ++i) {
                                 x_tmp[i] = system->get_cell("super").x_fractional(atm_s1, i)
                                            - system->get_cell("super").x_fractional(atm_s3, i);
@@ -1003,7 +1003,7 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                     } else {
 
                         for (kat = 0; kat < system->get_cell("prim").number_of_atoms; ++kat) {
-                            atm_s3 = system->map_p2s[kat][0];
+                            atm_s3 = system->get_map_p2s(0)[kat][0];
                             for (i = 0; i < 3; ++i) {
                                 x_tmp[i] = system->get_cell("super").x_fractional(atm_s1, i)
                                            - system->get_cell("super").x_fractional(atm_s3, i);
@@ -1126,8 +1126,8 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
     std::complex<double> im(0.0, 1.0);
     double tmp;
 
-    int atm_s1 = system->map_p2s[iat][0];
-    int atm_s2 = system->map_p2s[jat][0];
+    int atm_s1 = system->get_map_p2s(0)[iat][0];
+    int atm_s2 = system->get_map_p2s(0)[jat][0];
     double mi = system->get_mass_super()[atm_s1];
     double mj = system->get_mass_super()[atm_s2];
     double vol_p = system->volume_p;
@@ -1209,7 +1209,7 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
             common = std::exp(-0.25 * gd / std::pow(lambda, 2.0)) / gd;
 
             for (int kat = 0; kat < system->get_cell("prim").number_of_atoms; ++kat) {
-                int atm_s3 = system->map_p2s[kat][0];
+                int atm_s3 = system->get_map_p2s(0)[kat][0];
 
                 for (i = 0; i < 3; ++i) {
                     vecl[i] = system->get_cell("super").x_fractional(atm_s1, i)

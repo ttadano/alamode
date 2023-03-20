@@ -723,12 +723,12 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
         const auto xyz2 = it.xyz2;
         const auto icell = it.cell_s;
 
-        const auto atm1_s = system->map_p2s[atm1_p][0];
+        const auto atm1_s = system->get_map_p2s(0)[atm1_p][0];
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
-                     - system->get_cell("super").x_fractional(system->map_p2s[atm2_p][0], i);
+                     - system->get_cell("super").x_fractional(system->get_map_p2s(0)[atm2_p][0], i);
         }
 
         rotvec(vec, vec, system->get_cell("super").lattice_vector);
@@ -821,12 +821,12 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
         const auto xyz2 = it.xyz2;
         const auto icell = it.cell_s;
 
-        const auto atm1_s = system->map_p2s[atm1_p][0];
+        const auto atm1_s = system->get_map_p2s(0)[atm1_p][0];
         const auto atm2_p = system->map_s2p[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
-                     - system->get_cell("super").x_fractional(system->map_p2s[atm2_p][0], i);
+                     - system->get_cell("super").x_fractional(system->get_map_p2s(0)[atm2_p][0], i);
             vec2[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
                       - system->get_cell("super").x_fractional(atm1_s, i);
         }

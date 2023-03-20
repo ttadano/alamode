@@ -394,8 +394,8 @@ double Thermodynamics::disp_corrfunc(const double T_in,
     }
 
     ret *= 1.0 / (static_cast<double>(nk)
-                  * std::sqrt(system->get_mass_super()[system->map_p2s[ncrd1 / 3][0]]
-                              * system->get_mass_super()[system->map_p2s[ncrd2 / 3][0]]));
+                  * std::sqrt(system->get_mass_super()[system->get_map_p2s(0)[ncrd1 / 3][0]]
+                              * system->get_mass_super()[system->get_map_p2s(0)[ncrd2 / 3][0]]));
 
     return ret;
 }

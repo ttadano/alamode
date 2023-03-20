@@ -46,13 +46,8 @@ System::~System()
 
 void System::set_default_variables()
 {
-    kd = nullptr;
-    kd_anharm = nullptr;
     mass_kd = nullptr;
-//    mass_s = nullptr;
-//    mass_anharm = nullptr;
     symbol_kd = nullptr;
-    map_p2s = nullptr;
     map_p2s_anharm = nullptr;
     map_p2s_anharm_orig = nullptr;
     map_s2p = nullptr;
@@ -62,26 +57,11 @@ void System::set_default_variables()
 
 void System::deallocate_variables()
 {
-    if (kd) {
-        deallocate(kd);
-    }
-    if (kd_anharm) {
-        deallocate(kd_anharm);
-    }
     if (mass_kd) {
         deallocate(mass_kd);
     }
-//    if (mass_s) {
-//        deallocate(mass_s);
-//    }
-//    if (mass_anharm) {
-//        deallocate(mass_anharm);
-//    }
     if (symbol_kd) {
         deallocate(symbol_kd);
-    }
-    if (map_p2s) {
-        deallocate(map_p2s);
     }
     if (map_p2s_anharm) {
         deallocate(map_p2s_anharm);

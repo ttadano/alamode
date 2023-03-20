@@ -919,7 +919,7 @@ void Writes::write_phonon_dos() const
     allocate(nat_each_kd, system->get_cell("prim").number_of_elems);
     for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) nat_each_kd[i] = 0;
     for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
-        ++nat_each_kd[system->get_cell("prim").kind[system->map_p2s[i][0]]];
+        ++nat_each_kd[system->get_cell("prim").kind[system->get_map_p2s(0)[i][0]]];
     }
     for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
         ofs_dos << std::setw(5) << nat_each_kd[i];
@@ -1163,7 +1163,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
     }
 
     for (i = 0; i < natmin; ++i) {
-        k = system->map_p2s[i][0];
+        k = system->get_map_p2s(0)[i][0];
         for (j = 0; j < 3; ++j) {
             xmod[i][j] = system->get_cell("super").x_cartesian(k, j);
         }
@@ -1191,7 +1191,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
 
             for (j = 0; j < natmin; ++j) {
 
-                const auto m = system->map_p2s[j][0];
+                const auto m = system->get_map_p2s(0)[j][0];
 
                 ofs_anime << std::setw(10) << kd_tmp[j];
 
@@ -1459,7 +1459,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
 
     double xtmp[3];
     for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
-        for (j = 0; j < 3; ++j) xtmp[j] = system->get_cell("super").x_fractional(system->map_p2s[i][0], j);
+        for (j = 0; j < 3; ++j) xtmp[j] = system->get_cell("super").x_fractional(system->get_map_p2s(0)[i][0], j);
         rotvec(xtmp, xtmp, system->get_cell("super").lattice_vector);
         rotvec(xtmp, xtmp, system->get_primcell().reciprocal_lattice_vector);
         for (j = 0; j < 3; ++j) xtmp[j] /= 2.0 * pi;
@@ -1491,7 +1491,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
                                                    *dataspace));
     int kdtmp[dims[0]];
     for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
-        k = system->map_p2s[i][0];
+        k = system->get_map_p2s(0)[i][0];
         kdtmp[i] = system->get_cell("prim").kind[k];
     }
 
@@ -2242,7 +2242,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     for (i = 0; i < natmin; ++i) {
         for (j = 0; j < 3; ++j) {
-            xtmp(i, j) = system->get_cell("super").x_fractional(system->map_p2s[i][0], j);
+            xtmp(i, j) = system->get_cell("super").x_fractional(system->get_map_p2s(0)[i][0], j);
         }
     }
     xtmp = xtmp * system->get_cell("super").lattice_vector.transpose();
@@ -2272,7 +2272,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     // Prepare atomic symbols and masses
 
     for (i = 0; i < natmin; ++i) {
-        k = system->map_p2s[i][0];
+        k = system->get_map_p2s(0)[i][0];
         kd_tmp[i] = system->symbol_kd[system->get_cell("prim").kind[k]];
         mass[i] = system->get_mass_super()[k];
     }
