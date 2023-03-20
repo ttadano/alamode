@@ -112,36 +112,27 @@ void Fcs_phonon::setup(std::string mode)
     allocate(force_constant_with_cell, maxorder);
 
     if (mympi->my_rank == 0) {
-        double *maxdev;
 
         load_fc2_xml();
         load_fcs_xml();
 
         for (i = 0; i < maxorder; ++i) {
             std::cout << "  Number of non-zero IFCs for " << i + 2 << " order: ";
-            if (i == 0) {
-                std::cout << fc2_ext.size() << std::endl;
-            } else {
-                std::cout << force_constant_with_cell[i].size() << std::endl;
-            }
+            std::cout << force_constant_with_cell[i].size() << std::endl;
         }
         std::cout << std::endl;
-
-        allocate(maxdev, maxorder);
-        examine_translational_invariance(maxorder,
-                                         system->get_supercell(0).number_of_atoms,
-                                         system->get_primcell().number_of_atoms,
-                                         maxdev,
-                                         fc2_ext,
-                                         force_constant_with_cell);
 
         std::cout << "  Maximum deviation from the translational invariance: " << std::endl;
         for (i = 0; i < maxorder; ++i) {
+            const auto maxdev = examine_translational_invariance(i,
+                                             system->get_supercell(i).number_of_atoms,
+                                             system->get_primcell().number_of_atoms,
+                                             system->get_mapping_super_alm(i).from_true_primitive,
+                                             force_constant_with_cell[i]);
             std::cout << "   Order " << i + 2 << " : " << std::setw(12)
-                      << std::scientific << maxdev[i] << std::endl;
+                      << std::scientific << maxdev << std::endl;
         }
         std::cout << std::endl;
-        deallocate(maxdev);
     }
 
     MPI_Bcast_fc2_ext();
@@ -161,7 +152,7 @@ void Fcs_phonon::setup(std::string mode)
 
         const auto map_tmp = system->get_mapping_super_alm(0);
 
-        for (auto &it : force_constant_with_cell[order]) {
+        for (auto &it: force_constant_with_cell[order]) {
 
             relvecs.clear();
 
@@ -170,7 +161,7 @@ void Fcs_phonon::setup(std::string mode)
                 const auto atom2_s = map_tmp.from_true_primitive[it.pairs[i].index / 3][0];
                 for (auto j = 0; j < 3; ++j) {
                     relvec_tmp[j] = xf_tmp(atom1_s, j) + xf_image[it.pairs[i].cell_s][j]
-                            - xf_tmp(atom2_s, j);
+                                    - xf_tmp(atom2_s, j);
                 }
 
                 relvec_tmp = convmat * relvec_tmp;
@@ -384,153 +375,110 @@ void Fcs_phonon::MPI_Bcast_fc2_ext()
     deallocate(ind);
 }
 
-void Fcs_phonon::examine_translational_invariance(const int n,
-                                                  const unsigned int nat,
-                                                  const unsigned int natmin,
-                                                  double *ret,
-                                                  std::vector<FcsClassExtent> &fc2,
-                                                  std::vector<FcsArrayWithCell> *fcs) const
+double Fcs_phonon::examine_translational_invariance(const int order,
+                                                    const unsigned int nat,
+                                                    const unsigned int natmin,
+                                                    const std::vector<std::vector<unsigned int>> &map_p2s_in,
+                                                    const std::vector<FcsArrayWithCell> &fc_in) const
 {
-    int i, j, k, l, m;
+    int j, k, l, m;
 
     double dev;
-    double **sum2;
-    double ***sum3;
-    double ****sum4;
 
-    const auto force_asr = false;
-    FcsClassExtent fc2_tmp;
+    double ret = 0.0;
 
-    for (i = 0; i < n; ++i) ret[i] = 0.0;
+    if (order == 0) {
+        double **sum2;
+        allocate(sum2, 3 * natmin, 3);
 
-    for (i = 0; i < n; ++i) {
-
-        if (i == 0) {
-            allocate(sum2, 3 * natmin, 3);
-
-            for (j = 0; j < 3 * natmin; ++j) {
-                for (k = 0; k < 3; ++k) {
-                    sum2[j][k] = 0.0;
-                }
+        for (j = 0; j < 3 * natmin; ++j) {
+            for (k = 0; k < 3; ++k) {
+                sum2[j][k] = 0.0;
             }
-            for (const auto &it: fc2) {
-                sum2[3 * it.atm1 + it.xyz1][it.xyz2] += it.fcs_val;
-            }
-
-            if (force_asr) {
-                std::cout << "  force_asr = true: Modify harmonic force constans so that the ASR is satisfied." << std::
-                endl;
-                for (j = 0; j < natmin; ++j) {
-                    for (k = 0; k < 3; ++k) {
-                        for (m = 0; m < 3; ++m) {
-                            fc2_tmp.atm1 = j;
-                            fc2_tmp.xyz1 = k;
-                            fc2_tmp.atm2 = system->get_map_p2s(0)[j][0];
-                            fc2_tmp.xyz2 = m;
-                            fc2_tmp.cell_s = 0;
-                            fc2_tmp.fcs_val = sum2[3 * j + k][m];
-                            const auto it_target = std::find(fc2.begin(), fc2.end(), fc2_tmp);
-                            if (std::abs(fc2_tmp.fcs_val) > eps12) {
-                                if (it_target != fc2.end()) {
-                                    fc2[it_target - fc2.begin()].fcs_val -= fc2_tmp.fcs_val;
-                                } else {
-                                    exit("examine_translational_invariance",
-                                         "Corresponding IFC not found.");
-                                }
-                            }
-                        }
-                    }
-                }
-                for (j = 0; j < 3 * natmin; ++j) {
-                    for (k = 0; k < 3; ++k) {
-                        sum2[j][k] = 0.0;
-                    }
-                }
-
-                for (const auto &it: fc2) {
-                    sum2[3 * it.atm1 + it.xyz1][it.xyz2] += it.fcs_val;
-                }
-            }
-
-            for (j = 0; j < 3 * natmin; ++j) {
-                for (k = 0; k < 3; ++k) {
-                    dev = std::abs(sum2[j][k]);
-                    if (ret[i] < dev) ret[i] = dev;
-                }
-            }
-            deallocate(sum2);
-
-        } else if (i == 1) {
-
-            allocate(sum3, 3 * natmin, 3 * nat, 3);
-
-            for (j = 0; j < 3 * natmin; ++j) {
-                for (k = 0; k < 3 * nat; ++k) {
-                    for (l = 0; l < 3; ++l) {
-                        sum3[j][k][l] = 0.0;
-                    }
-                }
-            }
-
-            for (const auto &it: fcs[i]) {
-                j = it.pairs[0].index;
-                k = 3 * (natmin * it.pairs[1].tran + it.pairs[1].index / 3) + it.pairs[1].index % 3;
-                l = it.pairs[2].index % 3;
-                sum3[j][k][l] += it.fcs_val;
-            }
-            for (j = 0; j < 3 * natmin; ++j) {
-                for (k = 0; k < 3 * nat; ++k) {
-                    for (l = 0; l < 3; ++l) {
-                        dev = std::abs(sum3[j][k][l]);
-                        if (ret[i] < dev) ret[i] = dev;
-                    }
-                }
-            }
-
-            deallocate(sum3);
-
-        } else if (i == 2) {
-
-            allocate(sum4, 3 * natmin, 3 * nat, 3 * nat, 3);
-
-            for (j = 0; j < 3 * natmin; ++j) {
-                for (k = 0; k < 3 * nat; ++k) {
-                    for (l = 0; l < 3 * nat; ++l) {
-                        for (m = 0; m < 3; ++m) {
-                            sum4[j][k][l][m] = 0.0;
-                        }
-                    }
-                }
-            }
-
-            for (const auto &it: fcs[i]) {
-                j = it.pairs[0].index;
-                k = 3 * system->get_map_p2s(2)[it.pairs[1].index / 3][it.pairs[1].tran]
-                    + it.pairs[1].index % 3;
-                l = 3 * system->get_map_p2s(2)[it.pairs[2].index / 3][it.pairs[2].tran]
-                    + it.pairs[2].index % 3;
-                m = it.pairs[3].index % 3;
-
-                sum4[j][k][l][m] += it.fcs_val;
-            }
-
-            for (j = 0; j < 3 * natmin; ++j) {
-                for (k = 0; k < 3 * nat; ++k) {
-                    for (l = 0; l < 3 * nat; ++l) {
-                        for (m = 0; m < 3; ++m) {
-                            dev = std::abs(sum4[j][k][l][m]);
-                            if (ret[i] < dev) ret[i] = dev;
-
-                        }
-                    }
-                }
-            }
-
-            deallocate(sum4);
-
         }
 
+        for (const auto &it: fc_in) {
+            j = it.pairs[0].index;
+            k = it.pairs[1].index % 3;
+            sum2[j][k] += it.fcs_val;
+        }
+
+        for (j = 0; j < 3 * natmin; ++j) {
+            for (k = 0; k < 3; ++k) {
+                dev = std::abs(sum2[j][k]);
+                if (ret < dev) ret = dev;
+            }
+        }
+        deallocate(sum2);
+
+    } else if (order == 1) {
+
+        double ***sum3;
+        allocate(sum3, 3 * natmin, 3 * nat, 3);
+
+        for (j = 0; j < 3 * natmin; ++j) {
+            for (k = 0; k < 3 * nat; ++k) {
+                for (l = 0; l < 3; ++l) {
+                    sum3[j][k][l] = 0.0;
+                }
+            }
+        }
+
+        for (const auto &it: fc_in) {
+            j = it.pairs[0].index;
+            k = 3 * map_p2s_in[it.pairs[1].index / 3][it.pairs[1].tran] + it.pairs[1].index % 3;
+            l = it.pairs[2].index % 3;
+            sum3[j][k][l] += it.fcs_val;
+        }
+        for (j = 0; j < 3 * natmin; ++j) {
+            for (k = 0; k < 3 * nat; ++k) {
+                for (l = 0; l < 3; ++l) {
+                    dev = std::abs(sum3[j][k][l]);
+                    if (ret < dev) ret = dev;
+                }
+            }
+        }
+        deallocate(sum3);
+
+    } else if (order == 2) {
+
+        double ****sum4;
+        allocate(sum4, 3 * natmin, 3 * nat, 3 * nat, 3);
+
+        for (j = 0; j < 3 * natmin; ++j) {
+            for (k = 0; k < 3 * nat; ++k) {
+                for (l = 0; l < 3 * nat; ++l) {
+                    for (m = 0; m < 3; ++m) {
+                        sum4[j][k][l][m] = 0.0;
+                    }
+                }
+            }
+        }
+
+        for (const auto &it: fc_in) {
+            j = it.pairs[0].index;
+            k = 3 * map_p2s_in[it.pairs[1].index / 3][it.pairs[1].tran] + it.pairs[1].index % 3;
+            l = 3 * map_p2s_in[it.pairs[2].index / 3][it.pairs[2].tran] + it.pairs[2].index % 3;
+            m = it.pairs[3].index % 3;
+            sum4[j][k][l][m] += it.fcs_val;
+        }
+
+        for (j = 0; j < 3 * natmin; ++j) {
+            for (k = 0; k < 3 * nat; ++k) {
+                for (l = 0; l < 3 * nat; ++l) {
+                    for (m = 0; m < 3; ++m) {
+                        dev = std::abs(sum4[j][k][l][m]);
+                        if (ret < dev) ret = dev;
+
+                    }
+                }
+            }
+        }
+        deallocate(sum4);
+
     }
+
+    return ret;
 }
 
 void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N) const
