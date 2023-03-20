@@ -262,8 +262,8 @@ void Writes::setup_result_io()
 
             fs_result >> natmin_tmp >> nkd_tmp;
 
-            if (!(natmin_tmp == system->get_cell("prim").number_of_atoms &&
-                  nkd_tmp == system->get_cell("prim").number_of_elems)) {
+            if (!(natmin_tmp == system->get_primcell().number_of_atoms &&
+                  nkd_tmp == system->get_primcell().number_of_elems)) {
                 exit("setup_result_io",
                      "SYSTEM information is not consistent");
             }
@@ -383,9 +383,9 @@ void Writes::setup_result_io()
 
             fs_result << "## General information" << std::endl;
             fs_result << "#SYSTEM" << std::endl;
-            fs_result << system->get_cell("prim").number_of_atoms << " " << system->get_cell("prim").number_of_elems
+            fs_result << system->get_primcell().number_of_atoms << " " << system->get_primcell().number_of_elems
                       << std::endl;
-            fs_result << system->volume_p << std::endl;
+            fs_result << system->get_primcell().volume << std::endl;
             fs_result << "#END SYSTEM" << std::endl;
 
             fs_result << "#KPOINT" << std::endl;
@@ -578,7 +578,7 @@ void Writes::print_phonon_energy() const
 void Writes::write_phonon_info()
 {
     if (nbands < 0) {
-        nbands = 3 * system->get_cell("prim").number_of_atoms;
+        nbands = 3 * system->get_primcell().number_of_atoms;
     }
 
     if (print_anime) {
@@ -909,19 +909,19 @@ void Writes::write_phonon_dos() const
     if (!ofs_dos) exit("write_phonon_dos", "cannot open file_dos");
 
     ofs_dos << "#";
-    for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
+    for (i = 0; i < system->get_primcell().number_of_elems; ++i) {
         ofs_dos << std::setw(5) << system->symbol_kd[i];
     }
     ofs_dos << std::endl;
     ofs_dos << "#";
 
     unsigned int *nat_each_kd;
-    allocate(nat_each_kd, system->get_cell("prim").number_of_elems);
-    for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) nat_each_kd[i] = 0;
-    for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
-        ++nat_each_kd[system->get_cell("prim").kind[system->get_map_p2s(0)[i][0]]];
+    allocate(nat_each_kd, system->get_primcell().number_of_elems);
+    for (i = 0; i < system->get_primcell().number_of_elems; ++i) nat_each_kd[i] = 0;
+    for (i = 0; i < system->get_primcell().number_of_atoms; ++i) {
+        ++nat_each_kd[system->get_primcell().kind[system->get_map_p2s(0)[i][0]]];
     }
-    for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
+    for (i = 0; i < system->get_primcell().number_of_elems; ++i) {
         ofs_dos << std::setw(5) << nat_each_kd[i];
     }
     ofs_dos << std::endl;
@@ -944,7 +944,7 @@ void Writes::write_phonon_dos() const
             ofs_dos << std::setw(15) << dos->dos_phonon[i];
         }
         if (dos->projected_dos) {
-            for (auto iat = 0; iat < system->get_cell("prim").number_of_atoms; ++iat) {
+            for (auto iat = 0; iat < system->get_primcell().number_of_atoms; ++iat) {
                 ofs_dos << std::setw(15) << dos->pdos_phonon[iat][i];
             }
         }
@@ -1142,7 +1142,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
     ofs_anime.setf(std::ios::scientific);
 
     unsigned int i, j, k;
-    const auto natmin = system->get_cell("prim").number_of_atoms;
+    const auto natmin = system->get_primcell().number_of_atoms;
     const auto force_factor = 100.0;
 
     double **xmod;
@@ -1157,7 +1157,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_anime << std::setw(15) << system->get_cell("prim").lattice_vector(j, i) * Bohr_in_Angstrom;
+            ofs_anime << std::setw(15) << system->get_primcell().lattice_vector(j, i) * Bohr_in_Angstrom;
         }
         ofs_anime << std::endl;
     }
@@ -1165,13 +1165,13 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
     for (i = 0; i < natmin; ++i) {
         k = system->get_map_p2s(0)[i][0];
         for (j = 0; j < 3; ++j) {
-            xmod[i][j] = system->get_cell("super").x_cartesian(k, j);
+            xmod[i][j] = system->get_supercell(0).x_cartesian(k, j);
         }
 
         for (j = 0; j < 3; ++j) {
             xmod[i][j] *= Bohr_in_Angstrom;
         }
-        kd_tmp[i] = system->symbol_kd[system->get_cell("prim").kind[k]];
+        kd_tmp[i] = system->symbol_kd[system->get_primcell().kind[k]];
     }
 
     i = 0;
@@ -1268,7 +1268,7 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            ofs_evec << std::setw(15) << system->get_cell("prim").lattice_vector(j, i);
+            ofs_evec << std::setw(15) << system->get_primcell().lattice_vector(j, i);
         }
         ofs_evec << std::endl;
     }
@@ -1286,9 +1286,9 @@ void Writes::write_eigenvectors_each(const std::string &fname_evec,
     ofs_evec << std::endl;
     ofs_evec << "# Number of phonon modes: " << std::setw(10) << nbands << std::endl;
     ofs_evec << "# Number of k points : " << std::setw(10) << nk_in << std::endl;
-    ofs_evec << "# Number of atomic kinds : " << std::setw(4) << system->get_cell("prim").number_of_elems << '\n';
+    ofs_evec << "# Number of atomic kinds : " << std::setw(4) << system->get_primcell().number_of_elems << '\n';
     ofs_evec << "# Atomic masses :";
-    for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
+    for (i = 0; i < system->get_primcell().number_of_elems; ++i) {
         ofs_evec << std::setw(15) << system->mass_kd[i];
     }
     ofs_evec << "\n\n";
@@ -1403,7 +1403,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
     hid_t str_datatype = H5Tcopy(H5T_C_S1);
     H5Tset_size(str_datatype, H5T_VARIABLE);
     std::vector<const char *> arr_c_str;
-    for (unsigned int ii = 0; ii < system->get_cell("prim").number_of_elems; ++ii) {
+    for (unsigned int ii = 0; ii < system->get_primcell().number_of_elems; ++ii) {
         arr_c_str.push_back(system->symbol_kd[ii].c_str());
     }
     hsize_t str_dim[1]{arr_c_str.size()};
@@ -1416,7 +1416,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
     dataspace->close();
 
     std::vector<double> mass_tmp;
-    for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
+    for (i = 0; i < system->get_primcell().number_of_elems; ++i) {
         mass_tmp.push_back(system->mass_kd[i]);
     }
     dataspace = new DataSpace(1, str_dim);
@@ -1435,7 +1435,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
     double lavec_tmp[3][3];
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            lavec_tmp[i][j] = system->get_cell("prim").lattice_vector(j, i);
+            lavec_tmp[i][j] = system->get_primcell().lattice_vector(j, i);
         }
     }
     dataspace = new DataSpace(2, dims);
@@ -1452,15 +1452,15 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
     dataset->close();
     dataspace->close();
 
-    dims[0] = system->get_cell("prim").number_of_atoms;
+    dims[0] = system->get_primcell().number_of_atoms;
     dims[1] = 3;
     std::vector<double> xfrac_1D(dims[0] * dims[1]);
     hsize_t counter = 0;
 
     double xtmp[3];
-    for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
-        for (j = 0; j < 3; ++j) xtmp[j] = system->get_cell("super").x_fractional(system->get_map_p2s(0)[i][0], j);
-        rotvec(xtmp, xtmp, system->get_cell("super").lattice_vector);
+    for (i = 0; i < system->get_primcell().number_of_atoms; ++i) {
+        for (j = 0; j < 3; ++j) xtmp[j] = system->get_supercell(0).x_fractional(system->get_map_p2s(0)[i][0], j);
+        rotvec(xtmp, xtmp, system->get_supercell(0).lattice_vector);
         rotvec(xtmp, xtmp, system->get_primcell().reciprocal_lattice_vector);
         for (j = 0; j < 3; ++j) xtmp[j] /= 2.0 * pi;
         for (j = 0; j < 3; ++j) {
@@ -1484,15 +1484,15 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
     dataspace->close();
 
     hsize_t dims2[1];
-    dims2[0] = system->get_cell("prim").number_of_atoms;
+    dims2[0] = system->get_primcell().number_of_atoms;
     dataspace = new DataSpace(1, dims2);
     dataset = new DataSet(group_cell.createDataSet("atomic_kinds",
                                                    PredType::NATIVE_INT,
                                                    *dataspace));
     int kdtmp[dims[0]];
-    for (i = 0; i < system->get_cell("prim").number_of_atoms; ++i) {
+    for (i = 0; i < system->get_primcell().number_of_atoms; ++i) {
         k = system->get_map_p2s(0)[i][0];
-        kdtmp[i] = system->get_cell("prim").kind[k];
+        kdtmp[i] = system->get_primcell().kind[k];
     }
 
     dataset->write(&kdtmp[0], PredType::NATIVE_INT);
@@ -1704,8 +1704,8 @@ void Writes::write_thermodynamics() const
 void Writes::write_gruneisen()
 {
     if (kpoint->kpoint_bs && gruneisen->gruneisen_bs) {
-        if (nbands < 0 || nbands > 3 * system->get_cell("prim").number_of_atoms) {
-            nbands = 3 * system->get_cell("prim").number_of_atoms;
+        if (nbands < 0 || nbands > 3 * system->get_primcell().number_of_atoms) {
+            nbands = 3 * system->get_primcell().number_of_atoms;
         }
 
         std::ofstream ofs_gruneisen;
@@ -2160,7 +2160,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     unsigned int i, j, k;
     unsigned int iband, istep;
     const auto ns = dynamical->neval;
-    const auto natmin = system->get_cell("prim").number_of_atoms;
+    const auto natmin = system->get_primcell().number_of_atoms;
     const auto nsuper = ncell[0] * ncell[1] * ncell[2];
     unsigned int ntmp = nbands;
     unsigned int ndigits = 0;
@@ -2242,10 +2242,10 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     for (i = 0; i < natmin; ++i) {
         for (j = 0; j < 3; ++j) {
-            xtmp(i, j) = system->get_cell("super").x_fractional(system->get_map_p2s(0)[i][0], j);
+            xtmp(i, j) = system->get_supercell(0).x_fractional(system->get_map_p2s(0)[i][0], j);
         }
     }
-    xtmp = xtmp * system->get_cell("super").lattice_vector.transpose();
+    xtmp = xtmp * system->get_supercell(0).lattice_vector.transpose();
     xtmp = xtmp * system->get_primcell().lattice_vector.inverse().transpose();
 
     // Prepare fractional coordinates of atoms in the supercell
@@ -2273,16 +2273,16 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     for (i = 0; i < natmin; ++i) {
         k = system->get_map_p2s(0)[i][0];
-        kd_tmp[i] = system->symbol_kd[system->get_cell("prim").kind[k]];
+        kd_tmp[i] = system->symbol_kd[system->get_primcell().kind[k]];
         mass[i] = system->get_mass_super()[k];
     }
 
     // Prepare lattice vectors of the supercell
 
     for (i = 0; i < 3; ++i) {
-        lavec_super[i][0] = system->get_cell("prim").lattice_vector(i, 0) * ncell[0] * Bohr_in_Angstrom;
-        lavec_super[i][1] = system->get_cell("prim").lattice_vector(i, 1) * ncell[1] * Bohr_in_Angstrom;
-        lavec_super[i][2] = system->get_cell("prim").lattice_vector(i, 2) * ncell[2] * Bohr_in_Angstrom;
+        lavec_super[i][0] = system->get_primcell().lattice_vector(i, 0) * ncell[0] * Bohr_in_Angstrom;
+        lavec_super[i][1] = system->get_primcell().lattice_vector(i, 1) * ncell[1] * Bohr_in_Angstrom;
+        lavec_super[i][2] = system->get_primcell().lattice_vector(i, 2) * ncell[2] * Bohr_in_Angstrom;
     }
 
     // Normalize the magnitude of displacements
@@ -2520,7 +2520,7 @@ void Writes::write_participation_ratio_each(const std::string &fname_pr,
 {
     unsigned int i, j, k;
     const auto neval = dynamical->neval;
-    const auto natmin = system->get_cell("prim").number_of_atoms;
+    const auto natmin = system->get_primcell().number_of_atoms;
 
     double **participation_ratio = nullptr;
     double ***atomic_participation_ratio = nullptr;
@@ -2607,7 +2607,7 @@ void Writes::write_participation_ratio_mesh(const std::string &fname_pr,
     unsigned int i, j, k;
     unsigned int knum;
     const auto neval = dynamical->neval;
-    const auto natmin = system->get_cell("prim").number_of_atoms;
+    const auto natmin = system->get_primcell().number_of_atoms;
     const auto nk = kmesh_in->nk;
 
     double **participation_ratio = nullptr;

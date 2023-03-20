@@ -560,7 +560,7 @@ void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
 {
     int i, is, ik;
     double ****kappa_mode;
-    const auto factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p);
+    const auto factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->get_primcell().volume);
 
     const auto nk_irred = kmesh_in->nk_irred;
     allocate(kappa_mode, ntemp, 9, ns, nk_irred);
@@ -641,7 +641,7 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
     // Compute the coherent part of thermal conductivity
     // based on the Michelle's paper.
     int ib;
-    const auto factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->volume_p);
+    const auto factor_toSI = 1.0e+18 / (std::pow(Bohr_in_Angstrom, 3) * system->get_primcell().volume);
     const auto common_factor = factor_toSI * 1.0e+12 * time_ry / static_cast<double>(nk);
     const auto common_factor_output = factor_toSI * 1.0e+12 * time_ry;
     const int ns2 = ns * ns;

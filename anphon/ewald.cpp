@@ -73,13 +73,13 @@ void Ewald::init()
     if (is_longrange) {
         int nsize[3] = {1, 1, 1};
 
-        const auto nat_tmp = system->get_cell("super").number_of_atoms;
-        const auto natmin_tmp = system->get_cell("prim").number_of_atoms;
+        const auto nat_tmp = system->get_supercell(0).number_of_atoms;
+        const auto natmin_tmp = system->get_primcell().number_of_atoms;
         allocate(multiplicity, nat_tmp, nat_tmp);
         allocate(Born_charge, natmin_tmp, 3, 3);
         allocate(distall_ewald, nat_tmp, nat_tmp);
 
-        get_pairs_of_minimum_distance(nat_tmp, nsize, system->get_cell("super").x_fractional);
+        get_pairs_of_minimum_distance(nat_tmp, nsize, system->get_supercell(0).x_fractional);
 
         for (int i = 0; i < natmin_tmp; ++i) {
             for (int j = 0; j < 3; ++j) {
@@ -123,8 +123,8 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
     invmat3(epsilon_inv, epsilon);
     invepsilon_mat = epsilon_mat.inverse();
 
-    const auto lavec_s_tmp = system->get_cell("super").lattice_vector;
-    const auto rlavec_s_tmp = system->get_cell("super").reciprocal_lattice_vector.transpose();
+    const auto lavec_s_tmp = system->get_supercell(0).lattice_vector;
+    const auto rlavec_s_tmp = system->get_supercell(0).reciprocal_lattice_vector.transpose();
     // For calculating Coulombic (dipole-dipole) FCs
     for (icrd = 0; icrd < 3; ++icrd) {
         lavec_norm[icrd] = lavec_s_tmp.col(icrd).norm();
@@ -156,8 +156,8 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
 
 
     // For calculating Coulombic (dipole-dipole) dynamical matrix
-    const auto lavec_p_tmp = system->get_cell("prim").lattice_vector;
-    const auto rlavec_p_tmp = system->get_cell("prim").reciprocal_lattice_vector.transpose();
+    const auto lavec_p_tmp = system->get_primcell().lattice_vector;
+    const auto rlavec_p_tmp = system->get_primcell().reciprocal_lattice_vector.transpose();
     for (icrd = 0; icrd < 3; ++icrd) {
         lavec_norm[icrd] = lavec_p_tmp.col(icrd).norm();
         rlavec_norm[icrd] = rlavec_p_tmp.col(icrd).norm();
@@ -245,7 +245,7 @@ void Ewald::prepare_G()
                 g_tmp[0] = static_cast<double>(ix);
                 g_tmp[1] = static_cast<double>(iy);
                 g_tmp[2] = static_cast<double>(iz);
-                rotvec(g_tmp, g_tmp, system->get_cell("super").reciprocal_lattice_vector, 'T');
+                rotvec(g_tmp, g_tmp, system->get_supercell(0).reciprocal_lattice_vector, 'T');
                 gnorm = std::sqrt(g_tmp[0] * g_tmp[0] + g_tmp[1] * g_tmp[1] + g_tmp[2] * g_tmp[2]);
                 if (gnorm <= Gmax_sub) {
                     G_vector_sub.emplace_back(g_tmp);
@@ -261,7 +261,7 @@ void Ewald::prepare_G()
                 g_tmp[0] = static_cast<double>(ix);
                 g_tmp[1] = static_cast<double>(iy);
                 g_tmp[2] = static_cast<double>(iz);
-                rotvec(g_tmp, g_tmp, system->get_cell("prim").reciprocal_lattice_vector, 'T');
+                rotvec(g_tmp, g_tmp, system->get_primcell().reciprocal_lattice_vector, 'T');
                 gnorm = std::sqrt(g_tmp[0] * g_tmp[0] + g_tmp[1] * g_tmp[1] + g_tmp[2] * g_tmp[2]);
                 if (gnorm <= Gmax) {
                     G_vector.emplace_back(g_tmp);
@@ -290,7 +290,7 @@ void Ewald::get_pairs_of_minimum_distance(const int nat,
         for (int icrd = 0; icrd < 3; ++icrd) {
             xcrd[0][iat][icrd] = xf(iat, icrd);
         }
-        rotvec(xcrd[0][iat], xcrd[0][iat], system->get_cell("super").lattice_vector);
+        rotvec(xcrd[0][iat], xcrd[0][iat], system->get_supercell(0).lattice_vector);
     }
 
     for (int isize = -nsize[0]; isize <= nsize[0]; ++isize) {
@@ -302,7 +302,7 @@ void Ewald::get_pairs_of_minimum_distance(const int nat,
                     xcrd[icell][iat][0] = xf(iat, 0) + static_cast<double>(isize);
                     xcrd[icell][iat][1] = xf(iat, 1) + static_cast<double>(jsize);
                     xcrd[icell][iat][2] = xf(iat, 2) + static_cast<double>(ksize);
-                    rotvec(xcrd[icell][iat], xcrd[icell][iat], system->get_cell("super").lattice_vector);
+                    rotvec(xcrd[icell][iat], xcrd[icell][iat], system->get_supercell(0).lattice_vector);
                 }
 
             }
@@ -344,8 +344,8 @@ void Ewald::compute_ewald_fcs()
     int iat, jat;
     int icrd, jcrd;
     int atm_s;
-    int nat = system->get_cell("super").number_of_atoms;
-    int natmin = system->get_cell("prim").number_of_atoms;
+    int nat = system->get_supercell(0).number_of_atoms;
+    int natmin = system->get_primcell().number_of_atoms;
     double **fcs_ewald;
     double **fc_ewald_short, **fc_ewald_long;
     double **fcs_total, **fcs_other;
@@ -476,8 +476,8 @@ void Ewald::compute_ewald_fcs2()
     int iat, jat;
     int icrd, jcrd;
     int atm_s;
-    int nat = system->get_cell("super").number_of_atoms;
-    int natmin = system->get_cell("prim").number_of_atoms;
+    int nat = system->get_supercell(0).number_of_atoms;
+    int natmin = system->get_primcell().number_of_atoms;
     double **fcs_ewald;
     double **fc_ewald_short, **fc_ewald_long;
     double **fcs_total, **fcs_other;
@@ -488,8 +488,8 @@ void Ewald::compute_ewald_fcs2()
     }
 
     std::vector<std::vector<double>> k_commensurate;
-    kpoint->get_commensurate_kpoints(system->get_cell("super").lattice_vector,
-                                     system->get_cell("prim").lattice_vector,
+    kpoint->get_commensurate_kpoints(system->get_supercell(0).lattice_vector,
+                                     system->get_primcell().lattice_vector,
                                      k_commensurate);
 
     allocate(fcs_ewald, 3 * natmin, 3 * nat);
@@ -639,15 +639,15 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                     if (icell == 0 && jcell == 0 && kcell == 0) {
                         // l'' = l = 0
 
-                        for (kat = 0; kat < system->get_cell("super").number_of_atoms; ++kat) {
+                        for (kat = 0; kat < system->get_supercell(0).number_of_atoms; ++kat) {
 
                             if (kat == iat) continue; // k'' = k
 
                             for (i = 0; i < 3; ++i) {
-                                x_tmp[i] = system->get_cell("super").x_fractional(iat, i)
-                                           - system->get_cell("super").x_fractional(kat, i);
+                                x_tmp[i] = system->get_supercell(0).x_fractional(iat, i)
+                                           - system->get_supercell(0).x_fractional(kat, i);
                             }
-                            rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+                            rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
                             xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
                                               + x_tmp[1] * x_tmp[1]
                                               + x_tmp[2] * x_tmp[2]);
@@ -679,14 +679,14 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                         trans[0] = static_cast<double>(icell);
                         trans[1] = static_cast<double>(jcell);
                         trans[2] = static_cast<double>(kcell);
-                        rotvec(trans, trans, system->get_cell("super").lattice_vector);
+                        rotvec(trans, trans, system->get_supercell(0).lattice_vector);
 
-                        for (kat = 0; kat < system->get_cell("super").number_of_atoms; ++kat) {
+                        for (kat = 0; kat < system->get_supercell(0).number_of_atoms; ++kat) {
                             for (i = 0; i < 3; ++i) {
-                                x_tmp[i] = system->get_cell("super").x_fractional(iat, i)
-                                           - system->get_cell("super").x_fractional(kat, i);
+                                x_tmp[i] = system->get_supercell(0).x_fractional(iat, i)
+                                           - system->get_supercell(0).x_fractional(kat, i);
                             }
-                            rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+                            rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
                             for (i = 0; i < 3; ++i) {
                                 x_tmp[i] -= trans[i];
                             }
@@ -715,10 +715,10 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                         }
 
                         for (i = 0; i < 3; ++i) {
-                            x_tmp[i] = system->get_cell("super").x_fractional(iat, i)
-                                       - system->get_cell("super").x_fractional(jat, i);
+                            x_tmp[i] = system->get_supercell(0).x_fractional(iat, i)
+                                       - system->get_supercell(0).x_fractional(jat, i);
                         }
-                        rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+                        rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
                         for (i = 0; i < 3; ++i) {
                             x_tmp[i] -= trans[i];
                         }
@@ -754,10 +754,10 @@ void Ewald::calc_short_term_ewald_fcs(const int iat,
                     trans[2] = static_cast<double>(kcell);
 
                     for (i = 0; i < 3; ++i) {
-                        x_tmp[i] = system->get_cell("super").x_fractional(iat, i)
-                                   - system->get_cell("super").x_fractional(jat, i) - trans[i];
+                        x_tmp[i] = system->get_supercell(0).x_fractional(iat, i)
+                                   - system->get_supercell(0).x_fractional(jat, i) - trans[i];
                     }
-                    rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+                    rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
                     xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
                                       + x_tmp[1] * x_tmp[1]
                                       + x_tmp[2] * x_tmp[2]);
@@ -797,7 +797,7 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
             fc_g_out[icrd][jcrd] = 0.0;
         }
     }
-    double volume = system->get_cell("super", "base").volume;
+    double volume = system->get_supercell(0).volume;
 
     int ikd = system->get_map_s2p(0)[iat].atom_num;
     int jkd = system->get_map_s2p(0)[jat].atom_num;
@@ -813,14 +813,14 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
                      + g_tmp[1] * epsilon_gvector[1]
                      + g_tmp[2] * epsilon_gvector[2];
 
-            for (int kat = 0; kat < system->get_cell("super").number_of_atoms; ++kat) {
+            for (int kat = 0; kat < system->get_supercell(0).number_of_atoms; ++kat) {
                 int kkd = system->get_map_s2p(0)[kat].atom_num;
 
                 for (i = 0; i < 3; ++i) {
-                    x_tmp[i] = system->get_cell("super").x_fractional(iat, i)
-                               - system->get_cell("super").x_fractional(kat, i);
+                    x_tmp[i] = system->get_supercell(0).x_fractional(iat, i)
+                               - system->get_supercell(0).x_fractional(kat, i);
                 }
-                rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+                rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
 
                 common_tmp = factor * std::exp(-0.25 * gnorm2 / std::pow(lambda_sub, 2.0)) / gnorm2
                              * std::cos(g_tmp[0] * x_tmp[0]
@@ -859,10 +859,10 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
                  + g_tmp[2] * epsilon_gvector[2];
 
         for (i = 0; i < 3; ++i) {
-            x_tmp[i] = system->get_cell("super").x_fractional(iat, i)
-                       - system->get_cell("super").x_fractional(jat, i);
+            x_tmp[i] = system->get_supercell(0).x_fractional(iat, i)
+                       - system->get_supercell(0).x_fractional(jat, i);
         }
-        rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+        rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
 
         common_tmp = 2.0 * factor * std::exp(-0.25 * gnorm2 / std::pow(lambda_sub, 2.0)) / gnorm2
                      * std::cos(g_tmp[0] * x_tmp[0] + g_tmp[1] * x_tmp[1] + g_tmp[2] * x_tmp[2]);
@@ -885,8 +885,8 @@ void Ewald::add_longrange_matrix(const double *xk_in,
                                  std::complex<double> **dymat_k_out)
 {
     int icrd, jcrd, iat, jat;
-    int natmin = system->get_cell("prim").number_of_atoms;
-    int neval = 3 * system->get_cell("prim").number_of_atoms;
+    int natmin = system->get_primcell().number_of_atoms;
+    int neval = 3 * system->get_primcell().number_of_atoms;
     double xk[3];
     std::complex<double> **dymat_tmp_l, **dymat_tmp_g;
 
@@ -899,7 +899,7 @@ void Ewald::add_longrange_matrix(const double *xk_in,
         xk[i] = xk_in[i] - static_cast<double>(nint(xk_in[i]));
     }
 
-    rotvec(xk, xk, system->get_cell("prim").reciprocal_lattice_vector, 'T');
+    rotvec(xk, xk, system->get_primcell().reciprocal_lattice_vector, 'T');
 
     for (int i = 0; i < neval; ++i) {
         for (int j = 0; j < neval; ++j) {
@@ -962,20 +962,20 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                     trans[0] = static_cast<double>(icell);
                     trans[1] = static_cast<double>(jcell);
                     trans[2] = static_cast<double>(kcell);
-                    rotvec(trans, trans, system->get_cell("prim").lattice_vector);
+                    rotvec(trans, trans, system->get_primcell().lattice_vector);
 
                     // Lattice vector = 0
                     if (icell == 0 && jcell == 0 && kcell == 0) {
 
-                        for (kat = 0; kat < system->get_cell("prim").number_of_atoms; ++kat) {
+                        for (kat = 0; kat < system->get_primcell().number_of_atoms; ++kat) {
                             if (kat == iat) continue;
 
                             atm_s3 = system->get_map_p2s(0)[kat][0];
                             for (i = 0; i < 3; ++i) {
-                                x_tmp[i] = system->get_cell("super").x_fractional(atm_s1, i)
-                                           - system->get_cell("super").x_fractional(atm_s3, i);
+                                x_tmp[i] = system->get_supercell(0).x_fractional(atm_s1, i)
+                                           - system->get_supercell(0).x_fractional(atm_s3, i);
                             }
-                            rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+                            rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
                             xnorm = std::sqrt(x_tmp[0] * x_tmp[0]
                                               + x_tmp[1] * x_tmp[1]
                                               + x_tmp[2] * x_tmp[2]);
@@ -1002,13 +1002,13 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
 
                     } else {
 
-                        for (kat = 0; kat < system->get_cell("prim").number_of_atoms; ++kat) {
+                        for (kat = 0; kat < system->get_primcell().number_of_atoms; ++kat) {
                             atm_s3 = system->get_map_p2s(0)[kat][0];
                             for (i = 0; i < 3; ++i) {
-                                x_tmp[i] = system->get_cell("super").x_fractional(atm_s1, i)
-                                           - system->get_cell("super").x_fractional(atm_s3, i);
+                                x_tmp[i] = system->get_supercell(0).x_fractional(atm_s1, i)
+                                           - system->get_supercell(0).x_fractional(atm_s3, i);
                             }
-                            rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+                            rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
                             for (i = 0; i < 3; ++i) {
                                 x_tmp[i] -= trans[i];
                             }
@@ -1038,10 +1038,10 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                         }
 
                         for (i = 0; i < 3; ++i) {
-                            x_tmp[i] = system->get_cell("super").x_fractional(atm_s1, i)
-                                       - system->get_cell("super").x_fractional(atm_s2, i);
+                            x_tmp[i] = system->get_supercell(0).x_fractional(atm_s1, i)
+                                       - system->get_supercell(0).x_fractional(atm_s2, i);
                         }
-                        rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+                        rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
                         for (i = 0; i < 3; ++i) {
                             x_tmp[i] -= trans[i];
                         }
@@ -1073,13 +1073,13 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
                     trans[0] = static_cast<double>(icell);
                     trans[1] = static_cast<double>(jcell);
                     trans[2] = static_cast<double>(kcell);
-                    rotvec(trans, trans, system->get_cell("prim").lattice_vector);
+                    rotvec(trans, trans, system->get_primcell().lattice_vector);
 
                     for (i = 0; i < 3; ++i) {
-                        x_tmp[i] = system->get_cell("super").x_fractional(atm_s1, i)
-                                   - system->get_cell("super").x_fractional(atm_s2, i);
+                        x_tmp[i] = system->get_supercell(0).x_fractional(atm_s1, i)
+                                   - system->get_supercell(0).x_fractional(atm_s2, i);
                     }
-                    rotvec(x_tmp, x_tmp, system->get_cell("super").lattice_vector);
+                    rotvec(x_tmp, x_tmp, system->get_supercell(0).lattice_vector);
                     for (i = 0; i < 3; ++i) {
                         x_tmp[i] -= trans[i];
                     }
@@ -1130,12 +1130,12 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
     int atm_s2 = system->get_map_p2s(0)[jat][0];
     double mi = system->get_mass_super()[atm_s1];
     double mj = system->get_mass_super()[atm_s2];
-    double vol_p = system->volume_p;
+    double vol_p = system->get_primcell().volume;
     for (i = 0; i < 3; ++i) {
-        vec[i] = system->get_cell("super").x_fractional(atm_s1, i)
-                 - system->get_cell("super").x_fractional(atm_s2, i);
+        vec[i] = system->get_supercell(0).x_fractional(atm_s1, i)
+                 - system->get_supercell(0).x_fractional(atm_s2, i);
     }
-    rotvec(vec, vec, system->get_cell("super").lattice_vector);
+    rotvec(vec, vec, system->get_supercell(0).lattice_vector);
     double phase = xk_in[0] * vec[0] + xk_in[1] * vec[1] + xk_in[2] * vec[2];
     rotvec(e_kvec, xk_in, epsilon);
 
@@ -1208,14 +1208,14 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
             double gd = g[0] * g_tmp[0] + g[1] * g_tmp[1] + g[2] * g_tmp[2];
             common = std::exp(-0.25 * gd / std::pow(lambda, 2.0)) / gd;
 
-            for (int kat = 0; kat < system->get_cell("prim").number_of_atoms; ++kat) {
+            for (int kat = 0; kat < system->get_primcell().number_of_atoms; ++kat) {
                 int atm_s3 = system->get_map_p2s(0)[kat][0];
 
                 for (i = 0; i < 3; ++i) {
-                    vecl[i] = system->get_cell("super").x_fractional(atm_s1, i)
-                              - system->get_cell("super").x_fractional(atm_s3, i);
+                    vecl[i] = system->get_supercell(0).x_fractional(atm_s1, i)
+                              - system->get_supercell(0).x_fractional(atm_s3, i);
                 }
-                rotvec(vecl, vecl, system->get_cell("super").lattice_vector);
+                rotvec(vecl, vecl, system->get_supercell(0).lattice_vector);
                 double phase_g1 = g[0] * vecl[0] + g[1] * vecl[1] + g[2] * vecl[2];
                 exp_phase = std::exp(im * phase_g1);
 

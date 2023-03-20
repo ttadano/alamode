@@ -114,12 +114,12 @@ void Input::parse_general_vars()
             "VERBOSITY", "FC2FILE", "FC3FILE", "FC4FILE", "FCSFILE"
     };
 
-    std::vector<std::string> no_defaults{"PREFIX", "MODE", "NKD", "KD"};
+    std::vector<std::string> no_defaults{"PREFIX", "MODE"};
     std::vector<std::string> kdname_v, masskd_v;
     std::map<std::string, std::string> general_var_dict;
 
     double *masskd = nullptr;
-    std::string *kdname = nullptr;
+    std::vector<std::string> kdname;
 
     if (from_stdin) {
         std::cin.ignore();
@@ -153,17 +153,20 @@ void Input::parse_general_vars()
              "Either FCSFILE or FC2FILE must be given to start a phonon calculation.");
     }
 
-    assign_val(nkd, "NKD", general_var_dict);
+    if (!general_var_dict["NKD"].empty()) {
+        assign_val(nkd, "NKD", general_var_dict);
+    }
 
-    split_str_by_space(general_var_dict["KD"], kdname_v);
-
-    if (kdname_v.size() != nkd) {
-        exit("parse_general_vars",
-             "The number of entries for KD is inconsistent with NKD");
-    } else {
-        allocate(kdname, nkd);
-        for (i = 0; i < nkd; ++i) {
-            kdname[i] = kdname_v[i];
+    if (!general_var_dict["KD"].empty()) {
+        split_str_by_space(general_var_dict["KD"], kdname_v);
+        if (kdname_v.size() != nkd) {
+            exit("parse_general_vars",
+                 "The number of entries for KD is inconsistent with NKD");
+        } else {
+            kdname.resize(nkd);
+            for (i = 0; i < nkd; ++i) {
+                kdname[i] = kdname_v[i];
+            }
         }
     }
 
@@ -305,12 +308,11 @@ void Input::parse_general_vars()
     system->dT = dT;
     system->nkd = nkd;
 
-    allocate(system->symbol_kd, nkd);
-    for (i = 0; i < nkd; ++i) {
-        system->symbol_kd[i] = kdname[i];
-    }
-    if (kdname) {
-        deallocate(kdname);
+    if (!kdname.empty()) {
+        system->symbol_kd.resize(kdname.size());
+        for (i = 0; i < kdname.size(); ++i) {
+            system->symbol_kd[i] = kdname[i];
+        }
     }
 
     if (!general_var_dict["MASS"].empty()) {
@@ -786,8 +788,8 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     if (include_isotope) {
         if (!analysis_var_dict["ISOFACT"].empty()) {
-            allocate(isotope->isotope_factor, system->get_cell("prim").number_of_elems);
-            for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
+            allocate(isotope->isotope_factor, system->get_primcell().number_of_elems);
+            for (i = 0; i < system->get_primcell().number_of_elems; ++i) {
                 isotope->isotope_factor[i] = isotope_factor[i];
             }
         }

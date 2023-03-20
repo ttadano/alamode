@@ -377,7 +377,7 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
         for (auto j = 0; j < ns; ++j) {
             for (auto k = 0; k < ns; ++k) {
                 rotvec(velmat_loc[i][j][k], velmat_loc[i][j][k], symmetrizer_k, 'T');
-                rotvec(velmat_loc[i][j][k], velmat_loc[i][j][k], system->get_cell("prim").lattice_vector);
+                rotvec(velmat_loc[i][j][k], velmat_loc[i][j][k], system->get_primcell().lattice_vector);
                 for (auto mu = 0; mu < 3; ++mu) {
                     velmat_loc[i][j][k][mu] *= factor;
                 }
@@ -457,8 +457,8 @@ void PhononVelocity::phonon_vel_k(const double *xk_in,
             kvec_na_tmp[0][j] = xk_shift[0][j];
             kvec_na_tmp[1][j] = xk_shift[1][j];
         }
-        rotvec(kvec_na_tmp[0], kvec_na_tmp[0], system->get_cell("prim").reciprocal_lattice_vector, 'T');
-        rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->get_cell("prim").reciprocal_lattice_vector, 'T');
+        rotvec(kvec_na_tmp[0], kvec_na_tmp[0], system->get_primcell().reciprocal_lattice_vector, 'T');
+        rotvec(kvec_na_tmp[1], kvec_na_tmp[1], system->get_primcell().reciprocal_lattice_vector, 'T');
 
         auto norm = std::sqrt(kvec_na_tmp[0][0] * kvec_na_tmp[0][0]
                               + kvec_na_tmp[0][1] * kvec_na_tmp[0][1]
@@ -533,7 +533,7 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
 {
     unsigned int i, j, l, m;
     unsigned int icrd;
-    const auto nmode = 3 * system->get_cell("prim").number_of_atoms;
+    const auto nmode = 3 * system->get_primcell().number_of_atoms;
 
     std::complex<double> ***ddyn;
     std::complex<double> ctmp;
@@ -727,12 +727,12 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
         const auto atm2_p = system->get_map_s2p(0)[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
-                     - system->get_cell("super").x_fractional(system->get_map_p2s(0)[atm2_p][0], i);
+            vec[i] = system->get_supercell(0).x_fractional(atm2_s, i) + xshift_s[icell][i]
+                     - system->get_supercell(0).x_fractional(system->get_map_p2s(0)[atm2_p][0], i);
         }
 
-        rotvec(vec, vec, system->get_cell("super").lattice_vector);
-        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
+        rotvec(vec, vec, system->get_supercell(0).lattice_vector);
+        rotvec(vec, vec, system->get_primcell().reciprocal_lattice_vector);
 
         auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
@@ -825,16 +825,16 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
         const auto atm2_p = system->get_map_s2p(0)[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
-                     - system->get_cell("super").x_fractional(system->get_map_p2s(0)[atm2_p][0], i);
-            vec2[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
-                      - system->get_cell("super").x_fractional(atm1_s, i);
+            vec[i] = system->get_supercell(0).x_fractional(atm2_s, i) + xshift_s[icell][i]
+                     - system->get_supercell(0).x_fractional(system->get_map_p2s(0)[atm2_p][0], i);
+            vec2[i] = system->get_supercell(0).x_fractional(atm2_s, i) + xshift_s[icell][i]
+                      - system->get_supercell(0).x_fractional(atm1_s, i);
         }
 
-        rotvec(vec, vec, system->get_cell("super").lattice_vector);
-        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
-        rotvec(vec2, vec2, system->get_cell("super").lattice_vector);
-        rotvec(vec2, vec2, system->get_cell("prim").reciprocal_lattice_vector);
+        rotvec(vec, vec, system->get_supercell(0).lattice_vector);
+        rotvec(vec, vec, system->get_primcell().reciprocal_lattice_vector);
+        rotvec(vec2, vec2, system->get_supercell(0).lattice_vector);
+        rotvec(vec2, vec2, system->get_primcell().reciprocal_lattice_vector);
 
         auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 

@@ -60,13 +60,17 @@ public:
 
     void setup();
 
-    const Cell &get_cell(const std::string celltype, const std::string filetype = "base") const;
+    const Cell &get_supercell(const int index) const;
 
     const Cell &get_primcell() const;
 
-    const Spin &get_spin(const std::string celltype) const;
+    const Spin &get_spin_super() const;
 
-    const MappingTable &get_mapping_table(const std::string celltype, const std::string filetype = "base") const;
+    const Spin &get_spin_prim() const;
+
+    const MappingTable &get_mapping_super_alm(const int index) const;
+
+    const MappingTable &get_mapping_prim_alm(const int index) const;
 
     const std::vector<Maps> &get_map_s2p(const int index = 0) const;
 
@@ -76,12 +80,9 @@ public:
     Eigen::Matrix3d lavec_p_input;
 
     int load_primitive_from_file;
-    double volume_p;
-
     unsigned int nkd;
-    unsigned int **map_p2s_anharm_orig;
 
-    std::string *symbol_kd;
+    std::vector<std::string> symbol_kd;
     double *mass_kd;
 
     double Tmin, Tmax, dT;
@@ -100,13 +101,10 @@ private:
         Direct, Reciprocal
     };
 
-    Cell supercell_base, supercell_fc2, supercell_fc3, supercell_fc4;
-    Cell primcell_base, primcell_fc2, primcell_fc3, primcell_fc4;
-    Spin spin_super_base, spin_prim_base;
-    MappingTable map_scell_base, map_pcell_base;
-    MappingTable map_scell_fc2, map_pcell_fc2;
-    MappingTable map_scell_fc3, map_pcell_fc3;
-    MappingTable map_scell_fc4, map_pcell_fc4;
+    std::vector<Cell> supercell;
+    Cell primcell;
+    Spin spin_super, spin_prim;
+    std::vector<MappingTable> map_super_alm, map_prim_alm;
 
     std::vector<std::vector<Maps>> map_s2p_new;
     std::vector<std::vector<std::vector<unsigned int>>> map_p2s_new;
@@ -119,10 +117,10 @@ private:
     void deallocate_variables();
 
     void set_mass_elem_from_database(const int,
-                                     const std::string *,
+                                     const std::vector<std::string> &,
                                      double *);
 
-    void load_system_info_from_XML();
+    void print_structure_information_stdout() const;
 
     void load_system_info_from_file();
 

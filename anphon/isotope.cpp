@@ -52,7 +52,7 @@ void Isotope::deallocate_variables()
 
 void Isotope::setup_isotope_scattering()
 {
-    const int nkd = system->get_cell("prim").number_of_elems;
+    const int nkd = system->get_primcell().number_of_elems;
 
     MPI_Bcast(&include_isotope, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -62,7 +62,7 @@ void Isotope::setup_isotope_scattering()
             if (!isotope_factor) {
                 allocate(isotope_factor, nkd);
                 set_isotope_factor_from_database(nkd,
-                                                 system->symbol_kd,
+                                                 &system->symbol_kd[0],
                                                  isotope_factor);
             }
         }
@@ -101,7 +101,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
 
     const auto nk = kmesh_in->nk;
     const auto ns = dynamical->neval;
-    const auto natmin = system->get_cell("prim").number_of_atoms;
+    const auto natmin = system->get_primcell().number_of_atoms;
     const auto epsilon = integration->epsilon;
 
     ret = 0.0;
@@ -118,7 +118,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
                              * evec_in[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->get_cell("prim").kind[system->get_map_p2s(0)[iat][0]]] * std::norm(dprod);
+                prod += isotope_factor[system->get_primcell().kind[system->get_map_p2s(0)[iat][0]]] * std::norm(dprod);
             }
 
             const auto omega1 = eval_in[ik][is];
@@ -149,7 +149,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
     int ik, is;
     const auto nk = kmesh_in->nk;
     const auto ns = dynamical->neval;
-    const auto natmin = system->get_cell("prim").number_of_atoms;
+    const auto natmin = system->get_primcell().number_of_atoms;
 
     ret = 0.0;
 
@@ -171,7 +171,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
                              * evec_in[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->get_cell("prim").kind[system->get_map_p2s(0)[iat][0]]] * std::norm(dprod);
+                prod += isotope_factor[system->get_primcell().kind[system->get_map_p2s(0)[iat][0]]] * std::norm(dprod);
             }
 
             weight[ik] = prod * eval_in[ik][is];

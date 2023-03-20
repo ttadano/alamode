@@ -247,11 +247,11 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
         const auto atm2_s = system->get_map_p2s(2)[atm2][tran];
 
         for (i = 0; i < 3; ++i) {
-            vec[i] = system->get_cell("super", "fc3").x_fractional(atm2_s, i) + xshift_s[cell_s][i]
-                     - system->get_cell("super", "fc3").x_fractional(system->get_map_p2s(2)[atm2][0], i);
+            vec[i] = system->get_supercell(1).x_fractional(atm2_s, i) + xshift_s[cell_s][i]
+                     - system->get_supercell(1).x_fractional(system->get_map_p2s(2)[atm2][0], i);
         }
 
-        rotvec(vec, vec, system->get_cell("super", "fc3").lattice_vector);
+        rotvec(vec, vec, system->get_supercell(1).lattice_vector);
         rotvec(vec, vec, system->get_primcell().reciprocal_lattice_vector);
 
         double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
@@ -358,11 +358,11 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
             set_index_uniq.insert(index_with_cell);
 
             for (i = 0; i < 3; i++) {
-                vec_origin[i] = system->get_cell("super", "fc3").x_fractional(
+                vec_origin[i] = system->get_supercell(1).x_fractional(
                         system->get_map_p2s(2)[it.pairs[0].index / 3][0], i);
                 for (j = 1; j < norder - 1; j++) {
                     vec_origin[i] +=
-                            system->get_cell("super", "fc3").x_fractional(
+                            system->get_supercell(1).x_fractional(
                                     system->get_map_p2s(2)[it.pairs[j].index / 3][it.pairs[j].tran], i)
                             + xshift_s[it.pairs[j].cell_s][i];
                 }
@@ -370,16 +370,16 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
             }
 
             for (i = 0; i < 3; ++i) {
-                vec[i] = system->get_cell("super", "fc3").x_fractional(
+                vec[i] = system->get_supercell(1).x_fractional(
                         system->get_map_p2s(2)[it.pairs[norder - 1].index / 3][it.pairs[norder -
                                                                                         1].tran],
                         i)
-                         // - system->get_cell("super", "fc3").x_fractional[system->get_map_p2s(2)[it.pairs[0].index / 3][0]][i]
+                         // - system->get_supercell(1).x_fractional[system->get_map_p2s(2)[it.pairs[0].index / 3][0]][i]
                          - vec_origin[i]
                          + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec, vec, system->get_cell("super", "fc3").lattice_vector);
+            rotvec(vec, vec, system->get_supercell(1).lattice_vector);
 
             fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
         }
@@ -455,11 +455,11 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
             }
 
             for (i = 0; i < 3; i++) {
-                vec_origin[i] = system->get_cell("super", "fc3").x_fractional(
+                vec_origin[i] = system->get_supercell(1).x_fractional(
                         system->get_map_p2s(2)[it.pairs[0].index / 3][0], i);
                 for (j = 1; j < norder - 1; j++) {
                     vec_origin[i] +=
-                            system->get_cell("super", "fc3").x_fractional(
+                            system->get_supercell(1).x_fractional(
                                     system->get_map_p2s(2)[it.pairs[j].index / 3][it.pairs[j].tran], i)
                             + xshift_s[it.pairs[j].cell_s][i];
                 }
@@ -467,16 +467,16 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
             }
 
             for (i = 0; i < 3; ++i) {
-                vec[i] = system->get_cell("super", "fc3").x_fractional(
+                vec[i] = system->get_supercell(1).x_fractional(
                         system->get_map_p2s(2)[it.pairs[norder - 1].index / 3][it.pairs[norder -
                                                                                         1].tran],
                         i)
-                         // - system->get_cell("super", "fc3").x_fractional[system->get_map_p2s(2)[it.pairs[0].index / 3][0]][i]
+                         // - system->get_supercell(1).x_fractional[system->get_map_p2s(2)[it.pairs[0].index / 3][0]][i]
                          - vec_origin[i]
                          + xshift_s[it.pairs[norder - 1].cell_s][i];
             }
 
-            rotvec(vec, vec, system->get_cell("super", "fc3").lattice_vector);
+            rotvec(vec, vec, system->get_supercell(1).lattice_vector);
 
             fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
         }
@@ -587,7 +587,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
             lattice_vector[i][j] = (1.0 + change_ratio_of_a)
-                                   * system->get_cell("super").lattice_vector(i, j);
+                                   * system->get_supercell(0).lattice_vector(i, j);
         }
     }
 
@@ -600,10 +600,10 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
     pt.put("Data.Description.OriginalXML", fcs_phonon->file_fcs);
     pt.put("Data.Description.Delta_A", double2string(change_ratio_of_a));
 
-    pt.put("Data.Structure.NumberOfAtoms", system->get_cell("super").number_of_atoms);
-    pt.put("Data.Structure.NumberOfElements", system->get_cell("prim").number_of_elems);
+    pt.put("Data.Structure.NumberOfAtoms", system->get_supercell(0).number_of_atoms);
+    pt.put("Data.Structure.NumberOfElements", system->get_primcell().number_of_elems);
 
-    for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
+    for (i = 0; i < system->get_primcell().number_of_elems; ++i) {
         ptree &child = pt.add("Data.Structure.AtomicElements.element",
                               system->symbol_kd[i]);
         child.put("<xmlattr>.number", i + 1);
@@ -623,9 +623,9 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
     pt.put("Data.Structure.Position", "");
     std::string str_tmp;
 
-    const auto cell_tmp = system->get_cell("super");
+    const auto cell_tmp = system->get_supercell(0);
     const auto map_tmp = system->get_map_p2s(0);
-    const auto nat_prim_tmp = system->get_cell("prim").number_of_atoms;
+    const auto nat_prim_tmp = system->get_primcell().number_of_atoms;
 
     for (i = 0; i < cell_tmp.number_of_atoms; ++i) {
         str_tmp.clear();
@@ -761,11 +761,11 @@ std::string Gruneisen::double2string(const double d) const
 // 
 //         for (i = 0; i < norder; ++i) {
 //             for (j = 0; j < 3; ++j) {
-//                 vec[i][j] = system->get_cell("super").x_fractional[system->map_trueprim_to_super[(*it).pairs[i].index / 3][(*it).pairs[i].tran]][j]
+//                 vec[i][j] = system->get_supercell(0).x_fractional[system->map_trueprim_to_super[(*it).pairs[i].index / 3][(*it).pairs[i].tran]][j]
 //                 + xshift_s[(*it).pairs[i].cell_s][j];
 // 
-//                 pos[i][j] = system->get_cell("super").x_fractional[system->map_trueprim_to_super[(*it).pairs[i].index / 3][0]][j];
-//             //    vec[i][j] = system->get_cell("super").x_fractional[system->map_trueprim_to_super[0][(*it).pairs[i].tran]][j] + xshift_s[(*it).pairs[i].cell_s][j];
+//                 pos[i][j] = system->get_supercell(0).x_fractional[system->map_trueprim_to_super[(*it).pairs[i].index / 3][0]][j];
+//             //    vec[i][j] = system->get_supercell(0).x_fractional[system->map_trueprim_to_super[0][(*it).pairs[i].tran]][j] + xshift_s[(*it).pairs[i].cell_s][j];
 //             }
 //             rotvec(vec[i], vec[i], system->lavec_s);
 //             rotvec(pos[i], pos[i], system->lavec_s);
@@ -809,10 +809,10 @@ std::string Gruneisen::double2string(const double d) const
 // 
 //         for (i = 0; i < norder; ++i) {
 //             for (j = 0; j < 3; ++j) {
-//                 vec[i][j] = system->get_cell("super").x_fractional[system->map_trueprim_to_super[(*it).pairs[i].index / 3][(*it).pairs[i].tran]][j]
+//                 vec[i][j] = system->get_supercell(0).x_fractional[system->map_trueprim_to_super[(*it).pairs[i].index / 3][(*it).pairs[i].tran]][j]
 //                 + xshift_s[(*it).pairs[i].cell_s][j];
 // 
-//                 pos[i][j] = system->get_cell("super").x_fractional[system->map_trueprim_to_super[(*it).pairs[i].index / 3][0]][j];
+//                 pos[i][j] = system->get_supercell(0).x_fractional[system->map_trueprim_to_super[(*it).pairs[i].index / 3][0]][j];
 //             }
 //             rotvec(vec[i], vec[i], system->lavec_s);
 //             rotvec(pos[i], pos[i], system->lavec_s);
@@ -852,7 +852,7 @@ std::string Gruneisen::double2string(const double d) const
 // void Gruneisen::print_stress_energy()
 // {
 // 
-//     double volume = system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30;
+//     double volume = system->get_primcell().volume * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30;
 // 
 // 
 //     double ****A, ****C;

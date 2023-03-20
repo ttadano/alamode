@@ -129,8 +129,8 @@ void Fcs_phonon::setup(std::string mode)
 
         allocate(maxdev, maxorder);
         examine_translational_invariance(maxorder,
-                                         system->get_cell("super").number_of_atoms,
-                                         system->get_cell("prim").number_of_atoms,
+                                         system->get_supercell(0).number_of_atoms,
+                                         system->get_primcell().number_of_atoms,
                                          maxdev,
                                          fc2_ext,
                                          force_constant_with_cell);
@@ -153,13 +153,13 @@ void Fcs_phonon::setup(std::string mode)
     std::vector<int> atoms_prim_tmp, coords_tmp;
 
     const auto xf_image = dynamical->get_xrs_image();
-    const auto xf_tmp = system->get_cell("super").x_fractional;
-    Eigen::Matrix3d convmat = system->get_cell("prim").lattice_vector.inverse()
-                              * system->get_cell("super").lattice_vector;
+    const auto xf_tmp = system->get_supercell(0).x_fractional;
+    Eigen::Matrix3d convmat = system->get_primcell().lattice_vector.inverse()
+                              * system->get_supercell(0).lattice_vector;
 
     for (auto order = 0; order < maxorder; ++order) {
 
-        const auto map_tmp = system->get_mapping_table("super");
+        const auto map_tmp = system->get_mapping_super_alm(0);
 
         for (auto &it : force_constant_with_cell[order]) {
 
@@ -276,8 +276,7 @@ void Fcs_phonon::load_fcs_xml() const
             str_tag = "Data.ForceConstants.ANHARM" + std::to_string(order + 2);
         }
 
-        const std::string str_fc = "fc" + std::to_string(order + 2);
-        const auto map_tmp = system->get_mapping_table("super", str_fc);
+        const auto map_tmp = system->get_mapping_super_alm(order);
 
         auto child_ = pt.get_child_optional(str_tag);
 

@@ -194,9 +194,9 @@ void Dos::calc_dos_all()
     }
 
     if (projected_dos) {
-        allocate(pdos_phonon, system->get_cell("prim").number_of_atoms, n_energy);
+        allocate(pdos_phonon, system->get_primcell().number_of_atoms, n_energy);
         calc_atom_projected_dos(nk, eval, n_energy, energy_dos,
-                                pdos_phonon, neval, system->get_cell("prim").number_of_atoms,
+                                pdos_phonon, neval, system->get_primcell().number_of_atoms,
                                 integration->ismear,
                                 dymat_dos->get_eigenvectors());
     }
@@ -206,7 +206,7 @@ void Dos::calc_dos_all()
         calc_longitudinal_projected_dos(nk, kmesh_dos->xk,
                                         system->get_primcell().reciprocal_lattice_vector,
                                         eval, n_energy, energy_dos,
-                                        longitude_dos, neval, system->get_cell("prim").number_of_atoms,
+                                        longitude_dos, neval, system->get_primcell().number_of_atoms,
                                         integration->ismear,
                                         dymat_dos->get_eigenvectors());
     }

@@ -221,7 +221,7 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
     }
 
     auto freq_conv_factor = time_ry * time_ry / (Hz_to_kayser * Hz_to_kayser);
-    auto factor = 8.0 * pi / system->volume_p;
+    auto factor = 8.0 * pi / system->get_primcell().volume;
     double w2_tmp;
     for (auto iomega = 0; iomega < nomega_in; ++iomega) {
         w2_tmp = omega_grid_in[iomega] * omega_grid_in[iomega] * freq_conv_factor;

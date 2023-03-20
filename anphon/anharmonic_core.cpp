@@ -127,8 +127,8 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
     std::vector<unsigned int> atm_super, atm_prim;
     std::vector<unsigned int> cells;
 
-    Eigen::Matrix3d mat_convert = system->get_cell("prim").reciprocal_lattice_vector
-                                    * system->get_cell("super", "fc3").lattice_vector;
+    Eigen::Matrix3d mat_convert = system->get_primcell().reciprocal_lattice_vector
+                                    * system->get_supercell(1).lattice_vector;
 
     allocate(xshift_s, 27, 3);
 
@@ -156,7 +156,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 
     unsigned int icount = 0;
 
-    const auto xf_tmp = system->get_cell("super").x_fractional;
+    const auto xf_tmp = system->get_supercell(0).x_fractional;
 
     for (auto igroup = 0; igroup < number_of_groups; ++igroup) {
 
@@ -1067,7 +1067,7 @@ void AnharmonicCore::setup_cubic()
 {
     int i;
     double *invsqrt_mass_p;
-    const auto natmin_tmp = system->get_cell("prim").number_of_atoms;
+    const auto natmin_tmp = system->get_primcell().number_of_atoms;
 
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
     // This sorting is necessary.
@@ -1112,7 +1112,7 @@ void AnharmonicCore::setup_quartic()
 {
     int i;
     double *invsqrt_mass_p;
-    const auto natmin_tmp = system->get_cell("prim").number_of_atoms;
+    const auto natmin_tmp = system->get_primcell().number_of_atoms;
 
     std::sort(fcs_phonon->force_constant_with_cell[2].begin(),
               fcs_phonon->force_constant_with_cell[2].end());

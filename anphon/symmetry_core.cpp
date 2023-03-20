@@ -39,7 +39,7 @@ void Symmetry::set_default_variables()
 
 void Symmetry::setup_symmetry()
 {
-    time_reversal_sym = system->get_spin("prim").time_reversal_symm;
+    time_reversal_sym = system->get_spin_prim().time_reversal_symm;
     SymmList.clear();
 
     if (mympi->my_rank == 0) {
@@ -47,13 +47,13 @@ void Symmetry::setup_symmetry()
         std::cout << "  Symmetry \n";
         std::cout << " ==========\n\n";
 
-        const auto cell_tmp = system->get_cell("prim", "base");
+        const auto cell_tmp = system->get_primcell();
         setup_symmetry_operation(nsym,
                                  cell_tmp.lattice_vector,
                                  cell_tmp.reciprocal_lattice_vector,
                                  cell_tmp.x_fractional,
                                  cell_tmp.kind,
-                                 system->get_spin("prim"));
+                                 system->get_spin_prim());
     }
 
     MPI_Bcast(&nsym, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -62,9 +62,9 @@ void Symmetry::setup_symmetry()
     if (mympi->my_rank == 0) {
         std::cout << "  Number of symmetry operations : "
                   << nsym << std::endl << std::endl;
-        gensym_withmap(system->get_cell("prim", "base").lattice_vector,
-                       system->get_cell("prim", "base").x_fractional,
-                       system->get_cell("prim", "base").kind);
+        gensym_withmap(system->get_primcell().lattice_vector,
+                       system->get_primcell().x_fractional,
+                       system->get_primcell().kind);
     }
 }
 

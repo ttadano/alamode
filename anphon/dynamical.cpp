@@ -152,7 +152,7 @@ std::complex<double> ***DymatEigenValue::get_eigenvectors() const
 
 void Dynamical::setup_dynamical()
 {
-    neval = 3 * system->get_cell("prim", "base").number_of_atoms;
+    neval = 3 * system->get_primcell().number_of_atoms;
 
     if (mympi->my_rank == 0) {
         std::cout << std::endl;
@@ -261,8 +261,8 @@ void Dynamical::setup_dynamical()
         MPI_Bcast(&na_sigma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         allocate(mindist_list,
-                 system->get_cell("prim").number_of_atoms,
-                 system->get_cell("super").number_of_atoms); // should use fc2 cell?
+                 system->get_primcell().number_of_atoms,
+                 system->get_supercell(0).number_of_atoms); // should use fc2 cell?
         prepare_mindist_list(mindist_list);
     }
 
@@ -280,8 +280,8 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 
     double ***xcrd;
 
-    const auto scell_tmp = system->get_cell("super");
-    const auto pcell_tmp = system->get_cell("prim");
+    const auto scell_tmp = system->get_supercell(0);
+    const auto pcell_tmp = system->get_primcell();
     const auto nat = scell_tmp.number_of_atoms;
     const auto natmin = pcell_tmp.number_of_atoms;
 
@@ -484,7 +484,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
     // Calculate Coulombic contributions including long-range interactions
     ewald->add_longrange_matrix(xk_in, kvec_in, mat_longrange);
 
-    const auto nat_prim = system->get_cell("prim").number_of_atoms;
+    const auto nat_prim = system->get_primcell().number_of_atoms;
     // Add calculated dynamical matrix of Coulomb parts
     for (i = 0; i < nat_prim; ++i) {
         for (icrd = 0; icrd < 3; ++icrd) {
@@ -572,10 +572,10 @@ void Dynamical::calc_analytic_k(const double *xk_in,
 {
     int i;
     Eigen::Vector3d vec;
-    Eigen::Matrix3d convmat = system->get_cell("prim").reciprocal_lattice_vector
-                              * system->get_cell("super").lattice_vector;
+    Eigen::Matrix3d convmat = system->get_primcell().reciprocal_lattice_vector
+                              * system->get_supercell(0).lattice_vector;
 
-    const auto xf_tmp = system->get_cell("super").x_fractional;
+    const auto xf_tmp = system->get_supercell(0).x_fractional;
 
     for (i = 0; i < neval; ++i) {
         for (auto j = 0; j < neval; ++j) {
@@ -640,7 +640,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 
     unsigned int i, j;
     unsigned int iat, jat;
-    const auto pcell = system->get_cell("prim");
+    const auto pcell = system->get_primcell();
     const auto nat_prim = pcell.number_of_atoms;
     double kepsilon[3];
     double kz1[3], kz2[3];
@@ -705,7 +705,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
     xk_tmp = pcell.reciprocal_lattice_vector.transpose() * xk_tmp;
     const auto norm2 = xk_tmp.squaredNorm();
 
-    const auto factor = 8.0 * pi / system->volume_p * std::exp(-norm2 / std::pow(na_sigma, 2));
+    const auto factor = 8.0 * pi / system->get_primcell().volume * std::exp(-norm2 / std::pow(na_sigma, 2));
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -715,8 +715,8 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
 
     // Multiply an additional phase factor for the non-analytic term.
 
-    const auto xf_tmp = system->get_cell("super").x_fractional;
-    const auto convmat = pcell.reciprocal_lattice_vector * system->get_cell("super").lattice_vector;
+    const auto xf_tmp = system->get_supercell(0).x_fractional;
+    const auto convmat = pcell.reciprocal_lattice_vector * system->get_supercell(0).lattice_vector;
 
     for (iat = 0; iat < nat_prim; ++iat) {
         for (jat = 0; jat < nat_prim; ++jat) {
@@ -747,15 +747,15 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
     // by the mixed-space approach.
 
     unsigned int i, j;
-    const auto natmin = system->get_cell("prim").number_of_atoms;
+    const auto natmin = system->get_primcell().number_of_atoms;
     double kepsilon[3];
     double kz1[3], kz2[3];
     double born_tmp[3][3];
     Eigen::Vector3d vec;
-    Eigen::Matrix3d convmat = system->get_cell("prim").reciprocal_lattice_vector
-                              * system->get_cell("super").lattice_vector;
+    Eigen::Matrix3d convmat = system->get_primcell().reciprocal_lattice_vector
+                              * system->get_supercell(0).lattice_vector;
 
-    const auto xf_tmp = system->get_cell("super").x_fractional;
+    const auto xf_tmp = system->get_supercell(0).x_fractional;
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -811,8 +811,8 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                         }
 
 
-//                        rotvec(vec, vec, system->get_cell("super").lattice_vector);
-//                        rotvec(vec, vec, system->get_cell("prim").reciprocal_lattice_vector);
+//                        rotvec(vec, vec, system->get_supercell(0).lattice_vector);
+//                        rotvec(vec, vec, system->get_primcell().reciprocal_lattice_vector);
 
                         vec = convmat * vec;
                         double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
@@ -834,7 +834,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
         }
     }
 
-    double factor = 8.0 * pi / system->volume_p;
+    double factor = 8.0 * pi / system->get_primcell().volume;
 
     for (i = 0; i < neval; ++i) {
         for (j = 0; j < neval; ++j) {
@@ -1399,11 +1399,11 @@ void Dynamical::setup_dielectric(const unsigned int verbosity) // maybe, this sh
 {
     if (borncharge) deallocate(borncharge);
 
-    allocate(borncharge, system->get_cell("prim").number_of_atoms, 3, 3);
+    allocate(borncharge, system->get_primcell().number_of_atoms, 3, 3);
     if (mympi->my_rank == 0) load_born(symmetrize_borncharge, verbosity);
 
     MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&borncharge[0][0][0], 9 * system->get_cell("prim").number_of_atoms,
+    MPI_Bcast(&borncharge[0][0][0], 9 * system->get_primcell().number_of_atoms,
               MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
@@ -1416,7 +1416,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
     double sum_born[3][3];
     std::ifstream ifs_born;
 
-    const auto natmin_tmp = system->get_cell("prim").number_of_atoms;
+    const auto natmin_tmp = system->get_primcell().number_of_atoms;
 
     ifs_born.open(file_born.c_str(), std::ios::in);
     if (!ifs_born) exit("load_born", "cannot open file_born");
@@ -1451,7 +1451,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
         for (i = 0; i < natmin_tmp; ++i) {
             std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                      << std::setw(3) << system->symbol_kd[system->get_cell("super").kind[system->get_map_p2s(0)[i][0]]]
+                      << std::setw(3) << system->symbol_kd[system->get_supercell(0).kind[system->get_map_p2s(0)[i][0]]]
                       << ") :" << std::endl;
 
             for (j = 0; j < 3; ++j) {
@@ -1494,7 +1494,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
                     borncharge[i][j][k] -=
-                            sum_born[j][k] / static_cast<double>(system->get_cell("prim").number_of_atoms);
+                            sum_born[j][k] / static_cast<double>(system->get_primcell().number_of_atoms);
                 }
             }
         }
@@ -1580,7 +1580,7 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
                 std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
                 for (i = 0; i < natmin_tmp; ++i) {
                     std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                              << std::setw(3) << system->symbol_kd[system->get_cell("prim").kind[system->get_map_p2s(0)[i][0]]]
+                              << std::setw(3) << system->symbol_kd[system->get_primcell().kind[system->get_map_p2s(0)[i][0]]]
                               << ") :"
                               << std::endl;
 
@@ -1618,7 +1618,7 @@ void Dynamical::calc_participation_ratio_all(const unsigned int nk_in,
                                              double ***ret_all) const
 {
     const auto ns = dynamical->neval;
-    const auto natmin = system->get_cell("prim").number_of_atoms;
+    const auto natmin = system->get_primcell().number_of_atoms;
 
     double *atomic_pr;
 
@@ -1646,7 +1646,7 @@ void Dynamical::calc_atomic_participation_ratio(const std::complex<double> *evec
                                                 double *ret) const
 {
     unsigned int iat;
-    const auto natmin = system->get_cell("prim").number_of_atoms;
+    const auto natmin = system->get_primcell().number_of_atoms;
 
     for (iat = 0; iat < natmin; ++iat) ret[iat] = 0.0;
 

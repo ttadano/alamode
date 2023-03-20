@@ -78,7 +78,7 @@ void Kpoint::kpoint_setups(const std::string mode)
             }
 
             setup_kpoint_given(kpInp,
-                               system->get_cell("prim", "base").reciprocal_lattice_vector);
+                               system->get_primcell().reciprocal_lattice_vector);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  Number of k points : " << kpoint->kpoint_general->nk << std::endl << std::endl;
@@ -102,7 +102,7 @@ void Kpoint::kpoint_setups(const std::string mode)
             }
 
             setup_kpoint_band(kpInp,
-                              system->get_cell("prim", "base").reciprocal_lattice_vector);
+                              system->get_primcell().reciprocal_lattice_vector);
             if (mympi->my_rank == 0) {
                 std::cout << "  Number of paths : " << kpInp.size() << std::endl << std::endl;
                 std::cout << "  List of k paths : " << std::endl;
@@ -150,7 +150,7 @@ void Kpoint::kpoint_setups(const std::string mode)
             MPI_Bcast(&nk_tmp[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
             dos->kmesh_dos = new KpointMeshUniform(nk_tmp);
             dos->kmesh_dos->setup(symmetry->SymmList,
-                                  system->get_cell("prim", "base").reciprocal_lattice_vector,
+                                  system->get_primcell().reciprocal_lattice_vector,
                                   symmetry->time_reversal_sym,
                                   true);
 

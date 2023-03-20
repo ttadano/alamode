@@ -47,11 +47,8 @@ System::~System()
 void System::set_default_variables()
 {
     mass_kd = nullptr;
-    symbol_kd = nullptr;
-//    map_p2s_anharm = nullptr;
-    map_p2s_anharm_orig = nullptr;
-//    map_s2p_anharm = nullptr;
     load_primitive_from_file = 0;
+    symbol_kd.clear();
 }
 
 void System::deallocate_variables()
@@ -59,212 +56,165 @@ void System::deallocate_variables()
     if (mass_kd) {
         deallocate(mass_kd);
     }
-    if (symbol_kd) {
-        deallocate(symbol_kd);
-    }
-//    if (map_p2s_anharm) {
-//        deallocate(map_p2s_anharm);
-//    }
-//    if (map_s2p_anharm) {
-//        deallocate(map_s2p_anharm);
-//    }
-    if (map_p2s_anharm_orig) {
-        deallocate(map_p2s_anharm_orig);
-    }
 }
 
 void System::setup()
 {
-    using namespace std;
-
-    unsigned int i, j;
-    double vec_tmp[3][3];
-
     MPI_Bcast(&load_primitive_from_file, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(lavec_p_input.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    if (mympi->my_rank == 0) {
-
-        if (!mass_kd) {
-            allocate(mass_kd, nkd);
-            set_mass_elem_from_database(nkd, symbol_kd, mass_kd);
-        }
-    }
     load_system_info_from_file();
     update_primitive_lattice();
-    generate_mapping_tables();
-
-    //load_system_info_from_XML();
 
     if (mympi->my_rank == 0) {
-        cout << " -----------------------------------------------------------------" << endl;
-        cout << endl;
-        cout << " ===================\n";
-        cout << "  Crystal Structure \n";
-        cout << " ===================\n\n";
-        cout << " Lattice Vectors:\n\n";
-        cout.setf(ios::scientific);
-
-        cout << " * Supercell (from " << fcs_phonon->file_fcs << " )" << endl << endl;
-        cout << setw(16) << supercell_base.lattice_vector(0, 0);
-        cout << setw(15) << supercell_base.lattice_vector(1, 0);
-        cout << setw(15) << supercell_base.lattice_vector(2, 0);
-        cout << " : a1" << endl;
-
-        cout << setw(16) << supercell_base.lattice_vector(0, 1);
-        cout << setw(15) << supercell_base.lattice_vector(1, 1);
-        cout << setw(15) << supercell_base.lattice_vector(2, 1);
-        cout << " : a2" << endl;
-
-        cout << setw(16) << supercell_base.lattice_vector(0, 2);
-        cout << setw(15) << supercell_base.lattice_vector(1, 2);
-        cout << setw(15) << supercell_base.lattice_vector(2, 2);
-        cout << " : a3" << endl;
-        cout << endl;
-
-        cout << " * Primitive cell " << endl << endl;
-        cout << setw(16) << primcell_base.lattice_vector(0, 0);
-        cout << setw(15) << primcell_base.lattice_vector(1, 0);
-        cout << setw(15) << primcell_base.lattice_vector(2, 0);
-        cout << " : a1" << endl;
-
-        cout << setw(16) << primcell_base.lattice_vector(0, 1);
-        cout << setw(15) << primcell_base.lattice_vector(1, 1);
-        cout << setw(15) << primcell_base.lattice_vector(2, 1);
-        cout << " : a2" << endl;
-
-        cout << setw(16) << primcell_base.lattice_vector(0, 2);
-        cout << setw(15) << primcell_base.lattice_vector(1, 2);
-        cout << setw(15) << primcell_base.lattice_vector(2, 2);
-        cout << " : a3" << endl;
-        cout << endl;
-
-        cout << setw(16) << primcell_base.reciprocal_lattice_vector(0, 0);
-        cout << setw(15) << primcell_base.reciprocal_lattice_vector(0, 1);
-        cout << setw(15) << primcell_base.reciprocal_lattice_vector(0, 2);
-        cout << " : b1" << endl;
-
-        cout << setw(16) << primcell_base.reciprocal_lattice_vector(1, 0);
-        cout << setw(15) << primcell_base.reciprocal_lattice_vector(1, 1);
-        cout << setw(15) << primcell_base.reciprocal_lattice_vector(1, 2);
-        cout << " : b2" << endl;
-
-        cout << setw(16) << primcell_base.reciprocal_lattice_vector(2, 0);
-        cout << setw(15) << primcell_base.reciprocal_lattice_vector(2, 1);
-        cout << setw(15) << primcell_base.reciprocal_lattice_vector(2, 2);
-        cout << " : b3" << endl;
-        cout << endl << endl;
-
-        volume_p = primcell_base.volume;
-
-        cout << "  Volume of the primitive cell : "
-             << primcell_base.volume << " (a.u.)^3" << endl << endl;
-        cout << "  Number of atoms in the supercell     : "
-             << supercell_base.number_of_atoms << endl;
-        cout << "  Number of atoms in the primitive cell: "
-             << primcell_base.number_of_atoms << endl << endl;
-
-        if (fcs_phonon->update_fc2) {
-            cout << endl;
-            cout << "  FC2XML is given: Harmonic IFCs will be replaced by the values in "
-                 << fcs_phonon->file_fc2 << endl;
-            cout << endl;
-
-            cout << " * Supercell for HARMONIC (from "
-                 << fcs_phonon->file_fc2 << " )" << endl << endl;
-
-            cout << setw(16) << supercell_fc2.lattice_vector(0, 0);
-            cout << setw(15) << supercell_fc2.lattice_vector(1, 0);
-            cout << setw(15) << supercell_fc2.lattice_vector(2, 0);
-            cout << " : a1" << endl;
-
-            cout << setw(16) << supercell_fc2.lattice_vector(0, 1);
-            cout << setw(15) << supercell_fc2.lattice_vector(1, 1);
-            cout << setw(15) << supercell_fc2.lattice_vector(2, 1);
-            cout << " : a2" << endl;
-
-            cout << setw(16) << supercell_fc2.lattice_vector(0, 2);
-            cout << setw(15) << supercell_fc2.lattice_vector(1, 2);
-            cout << setw(15) << supercell_fc2.lattice_vector(2, 2);
-            cout << " : a3" << endl;
-            cout << endl;
-
-            cout << "  Number of atoms in the supercell (HARMONIC)   : "
-                 << supercell_fc2.number_of_atoms << endl;
-            cout << endl;
+        if (!mass_kd) {
+            const auto nkd_tmp = symbol_kd.size();
+            allocate(mass_kd, nkd_tmp);
+            set_mass_elem_from_database(nkd_tmp, symbol_kd, mass_kd);
         }
-
-        cout << "  Atomic positions in the primitive cell (fractional):" << endl;
-        for (i = 0; i < primcell_base.number_of_atoms; ++i) {
-            cout << setw(4) << i + 1 << ":";
-            for (j = 0; j < 3; ++j) {
-                cout << setw(15) << primcell_base.x_fractional(i, j);
-            }
-            cout << setw(4) << symbol_kd[primcell_base.kind[i]] << endl;
-        }
-        cout << endl;
-
-        if (spin_prim_base.lspin) {
-            cout << "  MagneticMoments entry found in the XML file. " << endl;
-            cout << "  Magnetic moment in Cartesian coordinates: " << endl;
-            for (i = 0; i < primcell_base.number_of_atoms; ++i) {
-                cout << setw(4) << i + 1 << ":";
-                for (j = 0; j < 3; ++j) {
-                    cout << setw(15) << spin_prim_base.magmom[i][j];
-                }
-                cout << endl;
-            }
-            cout << endl;
-            if (spin_prim_base.noncollinear == 0) {
-                cout << "  Collinear calculation: magnetic moments are considered as scalar variables." << endl;
-            } else if (spin_prim_base.noncollinear == 1) {
-                cout << "  Noncollinear calculation: magnetic moments are considered as vector variables." << endl;
-                if (spin_prim_base.time_reversal_symm) {
-                    cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << endl;
-                } else {
-                    cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" <<
-                         endl;
-                }
-            }
-            cout << endl;
-        }
-
-        cout << "  Mass of atomic species (u):" << endl;
-        for (i = 0; i < primcell_base.number_of_elems; ++i) {
-            cout << setw(4) << symbol_kd[i] << ":";
-            cout << fixed << setw(12) << mass_kd[i] << endl;
-        }
-        cout << endl << endl;
     }
 
-    // Check the consistency of FCSXML and FC2XML
-    MPI_Bcast(&fcs_phonon->update_fc2, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
-//    if (fcs_phonon->update_fc2) {
-//        allocate(map_p2s_anharm_orig, natmin, ntran_anharm);
-//        check_consistency_primitive_lattice();
-//    }
-    // Atomic masses in Rydberg unit
-
-    mass_super.resize(supercell_base.number_of_atoms);
-    mass_prim.resize(primcell_base.number_of_atoms);
-    invsqrt_mass_p.resize(primcell_base.number_of_atoms);
-
-    for (i = 0; i < supercell_base.number_of_atoms; ++i) {
-        mass_super[i] = mass_kd[supercell_base.kind[i]] * amu_ry;
+    if (mympi->my_rank == 0) {
+        print_structure_information_stdout();
     }
-    for (i = 0; i < primcell_base.number_of_atoms; ++i) {
-        mass_prim[i] = mass_kd[primcell_base.kind[i]] * amu_ry;
+
+    mass_super.resize(supercell[0].number_of_atoms);
+    mass_prim.resize(primcell.number_of_atoms);
+    invsqrt_mass_p.resize(primcell.number_of_atoms);
+
+    for (auto i = 0; i < supercell[0].number_of_atoms; ++i) {
+        mass_super[i] = mass_kd[supercell[0].kind[i]] * amu_ry;
     }
-    for (i = 0; i < primcell_base.number_of_atoms; ++i) {
+    for (auto i = 0; i < primcell.number_of_atoms; ++i) {
+        mass_prim[i] = mass_kd[primcell.kind[i]] * amu_ry;
+    }
+    for (auto i = 0; i < primcell.number_of_atoms; ++i) {
         invsqrt_mass_p[i] = 1.0 / std::sqrt(mass_prim[i]);
     }
 
     MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&volume_p, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    generate_mapping_tables();
 }
 
+
+void System::print_structure_information_stdout() const
+{
+    using namespace std;
+
+    cout << " -----------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << " ===================\n";
+    cout << "  Crystal Structure \n";
+    cout << " ===================\n\n";
+    cout << " Lattice Vectors:\n\n";
+    cout.setf(ios::scientific);
+
+
+    cout << " * Primitive cell ";
+    if (load_primitive_from_file) {
+        cout << " (from input file)\n\n";
+    } else {
+        if (!fcs_phonon->file_fcs.empty()) {
+            cout << " (from " << fcs_phonon->file_fcs << ")\n\n";
+        }  else {
+            cout << " (from " << fcs_phonon->file_fc2 << ")\n\n";
+        }
+    }
+
+    for (auto i = 0; i < 3; ++i) {
+        cout << setw(16) << primcell.lattice_vector(0, i);
+        cout << setw(15) << primcell.lattice_vector(1, i);
+        cout << setw(15) << primcell.lattice_vector(2, i);
+        cout << (" : a" + std::to_string(i+1)) << '\n';
+    }
+    cout << '\n';
+
+    for (auto i = 0; i < 3; ++i) {
+        cout << setw(16) << primcell.reciprocal_lattice_vector(i, 0);
+        cout << setw(15) << primcell.reciprocal_lattice_vector(i, 1);
+        cout << setw(15) << primcell.reciprocal_lattice_vector(i, 2);
+        cout << (" : b" + std::to_string(i+1)) << '\n';
+    }
+    cout << "\n\n";
+
+    cout << "  Volume of the primitive cell : "
+         << primcell.volume << " (a.u.)^3" << endl << endl;
+    cout << "  Number of atoms in the primitive cell: "
+         << primcell.number_of_atoms << endl << endl;
+
+    cout << "  Atomic positions in the primitive cell (fractional):" << endl;
+    for (auto i = 0; i < primcell.number_of_atoms; ++i) {
+        cout << setw(4) << i + 1 << ":";
+        for (auto j = 0; j < 3; ++j) {
+            cout << setw(15) << primcell.x_fractional(i, j);
+        }
+        cout << setw(4) << symbol_kd[primcell.kind[i]] << endl;
+    }
+    cout << endl;
+
+    if (spin_prim.lspin) {
+        cout << "  MagneticMoments entry found in the XML file. " << endl;
+        cout << "  Magnetic moment in Cartesian coordinates: " << endl;
+        for (auto i = 0; i < primcell.number_of_atoms; ++i) {
+            cout << setw(4) << i + 1 << ":";
+            for (auto j = 0; j < 3; ++j) {
+                cout << setw(15) << spin_prim.magmom[i][j];
+            }
+            cout << endl;
+        }
+        cout << endl;
+        if (spin_prim.noncollinear == 0) {
+            cout << "  Collinear calculation: magnetic moments are considered as scalar variables." << endl;
+        } else if (spin_prim.noncollinear == 1) {
+            cout << "  Noncollinear calculation: magnetic moments are considered as vector variables." << endl;
+            if (spin_prim.time_reversal_symm) {
+                cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << endl;
+            } else {
+                cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" <<
+                     endl;
+            }
+        }
+        cout << endl;
+    }
+
+    cout << "  Mass of atomic species (u):" << endl;
+    for (auto i = 0; i < primcell.number_of_elems; ++i) {
+        cout << setw(4) << symbol_kd[i] << ":";
+        cout << fixed << setw(12) << mass_kd[i] << endl;
+    }
+    cout << endl << endl;
+
+    Eigen::Matrix3d transformation_matrix;
+
+    transformation_matrix = supercell[0].lattice_vector * primcell.lattice_vector.inverse();
+
+    cout << " * Supercell for harmonic \n\n";
+    for (auto i = 0; i < 3; ++i) {
+        cout << setw(16) << supercell[0].lattice_vector(0, i);
+        cout << setw(15) << supercell[0].lattice_vector(1, i);
+        cout << setw(15) << supercell[0].lattice_vector(2, i);
+        cout << (" : a" + std::to_string(i+1)) << '\n';
+    }
+    cout << '\n';
+    cout << "  Transformation matrix:\n";
+    for (auto i = 0; i < 3; ++i) {
+        cout << setw(16) << transformation_matrix(0, i);
+        cout << setw(16) << transformation_matrix(1, i);
+        cout << setw(16) << transformation_matrix(2, i);
+        cout << '\n';
+    }
+    const auto det_mat = transformation_matrix.determinant();
+    if (std::abs(static_cast<double>(nint(det_mat))-det_mat) > eps6) {
+        exit("print_structure_information_stdout",
+             "The transformation matrix should be composed of integers. Something is wrong.");
+    }
+    cout << '\n' << "  Number of atoms in the supercell     : "
+         << supercell[0].number_of_atoms << endl;
+
+    cout << "\n\n";
+}
 
 void System::load_system_info_from_file()
 {
@@ -275,6 +225,10 @@ void System::load_system_info_from_file()
                                            fcs_phonon->file_fc2,
                                            fcs_phonon->file_fc3,
                                            fcs_phonon->file_fc4};
+
+    supercell.resize(3);
+    map_super_alm.resize(3);
+    map_prim_alm.resize(3);
 
     if (mympi->my_rank == 0) {
         for (auto i = 0; i < filename_list.size(); ++i) {
@@ -300,6 +254,11 @@ void System::load_system_info_from_file()
 
     Spin spin_super_fc2, spin_prim_fc2;
     std::vector<std::string> elements_base, elements_fc2, elements_tmp;
+    Cell primcell_base, primcell_fc2;
+    Cell supercell_base;
+    MappingTable map_scell_base, map_pcell_base;
+    Spin spin_super_base, spin_prim_base;
+
 
     for (auto i = 0; i < 4; ++i) {
 
@@ -335,64 +294,67 @@ void System::load_system_info_from_file()
             elements_base = elements_tmp;
 
         } else if (i == 1) {
-            supercell_fc2 = scell;
+            supercell[0] = scell;
+            map_super_alm[0] = map_s;
+            map_prim_alm[0] = map_p;
             primcell_fc2 = pcell;
-            map_scell_fc2 = map_s;
-            map_pcell_fc2 = map_p;
             spin_super_fc2 = spin_s;
             spin_prim_fc2 = spin_p;
             elements_fc2 = elements_tmp;
 
         } else if (i == 2) {
-            supercell_fc3 = scell;
-            primcell_fc3 = pcell;
-            map_scell_fc3 = map_s;
-            map_pcell_fc3 = map_p;
+            supercell[1] = scell;
+            map_super_alm[1] = map_s;
+            map_prim_alm[1] = map_p;
 
         } else if (i == 3) {
-            supercell_fc4 = scell;
-            primcell_fc4 = pcell;
-            map_scell_fc4 = map_s;
-            map_pcell_fc4 = map_p;
-
+            supercell[2] = scell;
+            map_super_alm[2] = map_s;
+            map_prim_alm[2] = map_p;
         }
     }
 
     // If FCSFILE is not defined in input, set FC2FILE information as base.
     if (filetype[0] == -1) {
-        supercell_base = supercell_fc2;
+        supercell_base = supercell[0];
         primcell_base = primcell_fc2;
-        map_scell_base = map_scell_fc2;
-        map_pcell_base = map_pcell_fc2;
+        map_scell_base = map_super_alm[0];
+        map_pcell_base = map_prim_alm[0];
         spin_super_base = spin_super_fc2;
         spin_prim_base = spin_prim_fc2;
         elements_base = elements_fc2;
     }
 
     if (filetype[1] == -1) {
-        supercell_fc2 = supercell_base;
-        primcell_fc2 = primcell_base;
-        map_scell_fc2 = map_scell_base;
-        map_pcell_fc2 = map_pcell_base;
-        spin_super_fc2 = spin_super_base;
-        spin_prim_fc2 = spin_prim_base;
+        supercell[0] = supercell_base;
+        map_super_alm[0] = map_scell_base;
+        map_prim_alm[0] = map_pcell_base;
     }
 
     // Copy data if FC3FILE is not given.
     if (filetype[2] == -1) {
-        supercell_fc3 = supercell_base;
-        primcell_fc2 = primcell_base;
-        map_scell_fc3 = map_scell_base;
-        map_pcell_fc3 = map_pcell_base;
+        supercell[1] = supercell_base;
+        map_super_alm[1] = map_scell_base;
+        map_prim_alm[1] = map_pcell_base;
     }
 
     // Copy data if FC4FILE is not given.
     if (filetype[3] == -1) {
-        supercell_fc4 = supercell_base;
-        primcell_fc4 = primcell_base;
-        map_scell_fc4 = map_scell_base;
-        map_pcell_fc4 = map_pcell_base;
+        supercell[2] = supercell_base;
+        map_super_alm[2] = map_scell_base;
+        map_prim_alm[2] = map_pcell_base;
     }
+
+    primcell = primcell_base;
+    spin_super = spin_super_base;
+    spin_prim = spin_prim_base;
+
+    if (symbol_kd.empty()) {
+        std::copy(elements_base.begin(),
+                  elements_base.end(),
+                  std::back_inserter(symbol_kd));
+    }
+
 }
 
 void System::get_structure_and_mapping_table_xml(const std::string &filename,
@@ -1121,7 +1083,7 @@ void System::update_primitive_lattice()
 {
     // Update primcell_base and spin_prim_base.
 
-    if (!primcell_base.has_entry && (load_primitive_from_file == 0)) {
+    if (!primcell.has_entry && (load_primitive_from_file == 0)) {
         exit("System::update_primitive_lattice()",
              "Primitive lattice vectors must be given in the &cell field, \n"
              "because the corresponding data does not exist in FCSFILE.");
@@ -1130,30 +1092,30 @@ void System::update_primitive_lattice()
     MPI_Bcast(lavec_p_input.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (load_primitive_from_file == 1) {
-        // Update the information of primcell_base using the information of supercell_base
+        // Update the information of primcell using the information of supercell[0]
         // and the given lattice vector.
 
-        Eigen::Matrix3d transmat_to_prim = supercell_base.lattice_vector.inverse() * lavec_p_input;
+        Eigen::Matrix3d transmat_to_prim = supercell[0].lattice_vector.inverse() * lavec_p_input;
 
-        primcell_base.lattice_vector = lavec_p_input;
-        recips(primcell_base.lattice_vector, primcell_base.reciprocal_lattice_vector);
-        primcell_base.volume = volume(primcell_base.lattice_vector, Direct);
+        primcell.lattice_vector = lavec_p_input;
+        recips(primcell.lattice_vector, primcell.reciprocal_lattice_vector);
+        primcell.volume = volume(primcell.lattice_vector, Direct);
 
         const auto ndiv = nint(1.0 / transmat_to_prim.determinant());
-        if (supercell_base.number_of_atoms % ndiv != 0) {
+        if (supercell[0].number_of_atoms % ndiv != 0) {
             exit("update_primitive_lattice",
                  "The input primitive cell lattice vector is incommensurate \n "
                  " with the supercell information parsed from FCSFILE.");
         }
 
-        primcell_base.number_of_atoms = supercell_base.number_of_atoms / ndiv;
-        primcell_base.number_of_elems = supercell_base.number_of_elems;
+        primcell.number_of_atoms = supercell[0].number_of_atoms / ndiv;
+        primcell.number_of_elems = supercell[0].number_of_elems;
 
-        spin_prim_base.lspin = spin_super_base.lspin;
-        spin_prim_base.noncollinear = spin_super_base.noncollinear;
-        spin_prim_base.time_reversal_symm = spin_super_base.time_reversal_symm;
-        spin_prim_base.magmom.clear();
-        spin_prim_base.magmom.shrink_to_fit();
+        spin_prim.lspin = spin_super.lspin;
+        spin_prim.noncollinear = spin_super.noncollinear;
+        spin_prim.time_reversal_symm = spin_super.time_reversal_symm;
+        spin_prim.magmom.clear();
+        spin_prim.magmom.shrink_to_fit();
 
         // Convert the basis of coordinates from inputcell to primitive fractional
         // (a_in, b_in, c_in) * xf_in = xc_in
@@ -1161,14 +1123,14 @@ void System::update_primitive_lattice()
         // xf_p = (a_p, b_p, c_p)^{-1} * (a_in, b_in, c_in) * xf_in
         //      = [Mat(inp->p)]^{-1} * xf_in
         Eigen::Matrix3d conversion_mat = transmat_to_prim.inverse().transpose();
-        Eigen::MatrixXd xf_prim_all = supercell_base.x_fractional * conversion_mat;
+        Eigen::MatrixXd xf_prim_all = supercell[0].x_fractional * conversion_mat;
 
         std::vector<std::vector<double>> xf_unique, magmom_unique;
         std::vector<double> xf_tmp_vec(3), magmom_tmp_vec(3);
         std::vector<int> kind_unique;
         Eigen::VectorXd xf_tmp(3), xf_tmp2(3), xf_diff(3);
 
-        for (auto i = 0; i < supercell_base.number_of_atoms; ++i) {
+        for (auto i = 0; i < supercell[0].number_of_atoms; ++i) {
             xf_tmp = xf_prim_all.row(i);
             xf_tmp = xf_tmp.unaryExpr([](const double x) { return std::fmod(x, 1.0); });
             for (auto j = 0; j < 3; ++j) {
@@ -1189,16 +1151,16 @@ void System::update_primitive_lattice()
                 if (xf_diff.norm() < eps6) {
                     is_duplicate = true;
 
-                    if (kind_unique[k] != supercell_base.kind[i]) {
+                    if (kind_unique[k] != supercell[0].kind[i]) {
                         exit("update_primitive_lattice",
                              "Different atoms with different element types occupy the same atomic site.\n"
                              "This is strange. Please check the PRIMCELL and input structure carefully.");
                     }
 
-                    if (spin_super_base.lspin) {
+                    if (spin_super.lspin) {
                         double norm_magmom = 0.0;
                         for (auto kk = 0; kk < 3; ++kk) {
-                            norm_magmom += std::pow(spin_super_base.magmom[i][kk] - magmom_unique[k][kk], 2);
+                            norm_magmom += std::pow(spin_super.magmom[i][kk] - magmom_unique[k][kk], 2);
                         }
                         if (std::sqrt(norm_magmom) > eps6) {
                             exit("update_primitive_lattice",
@@ -1212,38 +1174,38 @@ void System::update_primitive_lattice()
             if (!is_duplicate) {
                 for (auto j = 0; j < 3; ++j) xf_tmp_vec[j] = xf_tmp[j];
                 xf_unique.emplace_back(xf_tmp_vec);
-                kind_unique.emplace_back(supercell_base.kind[i]);
-                if (spin_super_base.lspin) {
-                    for (auto j = 0; j < 3; ++j) magmom_tmp_vec[j] = spin_super_base.magmom[i][j];
+                kind_unique.emplace_back(supercell[0].kind[i]);
+                if (spin_super.lspin) {
+                    for (auto j = 0; j < 3; ++j) magmom_tmp_vec[j] = spin_super.magmom[i][j];
                     magmom_unique.emplace_back(magmom_tmp_vec);
                 }
             }
         }
 
-        if (xf_unique.size() != primcell_base.number_of_atoms) {
-            std::cout << "primcell.number_of_atoms = " << primcell_base.number_of_atoms << '\n';
+        if (xf_unique.size() != primcell.number_of_atoms) {
+            std::cout << "primcell.number_of_atoms = " << primcell.number_of_atoms << '\n';
             std::cout << "xf_unique.size() = " << xf_unique.size() << '\n';
             exit("update_primitive_lattice",
                  "Mapping to the primitive cell failed. "
                  "Please check the lattice constant in the &cell field.");
         }
 
-        primcell_base.x_fractional.resize(primcell_base.number_of_atoms, 3);
-        primcell_base.kind.resize(primcell_base.number_of_atoms);
+        primcell.x_fractional.resize(primcell.number_of_atoms, 3);
+        primcell.kind.resize(primcell.number_of_atoms);
 
-        for (auto i = 0; i < primcell_base.number_of_atoms; ++i) {
+        for (auto i = 0; i < primcell.number_of_atoms; ++i) {
             for (auto j = 0; j < 3; ++j) {
-                primcell_base.x_fractional(i, j) = xf_unique[i][j];
+                primcell.x_fractional(i, j) = xf_unique[i][j];
             }
-            primcell_base.kind[i] = kind_unique[i];
+            primcell.kind[i] = kind_unique[i];
         }
 
-        primcell_base.x_cartesian = primcell_base.x_fractional * primcell_base.lattice_vector.transpose();
+        primcell.x_cartesian = primcell.x_fractional * primcell.lattice_vector.transpose();
 
-        if (spin_prim_base.lspin) {
+        if (spin_prim.lspin) {
             std::copy(magmom_unique.begin(),
                       magmom_unique.end(),
-                      std::back_inserter(spin_prim_base.magmom));
+                      std::back_inserter(spin_prim.magmom));
         }
     }
 }
@@ -1251,23 +1213,12 @@ void System::update_primitive_lattice()
 
 void System::generate_mapping_tables()
 {
-    std::vector<std::vector<unsigned int>> map_p2s_tmp;
-    std::vector<Maps> map_s2p_tmp;
-
-    map_s2p_new.resize(4);
-    map_p2s_new.resize(4);
-
-    generate_mapping_primitive_super(primcell_base, supercell_base,
-                                     map_p2s_new[0], map_s2p_new[0]);
-
-    generate_mapping_primitive_super(primcell_base, supercell_fc2,
-                                     map_p2s_new[1], map_s2p_new[1]);
-
-    generate_mapping_primitive_super(primcell_base, supercell_fc3,
-                                     map_p2s_new[2], map_s2p_new[2]);
-
-    generate_mapping_primitive_super(primcell_base, supercell_fc4,
-                                     map_p2s_new[3], map_s2p_new[3]);
+    map_s2p_new.resize(3);
+    map_p2s_new.resize(3);
+    for (auto i = 0; i < 3; ++i) {
+        generate_mapping_primitive_super(primcell, supercell[i],
+                                         map_p2s_new[i], map_s2p_new[i]);
+    }
 }
 
 
@@ -1371,12 +1322,12 @@ void System::generate_mapping_primitive_super(const Cell &pcell,
 
     for (auto itran = 0; itran < trans_vecs.size(); ++ itran) {
         if (unique_shifts_set.find(trans_vecs[itran]) == unique_shifts_set.end()) {
-
-            std::cout << " itran = " << itran << ' ';
-            for (const auto &it : trans_vecs[itran]) {
-                std::cout << std::setw(4) << it;
-            }
-            std::cout << '\n';
+//
+//            std::cout << " itran = " << itran << ' ';
+//            for (const auto &it : trans_vecs[itran]) {
+//                std::cout << std::setw(4) << it;
+//            }
+//            std::cout << '\n';
             unique_shifts_set.insert(trans_vecs[itran]);
             unique_shifts_vec.emplace_back(trans_vecs[itran]);
             unique_itran_indices.emplace_back(itran);
@@ -1509,7 +1460,7 @@ int System::get_atomic_number_by_name(const std::string &kdname_in)
 }
 
 void System::set_mass_elem_from_database(const int nkd,
-                                         const std::string *symbol_in,
+                                         const std::vector<std::string> &symbol_in,
                                          double *mass_kd_out)
 {
     for (int i = 0; i < nkd; ++i) {
@@ -1551,119 +1502,22 @@ double System::volume(const Eigen::Matrix3d &mat_in,
 
 const Cell &System::get_primcell() const
 {
-    return primcell_base;
+    return primcell;
 }
 
-
-const Cell &System::get_cell(const std::string celltype,
-                             const std::string filetype) const
+const Cell &System::get_supercell(const int index) const
 {
-    // This function returns Cell object of the given celltype and filetype.
-    // It is very general but the overhead is high.
-    // So, this function should NOT be called from the inside the loop.
-    std::string celltype_tmp, filetype_tmp;
-    if (celltype == "SuperCell" || celltype == "Super" || celltype == "super") {
-        celltype_tmp = "super";
-    } else if (celltype == "PrimCell" || celltype == "Prim" || celltype == "prim") {
-        celltype_tmp = "prim";
-    } else {
-        exit("get_cell", "invalid celltype");
-    }
-
-    if (filetype == "base" || filetype == "default" || filetype == "Base") {
-        filetype_tmp = "base";
-    } else if (filetype == "fc2" || filetype == "FC2") {
-        filetype_tmp = "fc2";
-    } else if (filetype == "fc3" || filetype == "FC3") {
-        filetype_tmp = "fc3";
-    } else if (filetype == "fc4" || filetype == "FC4") {
-        filetype_tmp = "fc4";
-    } else {
-        exit("get_cell", "invalid filetype");
-    }
-
-    if (celltype_tmp == "super" && filetype_tmp == "base") {
-        return supercell_base;
-    } else if (celltype_tmp == "prim" && filetype_tmp == "base") {
-        return primcell_base;
-    } else if (celltype_tmp == "super" && filetype_tmp == "fc2") {
-        return supercell_fc2;
-    } else if (celltype_tmp == "prim" && filetype_tmp == "fc2") {
-        return primcell_fc2;
-    } else if (celltype_tmp == "super" && filetype_tmp == "fc3") {
-        return supercell_fc3;
-    } else if (celltype_tmp == "prim" && filetype_tmp == "fc3") {
-        return primcell_fc3;
-    } else if (celltype_tmp == "super" && filetype_tmp == "fc4") {
-        return supercell_fc4;
-    } else if (celltype_tmp == "prim" && filetype_tmp == "fc4") {
-        return primcell_fc4;
-    }
-    return supercell_base; // dummy for supressing compiler warning
+    return supercell[index];
 }
 
-const Spin &System::get_spin(const std::string celltype) const
+const MappingTable &System::get_mapping_super_alm(const int index) const
 {
-    std::string celltype_tmp;
-    if (celltype == "SuperCell" || celltype == "Super" || celltype == "super") {
-        celltype_tmp = "super";
-    } else if (celltype == "PrimCell" || celltype == "Prim" || celltype == "prim") {
-        celltype_tmp = "prim";
-    } else {
-        exit("get_spin", "invalid celltype");
-    }
-
-    if (celltype_tmp == "super") {
-        return spin_super_base;
-    } else if (celltype_tmp == "prim") {
-        return spin_prim_base;
-    }
-    return spin_super_base; // dummy for supressing compiler warning
+    return map_super_alm[index];
 }
 
-const MappingTable &System::get_mapping_table(const std::string celltype,
-                                              const std::string filetype) const
+const MappingTable &System::get_mapping_prim_alm(const int index) const
 {
-    std::string celltype_tmp, filetype_tmp;
-    if (celltype == "SuperCell" || celltype == "Super" || celltype == "super") {
-        celltype_tmp = "super";
-    } else if (celltype == "PrimCell" || celltype == "Prim" || celltype == "prim") {
-        celltype_tmp = "prim";
-    } else {
-        exit("get_mapping_table", "invalid celltype");
-    }
-
-    if (filetype == "base" || filetype == "default" || filetype == "Base") {
-        filetype_tmp = "base";
-    } else if (filetype == "fc2" || filetype == "FC2") {
-        filetype_tmp = "fc2";
-    } else if (filetype == "fc3" || filetype == "FC3") {
-        filetype_tmp = "fc3";
-    } else if (filetype == "fc4" || filetype == "FC4") {
-        filetype_tmp = "fc4";
-    } else {
-        exit("get_mapping_table", "invalid filetype");
-    }
-
-    if (celltype_tmp == "super" && filetype_tmp == "base") {
-        return map_scell_base;
-    } else if (celltype_tmp == "prim" && filetype_tmp == "base") {
-        return map_pcell_base;
-    } else if (celltype_tmp == "super" && filetype_tmp == "fc2") {
-        return map_scell_fc2;
-    } else if (celltype_tmp == "prim" && filetype_tmp == "fc2") {
-        return map_pcell_fc2;
-    } else if (celltype_tmp == "super" && filetype_tmp == "fc3") {
-        return map_scell_fc3;
-    } else if (celltype_tmp == "prim" && filetype_tmp == "fc3") {
-        return map_pcell_fc3;
-    } else if (celltype_tmp == "super" && filetype_tmp == "fc4") {
-        return map_scell_fc4;
-    } else if (celltype_tmp == "prim" && filetype_tmp == "fc4") {
-        return map_pcell_fc4;
-    }
-
-    return map_scell_base; // dummy for supressing compiler warning
+    return map_prim_alm[index];
 }
 
 const std::vector<double> &System::get_mass_prim() const
@@ -1691,3 +1545,12 @@ const std::vector<std::vector<unsigned int>> &System::get_map_p2s(const int inde
     return map_p2s_new[index];
 }
 
+const Spin &System::get_spin_prim() const
+{
+    return spin_prim;
+}
+
+const Spin &System::get_spin_super() const
+{
+    return spin_super;
+}
