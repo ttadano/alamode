@@ -48,10 +48,9 @@ void System::set_default_variables()
 {
     mass_kd = nullptr;
     symbol_kd = nullptr;
-    map_p2s_anharm = nullptr;
+//    map_p2s_anharm = nullptr;
     map_p2s_anharm_orig = nullptr;
-    map_s2p = nullptr;
-    map_s2p_anharm = nullptr;
+//    map_s2p_anharm = nullptr;
     load_primitive_from_file = 0;
 }
 
@@ -63,15 +62,12 @@ void System::deallocate_variables()
     if (symbol_kd) {
         deallocate(symbol_kd);
     }
-    if (map_p2s_anharm) {
-        deallocate(map_p2s_anharm);
-    }
-    if (map_s2p) {
-        deallocate(map_s2p);
-    }
-    if (map_s2p_anharm) {
-        deallocate(map_s2p_anharm);
-    }
+//    if (map_p2s_anharm) {
+//        deallocate(map_p2s_anharm);
+//    }
+//    if (map_s2p_anharm) {
+//        deallocate(map_s2p_anharm);
+//    }
     if (map_p2s_anharm_orig) {
         deallocate(map_p2s_anharm_orig);
     }

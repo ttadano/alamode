@@ -276,6 +276,9 @@ void Fcs_phonon::load_fcs_xml() const
             str_tag = "Data.ForceConstants.ANHARM" + std::to_string(order + 2);
         }
 
+        const std::string str_fc = "fc" + std::to_string(order + 2);
+        const auto map_tmp = system->get_mapping_table("super", str_fc);
+
         auto child_ = pt.get_child_optional(str_tag);
 
         if (!child_) {
@@ -301,11 +304,7 @@ void Fcs_phonon::load_fcs_xml() const
                             if (i == 0) {
 
                                 ss >> atmn >> xyz;
-                                if (update_fc2) {
-                                    ivec_tmp.index = 3 * system->map_p2s_anharm_orig[atmn - 1][0] + xyz - 1;
-                                } else {
-                                    ivec_tmp.index = 3 * system->map_p2s_anharm[atmn - 1][0] + xyz - 1;
-                                }
+                                ivec_tmp.index = 3 * map_tmp.from_true_primitive[atmn - 1][0] + xyz - 1;
                                 ivec_tmp.cell_s = 0;
                                 ivec_tmp.tran = 0; // dummy
                                 ivec_with_cell.push_back(ivec_tmp);
@@ -329,9 +328,9 @@ void Fcs_phonon::load_fcs_xml() const
                                 for (i = 0; i < ivec_with_cell.size(); ++i) {
                                     atmn = ivec_with_cell[i].index / 3;
                                     xyz = ivec_with_cell[i].index % 3;
-                                    ivec_tmp.index = 3 * system->map_s2p_anharm[atmn].atom_num + xyz;
+                                    ivec_tmp.index = 3 * map_tmp.to_true_primitive[atmn].atom_num + xyz;
                                     ivec_tmp.cell_s = ivec_with_cell[i].cell_s;
-                                    ivec_tmp.tran = system->map_s2p_anharm[atmn].tran_num;
+                                    ivec_tmp.tran = map_tmp.to_true_primitive[atmn].tran_num;
                                     ivec_copy.push_back(ivec_tmp);
                                 }
 
@@ -507,9 +506,9 @@ void Fcs_phonon::examine_translational_invariance(const int n,
 
             for (const auto &it: fcs[i]) {
                 j = it.pairs[0].index;
-                k = 3 * system->map_p2s_anharm[it.pairs[1].index / 3][it.pairs[1].tran]
+                k = 3 * system->get_map_p2s(2)[it.pairs[1].index / 3][it.pairs[1].tran]
                     + it.pairs[1].index % 3;
-                l = 3 * system->map_p2s_anharm[it.pairs[2].index / 3][it.pairs[2].tran]
+                l = 3 * system->get_map_p2s(2)[it.pairs[2].index / 3][it.pairs[2].tran]
                     + it.pairs[2].index % 3;
                 m = it.pairs[3].index % 3;
 

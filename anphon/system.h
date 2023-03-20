@@ -79,11 +79,7 @@ public:
     double volume_p;
 
     unsigned int nkd;
-
-    unsigned int **map_p2s_anharm;
     unsigned int **map_p2s_anharm_orig;
-
-    Maps *map_s2p, *map_s2p_anharm;
 
     std::string *symbol_kd;
     double *mass_kd;

@@ -168,14 +168,14 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
                 atm_prim[i] = fcs_in[icount].pairs[i].index / 3;
                 const auto tran_tmp = fcs_in[icount].pairs[i].tran;
                 cells[i] = fcs_in[icount].pairs[i].cell_s;
-                atm_super[i] = system->map_p2s_anharm[atm_prim[i]][tran_tmp];
+                atm_super[i] = system->get_map_p2s(2)[atm_prim[i]][tran_tmp];
             }
 
             for (i = 0; i < N - 1; ++i) {
                 for (k = 0; k < 3; ++k) {
                     // TODO: replace below with fc3 or fc4 Cell data
                     vecs[i][k] = xf_tmp(atm_super[i + 1], k) + xshift_s[cells[i + 1]][k]
-                                 - xf_tmp(system->map_p2s_anharm[atm_prim[i + 1]][0], k);
+                                 - xf_tmp(system->get_map_p2s(2)[atm_prim[i + 1]][0], k);
                 }
                 rotvec(vecs[i], vecs[i], mat_convert);
             }

@@ -724,7 +724,7 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
         const auto icell = it.cell_s;
 
         const auto atm1_s = system->get_map_p2s(0)[atm1_p][0];
-        const auto atm2_p = system->map_s2p[atm2_s].atom_num;
+        const auto atm2_p = system->get_map_s2p(0)[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]
@@ -822,7 +822,7 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
         const auto icell = it.cell_s;
 
         const auto atm1_s = system->get_map_p2s(0)[atm1_p][0];
-        const auto atm2_p = system->map_s2p[atm2_s].atom_num;
+        const auto atm2_p = system->get_map_s2p(0)[atm2_s].atom_num;
 
         for (i = 0; i < 3; ++i) {
             vec[i] = system->get_cell("super").x_fractional(atm2_s, i) + xshift_s[icell][i]

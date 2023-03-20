@@ -799,8 +799,8 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
     }
     double volume = system->get_cell("super", "base").volume;
 
-    int ikd = system->map_s2p[iat].atom_num;
-    int jkd = system->map_s2p[jat].atom_num;
+    int ikd = system->get_map_s2p(0)[iat].atom_num;
+    int jkd = system->get_map_s2p(0)[jat].atom_num;
 
     double factor = 4.0 * pi / volume;
 
@@ -814,7 +814,7 @@ void Ewald::calc_long_term_ewald_fcs(const int iat,
                      + g_tmp[2] * epsilon_gvector[2];
 
             for (int kat = 0; kat < system->get_cell("super").number_of_atoms; ++kat) {
-                int kkd = system->map_s2p[kat].atom_num;
+                int kkd = system->get_map_s2p(0)[kat].atom_num;
 
                 for (i = 0; i < 3; ++i) {
                     x_tmp[i] = system->get_cell("super").x_fractional(iat, i)
@@ -1287,8 +1287,8 @@ void Ewald::calc_realspace_sum(const int iat,
 
     calc_anisotropic_hmat(lambda_in, xdist, hmat_tmp);
 
-    const auto ikd = system->map_s2p[iat].atom_num;
-    const auto jkd = system->map_s2p[jat].atom_num;
+    const auto ikd = system->get_map_s2p(0)[iat].atom_num;
+    const auto jkd = system->get_map_s2p(0)[jat].atom_num;
 
     for (icrd = 0; icrd < 3; ++icrd) {
         for (jcrd = 0; jcrd < 3; ++jcrd) {
