@@ -373,7 +373,7 @@ void Input::parse_scph_vars()
     auto tolerance_scph = 1.0e-10;
     unsigned int maxiter = 1000;
     auto mixalpha = 0.1;
-    auto selenergy_offdiagonal = true;
+    auto selfenergy_offdiagonal = true;
     unsigned int ialgo_scph = 0;
     auto lower_temp = true;
     auto warm_start = true;
@@ -389,7 +389,7 @@ void Input::parse_scph_vars()
     assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
     assign_val(maxiter, "MAXITER", scph_var_dict);
     assign_val(mixalpha, "MIXALPHA", scph_var_dict);
-    assign_val(selenergy_offdiagonal, "SELF_OFFDIAG", scph_var_dict);
+    assign_val(selfenergy_offdiagonal, "SELF_OFFDIAG", scph_var_dict);
     assign_val(ialgo_scph, "IALGO", scph_var_dict);
     assign_val(tolerance_scph, "TOL_SCPH", scph_var_dict);
     assign_val(lower_temp, "LOWER_TEMP", scph_var_dict);
@@ -452,7 +452,7 @@ void Input::parse_scph_vars()
     scph->mixalpha = mixalpha;
     scph->maxiter = maxiter;
     scph->restart_scph = restart_scph;
-    scph->selfenergy_offdiagonal = selenergy_offdiagonal;
+    scph->selfenergy_offdiagonal = selfenergy_offdiagonal;
     scph->ialgo = ialgo_scph;
     scph->tolerance_scph = tolerance_scph;
     scph->lower_temp = lower_temp;

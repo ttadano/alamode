@@ -97,7 +97,7 @@ class VaspParser(object):
             if basis[0] == "D" or basis[0] == "d":
                 xf = x
             else:
-                xf = np.dot(x, invlavec)
+                xf = np.dot(x, invlavec.transpose())
 
             kd = []
             for i in range(len(nat_elem)):
