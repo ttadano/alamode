@@ -49,8 +49,8 @@ void System::set_default_variables()
     kd = nullptr;
     kd_anharm = nullptr;
     mass_kd = nullptr;
-    mass_s = nullptr;
-    mass_anharm = nullptr;
+//    mass_s = nullptr;
+//    mass_anharm = nullptr;
     symbol_kd = nullptr;
     map_p2s = nullptr;
     map_p2s_anharm = nullptr;
@@ -71,12 +71,12 @@ void System::deallocate_variables()
     if (mass_kd) {
         deallocate(mass_kd);
     }
-    if (mass_s) {
-        deallocate(mass_s);
-    }
-    if (mass_anharm) {
-        deallocate(mass_anharm);
-    }
+//    if (mass_s) {
+//        deallocate(mass_s);
+//    }
+//    if (mass_anharm) {
+//        deallocate(mass_anharm);
+//    }
     if (symbol_kd) {
         deallocate(symbol_kd);
     }
@@ -103,9 +103,9 @@ void System::setup()
 
     unsigned int i, j;
     double vec_tmp[3][3];
-    unsigned int *kd_prim;
 
     MPI_Bcast(&load_primitive_from_file, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(lavec_p_input.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
 
@@ -116,8 +116,9 @@ void System::setup()
     }
     load_system_info_from_file();
     update_primitive_lattice();
+    generate_mapping_tables();
 
-    load_system_info_from_XML();
+    //load_system_info_from_XML();
 
     if (mympi->my_rank == 0) {
         cout << " -----------------------------------------------------------------" << endl;
@@ -268,32 +269,24 @@ void System::setup()
 //    }
     // Atomic masses in Rydberg unit
 
-    allocate(mass_s, nat);
-    allocate(mass_anharm, nat_anharm);
-    for (i = 0; i < nat; ++i) {
-        mass_s[i] = mass_kd[kd[i]] * amu_ry;
-    }
-    for (i = 0; i < nat_anharm; ++i) {
-        mass_anharm[i] = mass_kd[kd_anharm[i]] * amu_ry;
-    }
-
+    mass_super.resize(supercell_base.number_of_atoms);
+    mass_prim.resize(primcell_base.number_of_atoms);
     invsqrt_mass_p.resize(primcell_base.number_of_atoms);
+
+    for (i = 0; i < supercell_base.number_of_atoms; ++i) {
+        mass_super[i] = mass_kd[supercell_base.kind[i]] * amu_ry;
+    }
     for (i = 0; i < primcell_base.number_of_atoms; ++i) {
-        invsqrt_mass_p[i]
-        = 1.0 / std::sqrt(mass_kd[primcell_base.kind[i]] * amu_ry);
+        mass_prim[i] = mass_kd[primcell_base.kind[i]] * amu_ry;
+    }
+    for (i = 0; i < primcell_base.number_of_atoms; ++i) {
+        invsqrt_mass_p[i] = 1.0 / std::sqrt(mass_prim[i]);
     }
 
     MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&volume_p, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    allocate(kd_prim, natmin);
-
-    for (i = 0; i < natmin; ++i) {
-        kd_prim[i] = kd[map_p2s[i][0]];
-    }
-    deallocate(kd_prim);
 }
 
 
@@ -302,8 +295,10 @@ void System::load_system_info_from_file()
     // Parse structure information either from the XML file or h5 file
     int filetype[4]; // filetype[0] for FCSFILE, filetype[X-1] for FCXFILE (X=2, 3, 4)
     // -1: FC?FILE not given, 0: FC?FILE in XML format, 1: FC?FLIE in HDF5 format
-    std::vector<std::string> filename_list{fcs_phonon->file_fcs, fcs_phonon->file_fc2,
-                                           fcs_phonon->file_fc3, fcs_phonon->file_fc4};
+    std::vector<std::string> filename_list{fcs_phonon->file_fcs,
+                                           fcs_phonon->file_fc2,
+                                           fcs_phonon->file_fc3,
+                                           fcs_phonon->file_fc4};
 
     if (mympi->my_rank == 0) {
         for (auto i = 0; i < filename_list.size(); ++i) {
@@ -387,6 +382,7 @@ void System::load_system_info_from_file()
         }
     }
 
+    // If FCSFILE is not defined in input, set FC2FILE information as base.
     if (filetype[0] == -1) {
         supercell_base = supercell_fc2;
         primcell_base = primcell_fc2;
@@ -397,6 +393,16 @@ void System::load_system_info_from_file()
         elements_base = elements_fc2;
     }
 
+    if (filetype[1] == -1) {
+        supercell_fc2 = supercell_base;
+        primcell_fc2 = primcell_base;
+        map_scell_fc2 = map_scell_base;
+        map_pcell_fc2 = map_pcell_base;
+        spin_super_fc2 = spin_super_base;
+        spin_prim_fc2 = spin_prim_base;
+    }
+
+    // Copy data if FC3FILE is not given.
     if (filetype[2] == -1) {
         supercell_fc3 = supercell_base;
         primcell_fc2 = primcell_base;
@@ -404,6 +410,7 @@ void System::load_system_info_from_file()
         map_pcell_fc3 = map_pcell_base;
     }
 
+    // Copy data if FC4FILE is not given.
     if (filetype[3] == -1) {
         supercell_fc4 = supercell_base;
         primcell_fc4 = primcell_base;
@@ -819,320 +826,320 @@ void System::get_structure_and_mapping_table_h5(const std::string &filename,
     pcell_out.has_entry = 1;
 }
 
-
-void System::load_system_info_from_XML()
-{
-    if (mympi->my_rank == 0) {
-
-        int i;
-        using namespace boost::property_tree;
-        ptree pt;
-
-        std::map<std::string, int> dict_atomic_kind;
-
-        try {
-            read_xml(fcs_phonon->file_fcs, pt);
-        }
-        catch (std::exception &e) {
-            std::string str_error = "Cannot open file FCSXML ( "
-                                    + fcs_phonon->file_fcs + " )";
-            exit("load_system_info_from_XML",
-                 str_error.c_str());
-        }
-
-        // Parse nat_base and ntran_super
-
-        nat = boost::lexical_cast<unsigned int>(
-                get_value_from_xml(pt,
-                                   "Data.Structure.NumberOfAtoms"));
-        int nkd_tmp = boost::lexical_cast<unsigned int>(
-                get_value_from_xml(pt,
-                                   "Data.Structure.NumberOfElements"));
-
-        if (nkd != nkd_tmp)
-            exit("load_system_info_from_XML",
-                 "NKD in the FCSXML file is not consistent with that given in the input file.");
-
-        ntran = boost::lexical_cast<unsigned int>(
-                get_value_from_xml(pt,
-                                   "Data.Symmetry.NumberOfTranslations"));
-
-        natmin = nat / ntran;
-
-        // Parse lattice vectors
-
-        std::stringstream ss;
-
-        for (i = 0; i < 3; ++i) {
-            ss.str("");
-            ss.clear();
-            ss << get_value_from_xml(pt,
-                                     "Data.Structure.LatticeVector.a"
-                                     + std::to_string(i + 1));
-//            ss >> lavec_s(0, i) >> lavec_s(1, i) >> lavec_s(2, i);
-        }
-
-        // Parse atomic elements and coordinates
-
-        //xr_s.resize(nat, 3);
-        allocate(kd, nat);
-
-        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
-                        const auto &child = child_.second;
-                        const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
-                        dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
-                    }
-
-        unsigned int index;
-
-        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
-                        const auto &child = child_.second;
-                        const auto str_index = child.get<std::string>("<xmlattr>.index");
-                        const auto str_element = child.get<std::string>("<xmlattr>.element");
-
-                        ss.str("");
-                        ss.clear();
-                        ss << child.data();
-
-                        index = boost::lexical_cast<unsigned int>(str_index) - 1;
-
-                        if (index >= nat)
-                            exit("load_system_info_xml",
-                                 "index is out of range");
-
-                        kd[index] = dict_atomic_kind[str_element];
-//                        ss >> xr_s(index, 0) >> xr_s(index, 1) >> xr_s(index, 2);
-                    }
-
-        dict_atomic_kind.clear();
-
-        // Parse mapping information
-
-        allocate(map_p2s, natmin, ntran);
-        allocate(map_s2p, nat);
-
-        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Symmetry.Translations")) {
-                        const auto &child = child_.second;
-                        const auto str_tran = child.get<std::string>("<xmlattr>.tran");
-                        const auto str_atom = child.get<std::string>("<xmlattr>.atom");
-
-                        const auto tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
-                        const auto atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
-                        const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
-
-                        if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                            exit("load_system_info_xml",
-                                 "index is out of range");
-                        }
-
-                        map_p2s[atom_p][tran] = atom_s;
-                        map_s2p[atom_s].atom_num = atom_p;
-                        map_s2p[atom_s].tran_num = tran;
-                    }
-
-        // Parse magnetic moments
-
-        double **magmom_tmp;
-        allocate(magmom_tmp, nat, 3);
-
-        //lspin = true;
-        try {
-            BOOST_FOREACH(const ptree::value_type &child_, pt.get_child("Data.MagneticMoments")) {
-                            if (child_.first == "mag") {
-                                const auto &child = child_.second;
-                                const auto str_index = child.get<std::string>("<xmlattr>.index");
-
-                                ss.str("");
-                                ss.clear();
-                                ss << child.data();
-
-                                index = boost::lexical_cast<unsigned int>(str_index) - 1;
-
-                                if (index >= nat)
-                                    exit("load_system_info_xml",
-                                         "index is out of range");
-
-                                ss >> magmom_tmp[index][0]
-                                   >> magmom_tmp[index][1]
-                                   >> magmom_tmp[index][2];
-                            }
-                        }
-
-        }
-        catch (...) {
-            //    lspin = false;
-        }
-
-        deallocate(magmom_tmp);
-
-        // Now, replicate the information for anharmonic terms.
-
-        int j;
-        nat_anharm = nat;
-        ntran_anharm = ntran;
-        //xr_s_anharm.resize(nat_anharm, 3);
-        allocate(kd_anharm, nat_anharm);
-        allocate(map_p2s_anharm, natmin, ntran_anharm);
-        allocate(map_s2p_anharm, nat_anharm);
-
-        //lavec_s_anharm = lavec_s;
-        //xr_s_anharm = xr_s;
-        for (i = 0; i < nat_anharm; ++i) {
-            kd_anharm[i] = kd[i];
-            map_s2p_anharm[i] = map_s2p[i];
-        }
-        for (i = 0; i < natmin; ++i) {
-            for (j = 0; j < ntran_anharm; ++j) {
-                map_p2s_anharm[i][j] = map_p2s[i][j];
-            }
-        }
-
-        if (fcs_phonon->update_fc2) {
-
-            // When FC2XML is given, structural information is updated only for harmonic terms.
-
-            try {
-                read_xml(fcs_phonon->file_fc2, pt);
-            }
-            catch (std::exception &e) {
-                auto str_error = "Cannot open file FC2XML ( "
-                                 + fcs_phonon->file_fc2 + " )";
-                exit("load_system_info_from_XML",
-                     str_error.c_str());
-            }
-
-            // Parse nat_base and ntran_super
-
-            nat = boost::lexical_cast<unsigned int>(
-                    get_value_from_xml(pt,
-                                       "Data.Structure.NumberOfAtoms"));
-            nkd_tmp = boost::lexical_cast<unsigned int>(
-                    get_value_from_xml(pt,
-                                       "Data.Structure.NumberOfElements"));
-
-            if (nkd != nkd_tmp)
-                exit("load_system_info_from_XML",
-                     "NKD in the FC2XML file is not consistent with that given in the input file.");
-
-            ntran = boost::lexical_cast<unsigned int>(
-                    get_value_from_xml(pt,
-                                       "Data.Symmetry.NumberOfTranslations"));
-
-            const int natmin_tmp = nat / ntran;
-
-            if (natmin_tmp != natmin)
-                exit("load_system_info_from_XML",
-                     "Number of atoms in a primitive cell is different in FCSXML and FC2XML.");
-
-            deallocate(kd);
-            deallocate(map_p2s);
-            deallocate(map_s2p);
-
-
-            // Parse lattice vectors
-
-            std::stringstream ss;
-
-            for (i = 0; i < 3; ++i) {
-                ss.str("");
-                ss.clear();
-                ss << get_value_from_xml(pt,
-                                         "Data.Structure.LatticeVector.a"
-                                         + std::to_string(i + 1));
-//                ss >> lavec_s(0, i) >> lavec_s(1, i) >> lavec_s(2, i);
-            }
-
-            // Parse atomic elements and coordinates
-
-            //xr_s.resize(nat, 3);
-            allocate(kd, nat);
-
-            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
-                            const auto &child = child_.second;
-                            const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
-                            dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
-                        }
-
-            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
-                            const auto &child = child_.second;
-                            const auto str_index = child.get<std::string>("<xmlattr>.index");
-                            const auto str_element = child.get<std::string>("<xmlattr>.element");
-
-                            ss.str("");
-                            ss.clear();
-                            ss << child.data();
-
-                            auto index_kd = boost::lexical_cast<unsigned int>(str_index) - 1;
-
-                            if (index_kd >= nat)
-                                exit("load_system_info_xml",
-                                     "index is out of range");
-
-                            kd[index_kd] = dict_atomic_kind[str_element];
-//                            ss >> xr_s(index_kd, 0) >> xr_s(index_kd, 1) >> xr_s(index_kd, 2);
-                        }
-
-            dict_atomic_kind.clear();
-
-            // Parse mapping information
-
-            allocate(map_p2s, natmin, ntran);
-            allocate(map_s2p, nat);
-
-            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Symmetry.Translations")) {
-                            const auto &child = child_.second;
-                            const auto str_tran = child.get<std::string>("<xmlattr>.tran");
-                            const auto str_atom = child.get<std::string>("<xmlattr>.atom");
-
-                            const auto tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
-                            const auto atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
-                            const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
-
-                            if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
-                                exit("load_system_info_xml", "index is out of range");
-                            }
-
-                            map_p2s[atom_p][tran] = atom_s;
-                            map_s2p[atom_s].atom_num = atom_p;
-                            map_s2p[atom_s].tran_num = tran;
-                        }
-        }
-
-    }
-
-//    MPI_Bcast(lavec_s.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(lavec_p.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    //MPI_Bcast(lavec_s_anharm.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    MPI_Bcast(&nkd, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&nat, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&nat_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&ntran_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    if (mympi->my_rank > 0) {
-        allocate(mass_kd, nkd);
-//        xr_s.resize(nat, 3);
-//        xr_s_anharm.resize(nat_anharm, 3);
-        allocate(kd, nat);
-        allocate(kd_anharm, nat_anharm);
-        allocate(map_p2s, natmin, ntran);
-        allocate(map_p2s_anharm, natmin, ntran_anharm);
-        allocate(map_s2p, nat);
-        allocate(map_s2p_anharm, nat_anharm);
-    }
-
-    MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//    MPI_Bcast(xr_s.data(), 3 * nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//    MPI_Bcast(xr_s_anharm.data(), 3 * nat_anharm, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&kd_anharm[0], nat_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_p2s[0][0], natmin * ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_p2s_anharm[0][0], natmin * ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_s2p[0], nat * sizeof map_s2p[0], MPI_BYTE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&map_s2p_anharm[0], nat_anharm * sizeof map_s2p_anharm[0], MPI_BYTE, 0, MPI_COMM_WORLD);
-}
+//
+//void System::load_system_info_from_XML()
+//{
+//    if (mympi->my_rank == 0) {
+//
+//        int i;
+//        using namespace boost::property_tree;
+//        ptree pt;
+//
+//        std::map<std::string, int> dict_atomic_kind;
+//
+//        try {
+//            read_xml(fcs_phonon->file_fcs, pt);
+//        }
+//        catch (std::exception &e) {
+//            std::string str_error = "Cannot open file FCSXML ( "
+//                                    + fcs_phonon->file_fcs + " )";
+//            exit("load_system_info_from_XML",
+//                 str_error.c_str());
+//        }
+//
+//        // Parse nat_base and ntran_super
+//
+//        auto nat_tmp = boost::lexical_cast<unsigned int>(
+//                get_value_from_xml(pt,
+//                                   "Data.Structure.NumberOfAtoms"));
+//        int nkd_tmp = boost::lexical_cast<unsigned int>(
+//                get_value_from_xml(pt,
+//                                   "Data.Structure.NumberOfElements"));
+//
+//        if (nkd != nkd_tmp)
+//            exit("load_system_info_from_XML",
+//                 "NKD in the FCSXML file is not consistent with that given in the input file.");
+//
+//        ntran = boost::lexical_cast<unsigned int>(
+//                get_value_from_xml(pt,
+//                                   "Data.Symmetry.NumberOfTranslations"));
+//
+//        natmin = nat / ntran;
+//
+//        // Parse lattice vectors
+//
+//        std::stringstream ss;
+//
+//        for (i = 0; i < 3; ++i) {
+//            ss.str("");
+//            ss.clear();
+//            ss << get_value_from_xml(pt,
+//                                     "Data.Structure.LatticeVector.a"
+//                                     + std::to_string(i + 1));
+////            ss >> lavec_s(0, i) >> lavec_s(1, i) >> lavec_s(2, i);
+//        }
+//
+//        // Parse atomic elements and coordinates
+//
+//        //xr_s.resize(nat, 3);
+//        allocate(kd, nat);
+//
+//        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
+//                        const auto &child = child_.second;
+//                        const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
+//                        dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+//                    }
+//
+//        unsigned int index;
+//
+//        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
+//                        const auto &child = child_.second;
+//                        const auto str_index = child.get<std::string>("<xmlattr>.index");
+//                        const auto str_element = child.get<std::string>("<xmlattr>.element");
+//
+//                        ss.str("");
+//                        ss.clear();
+//                        ss << child.data();
+//
+//                        index = boost::lexical_cast<unsigned int>(str_index) - 1;
+//
+//                        if (index >= nat)
+//                            exit("load_system_info_xml",
+//                                 "index is out of range");
+//
+//                        kd[index] = dict_atomic_kind[str_element];
+////                        ss >> xr_s(index, 0) >> xr_s(index, 1) >> xr_s(index, 2);
+//                    }
+//
+//        dict_atomic_kind.clear();
+//
+//        // Parse mapping information
+//
+//        allocate(map_p2s, natmin, ntran);
+//        allocate(map_s2p, nat);
+//
+//        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Symmetry.Translations")) {
+//                        const auto &child = child_.second;
+//                        const auto str_tran = child.get<std::string>("<xmlattr>.tran");
+//                        const auto str_atom = child.get<std::string>("<xmlattr>.atom");
+//
+//                        const auto tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
+//                        const auto atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
+//                        const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
+//
+//                        if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
+//                            exit("load_system_info_xml",
+//                                 "index is out of range");
+//                        }
+//
+//                        map_p2s[atom_p][tran] = atom_s;
+//                        map_s2p[atom_s].atom_num = atom_p;
+//                        map_s2p[atom_s].tran_num = tran;
+//                    }
+//
+//        // Parse magnetic moments
+//
+//        double **magmom_tmp;
+//        allocate(magmom_tmp, nat, 3);
+//
+//        //lspin = true;
+//        try {
+//            BOOST_FOREACH(const ptree::value_type &child_, pt.get_child("Data.MagneticMoments")) {
+//                            if (child_.first == "mag") {
+//                                const auto &child = child_.second;
+//                                const auto str_index = child.get<std::string>("<xmlattr>.index");
+//
+//                                ss.str("");
+//                                ss.clear();
+//                                ss << child.data();
+//
+//                                index = boost::lexical_cast<unsigned int>(str_index) - 1;
+//
+//                                if (index >= nat)
+//                                    exit("load_system_info_xml",
+//                                         "index is out of range");
+//
+//                                ss >> magmom_tmp[index][0]
+//                                   >> magmom_tmp[index][1]
+//                                   >> magmom_tmp[index][2];
+//                            }
+//                        }
+//
+//        }
+//        catch (...) {
+//            //    lspin = false;
+//        }
+//
+//        deallocate(magmom_tmp);
+//
+//        // Now, replicate the information for anharmonic terms.
+//
+//        int j;
+//        nat_anharm = nat;
+//        ntran_anharm = ntran;
+//        //xr_s_anharm.resize(nat_anharm, 3);
+//        allocate(kd_anharm, nat_anharm);
+//        allocate(map_p2s_anharm, natmin, ntran_anharm);
+//        allocate(map_s2p_anharm, nat_anharm);
+//
+//        //lavec_s_anharm = lavec_s;
+//        //xr_s_anharm = xr_s;
+//        for (i = 0; i < nat_anharm; ++i) {
+//            kd_anharm[i] = kd[i];
+//            map_s2p_anharm[i] = map_s2p[i];
+//        }
+//        for (i = 0; i < natmin; ++i) {
+//            for (j = 0; j < ntran_anharm; ++j) {
+//                map_p2s_anharm[i][j] = map_p2s[i][j];
+//            }
+//        }
+//
+//        if (fcs_phonon->update_fc2) {
+//
+//            // When FC2XML is given, structural information is updated only for harmonic terms.
+//
+//            try {
+//                read_xml(fcs_phonon->file_fc2, pt);
+//            }
+//            catch (std::exception &e) {
+//                auto str_error = "Cannot open file FC2XML ( "
+//                                 + fcs_phonon->file_fc2 + " )";
+//                exit("load_system_info_from_XML",
+//                     str_error.c_str());
+//            }
+//
+//            // Parse nat_base and ntran_super
+//
+//            nat_tmp = boost::lexical_cast<unsigned int>(
+//                    get_value_from_xml(pt,
+//                                       "Data.Structure.NumberOfAtoms"));
+//            nkd_tmp = boost::lexical_cast<unsigned int>(
+//                    get_value_from_xml(pt,
+//                                       "Data.Structure.NumberOfElements"));
+//
+//            if (nkd != nkd_tmp)
+//                exit("load_system_info_from_XML",
+//                     "NKD in the FC2XML file is not consistent with that given in the input file.");
+//
+//            ntran = boost::lexical_cast<unsigned int>(
+//                    get_value_from_xml(pt,
+//                                       "Data.Symmetry.NumberOfTranslations"));
+//
+//            const int natmin_tmp = nat / ntran;
+//
+//            if (natmin_tmp != natmin)
+//                exit("load_system_info_from_XML",
+//                     "Number of atoms in a primitive cell is different in FCSXML and FC2XML.");
+//
+//            deallocate(kd);
+//            deallocate(map_p2s);
+//            deallocate(map_s2p);
+//
+//
+//            // Parse lattice vectors
+//
+//            std::stringstream ss;
+//
+//            for (i = 0; i < 3; ++i) {
+//                ss.str("");
+//                ss.clear();
+//                ss << get_value_from_xml(pt,
+//                                         "Data.Structure.LatticeVector.a"
+//                                         + std::to_string(i + 1));
+////                ss >> lavec_s(0, i) >> lavec_s(1, i) >> lavec_s(2, i);
+//            }
+//
+//            // Parse atomic elements and coordinates
+//
+//            //xr_s.resize(nat, 3);
+//            allocate(kd, nat);
+//
+//            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.AtomicElements")) {
+//                            const auto &child = child_.second;
+//                            const auto icount_kd = child.get<unsigned int>("<xmlattr>.number");
+//                            dict_atomic_kind[boost::lexical_cast<std::string>(child_.second.data())] = icount_kd - 1;
+//                        }
+//
+//            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Structure.Position")) {
+//                            const auto &child = child_.second;
+//                            const auto str_index = child.get<std::string>("<xmlattr>.index");
+//                            const auto str_element = child.get<std::string>("<xmlattr>.element");
+//
+//                            ss.str("");
+//                            ss.clear();
+//                            ss << child.data();
+//
+//                            auto index_kd = boost::lexical_cast<unsigned int>(str_index) - 1;
+//
+//                            if (index_kd >= nat)
+//                                exit("load_system_info_xml",
+//                                     "index is out of range");
+//
+//                            kd[index_kd] = dict_atomic_kind[str_element];
+////                            ss >> xr_s(index_kd, 0) >> xr_s(index_kd, 1) >> xr_s(index_kd, 2);
+//                        }
+//
+//            dict_atomic_kind.clear();
+//
+//            // Parse mapping information
+//
+//            allocate(map_p2s, natmin, ntran);
+//            allocate(map_s2p, nat);
+//
+//            BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.Symmetry.Translations")) {
+//                            const auto &child = child_.second;
+//                            const auto str_tran = child.get<std::string>("<xmlattr>.tran");
+//                            const auto str_atom = child.get<std::string>("<xmlattr>.atom");
+//
+//                            const auto tran = boost::lexical_cast<unsigned int>(str_tran) - 1;
+//                            const auto atom_p = boost::lexical_cast<unsigned int>(str_atom) - 1;
+//                            const auto atom_s = boost::lexical_cast<unsigned int>(child.data()) - 1;
+//
+//                            if (tran >= ntran || atom_p >= natmin || atom_s >= nat) {
+//                                exit("load_system_info_xml", "index is out of range");
+//                            }
+//
+//                            map_p2s[atom_p][tran] = atom_s;
+//                            map_s2p[atom_s].atom_num = atom_p;
+//                            map_s2p[atom_s].tran_num = tran;
+//                        }
+//        }
+//
+//    }
+//
+////    MPI_Bcast(lavec_s.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(lavec_p_input.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//    //MPI_Bcast(lavec_s_anharm.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//
+//    MPI_Bcast(&nkd, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&nat, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&nat_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&natmin, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&ntran, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&ntran_anharm, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//
+//    if (mympi->my_rank > 0) {
+//        allocate(mass_kd, nkd);
+////        xr_s.resize(nat, 3);
+////        xr_s_anharm.resize(nat_anharm, 3);
+//        allocate(kd, nat);
+//        allocate(kd_anharm, nat_anharm);
+//        allocate(map_p2s, natmin, ntran);
+//        allocate(map_p2s_anharm, natmin, ntran_anharm);
+//        allocate(map_s2p, nat);
+//        allocate(map_s2p_anharm, nat_anharm);
+//    }
+//
+//    MPI_Bcast(&mass_kd[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+////    MPI_Bcast(xr_s.data(), 3 * nat, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+////    MPI_Bcast(xr_s_anharm.data(), 3 * nat_anharm, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&kd[0], nat, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&kd_anharm[0], nat_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&map_p2s[0][0], natmin * ntran, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&map_p2s_anharm[0][0], natmin * ntran_anharm, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&map_s2p[0], nat * sizeof map_s2p[0], MPI_BYTE, 0, MPI_COMM_WORLD);
+//    MPI_Bcast(&map_s2p_anharm[0], nat_anharm * sizeof map_s2p_anharm[0], MPI_BYTE, 0, MPI_COMM_WORLD);
+//}
 
 void System::update_primitive_lattice()
 {
@@ -1144,16 +1151,16 @@ void System::update_primitive_lattice()
              "because the corresponding data does not exist in FCSFILE.");
     }
 
-    MPI_Bcast(lavec_p.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(lavec_p_input.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (load_primitive_from_file == 1) {
         // Update the information of primcell_base using the information of supercell_base
         // and the given lattice vector.
 
-        Eigen::Matrix3d transmat_to_prim = supercell_base.lattice_vector.inverse() * lavec_p;
+        Eigen::Matrix3d transmat_to_prim = supercell_base.lattice_vector.inverse() * lavec_p_input;
 
-        primcell_base.lattice_vector = lavec_p;
-        primcell_base.reciprocal_lattice_vector = tpi * primcell_base.lattice_vector.inverse();
+        primcell_base.lattice_vector = lavec_p_input;
+        recips(primcell_base.lattice_vector, primcell_base.reciprocal_lattice_vector);
         primcell_base.volume = volume(primcell_base.lattice_vector, Direct);
 
         const auto ndiv = nint(1.0 / transmat_to_prim.determinant());
@@ -1265,6 +1272,153 @@ void System::update_primitive_lattice()
     }
 }
 
+
+void System::generate_mapping_tables()
+{
+    std::vector<std::vector<unsigned int>> map_p2s_tmp;
+    std::vector<Maps> map_s2p_tmp;
+
+    map_s2p_new.resize(4);
+    map_p2s_new.resize(4);
+
+    generate_mapping_primitive_super(primcell_base, supercell_base,
+                                     map_p2s_new[0], map_s2p_new[0]);
+
+    generate_mapping_primitive_super(primcell_base, supercell_fc2,
+                                     map_p2s_new[1], map_s2p_new[1]);
+
+    generate_mapping_primitive_super(primcell_base, supercell_fc3,
+                                     map_p2s_new[2], map_s2p_new[2]);
+
+    generate_mapping_primitive_super(primcell_base, supercell_fc4,
+                                     map_p2s_new[3], map_s2p_new[3]);
+}
+
+
+void System::generate_mapping_primitive_super(const Cell &pcell,
+                                                 const Cell &scell,
+                                                 std::vector<std::vector<unsigned int>> &map_p2s_out,
+                                                 std::vector<Maps> &map_s2p_out) const
+{
+
+    Eigen::Vector3d x1, x2, x3, xdiff, tran_d;
+    Eigen::Vector3i tran;
+
+    const Eigen::MatrixXd x_super_in_primitive_frac = scell.x_fractional * scell.lattice_vector.transpose()
+                                                * pcell.lattice_vector.inverse().transpose();
+    const Eigen::Matrix3d transform_basis_primitive_to_super
+            = scell.lattice_vector.inverse() * pcell.lattice_vector;
+
+    const auto ntran_tmp = scell.number_of_atoms / pcell.number_of_atoms;
+
+    if (scell.number_of_atoms != pcell.number_of_atoms * ntran_tmp) {
+        exit("generate_mapping_primitive_super",
+             "The number of atoms in the supercell is not divisible "
+             "by the number of atoms in the primitive cell. Something is wrong.");
+    }
+
+    map_p2s_out.resize(pcell.number_of_atoms, std::vector<unsigned int>(ntran_tmp));
+
+    std::vector<int> flag_found(scell.number_of_atoms, 0);
+    std::map<int, int> map_index;
+    std::vector<std::map<int, int>> map_index_lists;
+    std::vector<int> atom_num_prim;
+    std::vector<std::vector<int>> trans_vecs;
+
+    atom_num_prim.clear();
+    trans_vecs.clear();
+    map_index_lists.clear();
+
+    for (auto iat = 0; iat < scell.number_of_atoms; ++iat) {
+
+        if (flag_found[iat]) continue;
+
+        x1 = x_super_in_primitive_frac.row(iat);
+
+        auto iloc = -1;
+        for (auto jat = 0; jat < pcell.number_of_atoms; ++jat) {
+            x2 = pcell.x_fractional.row(jat);
+            xdiff = (x1 - x2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
+
+            if (xdiff.norm() < eps6 && (scell.kind[iat] == pcell.kind[jat])) {
+                tran_d = (x1 - x2).unaryExpr([](const double x) { return static_cast<double>(nint(x)); });
+                // First move back to the fractional coordinate of the supercell and
+                // make sure that the shift vectors are in the 0<=x<1 region in that basis.
+                tran_d = transform_basis_primitive_to_super * tran_d;
+                tran_d = tran_d.unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
+                // Then, transform it back to the components in the primitive cell basis.
+                // All components should be integer.
+                tran_d = transform_basis_primitive_to_super.inverse() * tran_d;
+                tran = tran_d.unaryExpr([](const double x) { return nint(x); });
+                iloc = jat;
+                break;
+            }
+        }
+
+        if (iloc == -1) {
+            exit("generate_mapping_primitive_super",
+                 "An equivalent atom not found.");
+        } else {
+            atom_num_prim.emplace_back(iloc);
+            std::vector<int> vtmp(&tran[0], tran.data() + tran.cols() * tran.rows());
+            trans_vecs.emplace_back(vtmp);
+        }
+
+        tran_d = tran.unaryExpr([](const int x) { return static_cast<double>(x); });
+
+        map_index.clear();
+
+        // Now, we search all atoms in the supercell that can be mapped by the found trans value.
+        for (auto j = 0; j < pcell.number_of_atoms; ++j) {
+            x2 = pcell.x_fractional.row(j);
+            x2 += tran_d;
+            x2 = transform_basis_primitive_to_super * x2;
+
+            for (auto k = 0; k < scell.number_of_atoms; ++k) {
+                if (flag_found[k]) continue;
+
+                x3 = scell.x_fractional.row(k);
+                xdiff = (x3 - x2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
+
+                if (xdiff.norm() < eps6) {
+                    flag_found[k] = 1;
+                    map_index.insert({j, k});
+                }
+            }
+        }
+        map_index_lists.emplace_back(map_index);
+    }
+
+    std::set<std::vector<int>> unique_shifts_set;
+    std::vector<std::vector<int>> unique_shifts_vec;
+    std::vector<int> unique_itran_indices;
+
+    for (auto itran = 0; itran < trans_vecs.size(); ++ itran) {
+        if (unique_shifts_set.find(trans_vecs[itran]) == unique_shifts_set.end()) {
+
+            std::cout << " itran = " << itran << ' ';
+            for (const auto &it : trans_vecs[itran]) {
+                std::cout << std::setw(4) << it;
+            }
+            std::cout << '\n';
+            unique_shifts_set.insert(trans_vecs[itran]);
+            unique_shifts_vec.emplace_back(trans_vecs[itran]);
+            unique_itran_indices.emplace_back(itran);
+        }
+    }
+
+    map_s2p_out.resize(scell.number_of_atoms);
+
+    for (auto iat = 0; iat < pcell.number_of_atoms; ++iat) {
+        for (auto itran = 0; itran < unique_itran_indices.size(); ++itran) {
+            auto jat = map_index_lists[unique_itran_indices[itran]][iat];
+            map_p2s_out[iat][itran] = jat;
+            map_s2p_out[jat].atom_num = iat;
+            map_s2p_out[jat].tran_num = itran;
+        }
+    }
+}
+
 void System::recips(const Eigen::Matrix3d &mat_in,
                     Eigen::Matrix3d &rmat_out) const
 {
@@ -1276,91 +1430,91 @@ void System::recips(const Eigen::Matrix3d &mat_in,
     rmat_out = tpi * mat_in.inverse();
 }
 
-void System::check_consistency_primitive_lattice() const
-{
-    // Check if the ordering of atoms in the primitive cells derived 
-    // from FCSXML and FC2XML are same or not. If not, the ordering for the
-    // FCSXML (anharmonic terms) will be changed so that it becomes equivalent
-    // to that of FC2XML. 
-    // This operation is necessary for obtaining correct computational results.
-
-    int i, j, k;
-    Eigen::Vector3d xdiff;
-    Eigen::MatrixXd x_harm(natmin, 3), x_anharm(natmin, 3);
-
-    std::vector<int> map_anh2harm;
-    map_anh2harm.resize(natmin);
-
-    for (i = 0; i < natmin; ++i) {
-        for (j = 0; j < 3; ++j) {
-//            x_harm(i, j) = xr_s(map_p2s[i][0], j);
-//            x_anharm(i, j) = xr_s_anharm(map_p2s_anharm[i][0], j);
-        }
-    }
-
-//    x_harm = x_harm * lavec_s.transpose() * lavec_p.inverse().transpose();
-    //x_anharm = x_anharm * lavec_s_anharm.transpose() * lavec_p.inverse().transpose();
-
-    for (i = 0; i < natmin; ++i) {
-
-        int iloc = -1;
-
-        for (j = 0; j < natmin; ++j) {
-
-            xdiff = (x_anharm.row(i) - x_harm.row(j)).unaryExpr(
-                    [](const double x) { return x - static_cast<double>(nint(x)); });
-
-            //const auto norm = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
-            const auto norm = xdiff.squaredNorm();
-            if (norm < eps4 && kd[map_p2s[j][0]] == kd_anharm[map_p2s_anharm[i][0]]) {
-                iloc = j;
-                break;
-            }
-        }
-
-        if (iloc == -1) {
-            exit("check_consistency_primitive",
-                 "Could not find equivalent atom. Probably, the crystal structure is different.");
-        }
-
-        map_anh2harm[i] = iloc;
-    }
-
-    // Rebuild the mapping information for anharmonic terms.
-
-    unsigned int **map_p2s_tmp;
-
-    allocate(map_p2s_tmp, natmin, ntran_anharm);
-
-    for (i = 0; i < natmin; ++i) {
-        for (j = 0; j < ntran_anharm; ++j) {
-            map_p2s_anharm_orig[i][j] = map_p2s_anharm[i][j];
-        }
-    }
-
-    for (i = 0; i < ntran_anharm; ++i) {
-        for (j = 0; j < natmin; ++j) {
-            map_p2s_tmp[j][i] = map_p2s_anharm[j][i];
-        }
-    }
-
-    for (i = 0; i < ntran_anharm; ++i) {
-        for (j = 0; j < natmin; ++j) {
-            map_p2s_anharm[map_anh2harm[j]][i] = map_p2s_tmp[j][i];
-        }
-    }
-
-    for (i = 0; i < ntran_anharm; ++i) {
-        for (j = 0; j < natmin; ++j) {
-            k = map_p2s_anharm[j][i];
-            map_s2p_anharm[k].atom_num = j;
-            map_s2p_anharm[k].tran_num = i;
-        }
-    }
-
-    deallocate(map_p2s_tmp);
-    map_anh2harm.clear();
-}
+//void System::check_consistency_primitive_lattice() const
+//{
+//    // Check if the ordering of atoms in the primitive cells derived
+//    // from FCSXML and FC2XML are same or not. If not, the ordering for the
+//    // FCSXML (anharmonic terms) will be changed so that it becomes equivalent
+//    // to that of FC2XML.
+//    // This operation is necessary for obtaining correct computational results.
+//
+//    int i, j, k;
+//    Eigen::Vector3d xdiff;
+//    Eigen::MatrixXd x_harm(natmin, 3), x_anharm(natmin, 3);
+//
+//    std::vector<int> map_anh2harm;
+//    map_anh2harm.resize(natmin);
+//
+//    for (i = 0; i < natmin; ++i) {
+//        for (j = 0; j < 3; ++j) {
+////            x_harm(i, j) = xr_s(map_p2s[i][0], j);
+////            x_anharm(i, j) = xr_s_anharm(map_p2s_anharm[i][0], j);
+//        }
+//    }
+//
+////    x_harm = x_harm * lavec_s.transpose() * lavec_p_input.inverse().transpose();
+//    //x_anharm = x_anharm * lavec_s_anharm.transpose() * lavec_p_input.inverse().transpose();
+//
+//    for (i = 0; i < natmin; ++i) {
+//
+//        int iloc = -1;
+//
+//        for (j = 0; j < natmin; ++j) {
+//
+//            xdiff = (x_anharm.row(i) - x_harm.row(j)).unaryExpr(
+//                    [](const double x) { return x - static_cast<double>(nint(x)); });
+//
+//            //const auto norm = xdiff[0] * xdiff[0] + xdiff[1] * xdiff[1] + xdiff[2] * xdiff[2];
+//            const auto norm = xdiff.squaredNorm();
+//            if (norm < eps4 && kd[map_p2s[j][0]] == kd_anharm[map_p2s_anharm[i][0]]) {
+//                iloc = j;
+//                break;
+//            }
+//        }
+//
+//        if (iloc == -1) {
+//            exit("check_consistency_primitive",
+//                 "Could not find equivalent atom. Probably, the crystal structure is different.");
+//        }
+//
+//        map_anh2harm[i] = iloc;
+//    }
+//
+//    // Rebuild the mapping information for anharmonic terms.
+//
+//    unsigned int **map_p2s_tmp;
+//
+//    allocate(map_p2s_tmp, natmin, ntran_anharm);
+//
+//    for (i = 0; i < natmin; ++i) {
+//        for (j = 0; j < ntran_anharm; ++j) {
+//            map_p2s_anharm_orig[i][j] = map_p2s_anharm[i][j];
+//        }
+//    }
+//
+//    for (i = 0; i < ntran_anharm; ++i) {
+//        for (j = 0; j < natmin; ++j) {
+//            map_p2s_tmp[j][i] = map_p2s_anharm[j][i];
+//        }
+//    }
+//
+//    for (i = 0; i < ntran_anharm; ++i) {
+//        for (j = 0; j < natmin; ++j) {
+//            map_p2s_anharm[map_anh2harm[j]][i] = map_p2s_tmp[j][i];
+//        }
+//    }
+//
+//    for (i = 0; i < ntran_anharm; ++i) {
+//        for (j = 0; j < natmin; ++j) {
+//            k = map_p2s_anharm[j][i];
+//            map_s2p_anharm[k].atom_num = j;
+//            map_s2p_anharm[k].tran_num = i;
+//        }
+//    }
+//
+//    deallocate(map_p2s_tmp);
+//    map_anh2harm.clear();
+//}
 
 int System::get_atomic_number_by_name(const std::string &kdname_in)
 {
@@ -1536,7 +1690,28 @@ const MappingTable &System::get_mapping_table(const std::string celltype,
     return map_scell_base; // dummy for supressing compiler warning
 }
 
+const std::vector<double> &System::get_mass_prim() const
+{
+    return mass_prim;
+}
+
+const std::vector<double> &System::get_mass_super() const
+{
+    return mass_super;
+}
+
 const std::vector<double> &System::get_invsqrt_mass() const
 {
     return invsqrt_mass_p;
 }
+
+const std::vector<Maps> &System::get_map_s2p(const int index) const
+{
+    return map_s2p_new[index];
+}
+
+const std::vector<std::vector<unsigned int>> &System::get_map_p2s(const int index) const
+{
+    return map_p2s_new[index];
+}
+

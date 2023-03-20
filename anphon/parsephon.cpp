@@ -895,7 +895,7 @@ void Input::parse_cell_parameter()
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            system->lavec_p(i, j) = a * lavec_tmp[i][j];
+            system->lavec_p_input(i, j) = a * lavec_tmp[i][j];
         }
     }
     system->load_primitive_from_file = 1;

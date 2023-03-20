@@ -256,10 +256,13 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 
         double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
+//        dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2]
+//                += it.fcs_val * std::exp(im * phase)
+//                   / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
+
         dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2]
                 += it.fcs_val * std::exp(im * phase)
-                   / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
-
+                   / std::sqrt(system->get_mass_prim()[atm1] * system->get_mass_prim()[atm2]);
     }
 }
 
@@ -597,7 +600,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
     pt.put("Data.Description.OriginalXML", fcs_phonon->file_fcs);
     pt.put("Data.Description.Delta_A", double2string(change_ratio_of_a));
 
-    pt.put("Data.Structure.NumberOfAtoms", system->nat);
+    pt.put("Data.Structure.NumberOfAtoms", system->get_cell("super").number_of_atoms);
     pt.put("Data.Structure.NumberOfElements", system->get_cell("prim").number_of_elems);
 
     for (i = 0; i < system->get_cell("prim").number_of_elems; ++i) {
@@ -620,7 +623,7 @@ void Gruneisen::write_new_fcsxml(const std::string &filename_xml,
     pt.put("Data.Structure.Position", "");
     std::string str_tmp;
 
-    for (i = 0; i < system->nat; ++i) {
+    for (i = 0; i < system->get_cell("super").number_of_atoms; ++i) {
         str_tmp.clear();
         for (j = 0; j < 3; ++j) str_tmp += " " + double2string(system->get_cell("super").x_fractional(i, j));
         auto &child = pt.add("Data.Structure.Position.pos", str_tmp);

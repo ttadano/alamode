@@ -1201,7 +1201,7 @@ void Writes::write_normal_mode_direction_each(const std::string &fname_axsf,
                 for (k = 0; k < 3; ++k) {
                     ofs_anime << std::setw(15)
                               << evec_in[ik][imode][3 * j + k].real()
-                                 / (std::sqrt(system->mass_s[m]) * norm);
+                                 / (std::sqrt(system->get_mass_super()[m]) * norm);
                 }
                 ofs_anime << std::endl;
             }
@@ -2274,7 +2274,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
     for (i = 0; i < natmin; ++i) {
         k = system->map_p2s[i][0];
         kd_tmp[i] = system->symbol_kd[system->get_cell("prim").kind[k]];
-        mass[i] = system->mass_s[k];
+        mass[i] = system->get_mass_super()[k];
     }
 
     // Prepare lattice vectors of the supercell

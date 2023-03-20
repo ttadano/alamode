@@ -3424,8 +3424,8 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                 for (icell = 0; icell < ncell; ++icell) {
                     delta_fc2[is][js][icell]
                             = delta_dymat[iT][is][js][icell].real()
-                              * std::sqrt(system->mass_s[system->map_p2s[iat][0]]
-                                          * system->mass_s[system->map_p2s[jat][0]]);
+                              * std::sqrt(system->get_mass_super()[system->map_p2s[iat][0]]
+                                          * system->get_mass_super()[system->map_p2s[jat][0]]);
                 }
 
             }

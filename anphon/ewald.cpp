@@ -1103,8 +1103,8 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
 
     }
 
-    const auto mi = system->mass_s[atm_s1];
-    const auto mj = system->mass_s[atm_s2];
+    const auto mi = system->get_mass_super()[atm_s1];
+    const auto mj = system->get_mass_super()[atm_s2];
     for (icrd = 0; icrd < 3; ++icrd) {
         for (jcrd = 0; jcrd < 3; ++jcrd) {
             mat_out[icrd][jcrd] /= std::sqrt(mi * mj);
@@ -1128,8 +1128,8 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
 
     int atm_s1 = system->map_p2s[iat][0];
     int atm_s2 = system->map_p2s[jat][0];
-    double mi = system->mass_s[atm_s1];
-    double mj = system->mass_s[atm_s2];
+    double mi = system->get_mass_super()[atm_s1];
+    double mj = system->get_mass_super()[atm_s2];
     double vol_p = system->volume_p;
     for (i = 0; i < 3; ++i) {
         vec[i] = system->get_cell("super").x_fractional(atm_s1, i)

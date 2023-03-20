@@ -505,7 +505,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
                     auto count = 0;
                     for (j = 0; j < nat_prim; ++j) {
                         // TODO; replace below (map_p2s)
-                        const auto mass = system->mass_s[system->map_p2s[i][0]] * system->mass_s[system->map_p2s[j][0]];
+                        const auto mass = system->get_mass_super()[system->map_p2s[i][0]] * system->get_mass_super()[system->map_p2s[j][0]];
                         check += std::sqrt(mass) * dymat_k[3 * i + icrd][3 * j + jcrd];
                         count += 1;
                     }
@@ -604,7 +604,7 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-                += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass_s[atm1_s] * system->mass_s[atm2_s]);
+                += it.fcs_val * std::exp(im * phase) / std::sqrt(system->get_mass_super()[atm1_s] * system->get_mass_super()[atm2_s]);
     }
 }
 
@@ -686,7 +686,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
                     for (j = 0; j < 3; ++j) {
 
                         dymat_na_out[3 * iat + i][3 * jat + j]
-                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass_s[atm_p1] * system->mass_s[atm_p2]));
+                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->get_mass_super()[atm_p1] * system->get_mass_super()[atm_p2]));
 
                     }
                 }
@@ -826,7 +826,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         dymat_na_out[3 * iat + i][3 * jat + j]
-                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->mass_s[atm_p1] * system->mass_s[atm_p2]))
+                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->get_mass_super()[atm_p1] * system->get_mass_super()[atm_p2]))
                                   * exp_phase;
                     }
                 }
@@ -1653,7 +1653,7 @@ void Dynamical::calc_atomic_participation_ratio(const std::complex<double> *evec
     for (iat = 0; iat < natmin; ++iat) {
         ret[iat] = (std::norm(evec_in[3 * iat])
                     + std::norm(evec_in[3 * iat + 1])
-                    + std::norm(evec_in[3 * iat + 2])) / system->mass_s[system->map_p2s[iat][0]];
+                    + std::norm(evec_in[3 * iat + 2])) / system->get_mass_super()[system->map_p2s[iat][0]];
     }
 
     auto sum = 0.0;

@@ -68,12 +68,17 @@ public:
 
     const MappingTable &get_mapping_table(const std::string celltype, const std::string filetype = "base") const;
 
-    Eigen::Matrix3d lavec_p;
+    const std::vector<Maps> &get_map_s2p(const int index = 0) const;
+
+    const std::vector<std::vector<unsigned int>> &get_map_p2s(const int index = 0) const;
+
+
+    Eigen::Matrix3d lavec_p_input;
 
     int load_primitive_from_file;
     double volume_p;
 
-    unsigned int nat, natmin, ntran;
+    unsigned int ntran;
     unsigned int nat_anharm, ntran_anharm;
     unsigned int *kd, nkd;
     unsigned int *kd_anharm;
@@ -84,13 +89,18 @@ public:
     Maps *map_s2p, *map_s2p_anharm;
 
     std::string *symbol_kd;
-    double *mass_kd, *mass_s, *mass_anharm;
+    double *mass_kd;
+//    double *mass_s, *mass_anharm;
 
     double Tmin, Tmax, dT;
 
     int get_atomic_number_by_name(const std::string &);
 
     const std::vector<double> &get_invsqrt_mass() const;
+
+    const std::vector<double> &get_mass_prim() const;
+
+    const std::vector<double> &get_mass_super() const;
 
 private:
 
@@ -106,6 +116,10 @@ private:
     MappingTable map_scell_fc3, map_pcell_fc3;
     MappingTable map_scell_fc4, map_pcell_fc4;
 
+    std::vector<std::vector<Maps>> map_s2p_new;
+    std::vector<std::vector<std::vector<unsigned int>>> map_p2s_new;
+
+    std::vector<double> mass_super, mass_prim;
     std::vector<double> invsqrt_mass_p;
 
     void set_default_variables();
@@ -140,10 +154,17 @@ private:
 
     void update_primitive_lattice();
 
+    void generate_mapping_tables();
+
+    void generate_mapping_primitive_super(const Cell &pcell,
+                                             const Cell &scell,
+                                             std::vector<std::vector<unsigned int>> &map_p2s_out,
+                                             std::vector<Maps> &map_s2p_out) const;
+
     void recips(const Eigen::Matrix3d &mat_in,
                 Eigen::Matrix3d &rmat_out) const;
 
-    void check_consistency_primitive_lattice() const;
+//    void check_consistency_primitive_lattice() const;
 
 
     double volume(const Eigen::Matrix3d &mat_in,

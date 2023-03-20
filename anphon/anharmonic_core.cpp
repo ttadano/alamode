@@ -1090,7 +1090,7 @@ void AnharmonicCore::setup_cubic()
     allocate(invsqrt_mass_p, natmin_tmp);
 
     for (i = 0; i < natmin_tmp; ++i) {
-        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass_s[system->map_p2s[i][0]]);
+        invsqrt_mass_p[i] = std::sqrt(1.0 / system->get_mass_super()[system->map_p2s[i][0]]);
     }
 
     int k = 0;
@@ -1133,7 +1133,7 @@ void AnharmonicCore::setup_quartic()
     allocate(invsqrt_mass_p, natmin_tmp);
 
     for (i = 0; i < natmin_tmp; ++i) {
-        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass_s[system->map_p2s[i][0]]);
+        invsqrt_mass_p[i] = std::sqrt(1.0 / system->get_mass_super()[system->map_p2s[i][0]]);
     }
 
     int k = 0;
