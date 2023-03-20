@@ -4904,8 +4904,10 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
     int iat1, iat2;
     int is1;
     int isymm;
-    double du_tmp;
-    std::string str_tmp;
+    double dtmp;
+    std::string str_tmp, mode_tmp;
+    double smag, weight;
+    double weight_sum[3][3];
     std::fstream fin_strain_force_coupling;
 
     double *inv_sqrt_mass;
@@ -4915,45 +4917,91 @@ void Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmo
     allocate(del_v1_strain_from_harmonic_in_real_space, 9, ns);
     allocate(del_v1_strain_from_harmonic_in_real_space_symm, 9, ns);
 
-    fin_strain_force_coupling.open("strain_force.in");
+    fin_strain_force_coupling.open(strain_IFC_dir + "strain_force.in");
 
     if(!fin_strain_force_coupling){
-        std::cout << "Warning in Scph::calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode: file strain_force.in could not open." << std::endl;
         exit("calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode",
                     "strain_force.in not found");
     }
 
     for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
         for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            if(ixyz1 > ixyz2){
-                continue;
-            }
+            weight_sum[ixyz1][ixyz2] = 0.0;
+        }
+    }
 
-            fin_strain_force_coupling >> str_tmp >> du_tmp;
+    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(is1 = 0; is1 < ns; is1++){
+            del_v1_strain_from_harmonic_in_real_space[ixyz1][is1] = 0.0;
+        }
+    }
+
+    while(1){
+        if(fin_strain_force_coupling >> mode_tmp >> smag >> weight){
+            if(mode_tmp == "xx"){
+                ixyz1 = ixyz2 = 0;
+            }
+            else if(mode_tmp == "yy"){
+                ixyz1 = ixyz2 = 1;
+            }
+            else if(mode_tmp == "zz"){
+                ixyz1 = ixyz2 = 2;
+            }
+            else if(mode_tmp == "xy"){
+                ixyz1 = 0;
+                ixyz2 = 1;
+            }
+            else if(mode_tmp == "yz"){
+                ixyz1 = 1;
+                ixyz2 = 2;
+            }
+            else if(mode_tmp == "zx"){
+                ixyz1 = 2;
+                ixyz2 = 0;
+            }
 
             for(iat1 = 0; iat1 < natmin; iat1++){
                 for(ixyz3 = 0; ixyz3 < 3; ixyz3++){
-                    fin_strain_force_coupling >> del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3];
-                    del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3] *= -1.0/du_tmp;
+                    fin_strain_force_coupling >> dtmp;
+                    del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3] += dtmp * -1.0/smag * weight;
+
                     if(ixyz1 != ixyz2){
                         del_v1_strain_from_harmonic_in_real_space[ixyz2*3+ixyz1][iat1*3+ixyz3] 
                         = del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3];
                     }
                 }
             }
-            
-            // debug
-            std::cout << ixyz1 << ixyz2 << std::endl;
-            std::cout << str_tmp << " " << du_tmp << std::endl;
 
-            for(iat1 = 0; iat1 < natmin; iat1++){
-                for(ixyz3 = 0; ixyz3 < 3; ixyz3++){
-                    std::cout << del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3]*du_tmp << " ";
-                }std::cout << std::endl;
+            if(ixyz1 == ixyz2){
+                weight_sum[ixyz1][ixyz2] += weight;
             }
+            else{
+                weight_sum[ixyz1][ixyz2] += weight;
+                weight_sum[ixyz2][ixyz1] += weight;
+            }
+            
+            // for(iat1 = 0; iat1 < natmin; iat1++){
+            //     for(ixyz3 = 0; ixyz3 < 3; ixyz3++){
+            //         std::cout << del_v1_strain_from_harmonic_in_real_space[ixyz1*3+ixyz2][iat1*3+ixyz3]*smag << " ";
+            //     }std::cout << std::endl;
+            // }
 
         }
+        else{
+            break;
+        }
     }
+
+    // check weight_sum
+    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+            if(std::fabs(weight_sum[ixyz1][ixyz2] - 1.0) > eps6){
+                exit("calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode",
+                    "Sum of weights must be 1.");
+            }
+        }
+    }
+
 
     // convert from eV/Angst to Ry/Bohr
     double eV_to_Ry = 1.6021766208e-19/Ryd;
