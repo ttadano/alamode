@@ -505,7 +505,8 @@ void Dynamical::eval_k_ewald(const double *xk_in,
                     auto count = 0;
                     for (j = 0; j < nat_prim; ++j) {
                         // TODO; replace below (map_p2s)
-                        const auto mass = system->get_mass_super()[system->get_map_p2s(0)[i][0]] * system->get_mass_super()[system->get_map_p2s(0)[j][0]];
+                        const auto mass = system->get_mass_super()[system->get_map_p2s(0)[i][0]] *
+                                          system->get_mass_super()[system->get_map_p2s(0)[j][0]];
                         check += std::sqrt(mass) * dymat_k[3 * i + icrd][3 * j + jcrd];
                         count += 1;
                     }
@@ -604,7 +605,8 @@ void Dynamical::calc_analytic_k(const double *xk_in,
         const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-                += it.fcs_val * std::exp(im * phase) / std::sqrt(system->get_mass_super()[atm1_s] * system->get_mass_super()[atm2_s]);
+                += it.fcs_val * std::exp(im * phase) /
+                   std::sqrt(system->get_mass_super()[atm1_s] * system->get_mass_super()[atm2_s]);
     }
 }
 
@@ -626,8 +628,8 @@ void Dynamical::calc_analytic_k(const double *xk_in,
                                   + it.relvecs[0][2] * xk_in[2]);
         dymat_out[it.pairs[0].index][it.pairs[1].index]
                 += it.fcs_val * std::exp(im * phase)
-                        * invsqrt_mass[it.pairs[0].index/3]
-                        * invsqrt_mass[it.pairs[1].index/3];
+                   * invsqrt_mass[it.pairs[0].index / 3]
+                   * invsqrt_mass[it.pairs[1].index / 3];
     }
 }
 
@@ -686,7 +688,8 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
                     for (j = 0; j < 3; ++j) {
 
                         dymat_na_out[3 * iat + i][3 * jat + j]
-                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->get_mass_super()[atm_p1] * system->get_mass_super()[atm_p2]));
+                                = kz1[i] * kz2[j] / (denom * std::sqrt(
+                                system->get_mass_super()[atm_p1] * system->get_mass_super()[atm_p2]));
 
                     }
                 }
@@ -826,7 +829,8 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         dymat_na_out[3 * iat + i][3 * jat + j]
-                                = kz1[i] * kz2[j] / (denom * std::sqrt(system->get_mass_super()[atm_p1] * system->get_mass_super()[atm_p2]))
+                                = kz1[i] * kz2[j] / (denom * std::sqrt(
+                                system->get_mass_super()[atm_p1] * system->get_mass_super()[atm_p2]))
                                   * exp_phase;
                     }
                 }
@@ -1580,7 +1584,8 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
                 std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
                 for (i = 0; i < natmin_tmp; ++i) {
                     std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                              << std::setw(3) << system->symbol_kd[system->get_primcell().kind[system->get_map_p2s(0)[i][0]]]
+                              << std::setw(3)
+                              << system->symbol_kd[system->get_primcell().kind[system->get_map_p2s(0)[i][0]]]
                               << ") :"
                               << std::endl;
 

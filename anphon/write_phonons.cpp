@@ -89,8 +89,8 @@ void Writes::write_input_vars()
     //std::cout << "  NKD = " << system->nkd << "; KD = ";
     //for (i = 0; i < system->nkd; ++i) {
     //    std::cout << std::setw(4) << system->symbol_kd[i];
-   // }
-   // std::cout << std::endl;
+    // }
+    // std::cout << std::endl;
     std::cout << "  MASS = ";
     if (system->mass_kd) {
         for (i = 0; i < system->nkd; ++i) {

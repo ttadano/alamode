@@ -147,9 +147,9 @@ private:
     void generate_mapping_tables();
 
     void generate_mapping_primitive_super(const Cell &pcell,
-                                             const Cell &scell,
-                                             std::vector<std::vector<unsigned int>> &map_p2s_out,
-                                             std::vector<Maps> &map_s2p_out) const;
+                                          const Cell &scell,
+                                          std::vector<std::vector<unsigned int>> &map_p2s_out,
+                                          std::vector<Maps> &map_s2p_out) const;
 
     void recips(const Eigen::Matrix3d &mat_in,
                 Eigen::Matrix3d &rmat_out) const;

@@ -109,6 +109,12 @@ public:
                      const std::vector<AtomCellSuper> &pairs_in)
             : pairs(pairs_in), fcs_val(fcs_in) {};
 
+    FcsArrayWithCell(const double fcs_in,
+                     const std::vector<AtomCellSuper> &pairs_in,
+                     const std::vector<Eigen::Vector3d> &relvecs_in) : pairs(pairs_in),
+                                                                       fcs_val(fcs_in),
+                                                                       relvecs(relvecs_in) {};
+
     bool operator<(const FcsArrayWithCell &obj) const
     {
         std::vector<unsigned int> index_a, index_b;
@@ -164,10 +170,12 @@ private:
     void parse_fcs_from_h5() const;
 
     double examine_translational_invariance(const int order,
-                                          const unsigned int nat,
-                                          const unsigned int natmin,
-                                          const std::vector<std::vector<unsigned int>> &map_p2s_in,
-                                          const std::vector<FcsArrayWithCell> &fc_in) const;
+                                            const unsigned int nat,
+                                            const unsigned int natmin,
+                                            const std::vector<std::vector<unsigned int>> &map_p2s_in,
+                                            const std::vector<FcsArrayWithCell> &fc_in) const;
+
+    void replicate_force_constants(const int maxorder_in);
 
     void MPI_Bcast_fc_class(unsigned int) const;
 

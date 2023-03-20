@@ -1427,7 +1427,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         if (norm > eps) for (j = 0; j < 3; ++j) kvec[j] /= norm;
         for (j = 0; j < 3; ++j) xk1[j] = dynamical->fold(xk1[j]);
 
-        dynamical->eval_k(xk1, kvec, fcs_phonon->fc2_ext,fcs_phonon->force_constant_with_cell[0],
+        dynamical->eval_k(xk1, kvec, fcs_phonon->fc2_ext, fcs_phonon->force_constant_with_cell[0],
                           eval[0], evec[0], true);
         for (j = 0; j < ns; ++j) eval[0][j] = dynamical->freq(eval[0][j]);
 

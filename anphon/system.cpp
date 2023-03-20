@@ -118,7 +118,7 @@ void System::print_structure_information_stdout() const
     } else {
         if (!fcs_phonon->file_fcs.empty()) {
             cout << " (from " << fcs_phonon->file_fcs << ")\n\n";
-        }  else {
+        } else {
             cout << " (from " << fcs_phonon->file_fc2 << ")\n\n";
         }
     }
@@ -127,7 +127,7 @@ void System::print_structure_information_stdout() const
         cout << setw(16) << primcell.lattice_vector(0, i);
         cout << setw(15) << primcell.lattice_vector(1, i);
         cout << setw(15) << primcell.lattice_vector(2, i);
-        cout << (" : a" + std::to_string(i+1)) << '\n';
+        cout << (" : a" + std::to_string(i + 1)) << '\n';
     }
     cout << '\n';
 
@@ -135,7 +135,7 @@ void System::print_structure_information_stdout() const
         cout << setw(16) << primcell.reciprocal_lattice_vector(i, 0);
         cout << setw(15) << primcell.reciprocal_lattice_vector(i, 1);
         cout << setw(15) << primcell.reciprocal_lattice_vector(i, 2);
-        cout << (" : b" + std::to_string(i+1)) << '\n';
+        cout << (" : b" + std::to_string(i + 1)) << '\n';
     }
     cout << "\n\n";
 
@@ -195,7 +195,7 @@ void System::print_structure_information_stdout() const
         cout << setw(16) << supercell[0].lattice_vector(0, i);
         cout << setw(15) << supercell[0].lattice_vector(1, i);
         cout << setw(15) << supercell[0].lattice_vector(2, i);
-        cout << (" : a" + std::to_string(i+1)) << '\n';
+        cout << (" : a" + std::to_string(i + 1)) << '\n';
     }
     cout << '\n';
     cout << "  Transformation matrix:\n";
@@ -206,7 +206,7 @@ void System::print_structure_information_stdout() const
         cout << '\n';
     }
     const auto det_mat = transformation_matrix.determinant();
-    if (std::abs(static_cast<double>(nint(det_mat))-det_mat) > eps6) {
+    if (std::abs(static_cast<double>(nint(det_mat)) - det_mat) > eps6) {
         exit("print_structure_information_stdout",
              "The transformation matrix should be composed of integers. Something is wrong.");
     }
@@ -1223,16 +1223,16 @@ void System::generate_mapping_tables()
 
 
 void System::generate_mapping_primitive_super(const Cell &pcell,
-                                                 const Cell &scell,
-                                                 std::vector<std::vector<unsigned int>> &map_p2s_out,
-                                                 std::vector<Maps> &map_s2p_out) const
+                                              const Cell &scell,
+                                              std::vector<std::vector<unsigned int>> &map_p2s_out,
+                                              std::vector<Maps> &map_s2p_out) const
 {
 
     Eigen::Vector3d x1, x2, x3, xdiff, tran_d;
     Eigen::Vector3i tran;
 
     const Eigen::MatrixXd x_super_in_primitive_frac = scell.x_fractional * scell.lattice_vector.transpose()
-                                                * pcell.lattice_vector.inverse().transpose();
+                                                      * pcell.lattice_vector.inverse().transpose();
     const Eigen::Matrix3d transform_basis_primitive_to_super
             = scell.lattice_vector.inverse() * pcell.lattice_vector;
 
@@ -1320,14 +1320,8 @@ void System::generate_mapping_primitive_super(const Cell &pcell,
     std::vector<std::vector<int>> unique_shifts_vec;
     std::vector<int> unique_itran_indices;
 
-    for (auto itran = 0; itran < trans_vecs.size(); ++ itran) {
+    for (auto itran = 0; itran < trans_vecs.size(); ++itran) {
         if (unique_shifts_set.find(trans_vecs[itran]) == unique_shifts_set.end()) {
-//
-//            std::cout << " itran = " << itran << ' ';
-//            for (const auto &it : trans_vecs[itran]) {
-//                std::cout << std::setw(4) << it;
-//            }
-//            std::cout << '\n';
             unique_shifts_set.insert(trans_vecs[itran]);
             unique_shifts_vec.emplace_back(trans_vecs[itran]);
             unique_itran_indices.emplace_back(itran);

@@ -128,7 +128,7 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
     std::vector<unsigned int> cells;
 
     Eigen::Matrix3d mat_convert = system->get_primcell().reciprocal_lattice_vector
-                                    * system->get_supercell(1).lattice_vector;
+                                  * system->get_supercell(1).lattice_vector;
 
     allocate(xshift_s, 27, 3);
 
