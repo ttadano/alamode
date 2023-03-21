@@ -29,6 +29,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <Eigen/LU>
+#include "hdf5_parser.h"
 
 using namespace PHON_NS;
 
@@ -112,7 +113,8 @@ void Fcs_phonon::setup(std::string mode)
 
     if (mympi->my_rank == 0) {
         load_fc2_xml();
-        load_fcs_xml();
+
+        load_fcs_from_file(maxorder);
 
         for (auto i = 0; i < maxorder; ++i) {
             std::cout << "  Number of non-zero IFCs for " << i + 2 << " order: ";
@@ -225,6 +227,66 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
     }
 }
 
+
+void Fcs_phonon::load_fcs_from_file(const int maxorder_in) const
+{
+    std::vector<std::string> filename_list{file_fc2,
+                                           file_fc3,
+                                           file_fc4};
+
+    std::vector<bool> load_flags{true, require_cubic, require_quartic};
+
+    if (file_fc2.empty()) {
+        filename_list[0] = file_fcs;
+    }
+
+    if (require_cubic) {
+        if (file_fc3.empty()) {
+            if (!file_fcs.empty()) {
+                filename_list[1] = file_fcs;
+            } else {
+                exit("load_fcs_from_file",
+                     "Either FCSFILE or FC3FILE must be given in the "
+                     "&general section of the input file.");
+            }
+        }
+    }
+
+    if (require_quartic) {
+        if (file_fc4.empty()) {
+            if (!file_fcs.empty()) {
+                filename_list[2] = file_fcs;
+            } else {
+                exit("load_fcs_from_file",
+                     "Either FCSFILE or FC4FILE must be given in the "
+                     "&general section of the input file.");
+            }
+        }
+    }
+
+    std::cout << "  Reading force constants from the XML file ... ";
+
+    for (auto i = 0; i < filename_list.size(); ++i) {
+
+        if (!load_flags[i]) continue;
+
+        const auto filename = filename_list[i];
+        const auto file_extension = filename.substr(filename.find_last_of('.') + 1);
+        if (file_extension == "xml" || file_extension == "XML") {
+
+            load_fcs_xml(filename, i, force_constant_with_cell[i]);
+
+        } else if (file_extension == "h5" || file_extension == "hdf5") {
+
+            parse_fcs_from_h5(filename, i, force_constant_with_cell[i]);
+
+        }
+    }
+
+    std::cout << "done !" << std::endl;
+
+}
+
 void Fcs_phonon::load_fc2_xml()
 {
     using namespace boost::property_tree;
@@ -282,14 +344,14 @@ void Fcs_phonon::load_fc2_xml()
     pt.clear();
 }
 
-void Fcs_phonon::load_fcs_xml() const
+void Fcs_phonon::load_fcs_xml(const std::string fname_fcs,
+                              const int order,
+                              std::vector<FcsArrayWithCell> &fcs_out) const
 {
     using namespace boost::property_tree;
     ptree pt;
     std::string str_tag;
     unsigned int atmn, xyz, cell_s;
-
-    std::vector<Triplet> tri_vec;
 
     std::stringstream ss;
 
@@ -302,98 +364,168 @@ void Fcs_phonon::load_fcs_xml() const
 
     const auto xf_image = dynamical->get_xrs_image();
 
-    std::cout << "  Reading force constants from the XML file ... ";
+    fcs_out.clear();
 
     try {
-        read_xml(file_fcs, pt);
+        read_xml(fname_fcs, pt);
     }
     catch (std::exception &e) {
-        auto str_error = "Cannot open file FCSXML ( " + fcs_phonon->file_fcs + " )";
+        auto str_error = "Cannot open file FCSFILE ( " + fname_fcs + " )";
         exit("load_fcs_xml", str_error.c_str());
     }
 
-    for (unsigned int order = 0; order < maxorder; ++order) {
+    if (order == 0) {
+        str_tag = "Data.ForceConstants.HARMONIC";
+    } else {
+        str_tag = "Data.ForceConstants.ANHARM" + std::to_string(order + 2);
+    }
 
-        if (order == 0) {
-            str_tag = "Data.ForceConstants.HARMONIC";
-        } else {
-            str_tag = "Data.ForceConstants.ANHARM" + std::to_string(order + 2);
-        }
+    const auto map_tmp = system->get_mapping_super_alm(order);
+    const auto xf_tmp = system->get_supercell(order).x_fractional;
 
-        const auto map_tmp = system->get_mapping_super_alm(order);
-        const auto xf_tmp = system->get_supercell(order).x_fractional;
+    auto child_ = pt.get_child_optional(str_tag);
 
-        auto child_ = pt.get_child_optional(str_tag);
+    if (!child_) {
+        auto str_tmp = str_tag + " flag not found in the FCSFILE file";
+        exit("load_fcs_xml", str_tmp.c_str());
+    }
 
-        if (!child_) {
-            auto str_tmp = str_tag + " flag not found in the XML file";
-            exit("load_fcs_xml", str_tmp.c_str());
-        }
+    BOOST_FOREACH (const ptree::value_type &child_, pt.get_child(str_tag)) {
+                    const auto &child = child_.second;
 
-        BOOST_FOREACH (const ptree::value_type &child_, pt.get_child(str_tag)) {
-                        const auto &child = child_.second;
+                    auto fcs_val = boost::lexical_cast<double>(child.data());
 
-                        auto fcs_val = boost::lexical_cast<double>(child.data());
+                    ivec_with_cell.clear();
 
-                        ivec_with_cell.clear();
+                    for (auto i = 0; i < order + 2; ++i) {
+                        auto str_attr = "<xmlattr>.pair" + std::to_string(i + 1);
+                        auto str_pairs = child.get<std::string>(str_attr);
 
-                        for (auto i = 0; i < order + 2; ++i) {
-                            auto str_attr = "<xmlattr>.pair" + std::to_string(i + 1);
-                            auto str_pairs = child.get<std::string>(str_attr);
+                        ss.str("");
+                        ss.clear();
+                        ss << str_pairs;
 
-                            ss.str("");
-                            ss.clear();
-                            ss << str_pairs;
-
-                            if (i == 0) {
-                                ss >> atmn >> xyz;
-                                ivec_tmp.index = 3 * map_tmp.from_true_primitive[atmn - 1][0] + xyz - 1;
-                                ivec_tmp.cell_s = 0;
-                                ivec_tmp.tran = 0; // dummy
-                                ivec_with_cell.push_back(ivec_tmp);
-                            } else {
-                                ss >> atmn >> xyz >> cell_s;
-                                ivec_tmp.index = 3 * (atmn - 1) + xyz - 1;
-                                ivec_tmp.cell_s = cell_s - 1;
-                                ivec_tmp.tran = 0; // dummy
-                                ivec_with_cell.push_back(ivec_tmp);
-                            }
-                        }
-
-                        if (std::abs(fcs_val) > eps) {
-                            do {
-                                ivec_copy.clear();
-                                for (auto i = 0; i < ivec_with_cell.size(); ++i) {
-                                    atmn = ivec_with_cell[i].index / 3;
-                                    xyz = ivec_with_cell[i].index % 3;
-                                    ivec_tmp.index = 3 * map_tmp.to_true_primitive[atmn].atom_num + xyz;
-                                    ivec_tmp.cell_s = ivec_with_cell[i].cell_s;
-                                    ivec_tmp.tran = map_tmp.to_true_primitive[atmn].tran_num;
-                                    ivec_copy.push_back(ivec_tmp);
-                                }
-                                force_constant_with_cell[order].emplace_back(fcs_val, ivec_copy);
-                            } while (std::next_permutation(ivec_with_cell.begin() + 1, ivec_with_cell.end()));
+                        if (i == 0) {
+                            ss >> atmn >> xyz;
+                            ivec_tmp.index = 3 * map_tmp.from_true_primitive[atmn - 1][0] + xyz - 1;
+                            ivec_tmp.cell_s = 0;
+                            ivec_tmp.tran = 0; // dummy
+                            ivec_with_cell.push_back(ivec_tmp);
+                        } else {
+                            ss >> atmn >> xyz >> cell_s;
+                            ivec_tmp.index = 3 * (atmn - 1) + xyz - 1;
+                            ivec_tmp.cell_s = cell_s - 1;
+                            ivec_tmp.tran = 0; // dummy
+                            ivec_with_cell.push_back(ivec_tmp);
                         }
                     }
 
-        // Register relative vector information for later use
-        for (auto &it: force_constant_with_cell[order]) {
-            relvecs.clear();
-            for (auto i = 1; i < order + 2; ++i) {
-                const auto atom1_s = map_tmp.from_true_primitive[it.pairs[i].index / 3][it.pairs[i].tran];
-                const auto atom2_s = map_tmp.from_true_primitive[it.pairs[0].index / 3][0];
-                for (auto j = 0; j < 3; ++j) {
-                    relvec_tmp[j] = xf_tmp(atom1_s, j) + xf_image[it.pairs[i].cell_s][j]
-                                    - xf_tmp(atom2_s, j);
+                    if (std::abs(fcs_val) > eps) {
+                        do {
+                            ivec_copy.clear();
+                            for (auto i = 0; i < ivec_with_cell.size(); ++i) {
+                                atmn = ivec_with_cell[i].index / 3;
+                                xyz = ivec_with_cell[i].index % 3;
+                                ivec_tmp.index = 3 * map_tmp.to_true_primitive[atmn].atom_num + xyz;
+                                ivec_tmp.cell_s = ivec_with_cell[i].cell_s;
+                                ivec_tmp.tran = map_tmp.to_true_primitive[atmn].tran_num;
+                                ivec_copy.push_back(ivec_tmp);
+                            }
+                            fcs_out.emplace_back(fcs_val, ivec_copy);
+                        } while (std::next_permutation(ivec_with_cell.begin() + 1, ivec_with_cell.end()));
+                    }
                 }
-                relvec_tmp = system->get_supercell(order).lattice_vector * relvec_tmp;
-                relvecs.emplace_back(relvec_tmp);
-            }
-            it.relvecs = relvecs;
-        }
-    }
 
-    std::cout << "done !" << std::endl;
+    // Register relative vector information for later use
+    for (auto &it: fcs_out) {
+        relvecs.clear();
+        for (auto i = 1; i < order + 2; ++i) {
+            const auto atom1_s = map_tmp.from_true_primitive[it.pairs[i].index / 3][it.pairs[i].tran];
+            const auto atom2_s = map_tmp.from_true_primitive[it.pairs[0].index / 3][0];
+            for (auto j = 0; j < 3; ++j) {
+                relvec_tmp[j] = xf_tmp(atom1_s, j) + xf_image[it.pairs[i].cell_s][j]
+                                - xf_tmp(atom2_s, j);
+            }
+            relvec_tmp = system->get_supercell(order).lattice_vector * relvec_tmp;
+            relvecs.emplace_back(relvec_tmp);
+        }
+        it.relvecs = relvecs;
+    }
+}
+
+void Fcs_phonon::parse_fcs_from_h5(const std::string fname_fcs,
+                                   const int order,
+                                   std::vector<FcsArrayWithCell> &fcs_out) const
+{
+    using namespace H5Easy;
+    File file(fname_fcs, File::ReadOnly);
+
+    Eigen::MatrixXi atom_indices, atom_indices_super, coord_indices;
+    Eigen::MatrixXd shift_vectors;
+    Eigen::ArrayXd fcs_values;
+
+    get_force_constants_from_h5(file,
+                                order,
+                                atom_indices,
+                                atom_indices_super,
+                                coord_indices,
+                                shift_vectors,
+                                fcs_values);
+
+    const auto nentries = fcs_values.size();
+
+    AtomCellSuper ivec_tmp{};
+    std::vector<AtomCellSuper> ivec_with_cell, ivec_copy;
+    std::vector<Eigen::Vector3d> relvecs_tmp;
+
+    struct IndexAndRelvecs {
+        unsigned int index_super;
+        unsigned int index_prim;
+        Eigen::Vector3d relvec;
+    };
+
+    const Eigen::Vector3d zerovec = Eigen::Vector3d::Zero();
+
+    const auto nelems = order + 2;
+    IndexAndRelvecs index_tmp{};
+    std::vector<IndexAndRelvecs> vec_index(nelems);
+
+    for (auto i = 0; i < nentries; ++i) {
+
+        if (std::abs(fcs_values[i]) < eps) continue;
+
+        vec_index.clear();
+
+        index_tmp.index_prim = 3 * atom_indices(i, 0) + coord_indices(i, 0);
+        index_tmp.index_super = 3 * atom_indices_super(i, 0) + coord_indices(i, 0);
+        index_tmp.relvec = zerovec;
+
+        vec_index.emplace_back(index_tmp);
+
+        for (auto j = 1; j < nelems; ++j) {
+            index_tmp.index_prim = 3 * atom_indices(i, j) + coord_indices(i, j);
+            index_tmp.index_super = 3 * atom_indices_super(i, j) + coord_indices(i, j);
+            for (auto k = 0; k < 3; ++k) {
+                index_tmp.relvec[k] = shift_vectors(i, 3 * (j - 1) + k);
+            }
+            vec_index.emplace_back(index_tmp);
+        }
+
+        do {
+            ivec_copy.clear();
+            relvecs_tmp.clear();
+            for (auto j = 0; j < vec_index.size(); ++j) {
+                ivec_tmp.index = vec_index[j].index_prim;
+                ivec_tmp.cell_s = 0;
+                ivec_tmp.tran = 0;
+                ivec_copy.push_back(ivec_tmp);
+                relvecs_tmp.emplace_back(vec_index[j].relvec);
+            }
+            fcs_out.emplace_back(fcs_values[i], ivec_copy, relvecs_tmp);
+        } while (std::next_permutation(vec_index.begin() + 1, vec_index.end(),
+                                       [](const IndexAndRelvecs &a, const IndexAndRelvecs &b)
+                                       {return a.index_super < b.index_super;}));
+    }
 }
 
 void Fcs_phonon::MPI_Bcast_fc2_ext()

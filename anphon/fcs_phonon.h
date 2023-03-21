@@ -16,45 +16,6 @@
 #include <set>
 
 namespace PHON_NS {
-struct Triplet {
-    unsigned int atom, cell, xyz;
-};
-
-class FcsClass {
-public:
-    std::vector<Triplet> elems;
-    double fcs_val;
-
-    FcsClass() {};
-
-    FcsClass(const FcsClass &obj) : elems(obj.elems), fcs_val(obj.fcs_val) {};
-
-    FcsClass(const unsigned int n,
-             const double val,
-             const Triplet *arr)
-    {
-        fcs_val = val;
-        for (unsigned int i = 0; i < n; ++i) {
-            elems.push_back(arr[i]);
-        }
-    }
-
-    FcsClass(const double val,
-             const std::vector<Triplet> &vec)
-            : elems(vec), fcs_val(val) {};
-
-    bool operator<(const FcsClass &obj) const
-    {
-        std::vector<int> a_tmp, b_tmp;
-        a_tmp.clear();
-        b_tmp.clear();
-        for (int i = 0; i < obj.elems.size(); ++i) {
-            a_tmp.push_back(3 * elems[i].atom + elems[i].xyz);
-            b_tmp.push_back(3 * obj.elems[i].atom + obj.elems[i].xyz);
-        }
-        return lexicographical_compare(a_tmp.begin(), a_tmp.end(), b_tmp.begin(), b_tmp.end());
-    }
-};
 
 class FcsClassExtent {
 public:
@@ -163,11 +124,16 @@ private:
 
     void load_fc2_xml();
 
-    void load_fcs_xml() const;
+    void load_fcs_xml(const std::string fname_fcs,
+                      const int order,
+                      std::vector<FcsArrayWithCell> &fcs_out) const;
 
-    void load_fcs_from_file() const;
+    void parse_fcs_from_h5(const std::string fname_fcs,
+                           const int order,
+                           std::vector<FcsArrayWithCell> &fcs_out) const;
 
-    void parse_fcs_from_h5() const;
+    void load_fcs_from_file(const int maxorder_in) const;
+
 
     double examine_translational_invariance(const int order,
                                             const unsigned int nat,
