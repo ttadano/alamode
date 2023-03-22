@@ -84,7 +84,7 @@ inline void get_magnetism_from_h5(const H5Easy::File &file,
         time_reversal_symmetry = load<int>(file, "/" + search_cell + "/time_reversal_symmetry");
     } else {
         noncollinear = 0;
-        time_reversal_symmetry = 0;
+        time_reversal_symmetry = 1;
     }
 }
 
