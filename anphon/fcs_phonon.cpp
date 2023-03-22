@@ -112,7 +112,6 @@ void Fcs_phonon::setup(std::string mode)
     allocate(force_constant_with_cell, maxorder);
 
     if (mympi->my_rank == 0) {
-        load_fc2_xml();
 
         load_fcs_from_file(maxorder);
 
@@ -135,7 +134,6 @@ void Fcs_phonon::setup(std::string mode)
         std::cout << std::endl;
     }
 
-    MPI_Bcast_fc2_ext();
     MPI_Bcast_fcs_array(maxorder);
     replicate_force_constants(maxorder);
 
@@ -298,62 +296,6 @@ void Fcs_phonon::load_fcs_from_file(const int maxorder_in) const
 
 }
 
-void Fcs_phonon::load_fc2_xml()
-{
-    using namespace boost::property_tree;
-
-    unsigned int atm1, atm2, xyz1, xyz2, cell_s;
-    ptree pt;
-    std::stringstream ss1, ss2;
-    FcsClassExtent fcext_tmp;
-
-    if (update_fc2) {
-        try {
-            read_xml(file_fc2, pt);
-        }
-        catch (std::exception &e) {
-            auto str_error = "Cannot open file FC2XML ( " + file_fc2 + " )";
-            exit("load_fc2_xml", str_error.c_str());
-        }
-    } else {
-        try {
-            read_xml(file_fcs, pt);
-        }
-        catch (std::exception &e) {
-            auto str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
-            exit("load_fc2_xml", str_error.c_str());
-        }
-    }
-
-    fc2_ext.clear();
-
-    BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
-                    const auto &child = child_.second;
-                    const auto str_p1 = child.get<std::string>("<xmlattr>.pair1");
-                    const auto str_p2 = child.get<std::string>("<xmlattr>.pair2");
-
-                    ss1.str("");
-                    ss2.str("");
-                    ss1.clear();
-                    ss2.clear();
-
-                    ss1 << str_p1;
-                    ss2 << str_p2;
-
-                    ss1 >> atm1 >> xyz1;
-                    ss2 >> atm2 >> xyz2 >> cell_s;
-
-                    fcext_tmp.atm1 = atm1 - 1;
-                    fcext_tmp.xyz1 = xyz1 - 1;
-                    fcext_tmp.atm2 = atm2 - 1;
-                    fcext_tmp.xyz2 = xyz2 - 1;
-                    fcext_tmp.cell_s = cell_s - 1;
-                    fcext_tmp.fcs_val = boost::lexical_cast<double>(child.data());
-
-                    fc2_ext.push_back(fcext_tmp);
-                }
-    pt.clear();
-}
 
 void Fcs_phonon::load_fcs_xml(const std::string fname_fcs,
                               const int order,
@@ -547,46 +489,6 @@ void Fcs_phonon::parse_fcs_from_h5(const std::string fname_fcs,
     }
 }
 
-void Fcs_phonon::MPI_Bcast_fc2_ext()
-{
-    unsigned int i;
-    double *fcs_tmp;
-    unsigned int **ind;
-    FcsClassExtent fcext_tmp;
-
-    auto nfcs = fc2_ext.size();
-    MPI_Bcast(&nfcs, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    allocate(fcs_tmp, nfcs);
-    allocate(ind, nfcs, 5);
-
-    if (mympi->my_rank == 0) {
-        for (i = 0; i < nfcs; ++i) {
-            fcs_tmp[i] = fc2_ext[i].fcs_val;
-            ind[i][0] = fc2_ext[i].atm1;
-            ind[i][1] = fc2_ext[i].xyz1;
-            ind[i][2] = fc2_ext[i].atm2;
-            ind[i][3] = fc2_ext[i].xyz2;
-            ind[i][4] = fc2_ext[i].cell_s;
-        }
-    }
-    MPI_Bcast(&fcs_tmp[0], nfcs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&ind[0][0], nfcs * 5, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
-
-    if (mympi->my_rank != 0) {
-        for (i = 0; i < nfcs; ++i) {
-            fcext_tmp.atm1 = ind[i][0];
-            fcext_tmp.xyz1 = ind[i][1];
-            fcext_tmp.atm2 = ind[i][2];
-            fcext_tmp.xyz2 = ind[i][3];
-            fcext_tmp.cell_s = ind[i][4];
-            fcext_tmp.fcs_val = fcs_tmp[i];
-            fc2_ext.push_back(fcext_tmp);
-        }
-    }
-    deallocate(fcs_tmp);
-    deallocate(ind);
-}
 
 double Fcs_phonon::examine_translational_invariance(const int order,
                                                     const unsigned int nat,

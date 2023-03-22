@@ -74,7 +74,7 @@ private:
     void deallocate_variables();
 
     void calc_derivative_dynmat_k(const double *,
-                                  const std::vector<FcsClassExtent> &,
+                                  const std::vector<FcsArrayWithCell> &,
                                   std::complex<double> ***) const;
 
     void diagonalize_hermite_mat(int,

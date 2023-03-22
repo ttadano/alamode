@@ -147,7 +147,7 @@ public:
     std::string file_fcs, file_fc2, file_fc3, file_fc4;
 
     std::vector<FcsArrayWithCell> *force_constant_with_cell;
-    std::vector<FcsClassExtent> fc2_ext;
+//    std::vector<FcsClassExtent> fc2_ext;
 
     bool update_fc2;
 

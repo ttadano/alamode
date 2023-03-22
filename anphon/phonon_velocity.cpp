@@ -548,7 +548,7 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
 
     allocate(ddyn, 3, nmode, nmode);
     allocate(vel_tmp, 3, nmode);
-    calc_derivative_dynmat_k(xk_in, fcs_phonon->fc2_ext, ddyn);
+    calc_derivative_dynmat_k(xk_in, fcs_phonon->force_constant_with_cell[0], ddyn);
 
     const auto do_diagonalize = false;
 
@@ -694,15 +694,13 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
 }
 
 void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
-                                              const std::vector<FcsClassExtent> &fc2_in,
+                                              const std::vector<FcsArrayWithCell> &fc2_in,
                                               std::complex<double> ***ddyn_out) const
 {
     unsigned int i, j, k;
 
     const auto nmode = dynamical->neval;
-
     double vec[3];
-    const std::complex<double> im(0.0, 1.0);
 
     for (k = 0; k < 3; ++k) {
         for (i = 0; i < nmode; ++i) {
@@ -712,33 +710,23 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
         }
     }
 
+    const auto invsqrt_mass = system->get_invsqrt_mass();
+
     for (const auto &it: fc2_in) {
 
-        const auto atm1_p = it.atm1;
-        const auto atm2_s = it.atm2;
-        const auto xyz1 = it.xyz1;
-        const auto xyz2 = it.xyz2;
-        const auto icell = it.cell_s;
-
-        const auto atm1_s = system->get_map_p2s(0)[atm1_p][0];
-        const auto atm2_p = system->get_map_s2p(0)[atm2_s].atom_num;
-
-        for (i = 0; i < 3; ++i) {
-            vec[i] = system->get_supercell(0).x_fractional(atm2_s, i) + xshift_s[icell][i]
-                     - system->get_supercell(0).x_fractional(system->get_map_p2s(0)[atm2_p][0], i);
-        }
-
-        rotvec(vec, vec, system->get_supercell(0).lattice_vector);
-        rotvec(vec, vec, system->get_primcell().reciprocal_lattice_vector);
-
-        auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+        const auto phase = tpi * (it.relvecs[0][0] * xk_in[0]
+                                  + it.relvecs[0][1] * xk_in[1]
+                                  + it.relvecs[0][2] * xk_in[2]);
 
         for (k = 0; k < 3; ++k) {
-            ddyn_out[k][3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-                    += it.fcs_val * std::exp(im * phase) * vec[k] / std::sqrt(
-                    system->get_mass_super()[atm1_s] * system->get_mass_super()[atm2_s]);
+            // For the diagonal components, this should be fine,
+            // whereas it.relvecs_vel should be used for computing the off diagonal elements.
+            ddyn_out[k][it.pairs[0].index][it.pairs[1].index]
+                    += it.fcs_val * std::exp(im * phase)
+                            * tpi * it.relvecs[0][k]
+                            * invsqrt_mass[it.pairs[0].index / 3]
+                            * invsqrt_mass[it.pairs[1].index / 3];
         }
-
     }
 
     for (k = 0; k < 3; ++k) {

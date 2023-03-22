@@ -386,8 +386,8 @@ void Ewald::compute_ewald_fcs()
         }
     }
 
-    for (const auto &it: fcs_phonon->fc2_ext) {
-        fcs_total[3 * it.atm1 + it.xyz1][3 * it.atm2 + it.xyz2] += it.fcs_val;
+    for (const auto &it: fcs_phonon->force_constant_with_cell[0]) {
+        fcs_total[it.pairs[0].index][3 * it.atoms_s[1] + it.coords[1]] += it.fcs_val;
     }
 
     for (i = 0; i < 3 * natmin; ++i) {
@@ -523,8 +523,8 @@ void Ewald::compute_ewald_fcs2()
         }
     }
 
-    for (const auto &it: fcs_phonon->fc2_ext) {
-        fcs_total[3 * it.atm1 + it.xyz1][3 * it.atm2 + it.xyz2] += it.fcs_val;
+    for (const auto &it: fcs_phonon->force_constant_with_cell[0]) {
+        fcs_total[it.pairs[0].index][3 * it.atoms_s[1] + it.coords[1]] += it.fcs_val;
     }
 
     for (i = 0; i < 3 * natmin; ++i) {
