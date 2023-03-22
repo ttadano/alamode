@@ -119,67 +119,19 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
                                              std::vector<double> *fcs_group,
                                              std::vector<RelativeVector> *&vec_out) const
 {
-    int i, j, k;
-
     double vecs[3][3];
-    double **xshift_s;
-
-    std::vector<unsigned int> atm_super, atm_prim;
-    std::vector<unsigned int> cells;
-
-    Eigen::Matrix3d mat_convert = system->get_primcell().reciprocal_lattice_vector
-                                  * system->get_supercell(1).lattice_vector;
-
-    allocate(xshift_s, 27, 3);
-
-    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
-
-    unsigned int icell = 0;
-
-    for (int ix = -1; ix <= 1; ++ix) {
-        for (int iy = -1; iy <= 1; ++iy) {
-            for (int iz = -1; iz <= 1; ++iz) {
-                if (ix == 0 && iy == 0 && iz == 0) continue;
-
-                ++icell;
-
-                xshift_s[icell][0] = static_cast<double>(ix);
-                xshift_s[icell][1] = static_cast<double>(iy);
-                xshift_s[icell][2] = static_cast<double>(iz);
-            }
-        }
-    }
-
-    atm_prim.resize(N);
-    cells.resize(N);
-    atm_super.resize(N);
-
     unsigned int icount = 0;
-
-    const auto xf_tmp = system->get_supercell(0).x_fractional;
-
     for (auto igroup = 0; igroup < number_of_groups; ++igroup) {
 
         unsigned int nsize_group = fcs_group[igroup].size();
 
-        for (j = 0; j < nsize_group; ++j) {
-
-            for (i = 0; i < N; ++i) {
-                atm_prim[i] = fcs_in[icount].pairs[i].index / 3;
-                const auto tran_tmp = fcs_in[icount].pairs[i].tran;
-                cells[i] = fcs_in[icount].pairs[i].cell_s;
-                atm_super[i] = system->get_map_p2s(2)[atm_prim[i]][tran_tmp];
-            }
-
-            for (i = 0; i < N - 1; ++i) {
-                for (k = 0; k < 3; ++k) {
-                    // TODO: replace below with fc3 or fc4 Cell data
-                    vecs[i][k] = xf_tmp(atm_super[i + 1], k) + xshift_s[cells[i + 1]][k]
-                                 - xf_tmp(system->get_map_p2s(2)[atm_prim[i + 1]][0], k);
+        for (auto j = 0; j < nsize_group; ++j) {
+            for (auto i = 0; i < N - 1; ++i) {
+                for (auto k = 0; k < 3; ++k) {
+                    // include tpi phase factor here
+                    vecs[i][k] = tpi * fcs_in[icount].relvecs[i][k];
                 }
-                rotvec(vecs[i], vecs[i], mat_convert);
             }
-
             if (N == 3) {
                 vec_out[igroup].emplace_back(vecs[0], vecs[1]);
             } else if (N == 4) {
@@ -188,8 +140,6 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
             ++icount;
         }
     }
-
-    deallocate(xshift_s);
 }
 
 void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
@@ -675,8 +625,6 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
     // Return zero if any of the involving phonon has imaginary frequency
     if (eval[0][mode] < eps8 || eval[1][is] < eps8 || eval[2][js] < eps8) return 0.0;
 
-    unsigned int ielem = 0;
-
     for (int i = 0; i < ngroup_v3; ++i) {
 
         auto vec_tmp = evec[0][mode][evec_index_v3[i][0]]
@@ -698,8 +646,6 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
                          + relvec_v3[i][j].vecs[1][2] * xk3[2];
 
             ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
-
-            ++ielem;
         }
         ctmp += ret_in * vec_tmp;
     }
@@ -1065,10 +1011,6 @@ void AnharmonicCore::calc_damping_tetrahedron(const unsigned int ntemp,
 
 void AnharmonicCore::setup_cubic()
 {
-    int i;
-    double *invsqrt_mass_p;
-    const auto natmin_tmp = system->get_primcell().number_of_atoms;
-
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
     // This sorting is necessary.
     std::sort(fcs_phonon->force_constant_with_cell[1].begin(),
@@ -1087,14 +1029,10 @@ void AnharmonicCore::setup_cubic()
                             fcs_group_v3,
                             relvec_v3);
 
-    allocate(invsqrt_mass_p, natmin_tmp);
-
-    for (i = 0; i < natmin_tmp; ++i) {
-        invsqrt_mass_p[i] = std::sqrt(1.0 / system->get_mass_super()[system->get_map_p2s(0)[i][0]]);
-    }
+    const auto invsqrt_mass_p = system->get_invsqrt_mass();
 
     int k = 0;
-    for (i = 0; i < ngroup_v3; ++i) {
+    for (auto i = 0; i < ngroup_v3; ++i) {
         for (int j = 0; j < 3; ++j) {
             evec_index_v3[i][j] = fcs_phonon->force_constant_with_cell[1][k].pairs[j].index;
         }
@@ -1104,16 +1042,10 @@ void AnharmonicCore::setup_cubic()
                   * invsqrt_mass_p[evec_index_v3[i][2] / 3];
         k += fcs_group_v3[i].size();
     }
-
-    deallocate(invsqrt_mass_p);
 }
 
 void AnharmonicCore::setup_quartic()
 {
-    int i;
-    double *invsqrt_mass_p;
-    const auto natmin_tmp = system->get_primcell().number_of_atoms;
-
     std::sort(fcs_phonon->force_constant_with_cell[2].begin(),
               fcs_phonon->force_constant_with_cell[2].end());
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2],
@@ -1130,14 +1062,10 @@ void AnharmonicCore::setup_quartic()
                             fcs_group_v4,
                             relvec_v4);
 
-    allocate(invsqrt_mass_p, natmin_tmp);
-
-    for (i = 0; i < natmin_tmp; ++i) {
-        invsqrt_mass_p[i] = std::sqrt(1.0 / system->get_mass_super()[system->get_map_p2s(0)[i][0]]);
-    }
+    const auto invsqrt_mass_p = system->get_invsqrt_mass();
 
     int k = 0;
-    for (i = 0; i < ngroup_v4; ++i) {
+    for (auto i = 0; i < ngroup_v4; ++i) {
         for (int j = 0; j < 4; ++j) {
             evec_index_v4[i][j] = fcs_phonon->force_constant_with_cell[2][k].pairs[j].index;
         }
@@ -1148,8 +1076,6 @@ void AnharmonicCore::setup_quartic()
                   * invsqrt_mass_p[evec_index_v4[i][3] / 3];
         k += fcs_group_v4[i].size();
     }
-
-    deallocate(invsqrt_mass_p);
 }
 
 void PhaseFactorStorage::create(const bool use_tuned_ver,
