@@ -896,7 +896,9 @@ void Writer::write_structures_h5(H5Easy::File &file,
     dump(file, "/" + celltype + "/number_of_atoms", cell.number_of_atoms);
     dump(file, "/" + celltype + "/number_of_elements", cell.number_of_elems);
     dump(file, "/" + celltype + "/fractional_coordinate", cell.x_fractional);
-    dump(file, "/" + celltype + "/atomic_kinds", cell.kind);
+    std::vector<int> kind_copy(cell.kind);
+    for (auto &it : kind_copy) it -= 1;
+    dump(file, "/" + celltype + "/atomic_kinds", kind_copy);
     dump(file, "/" + celltype + "/elements", kind_names);
     dump(file, "/" + celltype + "/spin_polarized", spin.lspin ? 1 : 0);
     if (spin.lspin) {
@@ -934,6 +936,8 @@ void Writer::write_forceconstant_at_given_order_h5(H5Easy::File &file,
     int i, j;
 
     for (const auto &it: fc_cart) {
+
+        if (!it.is_ascending_order) continue;
 
         index_atoms_trueprim.clear();
 
