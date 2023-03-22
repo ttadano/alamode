@@ -88,17 +88,35 @@ void MyMPI::MPI_Bcast_MappingTable(MappingTable &mapping,
         natmin_tmp = mapping.from_true_primitive.size();
         ntran_tmp = mapping.from_true_primitive[0].size();
     }
-    MPI_Bcast(&natmin_tmp, 1, MPI_INT, 0, comm);
-    MPI_Bcast(&ntran_tmp, 1, MPI_INT, 0, comm);
+    MPI_Bcast(&natmin_tmp, 1, MPI_INT, root, comm);
+    MPI_Bcast(&ntran_tmp, 1, MPI_INT, root, comm);
+
+    std::vector<unsigned int> map_1d(natmin_tmp * ntran_tmp);
+
+    if (my_rank == root) {
+        auto k = 0;
+        for (auto i = 0; i < natmin_tmp; ++i) {
+            for (auto j = 0; j < ntran_tmp; ++j) {
+                map_1d[k++] = mapping.from_true_primitive[i][j];
+            }
+        }
+    }
+
+    MPI_Bcast(&map_1d[0], natmin_tmp * ntran_tmp, MPI_UNSIGNED, root, comm);
 
     if (mympi->my_rank != root) {
         mapping.from_true_primitive.resize(natmin_tmp, std::vector<unsigned int>(ntran_tmp));
         mapping.to_true_primitive.resize(natmin_tmp * ntran_tmp);
+        auto k = 0;
+        for (auto i = 0; i < natmin_tmp; ++i) {
+            for (auto j = 0; j < ntran_tmp; ++j) {
+                mapping.from_true_primitive[i][j] = map_1d[k];
+                mapping.to_true_primitive[map_1d[k]].atom_num = i;
+                mapping.to_true_primitive[map_1d[k]].tran_num = j;
+                ++k;
+            }
+        }
     }
-    MPI_Bcast(&mapping.from_true_primitive[0][0],
-              natmin_tmp * ntran_tmp, MPI_UNSIGNED, root, comm);
-    MPI_Bcast(&mapping.to_true_primitive[0],
-              natmin_tmp * ntran_tmp * sizeof mapping.to_true_primitive[0],
-              MPI_BYTE, root, comm);
+    map_1d.clear();
 }
 
