@@ -119,7 +119,6 @@ public:
 
     void eval_k(const double *,
                 const double *,
-                const std::vector<FcsClassExtent> &,
                 const std::vector<FcsArrayWithCell> &,
                 double *,
                 std::complex<double> **,
@@ -160,7 +159,7 @@ public:
                              std::complex<double> **) const;
 
     void project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
-                                         const std::vector<FcsClassExtent> &fc2_ext_in,
+                                         const std::vector<FcsArrayWithCell> &fc2_in,
                                          double *xk_in,
                                          const std::vector<std::vector<double>> &project_directions,
                                          std::complex<double> **evec_out) const;
@@ -198,7 +197,6 @@ private:
     void get_eigenvalues_dymat(const unsigned int nk_in,
                                const double *const *xk_in,
                                const double *const *kvec_na_in,
-                               const std::vector<FcsClassExtent> &fc2_ext_in,
                                const std::vector<FcsArrayWithCell> &fc2,
                                const std::vector<FcsClassExtent> &fc2_without_dipole_in,
                                const bool require_evec,

@@ -146,7 +146,9 @@ void Gruneisen::calc_gruneisen()
 
         for (auto ik = 0; ik < nk; ++ik) {
 
-            calc_dfc2_reciprocal(dfc2_reciprocal, xk[ik]);
+//            calc_dfc2_reciprocal(dfc2_reciprocal, xk[ik]);
+            calc_dfc2_reciprocal2(dfc2_reciprocal, xk[ik]);
+
 
             for (auto is = 0; is < ns; ++is) {
 
@@ -266,290 +268,173 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
     }
 }
 
+void Gruneisen::calc_dfc2_reciprocal2(std::complex<double> **dphi2,
+                                      const double *xk_in)
+{
+    const auto ns = dynamical->neval;
+    for (auto i = 0; i < ns; ++i) {
+        for (unsigned int j = 0; j < ns; ++j) {
+            dphi2[i][j] = std::complex<double>(0.0, 0.0);
+        }
+    }
+
+    const auto invsqrt_mass = system->get_invsqrt_mass();
+
+    for (const auto &it: delta_fc2) {
+        const auto phase = tpi * (it.relvecs[0][0] * xk_in[0]
+                                  + it.relvecs[0][1] * xk_in[1]
+                                  + it.relvecs[0][2] * xk_in[2]);
+        dphi2[it.pairs[0].index][it.pairs[1].index]
+                += it.fcs_val * std::exp(im * phase)
+                   * invsqrt_mass[it.pairs[0].index / 3]
+                   * invsqrt_mass[it.pairs[1].index / 3];
+    }
+}
+
 void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                                   std::vector<FcsArrayWithCell> &delta_fcs,
                                   const int mirror_image_mode) const
 {
     unsigned int i, j;
-    double vec[3], vec_origin[3];
-    double fcs_tmp = 0.0;
+    Eigen::Vector3d vec, vec_origin;
 
-    std::vector<FcsAlignedForGruneisen> fcs_aligned;
+    std::vector<FcsArrayWithCell> fcs_aligned;
     std::vector<AtomCellSuper> pairs_vec;
     std::vector<int> index_old, index_now;
+    std::vector<int> relvecs_int_old, relvecs_int_now;
+
     std::vector<int> index_with_cell, index_with_cell_old;
-    std::set<std::vector<int>> set_index_uniq;
-    AtomCellSuper pairs_tmp;
+    std::vector<unsigned int> atoms_s_now, atoms_s_old;
+
+    std::vector<Eigen::Vector3d> relvecs_tmp, relvecs_tmp2;
+    std::vector<Eigen::Vector3d> relvecs_now, relvecs_old;
+    std::vector<Eigen::Vector3d> relvecs_vel_now, relvecs_vel_old;
+
+    AtomCellSuper pairs_tmp{};
+
+    if (fcs_in.empty()) return;
 
     const auto norder = fcs_in[0].pairs.size();
+    const auto nelems = norder - 1;
     unsigned int nmulti;
 
     delta_fcs.clear();
     fcs_aligned.clear();
 
     for (const auto &it: fcs_in) {
-        fcs_aligned.emplace_back(it.fcs_val, it.pairs);
+        fcs_aligned.emplace_back(it);
     }
-    std::sort(fcs_aligned.begin(), fcs_aligned.end());
+    std::sort(fcs_aligned.begin(),
+              fcs_aligned.end(),
+              sort_by_heading_indices());
 
-    if (mirror_image_mode == 0) {
-        // original implementation
-        // calculate IFC renormalization for the same atomic combination in the supercell
-        // but with different mirror images at once and assign the average value for each
-        // mirror images.
-        index_old.clear();
-        const auto nelems = 2 * (norder - 2) + 1;
-        for (i = 0; i < nelems; ++i) index_old.push_back(-1);
+    const auto cell_tmp = system->get_supercell(norder - 2);
+    const auto map_p2s_tmp = system->get_map_p2s(norder - 2);
+    const auto convmat = system->get_primcell().lattice_vector;
 
+    index_old.clear();
+    for (i = 0; i < nelems; ++i) {
+        index_old.push_back(-1);
+    }
+    for (i = 0; i < nelems - 1; ++i) {
+        for (j = 0; j < 3; ++j) {
+            relvecs_int_old.push_back(1000000);
+        }
+    }
+    index_with_cell.clear();
+
+    relvecs_tmp.resize(nelems - 1);
+    relvecs_tmp2.resize(nelems - 1);
+
+    relvecs_now.resize(nelems - 1);
+    relvecs_old.resize(nelems - 1);
+    relvecs_vel_now.resize(nelems - 1);
+    relvecs_vel_old.resize(nelems - 1);
+
+    double fcs_tmp = 0.0;
+
+    for (const auto &it: fcs_aligned) {
+
+        index_now.clear();
+        relvecs_int_now.clear();
         index_with_cell.clear();
-        set_index_uniq.clear();
+        atoms_s_now.clear();
 
-        for (const auto &it: fcs_aligned) {
+        index_now.push_back(it.pairs[0].index);
+        index_with_cell.push_back(it.pairs[0].index);
+        atoms_s_now.emplace_back(it.atoms_s[0]);
 
-            index_now.clear();
-            index_with_cell.clear();
-
-            index_now.push_back(it.pairs[0].index);
-            index_with_cell.push_back(it.pairs[0].index);
-
-            for (i = 1; i < norder - 1; ++i) {
-                index_now.push_back(it.pairs[i].index);
-                index_now.push_back(it.pairs[i].tran);
-
-                index_with_cell.push_back(it.pairs[i].index);
-                index_with_cell.push_back(it.pairs[i].tran);
-                index_with_cell.push_back(it.pairs[i].cell_s);
+        for (i = 1; i < nelems; ++i) {
+            index_now.push_back(it.pairs[i].index);
+            for (j = 0; j < 3; ++j) {
+                relvecs_int_now.push_back(nint(it.relvecs[i - 1][j]));
             }
 
-            if (index_now != index_old) {
-
-                if (index_old[0] != -1) {
-
-                    nmulti = set_index_uniq.size();
-                    fcs_tmp /= static_cast<double>(nmulti);
-
-                    if (std::abs(fcs_tmp) > eps15) {
-                        for (const auto &it2: set_index_uniq) {
-
-                            pairs_vec.clear();
-
-                            pairs_tmp.index = it2[0];
-                            pairs_tmp.tran = 0;
-                            pairs_tmp.cell_s = 0;
-                            pairs_vec.push_back(pairs_tmp);
-                            for (i = 1; i < norder - 1; ++i) {
-                                pairs_tmp.index = it2[3 * i - 2];
-                                pairs_tmp.tran = it2[3 * i - 1];
-                                pairs_tmp.cell_s = it2[3 * i];
-                                pairs_vec.push_back(pairs_tmp);
-                            }
-                            delta_fcs.emplace_back(fcs_tmp, pairs_vec);
-                        }
-                    }
-                    set_index_uniq.clear();
-                }
-
-                fcs_tmp = 0.0;
-                index_old.clear();
-                index_old.reserve(index_now.size());
-                std::copy(index_now.begin(), index_now.end(), std::back_inserter(index_old));
-            }
-
-            set_index_uniq.insert(index_with_cell);
-
-            for (i = 0; i < 3; i++) {
-                vec_origin[i] = system->get_supercell(1).x_fractional(
-                        system->get_map_p2s(2)[it.pairs[0].index / 3][0], i);
-                for (j = 1; j < norder - 1; j++) {
-                    vec_origin[i] +=
-                            system->get_supercell(1).x_fractional(
-                                    system->get_map_p2s(2)[it.pairs[j].index / 3][it.pairs[j].tran], i)
-                            + xshift_s[it.pairs[j].cell_s][i];
-                }
-                vec_origin[i] /= static_cast<double>(norder - 1);
-            }
-
-            for (i = 0; i < 3; ++i) {
-                vec[i] = system->get_supercell(1).x_fractional(
-                        system->get_map_p2s(2)[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                        1].tran],
-                        i)
-                         // - system->get_supercell(1).x_fractional[system->get_map_p2s(2)[it.pairs[0].index / 3][0]][i]
-                         - vec_origin[i]
-                         + xshift_s[it.pairs[norder - 1].cell_s][i];
-            }
-
-            rotvec(vec, vec, system->get_supercell(1).lattice_vector);
-
-            fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
+            index_with_cell.push_back(it.pairs[i].index);
+            index_with_cell.push_back(it.pairs[i].tran);
+            index_with_cell.push_back(it.pairs[i].cell_s);
+            atoms_s_now.emplace_back(it.atoms_s[i]);
+            relvecs_now[i - 1] = it.relvecs[i - 1];
+            relvecs_vel_now[i - 1] = it.relvecs_velocity[i - 1];
         }
 
-        nmulti = set_index_uniq.size();
-        fcs_tmp /= static_cast<double>(nmulti);
+        if ((index_now != index_old) || (relvecs_int_now != relvecs_int_old)) {
 
-        if (std::abs(fcs_tmp) > eps15) {
-            for (const auto &it2: set_index_uniq) {
+            if (index_old[0] != -1) {
 
-                pairs_vec.clear();
+                if (std::abs(fcs_tmp) > eps15) {
 
-                pairs_tmp.index = it2[0];
-                pairs_tmp.tran = 0;
-                pairs_tmp.cell_s = 0;
-                pairs_vec.push_back(pairs_tmp);
-                for (i = 1; i < norder - 1; ++i) {
-                    pairs_tmp.index = it2[3 * i - 2];
-                    pairs_tmp.tran = it2[3 * i - 1];
-                    pairs_tmp.cell_s = it2[3 * i];
+                    pairs_vec.clear();
+                    pairs_tmp.index = index_with_cell_old[0];
+                    pairs_tmp.tran = 0;
+                    pairs_tmp.cell_s = 0;
                     pairs_vec.push_back(pairs_tmp);
-                }
-                delta_fcs.emplace_back(fcs_tmp, pairs_vec);
-            }
-        }
-    } else { // if(mirror_image_mode != 0)
-        // new implementation
-        // calculate IFC renormalization separately for each mirror image combinations.
-        index_with_cell_old.clear();
-        const auto nelems = 3 * (norder - 2) + 1;
-        for (i = 0; i < nelems; ++i) index_with_cell_old.push_back(-1);
-
-        index_with_cell.clear();
-
-        for (const auto &it: fcs_aligned) {
-
-            index_with_cell.clear();
-
-            index_with_cell.push_back(it.pairs[0].index);
-
-            for (i = 1; i < norder - 1; ++i) {
-                index_with_cell.push_back(it.pairs[i].index);
-                index_with_cell.push_back(it.pairs[i].tran);
-                index_with_cell.push_back(it.pairs[i].cell_s);
-            }
-
-            if (index_with_cell != index_with_cell_old) {
-
-                if (index_with_cell_old[0] != -1) {
-
-                    if (std::abs(fcs_tmp) > eps15) {
-
-                        pairs_vec.clear();
-
-                        pairs_tmp.index = index_with_cell_old[0];
-                        pairs_tmp.tran = 0;
-                        pairs_tmp.cell_s = 0;
+                    for (i = 1; i < norder - 1; ++i) {
+                        pairs_tmp.index = index_with_cell_old[3 * i - 2];
+                        pairs_tmp.tran = index_with_cell_old[3 * i - 1];
+                        pairs_tmp.cell_s = index_with_cell_old[3 * i];
                         pairs_vec.push_back(pairs_tmp);
-                        for (i = 1; i < norder - 1; ++i) {
-                            pairs_tmp.index = index_with_cell_old[3 * i - 2];
-                            pairs_tmp.tran = index_with_cell_old[3 * i - 1];
-                            pairs_tmp.cell_s = index_with_cell_old[3 * i];
-                            pairs_vec.push_back(pairs_tmp);
-                        }
-                        delta_fcs.emplace_back(fcs_tmp, pairs_vec);
                     }
+                    delta_fcs.emplace_back(fcs_tmp,
+                                           pairs_vec,
+                                           atoms_s_old,
+                                           relvecs_old,
+                                           relvecs_vel_old);
                 }
-
-                fcs_tmp = 0.0;
-                index_with_cell_old.clear();
-                index_with_cell_old.reserve(index_with_cell.size());
-                std::copy(index_with_cell.begin(), index_with_cell.end(), std::back_inserter(index_with_cell_old));
             }
 
-            for (i = 0; i < 3; i++) {
-                vec_origin[i] = system->get_supercell(1).x_fractional(
-                        system->get_map_p2s(2)[it.pairs[0].index / 3][0], i);
-                for (j = 1; j < norder - 1; j++) {
-                    vec_origin[i] +=
-                            system->get_supercell(1).x_fractional(
-                                    system->get_map_p2s(2)[it.pairs[j].index / 3][it.pairs[j].tran], i)
-                            + xshift_s[it.pairs[j].cell_s][i];
-                }
-                vec_origin[i] /= static_cast<double>(norder - 1);
-            }
-
-            for (i = 0; i < 3; ++i) {
-                vec[i] = system->get_supercell(1).x_fractional(
-                        system->get_map_p2s(2)[it.pairs[norder - 1].index / 3][it.pairs[norder -
-                                                                                        1].tran],
-                        i)
-                         // - system->get_supercell(1).x_fractional[system->get_map_p2s(2)[it.pairs[0].index / 3][0]][i]
-                         - vec_origin[i]
-                         + xshift_s[it.pairs[norder - 1].cell_s][i];
-            }
-
-            rotvec(vec, vec, system->get_supercell(1).lattice_vector);
-
-            fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
+            fcs_tmp = 0.0;
+            index_old = index_now;
+            relvecs_int_old = relvecs_int_now;
+            atoms_s_old = atoms_s_now;
+            relvecs_old = relvecs_now;
+            relvecs_vel_old = relvecs_vel_now;
+            index_with_cell_old = index_with_cell;
         }
 
-        if (std::abs(fcs_tmp) > eps15) {
-
-            pairs_vec.clear();
-
-            pairs_tmp.index = index_with_cell[0];
-            pairs_tmp.tran = 0;
-            pairs_tmp.cell_s = 0;
-            pairs_vec.push_back(pairs_tmp);
-            for (i = 1; i < norder - 1; ++i) {
-                pairs_tmp.index = index_with_cell[3 * i - 2];
-                pairs_tmp.tran = index_with_cell[3 * i - 1];
-                pairs_tmp.cell_s = index_with_cell[3 * i];
-                pairs_vec.push_back(pairs_tmp);
-            }
-            delta_fcs.emplace_back(fcs_tmp, pairs_vec);
-        }
+        vec = convmat * it.relvecs_velocity[norder - 2];
+        fcs_tmp += it.fcs_val * vec[it.pairs[norder - 1].index % 3];
     }
 
-    fcs_aligned.clear();
-    set_index_uniq.clear();
+    if (std::abs(fcs_tmp) > eps15) {
+        pairs_vec.clear();
+        pairs_tmp.index = index_with_cell[0];
+        pairs_tmp.tran = 0;
+        pairs_tmp.cell_s = 0;
+        pairs_vec.push_back(pairs_tmp);
+        for (i = 1; i < norder - 1; ++i) {
+            pairs_tmp.index = index_with_cell[3 * i - 2];
+            pairs_tmp.tran = index_with_cell[3 * i - 1];
+            pairs_tmp.cell_s = index_with_cell[3 * i];
+            pairs_vec.push_back(pairs_tmp);
+        }
+        delta_fcs.emplace_back(fcs_tmp,
+                               pairs_vec,
+                               atoms_s_now,
+                               relvecs_now,
+                               relvecs_vel_now);
+    }
 }
-
-// only mode == 0 is implemented
-// This process breaks the permutation symmetry of the IFC.
-// void Gruneisen::impose_ASR_on_harmonic_IFC(std::vector<FcsArrayWithCell> &delta_fcs,
-//                            int mode)
-// {
-//     // should check if delta_fcs consists of harmonic IFCs?
-// 
-//     // change self-interaction
-//     if(mode == 0){
-// 
-//         int nat_base = system->nat_base;
-// 
-//         int i_ind1, i_tran1, i_ind2, i_tran2, iat1, xyz1, xyz2;
-//         double **phi;
-//         allocate(phi, nat_base, 9);
-// 
-//         // calculate correction
-//         for(auto &it: delta_fcs){
-//             i_ind1 = it.pairs[0].index;
-//             i_tran1 = it.pairs[0].tran;
-//             i_ind2 = it.pairs[1].index;
-//             iat1 = system->get_map_p2s(2)[i_ind1/3][i_tran1];
-//             xyz1 = i_ind1%3;
-//             xyz2 = i_ind2%3;
-// 
-//             phi[iat1][xyz1*3 + xyz2] += it.fcs_val;
-//         }
-// 
-//         // apply correction
-//         for(auto &it: delta_fcs){
-//             // if self-interaction
-//             if((it.pairs[0].index/3 == it.pairs[1].index/3) && 
-//                (it.pairs[0].tran == it.pairs[1].tran))
-//             {
-//                 i_ind1 = it.pairs[0].index;
-//                 i_tran1 = it.pairs[0].tran;
-//                 iat1 = system->get_map_p2s(2)[i_ind1/3][i_tran1];
-//                 xyz1 = i_ind1%3;
-//                 xyz2 = i_ind2%3;
-//                 it.fcs_val -= phi[iat1][xyz1*3 + xyz2];
-//             }
-//         }
-// 
-//     }
-// 
-//     return;
-// }
 
 
 void Gruneisen::write_new_fcsxml_all()

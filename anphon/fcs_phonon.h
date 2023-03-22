@@ -11,6 +11,7 @@
 #pragma once
 
 #include "pointers.h"
+#include "mathfunctions.h"
 #include <string>
 #include <vector>
 #include <set>
@@ -45,7 +46,7 @@ public:
 };
 
 struct AtomCellSuper {
-    unsigned int index;// flattened array of atom_s * 3 + coord
+    unsigned int index;// flattened array
     unsigned int tran;
     unsigned int cell_s;
 };
@@ -59,22 +60,56 @@ inline bool operator<(const AtomCellSuper &a,
 class FcsArrayWithCell {
 public:
     std::vector<AtomCellSuper> pairs;
-    std::vector<int> atoms_p;
-    std::vector<int> coords;
+    //std::vector<unsigned int> atoms_p; // atom index in the primitive cell (not used?)
+    std::vector<unsigned int> atoms_s; // atom index in the supercell
+    std::vector<unsigned int> coords; // xyz components
     double fcs_val;
-    std::vector<Eigen::Vector3d> relvecs;
+    std::vector<Eigen::Vector3d> relvecs; // For computing phase factor in exp
+    std::vector<Eigen::Vector3d> relvecs_velocity; // For computing group velocity matrix
 
     FcsArrayWithCell() {};
 
     FcsArrayWithCell(const double fcs_in,
-                     const std::vector<AtomCellSuper> &pairs_in)
-            : pairs(pairs_in), fcs_val(fcs_in) {};
+                     const std::vector<AtomCellSuper> &pairs_in,
+                     const std::vector<unsigned int> &atoms_s_in) : pairs(pairs_in),
+                                                           fcs_val(fcs_in),
+                                                           atoms_s(atoms_s_in)
+                    {
+                        coords.clear();
+                        for (const auto &it : pairs_in) {
+                            coords.push_back(it.index%3);
+                        }
+                    };
 
     FcsArrayWithCell(const double fcs_in,
                      const std::vector<AtomCellSuper> &pairs_in,
-                     const std::vector<Eigen::Vector3d> &relvecs_in) : pairs(pairs_in),
+                     const std::vector<unsigned int> &atoms_s_in,
+                     const std::vector<Eigen::Vector3d> &relvecs_vel_in) : pairs(pairs_in),
                                                                        fcs_val(fcs_in),
-                                                                       relvecs(relvecs_in) {};
+                                                                       atoms_s(atoms_s_in),
+                                                                       relvecs_velocity(relvecs_vel_in)
+                     {
+                         coords.clear();
+                         for (const auto &it : pairs_in) {
+                             coords.push_back(it.index%3);
+                         }
+                     };
+
+    FcsArrayWithCell(const double fcs_in,
+                     const std::vector<AtomCellSuper> &pairs_in,
+                     const std::vector<unsigned int> &atoms_s_in,
+                     const std::vector<Eigen::Vector3d> &relvecs_in,
+                     const std::vector<Eigen::Vector3d> &relvecs_vel_in) : pairs(pairs_in),
+                     fcs_val(fcs_in),
+                     atoms_s(atoms_s_in),
+                     relvecs(relvecs_in),
+                     relvecs_velocity(relvecs_vel_in)
+                     {
+                        coords.clear();
+                        for (const auto &it : pairs_in) {
+                            coords.push_back(it.index%3);
+                        }
+                     };
 
     bool operator<(const FcsArrayWithCell &obj) const
     {
@@ -94,6 +129,8 @@ public:
         return lexicographical_compare(index_a.begin(), index_a.end(),
                                        index_b.begin(), index_b.end());
     }
+
+
 
 
 };

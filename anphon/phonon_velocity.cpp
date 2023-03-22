@@ -77,7 +77,7 @@ void PhononVelocity::setup_velocity()
 void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStructure *kpoint_bs_in,
                                                              const Eigen::Matrix3d &lavec_p,
                                                              const Eigen::Matrix3d &rlavec_p,
-                                                             const std::vector<FcsClassExtent> &fc2_ext_in,
+                                                             const std::vector<FcsArrayWithCell> &fc2_in,
                                                              const std::vector<FcsClassExtent> &fc2_without_dipole,
                                                              double **phvel_out) const
 {
@@ -141,8 +141,7 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStr
             } else {
                 dynamical->eval_k(xk_shift[idiff],
                                   kpoint_bs_in->kvec_na[ik],
-                                  fc2_ext_in,
-                                  fcs_phonon->force_constant_with_cell[0],
+                                  fc2_in,
                                   omega_shift[idiff],
                                   evec_tmp, false);
             }
@@ -487,7 +486,6 @@ void PhononVelocity::phonon_vel_k(const double *xk_in,
             } else {
                 dynamical->eval_k(xk_shift[idiff],
                                   kvec_na_tmp[idiff],
-                                  fcs_phonon->fc2_ext,
                                   fcs_phonon->force_constant_with_cell[0],
                                   omega_shift[idiff],
                                   evec_tmp,

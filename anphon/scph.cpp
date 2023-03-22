@@ -1841,7 +1841,6 @@ void Scph::setup_eigvecs()
 
         dynamical->eval_k(kmesh_dense->xk[ik],
                           kmesh_dense->kvec_na[ik],
-                          fcs_phonon->fc2_ext,
                           fcs_phonon->force_constant_with_cell[0],
                           omega2_harmonic[ik],
                           evec_harmonic[ik], true);
@@ -2055,7 +2054,7 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
                                        mat_harmonic);
         } else {
             dynamical->calc_analytic_k(xk_dense[ik],
-                                       fcs_phonon->fc2_ext,
+                                       fcs_phonon->force_constant_with_cell[0],
                                        mat_harmonic);
         }
 
@@ -2322,7 +2321,7 @@ void Scph::calc_new_dymat_with_evec(std::complex<double> ***dymat_out,
 
         // Subtract harmonic contribution
         dynamical->calc_analytic_k(kmesh_coarse->xk[ik],
-                                   fcs_phonon->fc2_ext,
+                                   fcs_phonon->force_constant_with_cell[0],
                                    dymat_harmonic);
 
         for (is = 0; is < ns; ++is) {

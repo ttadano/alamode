@@ -123,7 +123,7 @@ void Dielec::run_dielec_calculation()
 
     for (auto i = 0; i < 3; ++i) xk[i] = 0.0;
 
-    dynamical->eval_k(xk, xk, fcs_phonon->fc2_ext, fcs_phonon->force_constant_with_cell[0],
+    dynamical->eval_k(xk, xk, fcs_phonon->force_constant_with_cell[0],
                       eval, evec, true);
 
     compute_dielectric_function(nomega, omega_grid,
@@ -283,12 +283,12 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
 
     if (!dynamical->get_projection_directions().empty()) {
         dynamical->project_degenerate_eigenvectors(system->get_primcell().lattice_vector,
-                                                   fcs_phonon->fc2_ext,
+                                                   fcs_phonon->force_constant_with_cell[0],
                                                    &xk[0],
                                                    dynamical->get_projection_directions(),
                                                    evec);
     } else {
-        dynamical->eval_k(&xk[0], &xk[0], fcs_phonon->fc2_ext, fcs_phonon->force_constant_with_cell[0],
+        dynamical->eval_k(&xk[0], &xk[0], fcs_phonon->force_constant_with_cell[0],
                           eval, evec, true);
     }
 

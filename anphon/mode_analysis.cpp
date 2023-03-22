@@ -1144,7 +1144,6 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         for (j = 0; j < nk_plane; ++j) {
             dynamical->eval_k(xk_plane[j],
                               kvec_plane[j],
-                              fcs_phonon->fc2_ext,
                               fcs_phonon->force_constant_with_cell[0],
                               eval[j],
                               evec[0],
@@ -1174,7 +1173,6 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
             dynamical->eval_k(xk1,
                               kvec,
-                              fcs_phonon->fc2_ext,
                               fcs_phonon->force_constant_with_cell[0],
                               eval_tmp,
                               evec[0],
@@ -1206,7 +1204,6 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
             for (k = 0; k < nk_plane; ++k) {
                 dynamical->eval_k(xk_plane2[k],
                                   kvec_plane[k],
-                                  fcs_phonon->fc2_ext,
                                   fcs_phonon->force_constant_with_cell[0],
                                   eval2[k],
                                   evec[0],
@@ -1427,7 +1424,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         if (norm > eps) for (j = 0; j < 3; ++j) kvec[j] /= norm;
         for (j = 0; j < 3; ++j) xk1[j] = dynamical->fold(xk1[j]);
 
-        dynamical->eval_k(xk1, kvec, fcs_phonon->fc2_ext, fcs_phonon->force_constant_with_cell[0],
+        dynamical->eval_k(xk1, kvec, fcs_phonon->force_constant_with_cell[0],
                           eval[0], evec[0], true);
         for (j = 0; j < ns; ++j) eval[0][j] = dynamical->freq(eval[0][j]);
 
@@ -1519,7 +1516,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                         if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;
 
-                        dynamical->eval_k(xk_sym, kvec, fcs_phonon->fc2_ext, fcs_phonon->force_constant_with_cell[0],
+                        dynamical->eval_k(xk_sym, kvec, fcs_phonon->force_constant_with_cell[0],
                                           eval[1], evec[1], true);
 
                         for (l = 0; l < 3; ++l) kvec[l] = xk3[l];
@@ -1528,7 +1525,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
 
                         if (norm > eps) for (l = 0; l < 3; ++l) kvec[l] /= norm;
 
-                        dynamical->eval_k(xk3, kvec, fcs_phonon->fc2_ext, fcs_phonon->force_constant_with_cell[0],
+                        dynamical->eval_k(xk3, kvec, fcs_phonon->force_constant_with_cell[0],
                                           eval[2], evec[2], true);
 
                         for (l = 0; l < ns; ++l) {

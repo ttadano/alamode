@@ -361,7 +361,6 @@ double Dynamical::distance(double *x1,
 
 void Dynamical::eval_k(const double *xk_in,
                        const double *kvec_in,
-                       const std::vector<FcsClassExtent> &fc2_ext,
                        const std::vector<FcsArrayWithCell> &fc2,
                        double *eval_out,
                        std::complex<double> **evec_out,
@@ -374,7 +373,6 @@ void Dynamical::eval_k(const double *xk_in,
 
     allocate(dymat_k, neval, neval);
 
-    //calc_analytic_k(xk_in, fc2_ext, dymat_k);
     calc_analytic_k(xk_in, fc2, dymat_k);
 
     if (nonanalytic) {
@@ -871,7 +869,6 @@ void Dynamical::diagonalize_dynamical_all()
         get_eigenvalues_dymat(nk,
                               kpoint->kpoint_general->xk,
                               kpoint->kpoint_general->kvec_na,
-                              fcs_phonon->fc2_ext,
                               fcs_phonon->force_constant_with_cell[0],
                               ewald->fc2_without_dipole,
                               eigenvectors,
@@ -883,7 +880,7 @@ void Dynamical::diagonalize_dynamical_all()
 
                 for (auto ik = 0; ik < nk; ++ik) {
                     project_degenerate_eigenvectors(system->get_primcell().lattice_vector,
-                                                    fcs_phonon->fc2_ext,
+                                                    fcs_phonon->force_constant_with_cell[0],
                                                     kpoint->kpoint_general->xk[ik],
                                                     projection_directions,
                                                     evec_tmp[ik]);
@@ -914,7 +911,6 @@ void Dynamical::diagonalize_dynamical_all()
         get_eigenvalues_dymat(nk,
                               kpoint->kpoint_bs->xk,
                               kpoint->kpoint_bs->kvec_na,
-                              fcs_phonon->fc2_ext,
                               fcs_phonon->force_constant_with_cell[0],
                               ewald->fc2_without_dipole,
                               eigenvectors,
@@ -925,7 +921,7 @@ void Dynamical::diagonalize_dynamical_all()
             if (mympi->my_rank == 0) {
                 for (auto ik = 0; ik < nk; ++ik) {
                     project_degenerate_eigenvectors(system->get_primcell().lattice_vector,
-                                                    fcs_phonon->fc2_ext,
+                                                    fcs_phonon->force_constant_with_cell[0],
                                                     kpoint->kpoint_bs->xk[ik],
                                                     projection_directions,
                                                     evec_tmp[ik]);
@@ -957,7 +953,6 @@ void Dynamical::diagonalize_dynamical_all()
         get_eigenvalues_dymat(nk,
                               dos->kmesh_dos->xk,
                               dos->kmesh_dos->kvec_na,
-                              fcs_phonon->fc2_ext,
                               fcs_phonon->force_constant_with_cell[0],
                               ewald->fc2_without_dipole,
                               eigenvectors,
@@ -968,7 +963,7 @@ void Dynamical::diagonalize_dynamical_all()
             if (mympi->my_rank == 0) {
                 for (auto ik = 0; ik < nk; ++ik) {
                     project_degenerate_eigenvectors(system->get_primcell().lattice_vector,
-                                                    fcs_phonon->fc2_ext,
+                                                    fcs_phonon->force_constant_with_cell[0],
                                                     dos->kmesh_dos->xk[ik],
                                                     projection_directions,
                                                     evec_tmp[ik]);
@@ -1007,7 +1002,6 @@ void Dynamical::diagonalize_dynamical_all()
 void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
                                       const double *const *xk_in,
                                       const double *const *kvec_na_in,
-                                      const std::vector<FcsClassExtent> &fc2_ext_in,
                                       const std::vector<FcsArrayWithCell> &fc2,
                                       const std::vector<FcsClassExtent> &fc2_without_dipole_in,
                                       const bool require_evec,
@@ -1034,7 +1028,6 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
         } else {
             eval_k(&xk_in[ik][0],
                    &kvec_na_in[ik][0],
-                   fc2_ext_in,
                    fc2,
                    eval_ret[ik],
                    evec_ret[ik],
@@ -1107,7 +1100,7 @@ void Dynamical::modify_eigenvectors() const
 }
 
 void Dynamical::project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
-                                                const std::vector<FcsClassExtent> &fc2_ext_in,
+                                                const std::vector<FcsArrayWithCell> &fc2_in,
                                                 double *xk_in,
                                                 const std::vector<std::vector<double>> &project_directions,
                                                 std::complex<double> **evec_out) const
@@ -1147,7 +1140,7 @@ void Dynamical::project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
 
     allocate(dymat_tmp, ns, ns);
 
-    calc_analytic_k(xk_in, fc2_ext_in, dymat_tmp);
+    calc_analytic_k(xk_in, fc2_in, dymat_tmp);
 
     if (std::sqrt(std::pow(std::fmod(xk_in[0], 0.5), 2.0)
                   + std::pow(std::fmod(xk_in[1], 0.5), 2.0)
@@ -1331,8 +1324,8 @@ int Dynamical::transform_eigenvectors(double *xk_in,
 
     allocate(dymat_dq, ns, ns);
     allocate(dymat_dq_minus, ns, ns);
-    calc_analytic_k(xk_shift, fcs_phonon->fc2_ext, dymat_dq);
-    calc_analytic_k(xk_shift_minus, fcs_phonon->fc2_ext, dymat_dq_minus);
+    calc_analytic_k(xk_shift, fcs_phonon->force_constant_with_cell[0], dymat_dq);
+    calc_analytic_k(xk_shift_minus, fcs_phonon->force_constant_with_cell[0], dymat_dq_minus);
 
     for (auto is = 0; is < ns; ++is) {
         for (auto js = 0; js < ns; ++js) {

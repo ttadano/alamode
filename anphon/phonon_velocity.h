@@ -48,7 +48,7 @@ public:
     void get_phonon_group_velocity_bandstructure(const KpointBandStructure *kpoint_bs_in,
                                                  const Eigen::Matrix3d &lavec_p,
                                                  const Eigen::Matrix3d &rlavec_p,
-                                                 const std::vector<FcsClassExtent> &fc2_ext_in,
+                                                 const std::vector<FcsArrayWithCell> &fc2_in,
                                                  const std::vector<FcsClassExtent> &fc2_without_dipole,
                                                  double **phvel_out) const;
 

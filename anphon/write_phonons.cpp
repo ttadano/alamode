@@ -781,7 +781,7 @@ void Writes::write_phonon_vel() const
     phonon_velocity->get_phonon_group_velocity_bandstructure(kpoint->kpoint_bs,
                                                              system->get_primcell().lattice_vector,
                                                              system->get_primcell().reciprocal_lattice_vector,
-                                                             fcs_phonon->fc2_ext,
+                                                             fcs_phonon->force_constant_with_cell[0],
                                                              ewald->fc2_without_dipole,
                                                              phvel_bs);
 
@@ -2226,7 +2226,7 @@ void Writes::write_normal_mode_animation(const double xk_in[3],
 
     // Get eigenvalues and eigenvectors at xk
 
-    dynamical->eval_k(xk, kvec, fcs_phonon->fc2_ext, fcs_phonon->force_constant_with_cell[0],
+    dynamical->eval_k(xk, kvec, fcs_phonon->force_constant_with_cell[0],
                       eval, evec, true);
 
     for (i = 0; i < ns; ++i) {

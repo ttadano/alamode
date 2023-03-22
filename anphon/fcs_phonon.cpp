@@ -144,8 +144,8 @@ void Fcs_phonon::setup(std::string mode)
 void Fcs_phonon::replicate_force_constants(const int maxorder_in)
 {
     std::vector<FcsArrayWithCell> force_constant_replicate;
-    std::vector<Eigen::Vector3d> relvecs;
-    Eigen::Vector3d relvec_tmp;
+    std::vector<Eigen::Vector3d> relvecs, relvecs_vel;
+    Eigen::Vector3d relvec_tmp, relvec_tmp2;
     std::vector<std::vector<unsigned int>> map_trans;
     Eigen::Vector3d xshift, x0, x_shifted;
     Eigen::Vector3d xdiff;
@@ -187,6 +187,7 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
         std::vector<AtomCellSuper> pairs_tmp(order + 2);
         std::vector<unsigned int> atom_super(order + 2), atom_super_tran(order + 2);
         std::vector<unsigned int> atom_new_prim(order + 2), atom_new_super(order + 2);
+        std::vector<unsigned int> tran_new(order + 2);
 
         for (const auto &it: force_constant_with_cell[order]) {
             for (auto i = 0; i < order + 2; ++i) {
@@ -205,18 +206,24 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
                 for (auto i = 0; i < order + 2; ++i) {
                     atom_new_prim[i] = system->get_map_s2p(order)[atom_super_tran[i]].atom_num;
                     pairs_tmp[i].index = 3 * atom_new_prim[i] + it.pairs[i].index % 3;
+                    pairs_tmp[i].tran = system->get_map_s2p(order)[atom_super_tran[i]].tran_num;
+                    pairs_tmp[i].cell_s = it.pairs[i].cell_s;
                 }
 
                 relvecs.clear();
+                relvecs_vel.clear();
                 for (auto i = 0; i < order + 1; ++i) {
                     for (auto j = 0; j < 3; ++j) {
-                        relvec_tmp[j] = it.relvecs[i][j] + cell_tmp.x_cartesian(atom_super_tran[0], j)
-                                        - cell_tmp.x_cartesian(system->get_map_p2s(order)[atom_new_prim[i + 1]][0], j);
+                        relvec_tmp[j] = it.relvecs_velocity[i][j] + cell_tmp.x_cartesian(atom_super_tran[0], j)
+                                        - cell_tmp.x_cartesian(system->get_map_p2s(order)[atom_new_prim[i + 1]][0],j);
+                        relvec_tmp2[j] = it.relvecs_velocity[i][j];
                     }
                     relvec_tmp = system->get_primcell().lattice_vector.inverse() * relvec_tmp;
+                    relvec_tmp2 = system->get_primcell().lattice_vector.inverse() * relvec_tmp2;
                     relvecs.emplace_back(relvec_tmp);
+                    relvecs_vel.emplace_back(relvec_tmp2);
                 }
-                force_constant_replicate.emplace_back(it.fcs_val, pairs_tmp, relvecs);
+                force_constant_replicate.emplace_back(it.fcs_val, pairs_tmp, atom_super_tran, relvecs, relvecs_vel);
             }
         }
 
@@ -361,6 +368,7 @@ void Fcs_phonon::load_fcs_xml(const std::string fname_fcs,
 
     Eigen::Vector3d relvec_tmp;
     std::vector<int> atoms_prim_tmp, coords_tmp;
+    std::vector<unsigned int> atoms_s_tmp;
 
     const auto xf_image = dynamical->get_xrs_image();
 
@@ -423,6 +431,8 @@ void Fcs_phonon::load_fcs_xml(const std::string fname_fcs,
                     if (std::abs(fcs_val) > eps) {
                         do {
                             ivec_copy.clear();
+                            atoms_s_tmp.clear();
+
                             for (auto i = 0; i < ivec_with_cell.size(); ++i) {
                                 atmn = ivec_with_cell[i].index / 3;
                                 xyz = ivec_with_cell[i].index % 3;
@@ -430,8 +440,9 @@ void Fcs_phonon::load_fcs_xml(const std::string fname_fcs,
                                 ivec_tmp.cell_s = ivec_with_cell[i].cell_s;
                                 ivec_tmp.tran = map_tmp.to_true_primitive[atmn].tran_num;
                                 ivec_copy.push_back(ivec_tmp);
+                                atoms_s_tmp.emplace_back(atmn);
                             }
-                            fcs_out.emplace_back(fcs_val, ivec_copy);
+                            fcs_out.emplace_back(fcs_val, ivec_copy, atoms_s_tmp);
                         } while (std::next_permutation(ivec_with_cell.begin() + 1, ivec_with_cell.end()));
                     }
                 }
@@ -449,7 +460,7 @@ void Fcs_phonon::load_fcs_xml(const std::string fname_fcs,
             relvec_tmp = system->get_supercell(order).lattice_vector * relvec_tmp;
             relvecs.emplace_back(relvec_tmp);
         }
-        it.relvecs = relvecs;
+        it.relvecs_velocity = relvecs;
     }
 }
 
@@ -477,6 +488,7 @@ void Fcs_phonon::parse_fcs_from_h5(const std::string fname_fcs,
     AtomCellSuper ivec_tmp{};
     std::vector<AtomCellSuper> ivec_with_cell, ivec_copy;
     std::vector<Eigen::Vector3d> relvecs_tmp;
+    std::vector<unsigned int> atoms_s_tmp;
 
     struct IndexAndRelvecs {
         unsigned int index_super;
@@ -514,14 +526,17 @@ void Fcs_phonon::parse_fcs_from_h5(const std::string fname_fcs,
         do {
             ivec_copy.clear();
             relvecs_tmp.clear();
+            atoms_s_tmp.clear();
+
             for (auto j = 0; j < vec_index.size(); ++j) {
                 ivec_tmp.index = vec_index[j].index_prim;
                 ivec_tmp.cell_s = 0;
                 ivec_tmp.tran = 0;
                 ivec_copy.push_back(ivec_tmp);
                 relvecs_tmp.emplace_back(vec_index[j].relvec);
+                atoms_s_tmp.emplace_back(vec_index[j].index_super / 3);
             }
-            fcs_out.emplace_back(fcs_values[i], ivec_copy, relvecs_tmp);
+            fcs_out.emplace_back(fcs_values[i], ivec_copy, atoms_s_tmp,relvecs_tmp);
         } while (std::next_permutation(vec_index.begin() + 1, vec_index.end(),
                                        [](const IndexAndRelvecs &a, const IndexAndRelvecs &b)
                                        {return a.index_super < b.index_super;}));
@@ -684,19 +699,24 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N) const
 
     AtomCellSuper ivec_tmp;
     std::vector<AtomCellSuper> ivec_array;
+    std::vector<unsigned int> atoms_s_tmp;
 
-    std::vector<Eigen::Vector3d> relvecs;
+    std::vector<Eigen::Vector3d> relvecs_vel;
     Eigen::Vector3d relvec_tmp;
 
     for (unsigned int i = 0; i < N; ++i) {
+
+//        if (force_constant_with_cell[i].empty()) continue;
 
         int len = force_constant_with_cell[i].size();
         int nelem = i + 2;
 
         MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+        if (len == 0) continue;
+
         allocate(fcs_tmp, len);
-        allocate(ind, len, nelem, 3);
+        allocate(ind, len, nelem, 4);
         allocate(relative_vector_tmp, len, nelem - 1, 3);
 
         if (mympi->my_rank == 0) {
@@ -706,17 +726,18 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N) const
                     ind[j][k][0] = force_constant_with_cell[i][j].pairs[k].index;
                     ind[j][k][1] = force_constant_with_cell[i][j].pairs[k].tran;
                     ind[j][k][2] = force_constant_with_cell[i][j].pairs[k].cell_s;
+                    ind[j][k][3] = force_constant_with_cell[i][j].atoms_s[k];
                 }
                 for (k = 0; k < nelem - 1; ++k) {
                     for (auto l = 0; l < 3; ++l) {
-                        relative_vector_tmp[j][k][l] = force_constant_with_cell[i][j].relvecs[k][l];
+                        relative_vector_tmp[j][k][l] = force_constant_with_cell[i][j].relvecs_velocity[k][l];
                     }
                 }
             }
         }
 
         MPI_Bcast(&fcs_tmp[0], len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&ind[0][0][0], 3 * nelem * len, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&ind[0][0][0], 4 * nelem * len, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
         MPI_Bcast(&relative_vector_tmp[0][0][0], 3 * len * (nelem - 1), MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         if (mympi->my_rank > 0) {
@@ -725,27 +746,26 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N) const
             for (j = 0; j < len; ++j) {
 
                 ivec_array.clear();
-
+                atoms_s_tmp.clear();
                 for (k = 0; k < nelem; ++k) {
                     ivec_tmp.index = ind[j][k][0];
                     ivec_tmp.tran = ind[j][k][1];
                     ivec_tmp.cell_s = ind[j][k][2];
-
                     ivec_array.push_back(ivec_tmp);
+                    atoms_s_tmp.emplace_back(ind[j][k][3]);
                 }
 
-                relvecs.clear();
-
+                relvecs_vel.clear();
                 for (k = 0; k < nelem - 1; ++k) {
                     for (auto l = 0; l < 3; ++l) {
                         relvec_tmp[l] = relative_vector_tmp[j][k][l];
                     }
-                    relvecs.emplace_back(relvec_tmp);
+                    relvecs_vel.emplace_back(relvec_tmp);
                 }
-
                 force_constant_with_cell[i].emplace_back(fcs_tmp[j],
                                                          ivec_array,
-                                                         relvecs);
+                                                         atoms_s_tmp,
+                                                         relvecs_vel);
             }
         }
 

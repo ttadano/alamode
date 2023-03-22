@@ -17,17 +17,8 @@
 #include "fcs_phonon.h"
 
 namespace PHON_NS {
-class FcsAlignedForGruneisen {
+class FcsAlignedForGruneisen : public FcsArrayWithCell {
 public:
-    std::vector<AtomCellSuper> pairs;
-    double fcs_val;
-
-    FcsAlignedForGruneisen() {};
-
-    FcsAlignedForGruneisen(const double fcs_in,
-                           const std::vector<AtomCellSuper> &pairs_in)
-            : pairs(pairs_in), fcs_val(fcs_in) {};
-
     bool operator<(const FcsAlignedForGruneisen &obj) const
     {
         std::vector<unsigned int> array_a, array_b;
@@ -52,7 +43,45 @@ public:
         return std::lexicographical_compare(array_a.begin(), array_a.end(),
                                             array_b.begin(), array_b.end());
     }
+
 };
+
+struct sort_by_heading_indices {
+    inline bool operator()(const FcsArrayWithCell &a, FcsArrayWithCell &b)
+    {
+        std::vector<int> array_a, array_b;
+        array_a.clear();
+        array_b.clear();
+        int len = a.pairs.size();
+        for (int i = 0; i < len - 1; ++i) {
+//            array_a.push_back(3 * a.atoms_s[i] + a.coords[i]);
+//            array_b.push_back(3 * b.atoms_s[i] + b.coords[i]);
+            array_a.push_back(a.pairs[i].index);
+            array_b.push_back(b.pairs[i].index);
+        }
+        // The components of relvec should be integers,
+        // so let's convert their types into int for sort.
+        for (int i = 0; i < len - 2; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                array_a.push_back(nint(a.relvecs[i][j]));
+                array_b.push_back(nint(b.relvecs[i][j]));
+            }
+        }
+        // Register the last index
+//        array_a.push_back(3 * a.atoms_s[len - 1] + a.coords[len - 1]);
+//        array_b.push_back(3 * b.atoms_s[len - 1] + b.coords[len - 1]) ;
+        array_a.push_back(a.pairs[len - 1].index);
+        array_b.push_back(b.pairs[len - 1].index);
+        for (auto j = 0; j < 3; ++j) {
+            array_a.push_back(nint(a.relvecs[len - 2][j]));
+            array_b.push_back(nint(b.relvecs[len - 2][j]));
+        }
+
+        return std::lexicographical_compare(array_a.begin(), array_a.end(),
+                                            array_b.begin(), array_b.end());
+    }
+};
+
 
 //inline bool operator<(const FcsAlignedForGruneisen &a, const FcsAlignedForGruneisen &b)
 //{
@@ -121,6 +150,9 @@ private:
 
     void calc_dfc2_reciprocal(std::complex<double> **,
                               const double *);
+
+    void calc_dfc2_reciprocal2(std::complex<double> **,
+                               const double *);
 
     void write_new_fcsxml(const std::string &,
                           double);
