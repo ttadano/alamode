@@ -362,7 +362,7 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
     for (auto i = 0; i < nk_loc; ++i) {
         auto knum = klist_proc[i];
         velocity_matrix_analytic(dos->kmesh_dos->xk[knum],
-                                 fcs_phonon->fc2_ext,
+                                 fcs_phonon->force_constant_with_cell[0],
                                  dos->dymat_dos->get_eigenvalues()[knum],
                                  dos->dymat_dos->get_eigenvectors()[knum],
                                  velmat_loc[i]);
@@ -382,30 +382,29 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
                 }
             }
         }
-        /*
-        std::cout << "k = " << i << std::endl;
-        std::cout << kpoint->xk[i][0] << "  " << kpoint->xk[i][1] << " " << kpoint->xk[i][2] << std::endl;
-        for (auto mu = 0; mu < 3; ++mu) {
-            std::cout << "mu = " << mu << std::endl;
 
-            std::cout << "Diagonal:\n";
-
-            for (j = 0; j < ns; ++j) {
-                std::cout << std::setw(20) << vel[i][j][mu] << std::endl;
-            }
-
-            std::cout << "Full:\n";
-            for (j = 0; j < ns; ++j) {
-                for (k = 0; k < ns; ++k) {
-                    std::cout << std::setw(20) << velmat[i][j][k][mu].real() 
-                                << std::setw(15) << velmat[i][j][k][mu].imag();
-                }
-                std::cout << std::endl;
-            }
-            std::cout << std::endl;
-        }
-        std::cout << std::endl;
-        */
+//        std::cout << "k = " << i << std::endl;
+//        std::cout << dos->kmesh_dos->xk[i][0] << "  " << dos->kmesh_dos->xk[i][1] << " " << dos->kmesh_dos->xk[i][2] << std::endl;
+//        for (auto mu = 0; mu < 3; ++mu) {
+//            std::cout << "mu = " << mu << std::endl;
+//
+//            std::cout << "Diagonal:\n";
+//
+//            for (auto j = 0; j < ns; ++j) {
+//                std::cout << std::setw(20) << velmat_loc[i][j][j][mu] << std::endl;
+//            }
+//
+//            std::cout << "Full:\n";
+//            for (auto j = 0; j < ns; ++j) {
+//                for (auto k = 0; k < ns; ++k) {
+//                    std::cout << std::setw(20) << velmat_loc[i][j][k][mu].real()
+//                                << std::setw(15) << velmat_loc[i][j][k][mu].imag();
+//                }
+//                std::cout << std::endl;
+//            }
+//            std::cout << std::endl;
+//        }
+//        std::cout << std::endl;
     }
 
     MPI_Gatherv(&velmat_loc[0][0][0][0], sendcount[mympi->my_rank], MPI_COMPLEX16,
@@ -782,8 +781,9 @@ void PhononVelocity::diagonalize_hermite_mat(const int n,
     deallocate(mat_1D);
 }
 
+
 void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
-                                              const std::vector<FcsClassExtent> &fc2_in,
+                                              const std::vector<FcsArrayWithCell> &fc2_in,
                                               const double *omega_in,
                                               std::complex<double> **evec_in,
                                               std::complex<double> ***velmat_out) const
@@ -797,7 +797,6 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
     const auto nmode = dynamical->neval;
 
     double vec[3], vec2[3];
-    const std::complex<double> im(0.0, 1.0);
     std::complex<double> ***ddymat;
 
     allocate(ddymat, nmode, nmode, 3);
@@ -811,36 +810,18 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
         }
     }
 
+    const auto invsqrt_mass = system->get_invsqrt_mass();
+
     for (const auto &it: fc2_in) {
+        const auto phase = tpi * (it.relvecs[0][0] * xk_in[0]
+                                  + it.relvecs[0][1] * xk_in[1]
+                                  + it.relvecs[0][2] * xk_in[2]);
 
-        const auto atm1_p = it.atm1;
-        const auto atm2_s = it.atm2;
-        const auto xyz1 = it.xyz1;
-        const auto xyz2 = it.xyz2;
-        const auto icell = it.cell_s;
-
-        const auto atm1_s = system->get_map_p2s(0)[atm1_p][0];
-        const auto atm2_p = system->get_map_s2p(0)[atm2_s].atom_num;
-
-        for (i = 0; i < 3; ++i) {
-            vec[i] = system->get_supercell(0).x_fractional(atm2_s, i) + xshift_s[icell][i]
-                     - system->get_supercell(0).x_fractional(system->get_map_p2s(0)[atm2_p][0], i);
-            vec2[i] = system->get_supercell(0).x_fractional(atm2_s, i) + xshift_s[icell][i]
-                      - system->get_supercell(0).x_fractional(atm1_s, i);
-        }
-
-        rotvec(vec, vec, system->get_supercell(0).lattice_vector);
-        rotvec(vec, vec, system->get_primcell().reciprocal_lattice_vector);
-        rotvec(vec2, vec2, system->get_supercell(0).lattice_vector);
-        rotvec(vec2, vec2, system->get_primcell().reciprocal_lattice_vector);
-
-        auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
-
-        // vec2 or vec??
         for (k = 0; k < 3; ++k) {
-            ddymat[3 * atm1_p + xyz1][3 * atm2_p + xyz2][k]
-                    += it.fcs_val * std::exp(im * phase) * vec2[k] / std::sqrt(
-                    system->get_mass_super()[atm1_s] * system->get_mass_super()[atm2_s]);
+            ddymat[it.pairs[0].index][it.pairs[1].index][k]
+                    += it.fcs_val * std::exp(im * phase) * tpi * it.relvecs_velocity[0][k]
+                       * invsqrt_mass[it.pairs[0].index / 3]
+                       * invsqrt_mass[it.pairs[1].index / 3];
         }
     }
 

@@ -223,7 +223,11 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
                     relvecs.emplace_back(relvec_tmp);
                     relvecs_vel.emplace_back(relvec_tmp2);
                 }
-                force_constant_replicate.emplace_back(it.fcs_val, pairs_tmp, atom_super_tran, relvecs, relvecs_vel);
+                force_constant_replicate.emplace_back(it.fcs_val,
+                                                      pairs_tmp,
+                                                      atom_super_tran,
+                                                      relvecs,
+                                                      relvecs_vel);
             }
         }
 

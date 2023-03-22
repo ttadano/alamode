@@ -146,9 +146,7 @@ void Gruneisen::calc_gruneisen()
 
         for (auto ik = 0; ik < nk; ++ik) {
 
-//            calc_dfc2_reciprocal(dfc2_reciprocal, xk[ik]);
-            calc_dfc2_reciprocal2(dfc2_reciprocal, xk[ik]);
-
+            calc_dfc2_reciprocal(dfc2_reciprocal, xk[ik]);
 
             for (auto is = 0; is < ns; ++is) {
 
@@ -220,55 +218,6 @@ void Gruneisen::calc_gruneisen()
 }
 
 void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
-                                     const double *xk_in)
-{
-    unsigned int i;
-    const auto ns = dynamical->neval;
-
-    double vec[3];
-
-    const std::complex<double> im(0.0, 1.0);
-
-    for (i = 0; i < ns; ++i) {
-        for (unsigned int j = 0; j < ns; ++j) {
-            dphi2[i][j] = std::complex<double>(0.0, 0.0);
-        }
-    }
-
-    for (const auto &it: delta_fc2) {
-
-        const auto atm1 = it.pairs[0].index / 3;
-        const auto xyz1 = it.pairs[0].index % 3;
-        const auto atm2 = it.pairs[1].index / 3;
-        const auto xyz2 = it.pairs[1].index % 3;
-
-        const auto tran = it.pairs[1].tran;
-        const auto cell_s = it.pairs[1].cell_s;
-
-        const auto atm1_s = system->get_map_p2s(2)[atm1][0];
-        const auto atm2_s = system->get_map_p2s(2)[atm2][tran];
-
-        for (i = 0; i < 3; ++i) {
-            vec[i] = system->get_supercell(1).x_fractional(atm2_s, i) + xshift_s[cell_s][i]
-                     - system->get_supercell(1).x_fractional(system->get_map_p2s(2)[atm2][0], i);
-        }
-
-        rotvec(vec, vec, system->get_supercell(1).lattice_vector);
-        rotvec(vec, vec, system->get_primcell().reciprocal_lattice_vector);
-
-        double phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
-
-//        dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2]
-//                += it.fcs_val * std::exp(im * phase)
-//                   / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
-
-        dphi2[3 * atm1 + xyz1][3 * atm2 + xyz2]
-                += it.fcs_val * std::exp(im * phase)
-                   / std::sqrt(system->get_mass_prim()[atm1] * system->get_mass_prim()[atm2]);
-    }
-}
-
-void Gruneisen::calc_dfc2_reciprocal2(std::complex<double> **dphi2,
                                       const double *xk_in)
 {
     const auto ns = dynamical->neval;

@@ -53,7 +53,7 @@ public:
                                                  double **phvel_out) const;
 
     void velocity_matrix_analytic(const double *xk_in,
-                                  const std::vector<FcsClassExtent> &fc2_in,
+                                  const std::vector<FcsArrayWithCell> &fc2_in,
                                   const double *omega_in,
                                   std::complex<double> **evec_in,
                                   std::complex<double> ***velmat_out) const;
