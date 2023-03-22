@@ -62,6 +62,9 @@ void System::setup()
 {
     MPI_Bcast(&load_primitive_from_file, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(lavec_p_input.data(), 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     load_system_info_from_file();
     update_primitive_lattice();
@@ -72,7 +75,10 @@ void System::setup()
             allocate(mass_kd, nkd_tmp);
             set_mass_elem_from_database(nkd_tmp, symbol_kd, mass_kd);
         }
+    } else {
+        allocate(mass_kd, symbol_kd.size());
     }
+    MPI_Bcast(&mass_kd[0], symbol_kd.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
         print_structure_information_stdout();
@@ -92,9 +98,6 @@ void System::setup()
         invsqrt_mass_p[i] = 1.0 / std::sqrt(mass_prim[i]);
     }
 
-    MPI_Bcast(&Tmin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&Tmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&dT, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     generate_mapping_tables();
 }
 

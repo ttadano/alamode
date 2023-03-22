@@ -65,8 +65,9 @@ void Fcs_phonon::deallocate_variables()
 void Fcs_phonon::setup(std::string mode)
 {
     if (mympi->my_rank == 0) {
-        std::cout << " Force constant" << std::endl;
-        std::cout << " ==============" << std::endl << std::endl;
+        std::cout << " =================\n";
+        std::cout << "  Force Constants \n";
+        std::cout << " =================\n\n";
     }
 
     MPI_Bcast(&anharmonic_core->quartic_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -290,6 +291,8 @@ void Fcs_phonon::load_fcs_from_file(const int maxorder_in) const
 
         }
     }
+
+    std::cout << "done.\n\n";
 }
 
 
