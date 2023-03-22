@@ -111,7 +111,7 @@ private:
                            const int) const;
 
     void calc_dfc2_reciprocal(std::complex<double> **,
-                               const double *);
+                              const double *);
 
     void write_new_fcsxml(const std::string &,
                           double);

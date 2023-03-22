@@ -218,7 +218,7 @@ void Gruneisen::calc_gruneisen()
 }
 
 void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
-                                      const double *xk_in)
+                                     const double *xk_in)
 {
     const auto ns = dynamical->neval;
     for (auto i = 0; i < ns; ++i) {

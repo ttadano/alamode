@@ -72,44 +72,44 @@ public:
     FcsArrayWithCell(const double fcs_in,
                      const std::vector<AtomCellSuper> &pairs_in,
                      const std::vector<unsigned int> &atoms_s_in) : pairs(pairs_in),
-                                                           fcs_val(fcs_in),
-                                                           atoms_s(atoms_s_in)
-                    {
-                        coords.clear();
-                        for (const auto &it : pairs_in) {
-                            coords.push_back(it.index%3);
-                        }
-                    };
+                                                                    fcs_val(fcs_in),
+                                                                    atoms_s(atoms_s_in)
+    {
+        coords.clear();
+        for (const auto &it: pairs_in) {
+            coords.push_back(it.index % 3);
+        }
+    };
 
     FcsArrayWithCell(const double fcs_in,
                      const std::vector<AtomCellSuper> &pairs_in,
                      const std::vector<unsigned int> &atoms_s_in,
                      const std::vector<Eigen::Vector3d> &relvecs_vel_in) : pairs(pairs_in),
-                                                                       fcs_val(fcs_in),
-                                                                       atoms_s(atoms_s_in),
-                                                                       relvecs_velocity(relvecs_vel_in)
-                     {
-                         coords.clear();
-                         for (const auto &it : pairs_in) {
-                             coords.push_back(it.index%3);
-                         }
-                     };
+                                                                           fcs_val(fcs_in),
+                                                                           atoms_s(atoms_s_in),
+                                                                           relvecs_velocity(relvecs_vel_in)
+    {
+        coords.clear();
+        for (const auto &it: pairs_in) {
+            coords.push_back(it.index % 3);
+        }
+    };
 
     FcsArrayWithCell(const double fcs_in,
                      const std::vector<AtomCellSuper> &pairs_in,
                      const std::vector<unsigned int> &atoms_s_in,
                      const std::vector<Eigen::Vector3d> &relvecs_in,
                      const std::vector<Eigen::Vector3d> &relvecs_vel_in) : pairs(pairs_in),
-                     fcs_val(fcs_in),
-                     atoms_s(atoms_s_in),
-                     relvecs(relvecs_in),
-                     relvecs_velocity(relvecs_vel_in)
-                     {
-                        coords.clear();
-                        for (const auto &it : pairs_in) {
-                            coords.push_back(it.index%3);
-                        }
-                     };
+                                                                           fcs_val(fcs_in),
+                                                                           atoms_s(atoms_s_in),
+                                                                           relvecs(relvecs_in),
+                                                                           relvecs_velocity(relvecs_vel_in)
+    {
+        coords.clear();
+        for (const auto &it: pairs_in) {
+            coords.push_back(it.index % 3);
+        }
+    };
 
     bool operator<(const FcsArrayWithCell &obj) const
     {
@@ -131,8 +131,6 @@ public:
     }
 
 
-
-
 };
 
 class Fcs_phonon : protected Pointers {
@@ -147,7 +145,6 @@ public:
     std::string file_fcs, file_fc2, file_fc3, file_fc4;
 
     std::vector<FcsArrayWithCell> *force_constant_with_cell;
-//    std::vector<FcsClassExtent> fc2_ext;
 
     bool update_fc2;
 

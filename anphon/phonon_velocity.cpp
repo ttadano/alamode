@@ -723,9 +723,9 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
             // whereas it.relvecs_vel should be used for computing the off diagonal elements.
             ddyn_out[k][it.pairs[0].index][it.pairs[1].index]
                     += it.fcs_val * std::exp(im * phase)
-                            * tpi * it.relvecs[0][k]
-                            * invsqrt_mass[it.pairs[0].index / 3]
-                            * invsqrt_mass[it.pairs[1].index / 3];
+                       * tpi * it.relvecs[0][k]
+                       * invsqrt_mass[it.pairs[0].index / 3]
+                       * invsqrt_mass[it.pairs[1].index / 3];
         }
     }
 

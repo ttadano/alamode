@@ -136,7 +136,6 @@ void Fcs_phonon::setup(std::string mode)
 
     MPI_Bcast_fcs_array(maxorder);
     replicate_force_constants(maxorder);
-
 }
 
 void Fcs_phonon::replicate_force_constants(const int maxorder_in)
@@ -189,7 +188,7 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
 
         for (const auto &it: force_constant_with_cell[order]) {
             for (auto i = 0; i < order + 2; ++i) {
-                atom_super[i] = map_tmp.from_true_primitive[it.pairs[i].index / 3][it.pairs[i].tran];
+                atom_super[i] = it.atoms_s[i];
             }
 
             for (const auto &it_trans: map_trans) {
@@ -213,7 +212,7 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
                 for (auto i = 0; i < order + 1; ++i) {
                     for (auto j = 0; j < 3; ++j) {
                         relvec_tmp[j] = it.relvecs_velocity[i][j] + cell_tmp.x_cartesian(atom_super_tran[0], j)
-                                        - cell_tmp.x_cartesian(system->get_map_p2s(order)[atom_new_prim[i + 1]][0],j);
+                                        - cell_tmp.x_cartesian(system->get_map_p2s(order)[atom_new_prim[i + 1]][0], j);
                         relvec_tmp2[j] = it.relvecs_velocity[i][j];
                     }
                     relvec_tmp = system->get_primcell().lattice_vector.inverse() * relvec_tmp;
@@ -273,7 +272,7 @@ void Fcs_phonon::load_fcs_from_file(const int maxorder_in) const
         }
     }
 
-    std::cout << "  Reading force constants from the XML file ... ";
+    std::cout << "  Reading force constants from the FCSFILE ... ";
 
     for (auto i = 0; i < filename_list.size(); ++i) {
 
@@ -291,9 +290,6 @@ void Fcs_phonon::load_fcs_from_file(const int maxorder_in) const
 
         }
     }
-
-    std::cout << "done !" << std::endl;
-
 }
 
 
@@ -457,7 +453,6 @@ void Fcs_phonon::parse_fcs_from_h5(const std::string fname_fcs,
         index_tmp.index_prim = 3 * atom_indices(i, 0) + coord_indices(i, 0);
         index_tmp.index_super = 3 * atom_indices_super(i, 0) + coord_indices(i, 0);
         index_tmp.relvec = zerovec;
-
         vec_index.emplace_back(index_tmp);
 
         for (auto j = 1; j < nelems; ++j) {
@@ -479,13 +474,16 @@ void Fcs_phonon::parse_fcs_from_h5(const std::string fname_fcs,
                 ivec_tmp.cell_s = 0;
                 ivec_tmp.tran = 0;
                 ivec_copy.push_back(ivec_tmp);
-                relvecs_tmp.emplace_back(vec_index[j].relvec);
                 atoms_s_tmp.emplace_back(vec_index[j].index_super / 3);
             }
-            fcs_out.emplace_back(fcs_values[i], ivec_copy, atoms_s_tmp,relvecs_tmp);
+            for (auto j = 1; j < vec_index.size(); ++j) {
+                relvecs_tmp.emplace_back(vec_index[j].relvec);
+            }
+            fcs_out.emplace_back(fcs_values[i], ivec_copy, atoms_s_tmp, relvecs_tmp);
         } while (std::next_permutation(vec_index.begin() + 1, vec_index.end(),
-                                       [](const IndexAndRelvecs &a, const IndexAndRelvecs &b)
-                                       {return a.index_super < b.index_super;}));
+                                       [](const IndexAndRelvecs &a, const IndexAndRelvecs &b) {
+                                           return a.index_super < b.index_super;
+                                       }));
     }
 }
 
@@ -541,7 +539,7 @@ double Fcs_phonon::examine_translational_invariance(const int order,
 
         for (const auto &it: fc_in) {
             j = it.pairs[0].index;
-            k = 3 * map_p2s_in[it.pairs[1].index / 3][it.pairs[1].tran] + it.pairs[1].index % 3;
+            k = 3 * it.atoms_s[1] + it.pairs[1].index % 3;
             l = it.pairs[2].index % 3;
             sum3[j][k][l] += it.fcs_val;
         }
@@ -572,8 +570,8 @@ double Fcs_phonon::examine_translational_invariance(const int order,
 
         for (const auto &it: fc_in) {
             j = it.pairs[0].index;
-            k = 3 * map_p2s_in[it.pairs[1].index / 3][it.pairs[1].tran] + it.pairs[1].index % 3;
-            l = 3 * map_p2s_in[it.pairs[2].index / 3][it.pairs[2].tran] + it.pairs[2].index % 3;
+            k = 3 * it.atoms_s[1] + it.pairs[1].index % 3;
+            l = 3 * it.atoms_s[2] + it.pairs[2].index % 3;
             m = it.pairs[3].index % 3;
             sum4[j][k][l][m] += it.fcs_val;
         }
@@ -611,8 +609,6 @@ void Fcs_phonon::MPI_Bcast_fcs_array(const unsigned int N) const
     Eigen::Vector3d relvec_tmp;
 
     for (unsigned int i = 0; i < N; ++i) {
-
-//        if (force_constant_with_cell[i].empty()) continue;
 
         int len = force_constant_with_cell[i].size();
         int nelem = i + 2;
