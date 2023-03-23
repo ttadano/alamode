@@ -267,6 +267,34 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                 }
             }
 
+            if (dos->compute_dos) {
+                auto emin_now = std::numeric_limits<double>::max();
+                auto emax_now = std::numeric_limits<double>::min();
+
+                double eval_tmp;
+                for (auto iT = 0; iT < NT; ++iT) {
+                    if (iT == 0 || (iT == NT - 1)) {
+                        exec_interpolation(kmesh_interpolate,
+                                           delta_dymat_scph[iT],
+                                           dos->kmesh_dos->nk,
+                                           dos->kmesh_dos->xk,
+                                           dos->kmesh_dos->kvec_na,
+                                           eval_anharm[iT],
+                                           evec_tmp);
+
+                        for (unsigned int j = 0; j < dos->kmesh_dos->nk_irred; ++j) {
+                            for (unsigned int k = 0; k < ns; ++k) {
+                                eval_tmp = writes->in_kayser(eval_anharm[iT][dos->kmesh_dos->kpoint_irred_all[j][0].knum][k]);
+                                emin_now = std::min(emin_now, eval_tmp);
+                                emax_now = std::max(emax_now, eval_tmp);
+                            }
+                        }
+                    }
+                }
+                emax_now += dos->delta_e;
+                dos->update_dos_energy_grid(emin_now, emax_now);
+            }
+
             for (auto iT = 0; iT < NT; ++iT) {
                 auto temperature = Tmin + dT * static_cast<double>(iT);
 
@@ -383,6 +411,34 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             if (bubble > 0) {
                 std::cout << std::endl;
                 std::cout << "   ";
+
+                if (dos->compute_dos) {
+                    auto emin_now = std::numeric_limits<double>::max();
+                    auto emax_now = std::numeric_limits<double>::min();
+
+                    double eval_tmp;
+                    for (auto iT = 0; iT < NT; ++iT) {
+                        if (iT == 0 || (iT == NT - 1)) {
+                            exec_interpolation(kmesh_interpolate,
+                                               delta_dymat_scph_plus_bubble[iT],
+                                               dos->kmesh_dos->nk,
+                                               dos->kmesh_dos->xk,
+                                               dos->kmesh_dos->kvec_na,
+                                               eval_anharm[iT],
+                                               evec_tmp);
+
+                            for (unsigned int j = 0; j < dos->kmesh_dos->nk_irred; ++j) {
+                                for (unsigned int k = 0; k < ns; ++k) {
+                                    eval_tmp = writes->in_kayser(eval_anharm[iT][dos->kmesh_dos->kpoint_irred_all[j][0].knum][k]);
+                                    emin_now = std::min(emin_now, eval_tmp);
+                                    emax_now = std::max(emax_now, eval_tmp);
+                                }
+                            }
+                        }
+                    }
+                    emax_now += dos->delta_e;
+                    dos->update_dos_energy_grid(emin_now, emax_now);
+                }
 
                 for (auto iT = 0; iT < NT; ++iT) {
                     auto temperature = Tmin + dT * static_cast<double>(iT);

@@ -2261,10 +2261,27 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
     double **self3_imag, **self3_real;
     std::ofstream ofs_self;
     double *omega_array;
-    const auto Omega_min = dos->emin;
-    const auto Omega_max = dos->emax;
+//    const auto Omega_min = dos->emin;
+//    const auto Omega_max = dos->emax;
     const auto delta_omega = dos->delta_e;
     double omega2[2];
+
+    const double Omega_min= 0.0;
+    double Omega_max;
+
+//    auto emin_now = std::numeric_limits<double>::max();
+    auto emax_now = std::numeric_limits<double>::min();
+    double omega_tmp;
+
+    for (auto ik = 0; ik < dos->kmesh_dos->nk_irred; ++ik) {
+        for (auto is = 0; is < ns; ++is) {
+            omega_tmp = writes->in_kayser(dos->dymat_dos->get_eigenvalues()[dos->kmesh_dos->kpoint_irred_all[ik][0].knum][is]);
+//            emin_now = std::min(emin_now, omega_tmp);
+            emax_now = std::max(emax_now, omega_tmp);
+        }
+    }
+    Omega_max = (emax_now + delta_omega) * 2.0;
+
 
     const auto nomega = static_cast<unsigned int>((Omega_max - Omega_min) / delta_omega) + 1;
 
