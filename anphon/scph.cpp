@@ -1628,8 +1628,8 @@ void Scph::setup_kmesh()
 
     kmesh_coarse = new KpointMeshUniform(kmesh_interpolate);
     kmesh_dense = new KpointMeshUniform(kmesh_scph);
-    kmesh_coarse->setup(symmetry->SymmList, system->rlavec_p, false);
-    kmesh_dense->setup(symmetry->SymmList, system->rlavec_p, false);
+    kmesh_coarse->setup(symmetry->SymmList, system->rlavec_p, true);
+    kmesh_dense->setup(symmetry->SymmList, system->rlavec_p, true);
 
     if (mympi->my_rank == 0) {
 //        if (verbosity > 0) {
@@ -1679,7 +1679,6 @@ void Scph::setup_transform_symmetry()
     double x1[3], x2[3], k[3], k_minus[3], Sk[3], xtmp[3];
     double S_cart[3][3], S_frac[3][3], S_frac_inv[3][3];
     double S_recip[3][3];
-    std::complex<double> im(0.0, 1.0);
     std::complex<double> **gamma_tmp;
     bool *flag;
 
@@ -1781,6 +1780,24 @@ void Scph::setup_transform_symmetry()
         }
     }
 
+    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
+
+        const auto knum = kmesh_coarse->kpoint_irred_all[ik][0].knum;
+        for (icrd = 0; icrd < 3; ++icrd) {
+            k[icrd] = kmesh_coarse->xk[knum][icrd];
+            k_minus[icrd] = -k[icrd];
+        }
+
+        const auto knum_minus = kmesh_coarse->get_knum(k_minus);
+
+        if (!flag[knum_minus]) {
+            kpoint_map_symmetry[knum_minus].symmetry_op = -1;
+            kpoint_map_symmetry[knum_minus].knum_irred_orig = ik;
+            kpoint_map_symmetry[knum_minus].knum_orig = knum;
+            flag[knum_minus] = true;
+        }
+    }
+
     deallocate(gamma_tmp);
     deallocate(flag);
 }
@@ -1808,6 +1825,7 @@ void Scph::symmetrize_dynamical_matrix(const unsigned int ik,
             }
         }
 
+        // Eq. (3.35) of Maradudin & Vosko
         dymat_tmp = gamma * dymat * gamma.transpose().conjugate();
         dymat_sym += dymat_tmp.conjugate();
     }
@@ -1821,6 +1839,7 @@ void Scph::symmetrize_dynamical_matrix(const unsigned int ik,
             }
         }
 
+        // Eq. (3.14) of Maradudin & Vosko
         dymat_tmp = gamma * dymat * gamma.transpose().conjugate();
         dymat_sym += dymat_tmp;
     }
@@ -1846,17 +1865,33 @@ void Scph::replicate_dymat_for_all_kpoints(std::complex<double> ***dymat_inout) 
         const auto ik_orig = kpoint_map_symmetry[i].knum_orig;
         const auto isym = kpoint_map_symmetry[i].symmetry_op;
 
-        for (is = 0; is < ns; ++is) {
-            for (js = 0; js < ns; ++js) {
-                gamma(is, js) = mat_transform_sym[ik_irred][isym][is][js];
-                dymat(is, js) = dymat_inout[is][js][ik_orig];
+        if (isym >= 0) {
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    gamma(is, js) = mat_transform_sym[ik_irred][isym][is][js];
+                    dymat(is, js) = dymat_inout[is][js][ik_orig];
+                }
+            }
+            dymat_tmp = gamma * dymat * gamma.transpose().conjugate();
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    dymat_all[is][js][i] = dymat_tmp(is, js);
+                }
             }
         }
-        dymat_tmp = gamma * dymat * gamma.transpose().conjugate();
+    }
 
-        for (is = 0; is < ns; ++is) {
-            for (js = 0; js < ns; ++js) {
-                dymat_all[is][js][i] = dymat_tmp(is, js);
+    // When the point group operation S_ which transforms k into -k, i.e., (S_)k = -k,
+    // does not exist for k, we simply set D(k)=D(-k)^{*}.
+    // (This should hold even when the time-reversal symmetry breaks.)
+    for (i = 0; i < kmesh_coarse->nk; ++i) {
+        const auto ik_orig = kpoint_map_symmetry[i].knum_orig;
+        const auto isym = kpoint_map_symmetry[i].symmetry_op;
+        if (isym == -1) {
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    dymat_all[is][js][i] = std::conj(dymat_all[is][js][ik_orig]);
+                }
             }
         }
     }
@@ -2166,8 +2201,6 @@ void Scph::r2q(const double *xk_in,
                std::complex<double> ***dymat_r_in,
                std::complex<double> **dymat_k_out) const
 {
-    std::complex<double> im(0.0, 1.0);
-
     const auto ncell = nx * ny * nz;
 
     for (unsigned int i = 0; i < ns; ++i) {

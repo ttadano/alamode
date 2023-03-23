@@ -46,7 +46,7 @@ public:
 
 struct KpointSymmetry {
 public:
-    unsigned int symmetry_op;
+    int symmetry_op;
     unsigned int knum_irred_orig;
     unsigned int knum_orig;
 };
