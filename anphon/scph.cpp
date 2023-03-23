@@ -2128,8 +2128,7 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
 
     double *eval_real = nullptr;
     std::complex<double> **mat_tmp = nullptr;
-    std::complex<double> **mat_harmonic = nullptr;
-    std::complex<double> **mat_harmonic_na = nullptr;
+
     std::vector<double> eval_vec(ns);
 
     allocate(mat_tmp, ns, ns);
@@ -2167,6 +2166,9 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
         }
 
     } else {
+
+        std::complex<double> **mat_harmonic = nullptr;
+        std::complex<double> **mat_harmonic_na = nullptr;
 
         allocate(mat_harmonic, ns, ns);
         if (dynamical->nonanalytic) {
@@ -2221,12 +2223,13 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
             }
             for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
         }
+        if (mat_harmonic) deallocate(mat_harmonic);
+        if (mat_harmonic_na) deallocate(mat_harmonic_na);
     }
 
     if (eval_real) deallocate(eval_real);
     if (mat_tmp) deallocate(mat_tmp);
-    if (mat_harmonic) deallocate(mat_harmonic);
-    if (mat_harmonic_na) deallocate(mat_harmonic_na);
+
 }
 
 void Scph::precompute_dymat_harm(const unsigned int nk_in,
@@ -2305,36 +2308,30 @@ void Scph::r2q(const double *xk_in,
                std::complex<double> **dymat_k_out) const
 {
     const auto ncell = nx * ny * nz;
+    const auto ns2 = ns * ns;
 
-    for (unsigned int i = 0; i < ns; ++i) {
-
+#pragma omp parallel for
+    for (int ij = 0; ij < ns2; ++ij) {
+        const auto i = ij / ns;
+        const auto j = ij % ns;
         const auto iat = i / 3;
+        const auto jat = j / 3;
 
-        for (unsigned int j = 0; j < ns; ++j) {
+        dymat_k_out[i][j] = std::complex<double>(0.0, 0.0);
 
-            const auto jat = j / 3;
+        for (auto icell = 0; icell < ncell; ++icell) {
+            auto exp_phase = std::complex<double>(0.0, 0.0);
+            // This operation is necessary for the Hermiticity of the dynamical matrix.
+            for (const auto &it: mindist_list_scph[iat][jat][icell].shift) {
+                auto phase = 2.0 * pi
+                             * (static_cast<double>(it.sx) * xk_in[0]
+                                + static_cast<double>(it.sy) * xk_in[1]
+                                + static_cast<double>(it.sz) * xk_in[2]);
 
-            dymat_k_out[i][j] = std::complex<double>(0.0, 0.0);
-
-            for (unsigned int icell = 0; icell < ncell; ++icell) {
-
-                auto exp_phase = std::complex<double>(0.0, 0.0);
-
-                // This operation is necessary for the Hermiticity of the dynamical matrix.
-                for (const auto &it: mindist_list_scph[iat][jat][icell].shift) {
-
-                    auto phase = 2.0 * pi
-                                 * (static_cast<double>(it.sx) * xk_in[0]
-                                    + static_cast<double>(it.sy) * xk_in[1]
-                                    + static_cast<double>(it.sz) * xk_in[2]);
-
-                    exp_phase += std::exp(im * phase);
-                }
-                exp_phase /= static_cast<double>(mindist_list_scph[iat][jat][icell].shift.size());
-
-                dymat_k_out[i][j] += dymat_r_in[i][j][icell] * exp_phase;
+                exp_phase += std::exp(im * phase);
             }
-
+            exp_phase /= static_cast<double>(mindist_list_scph[iat][jat][icell].shift.size());
+            dymat_k_out[i][j] += dymat_r_in[i][j][icell] * exp_phase;
         }
     }
 }
