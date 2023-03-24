@@ -1116,9 +1116,10 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     const auto nk_scph = kmesh_dense->nk;
     const auto ngroup_v4 = anharmonic_core->get_ngroup_fcs(4);
     const auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
-    static auto complex_zero = std::complex<double>(0.0, 0.0);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
+    std::complex<double> ***evec_conj;
 
     const size_t nk2_prod = nk_reduced_interpolate * nk_scph;
 
@@ -1130,9 +1131,43 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
         }
     }
 
+    std::vector<std::vector<size_t>> mode_combinations;
+    mode_combinations.clear();
+
+    if (self_offdiag || relax) {
+
+        std::vector<size_t> index_tmp(4);
+        for (ii = 0; ii < ns4; ++ii) {
+            is = ii / ns3;
+            js = (ii - ns3 * is) / ns2;
+            ks = (ii - ns3 * is - ns2 * js) / ns;
+            ls = ii % ns;
+
+            if (is < js) continue;
+
+            index_tmp[0] = is;
+            index_tmp[1] = js;
+            index_tmp[2] = ks;
+            index_tmp[3] = ls;
+
+            mode_combinations.emplace_back(index_tmp);
+        }
+    }
+
     allocate(v4_array_at_kpair, ngroup_v4);
     allocate(ind, ngroup_v4, 4);
     allocate(v4_mpi, nk2_prod, ns2, ns2);
+    allocate(evec_conj, kmesh_dense->nk, ns, ns);
+
+    const long int nks2 = kmesh_dense->nk * ns2;
+
+#pragma omp parallel for private(is, js)
+    for (long int iks = 0; iks < nks2; ++iks) {
+        size_t ik = iks / ns2;
+        is = (iks - ik * ns2) / ns;
+        js = iks % ns;
+        evec_conj[ik][is][js] = std::conj(evec_in[ik][is][js]);
+    }
 
     for (size_t ik_prod = mympi->my_rank; ik_prod < nk2_prod; ik_prod += mympi->nprocs) {
         const auto ik = ik_prod / nk_scph;
@@ -1146,20 +1181,18 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                                               phase_factor_scph,
                                               phi4_reciprocal);
 
-#ifdef _OPENMP
 #pragma omp parallel for private(j)
-#endif
         for (ii = 0; ii < ngroup_v4; ++ii) {
             v4_array_at_kpair[ii] = phi4_reciprocal[ii] * anharmonic_core->get_invmass_factor(4)[ii];
             for (j = 0; j < 4; ++j) ind[ii][j] = anharmonic_core->get_evec_index(4)[ii][j];
         }
 
-#pragma omp parallel for private(is)
-        for (ii = 0; ii < ns2; ++ii) {
-            for (is = 0; is < ns2; ++is) {
-                v4_mpi[ik_prod][ii][is] = complex_zero;
-                v4_out[ik_prod][ii][is] = complex_zero;
-            }
+#pragma omp parallel for private(is, js)
+        for (ii = 0; ii < ns4; ++ii) {
+            is = ii / ns2;
+            js = ii % ns2;
+            v4_mpi[ik_prod][is][js] = complex_zero;
+            v4_out[ik_prod][is][js] = complex_zero;
         }
 
         if (self_offdiag) {
@@ -1167,24 +1200,24 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
             // All matrix elements will be calculated when considering the off-diagonal
             // elements of the phonon self-energy (loop diagram).
 
+            const size_t npairs = mode_combinations.size();
+
 #pragma omp parallel for private(is, js, ks, ls, ret, i)
-            for (ii = 0; ii < ns4; ++ii) {
-                is = ii / ns3;
-                js = (ii - ns3 * is) / ns2;
-                ks = (ii - ns3 * is - ns2 * js) / ns;
-                ls = ii % ns;
+            for (ii = 0; ii < npairs; ++ii) {
 
-                if (is < js) continue;
+                is = mode_combinations[ii][0];
+                js = mode_combinations[ii][1];
+                ks = mode_combinations[ii][2];
+                ls = mode_combinations[ii][3];
 
-                ret = std::complex<double>(0.0, 0.0);
+                ret = complex_zero;
 
                 for (i = 0; i < ngroup_v4; ++i) {
-
                     ret += v4_array_at_kpair[i]
-                           * std::conj(evec_in[knum][is][ind[i][0]])
+                           * evec_conj[knum][is][ind[i][0]]
                            * evec_in[knum][js][ind[i][1]]
                            * evec_in[jk][ks][ind[i][2]]
-                           * std::conj(evec_in[jk][ls][ind[i][3]]);
+                           * evec_conj[jk][ls][ind[i][3]];
                 }
 
                 v4_mpi[ik_prod][ns * is + js][ns * ks + ls] = factor * ret;
@@ -1196,24 +1229,24 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
             if (relax && (knum == 0 || jk == 0)) {
 
+                const size_t npairs = mode_combinations.size();
+
 #pragma omp parallel for private(is, js, ks, ls, ret, i)
-                for (ii = 0; ii < ns4; ++ii) {
-                    is = ii / ns3;
-                    js = (ii - ns3 * is) / ns2;
-                    ks = (ii - ns3 * is - ns2 * js) / ns;
-                    ls = ii % ns;
+                for (ii = 0; ii < npairs; ++ii) {
 
-                    if (is < js) continue;
+                    is = mode_combinations[ii][0];
+                    js = mode_combinations[ii][1];
+                    ks = mode_combinations[ii][2];
+                    ls = mode_combinations[ii][3];
 
-                    ret = std::complex<double>(0.0, 0.0);
+                    ret = complex_zero;
 
                     for (i = 0; i < ngroup_v4; ++i) {
-
                         ret += v4_array_at_kpair[i]
-                               * std::conj(evec_in[knum][is][ind[i][0]])
+                               * evec_conj[knum][is][ind[i][0]]
                                * evec_in[knum][js][ind[i][1]]
                                * evec_in[jk][ks][ind[i][2]]
-                               * std::conj(evec_in[jk][ls][ind[i][3]]);
+                               * evec_conj[jk][ls][ind[i][3]];
                     }
 
                     v4_mpi[ik_prod][ns * is + js][ns * ks + ls] = factor * ret;
@@ -1226,15 +1259,14 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                     is = ii / ns;
                     js = ii % ns;
 
-                    ret = std::complex<double>(0.0, 0.0);
+                    ret = complex_zero;
 
                     for (i = 0; i < ngroup_v4; ++i) {
-
                         ret += v4_array_at_kpair[i]
-                               * std::conj(evec_in[knum][is][ind[i][0]])
+                               * evec_conj[knum][is][ind[i][0]]
                                * evec_in[knum][is][ind[i][1]]
                                * evec_in[jk][js][ind[i][2]]
-                               * std::conj(evec_in[jk][js][ind[i][3]]);
+                               * evec_conj[jk][js][ind[i][3]];
                     }
 
                     v4_mpi[ik_prod][(ns + 1) * is][(ns + 1) * js] = factor * ret;
@@ -1243,6 +1275,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
         }
     }
 
+    deallocate(evec_conj);
     deallocate(v4_array_at_kpair);
     deallocate(ind);
 
@@ -1322,7 +1355,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     const auto nk_scph = kmesh_dense->nk;
     const auto ngroup_v4 = anharmonic_core->get_ngroup_fcs(4);
     auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
-    static auto complex_zero = std::complex<double>(0.0, 0.0);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
 
@@ -1342,9 +1375,9 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
     allocate(nset_mpi, mympi->nprocs);
 
-    long int nset_tot = nk2_prod * ((ns2 - ns) / 2 + ns);
+    const long int nset_tot = nk2_prod * ((ns2 - ns) / 2 + ns);
     long int nset_each = nset_tot / mympi->nprocs;
-    long int nres = nset_tot - nset_each * mympi->nprocs;
+    const long int nres = nset_tot - nset_each * mympi->nprocs;
 
     for (i = 0; i < mympi->nprocs; ++i) {
         nset_mpi[i] = nset_each;
@@ -1444,7 +1477,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
             unsigned int ks = js / ns;
             unsigned int ls = js % ns;
 
-            auto ret = std::complex<double>(0.0, 0.0);
+            auto ret = complex_zero;
 
             for (i = 0; i < ngroup_v4; ++i) {
 
@@ -2655,7 +2688,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     std::cout << " Temperature = " << T_in << " K" << std::endl;
 
     // Set initial values
-
+    
     for (ik = 0; ik < nk; ++ik) {
         for (is = 0; is < ns; ++is) {
 
@@ -2756,7 +2789,6 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
         // Mixing dmat
         if (iloop > 0) {
-#pragma omp parallel for
             for (ik = 0; ik < nk; ++ik) {
                 dmat_convert[ik] = alpha * dmat_convert[ik].eval() + (1.0 - alpha) * dmat_convert_old[ik];
             }
@@ -2771,55 +2803,32 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             Fmat = Fmat0[ik];
 
             // Anharmonic correction to Fmat
-
             if (!offdiag) {
                 for (is = 0; is < ns; ++is) {
                     i = (ns + 1) * is;
-
-                    re_tmp = 0.0;
-                    im_tmp = 0.0;
-
-#pragma omp parallel for private(jk, kk, ks, ctmp), reduction(+:re_tmp, im_tmp)
+                    // OpenMP parallelization for this part turned out to be inefficient (even slower than serial version)
                     for (jk = 0; jk < nk; ++jk) {
-
                         kk = nk * ik + jk;
-
                         for (ks = 0; ks < ns; ++ks) {
-                            ctmp = v4_array_all[kk][i][(ns + 1) * ks]
+                            Fmat(is, is) += v4_array_all[kk][i][(ns + 1) * ks]
                                    * dmat_convert[jk](ks, ks);
-                            re_tmp += ctmp.real();
-                            im_tmp += ctmp.imag();
                         }
                     }
-                    Fmat(is, is) += std::complex<double>(re_tmp, im_tmp);
                 }
             } else {
-
-                // Anharmonic correction to Fmat
-
                 for (is = 0; is < ns; ++is) {
                     for (js = 0; js <= is; ++js) {
-
                         i = ns * is + js;
-
-                        re_tmp = 0.0;
-                        im_tmp = 0.0;
-
-#pragma omp parallel for private(jk, kk, ks, ctmp), reduction(+:re_tmp, im_tmp)
+                        // OpenMP parallelization for this part turned out to be inefficient (even slower than serial version)
                         for (jk = 0; jk < nk; ++jk) {
-
                             kk = nk * ik + jk;
-
                             for (ks = 0; ks < ns; ++ks) {
                                 for (unsigned int ls = 0; ls < ns; ++ls) {
-                                    ctmp = v4_array_all[kk][i][ns * ks + ls]
+                                    Fmat(is, js) += v4_array_all[kk][i][ns * ks + ls]
                                            * dmat_convert[jk](ks, ls);
-                                    re_tmp += ctmp.real();
-                                    im_tmp += ctmp.imag();
                                 }
                             }
                         }
-                        Fmat(is, js) += std::complex<double>(re_tmp, im_tmp);
                     }
                 }
             }
@@ -2958,7 +2967,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                            nk,
                            kmesh_dense->xk,
                            kmesh_dense->kvec_na,
-                           eval_interpolate, evec_new, true);
+                           eval_interpolate,
+                           evec_new,
+                           true);
 
         for (ik = 0; ik < nk; ++ik) {
             for (is = 0; is < ns; ++is) {
@@ -3078,6 +3089,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     deallocate(dymat_q);
     deallocate(dymat_q_HA);
 }
+
 
 void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
                                            std::complex<double> ****delta_dymat_scph)
