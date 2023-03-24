@@ -281,26 +281,15 @@ double Thermodynamics::free_energy_QHA(const double temp_in,
     const auto N = nk_irred * ns;
     int ik_irred;
 
-    int count_zero_ik0 = 0;
-    int count_zero_iknon0 = 0;
-
     if (classical) {
-#pragma omp parallel for private(ik_irred, ik, is, omega, x), reduction(+:ret, count_zero_ik0, count_zero_iknon0)
+#pragma omp parallel for private(ik_irred, ik, is, omega, x), reduction(+:ret)
         for (i = 0; i < N; ++i) {
             ik_irred = i / ns;
             ik = kp_irred[ik_irred][0].knum;
             is = i % ns;
             omega = eval_in[ik][is];
 
-            if (omega < eps8){
-                if(ik == 0){
-                    count_zero_ik0++;
-                }
-                else{
-                    count_zero_iknon0++;
-                }
-                continue;
-            }
+            if (omega < eps8) continue;
 
             if (std::abs(temp_in) > eps) {
                 x = omega / (temp_in * T_to_Ryd);
@@ -308,34 +297,17 @@ double Thermodynamics::free_energy_QHA(const double temp_in,
             }
         }
 
-        if(count_zero_ik0 != 3){
-            std::cout << "Warning in free_energy_QHA : ";
-            std::cout << count_zero_ik0 << " zero-frequencies are detected at Gamma point";
-        }
-        if(count_zero_iknon0 != 0){
-            std::cout << "Warning in free_energy_QHA : ";
-            std::cout << count_zero_iknon0 << " zero-frequencies are detected at non-Gamma point";
-        }
-
         return temp_in * T_to_Ryd * ret;
 
     }
-#pragma omp parallel for private(ik_irred, ik, is, omega, x), reduction(+:ret, count_zero_ik0, count_zero_iknon0)
+#pragma omp parallel for private(ik_irred, ik, is, omega, x), reduction(+:ret)
     for (i = 0; i < N; ++i) {
         ik_irred = i / ns;
         ik = kp_irred[ik_irred][0].knum;
         is = i % ns;
         omega = eval_in[ik][is];
 
-        if (omega < eps8){
-            if(ik == 0){
-                count_zero_ik0++;
-            }
-            else{
-                count_zero_iknon0++;
-            }
-            continue;
-        }
+        if (omega < eps8) continue;
 
         if (std::abs(temp_in) < eps) {
             ret += 0.5 * omega * weight_k_irred[ik_irred];
@@ -345,14 +317,6 @@ double Thermodynamics::free_energy_QHA(const double temp_in,
         }
     }
 
-    if(count_zero_ik0 != 3){
-        std::cout << "Warning in free_energy_QHA : ";
-        std::cout << count_zero_ik0 << " zero-frequencies are detected at Gamma point";
-    }
-    if(count_zero_iknon0 != 0){
-        std::cout << "Warning in free_energy_QHA : ";
-        std::cout << count_zero_iknon0 << " zero-frequencies are detected at non-Gamma point";
-    }
 
     if (std::abs(temp_in) < eps) return ret;
 
@@ -762,23 +726,12 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
 
     const auto complex_zero = std::complex<double>(0.0, 0.0);
 
-    int count_zero_ik0 = 0;
-    int count_zero_iknon0 = 0;
-
-#pragma omp parallel for reduction(+ : ret, count_zero_ik0, count_zero_iknon0)
+#pragma omp parallel for reduction(+ : ret)
     for (int i = 0; i < N; ++i) {
         int ik = i / ns;
         int is = i % ns;
         const auto omega = eval[ik][is];
-        if (std::abs(omega) < eps8){
-            if(ik == 0){
-                count_zero_ik0++;
-            }
-            else{
-                count_zero_iknon0++;
-            }
-            continue;
-        }
+        if (std::abs(omega) < eps8) continue;
 
         MatrixXcd Cmat(ns, ns);
 
@@ -811,15 +764,6 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
         } else {
             ret += (tmp_c.real() - omega * omega) * (1.0 + 2.0 * thermodynamics->fB(omega, temp)) / (8.0 * omega);
         }
-    }
-
-    if(count_zero_ik0 != 3){
-        std::cout << "Warning in FE_scph_correction : ";
-        std::cout << count_zero_ik0 << " zero-frequencies are detected at Gamma point";
-    }
-    if(count_zero_iknon0 != 0){
-        std::cout << "Warning in FE_scph_correction : ";
-        std::cout << count_zero_iknon0 << " zero-frequencies are detected at non-Gamma point";
     }
 
     return ret / static_cast<double>(nk);

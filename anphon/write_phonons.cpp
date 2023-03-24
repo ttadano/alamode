@@ -180,9 +180,9 @@ void Writes::write_input_vars()
                 std::cout << "  RENORM_3TO2ND = " << scph->renorm_3to2nd << std::endl;
                 std::cout << "  RENORM_2TO1ST = " << scph->renorm_2to1st << std::endl;
                 std::cout << "  RENORM_ANHARMTO1ST = " << scph->renorm_anharmto1st << std::endl;
+                std::cout << "  NAT_PRIM = " << scph->natmin_tmp << std::endl;
+                std::cout << "  STRAIN_IFC_DIR = " << scph->strain_IFC_dir << std::endl;
             }
-            std::cout << "  NAT_PRIM = " << scph->natmin_tmp << std::endl;
-
         }
     }
     std::cout << std::endl;

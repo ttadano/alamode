@@ -440,6 +440,10 @@ void Input::parse_scph_vars()
     assign_val(bubble, "BUBBLE", scph_var_dict);
 
     assign_val(relax_coordinate, "RELAX_COORDINATE", scph_var_dict);
+    if(relax_coordinate != 0 && selfenergy_offdiagonal == false){
+        exit("parse_scph_vars",
+             "SELF_OFFDIAG == 0 cannot be used with RELAX_COORDINATE != 0.");
+    }
     assign_val(relax_algo, "RELAX_ALGO", scph_var_dict);
     assign_val(max_str_iter, "MAX_STR_ITER", scph_var_dict);
     assign_val(coord_conv_tol, "COORD_CONV_TOL", scph_var_dict);
