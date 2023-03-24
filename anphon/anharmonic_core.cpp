@@ -333,6 +333,9 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
     if (kn[1] != kindex_phi3_stored[0] || kn[2] != kindex_phi3_stored[1]) {
         calc_phi3_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
+                             ngroup_v3,
+                             fcs_group_v3,
+                             relvec_v3,
                              phase_storage_in,
                              phi3_reciprocal);
 
@@ -379,8 +382,12 @@ std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
     if (kn[1] != kindex_phi3_stored[0] || kn[2] != kindex_phi3_stored[1]) {
         calc_phi3_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
+                             ngroup_v3,
+                             fcs_group_v3,
+                             relvec_v3,
                              phase_storage_in,
                              phi3_reciprocal);
+
         kindex_phi3_stored[0] = kn[1];
         kindex_phi3_stored[1] = kn[2];
     }
@@ -400,84 +407,6 @@ std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
 }
 
 void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
-                                          const double *xk2,
-                                          const PhaseFactorStorage *phase_storage_in,
-                                          std::complex<double> *ret)
-{
-    int i, j;
-    double phase;
-    std::complex<double> ret_in;
-    unsigned int nsize_group;
-
-    const auto tune_type_now = phase_storage_in->get_tune_type();
-
-    if (tune_type_now == 1) {
-
-#pragma omp parallel for private(ret_in, nsize_group, j, phase)
-        for (i = 0; i < ngroup_v3; ++i) {
-
-            ret_in = std::complex<double>(0.0, 0.0);
-            nsize_group = fcs_group_v3[i].size();
-
-            for (j = 0; j < nsize_group; ++j) {
-                phase = relvec_v3[i][j].vecs[0][0] * xk1[0]
-                        + relvec_v3[i][j].vecs[0][1] * xk1[1]
-                        + relvec_v3[i][j].vecs[0][2] * xk1[2]
-                        + relvec_v3[i][j].vecs[1][0] * xk2[0]
-                        + relvec_v3[i][j].vecs[1][1] * xk2[1]
-                        + relvec_v3[i][j].vecs[1][2] * xk2[2];
-
-                ret_in += fcs_group_v3[i][j] * phase_storage_in->get_exp_type1(phase);
-            }
-            ret[i] = ret_in;
-        }
-
-    } else if (tune_type_now == 2) {
-
-        // Tuned version is used when nk1=nk2=nk3 doesn't hold.
-
-        double phase3[3];
-
-#pragma omp parallel for private(ret_in, nsize_group, j, phase3)
-        for (i = 0; i < ngroup_v3; ++i) {
-
-            ret_in = std::complex<double>(0.0, 0.0);
-            nsize_group = fcs_group_v3[i].size();
-
-            for (j = 0; j < nsize_group; ++j) {
-                for (auto ii = 0; ii < 3; ++ii) {
-                    phase3[ii]
-                            = relvec_v3[i][j].vecs[0][ii] * xk1[ii]
-                              + relvec_v3[i][j].vecs[1][ii] * xk2[ii];
-                }
-                ret_in += fcs_group_v3[i][j] * phase_storage_in->get_exp_type2(phase3);
-            }
-            ret[i] = ret_in;
-        }
-    } else {
-        // Original version
-#pragma omp parallel for private(ret_in, nsize_group, phase, j)
-        for (i = 0; i < ngroup_v3; ++i) {
-
-            ret_in = std::complex<double>(0.0, 0.0);
-            nsize_group = fcs_group_v3[i].size();
-
-            for (j = 0; j < nsize_group; ++j) {
-                phase
-                        = relvec_v3[i][j].vecs[0][0] * xk1[0]
-                          + relvec_v3[i][j].vecs[0][1] * xk1[1]
-                          + relvec_v3[i][j].vecs[0][2] * xk1[2]
-                          + relvec_v3[i][j].vecs[1][0] * xk2[0]
-                          + relvec_v3[i][j].vecs[1][1] * xk2[1]
-                          + relvec_v3[i][j].vecs[1][2] * xk2[2];
-                ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
-            }
-            ret[i] = ret_in;
-        }
-    }
-}
-
-void AnharmonicCore::calc_phi3_reciprocal_for_given_IFCs(const double *xk1,
                                           const double *xk2,
                                           const int ngroup_v3_in,
                                           std::vector<double, std::allocator<double>>  *fcs_group_v3_in,
@@ -1590,6 +1519,13 @@ int **AnharmonicCore::get_evec_index(const unsigned int order) const
 {
     if (order == 3) return evec_index_v3;
     if (order == 4) return evec_index_v4;
+    return nullptr;
+}
+
+std::vector<RelativeVector> *AnharmonicCore::get_relvec(const unsigned int order) const
+{
+    if(order == 3) return relvec_v3;
+    if(order == 4) return relvec_v4;
     return nullptr;
 }
 

@@ -3240,6 +3240,9 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 
         anharmonic_core->calc_phi3_reciprocal(kmesh_dense->xk[ik],
                                               kmesh_dense->xk[kmesh_dense->kindex_minus_xk[ik]],
+                                              anharmonic_core->get_ngroup_fcs(3),
+                                              anharmonic_core->get_fcs_group(3),
+                                              anharmonic_core->get_relvec(3),
                                               phase_factor_scph,
                                               phi3_reciprocal);
 
@@ -3385,14 +3388,13 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
 
     for (unsigned int ik = mympi->my_rank; ik < nk_scph; ik += mympi->nprocs) {
 
-        anharmonic_core->calc_phi3_reciprocal_for_given_IFCs(kmesh_dense->xk[ik],
+        anharmonic_core->calc_phi3_reciprocal(kmesh_dense->xk[ik],
                                               kmesh_dense->xk[kmesh_dense->kindex_minus_xk[ik]],
                                               ngroup_v3_in,
                                               fcs_group_v3_in,
                                               relvec_v3_in,
                                               phase_factor_scph,
                                               phi3_reciprocal_tmp);
-
         
 #ifdef _OPENMP
 #pragma omp parallel for private(j)
@@ -5189,7 +5191,8 @@ void Scph::calculate_del_v2_strain_from_cubic_by_finite_difference(const std::co
     std::vector<std::vector<FcsClassExtent>> fc2_deformed(nmode);
 
     for(imode = 0; imode < nmode; imode++){
-        fcs_phonon->load_fc2_xml_tmp(strain_IFC_dir + filename_list[imode], fc2_deformed[imode]);
+        fcs_phonon->load_fc2_xml(fc2_deformed[imode], 1,
+                                 strain_IFC_dir + filename_list[imode]);
     }
 
     // calculate finite difference
@@ -6064,7 +6067,7 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
     double vec1[3], vec2[3], vec_origin[3];
     double fcs_tmp = 0.0;
 
-    std::vector<FcsAlignedForGruneisen2> fcs_aligned;
+    std::vector<FcsAlignedForGruneisen> fcs_aligned;
     std::vector<AtomCellSuper> pairs_vec;
     std::vector<int> index_old, index_now;
     std::vector<int> index_with_cell, index_with_cell_old;
@@ -6080,7 +6083,7 @@ void Scph::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCel
     for (const auto &it: fcs_in) {
         fcs_aligned.emplace_back(it.fcs_val, it.pairs);
     }
-    std::sort(fcs_aligned.begin(), fcs_aligned.end());
+    std::sort(fcs_aligned.begin(), fcs_aligned.end(), less_FcsAlignedForGruneisen2);
 
     // prepare supercell shift
     double **xshift_s;

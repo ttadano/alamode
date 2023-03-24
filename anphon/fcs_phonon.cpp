@@ -109,7 +109,7 @@ void Fcs_phonon::setup(std::string mode)
     if (mympi->my_rank == 0) {
         double *maxdev;
 
-        load_fc2_xml();
+        load_fc2_xml(fc2_ext, 0, std::string(""));
         load_fcs_xml();
 
         for (i = 0; i < maxorder; ++i) {
@@ -143,7 +143,9 @@ void Fcs_phonon::setup(std::string mode)
     MPI_Bcast_fcs_array(maxorder);
 }
 
-void Fcs_phonon::load_fc2_xml()
+void Fcs_phonon::load_fc2_xml(std::vector<FcsClassExtent> &fc2_vec,
+                              int mode,
+                              std::string xml_filename)
 {
     using namespace boost::property_tree;
 
@@ -152,73 +154,37 @@ void Fcs_phonon::load_fc2_xml()
     std::stringstream ss1, ss2;
     FcsClassExtent fcext_tmp;
 
-    if (update_fc2) {
+    // read from the input file
+    if(mode == 0){
+        if (update_fc2) {
+            try {
+                read_xml(file_fc2, pt);
+            }
+            catch (std::exception &e) {
+                auto str_error = "Cannot open file FC2XML ( " + file_fc2 + " )";
+                exit("load_fc2_xml", str_error.c_str());
+            }
+        } else {
+            try {
+                read_xml(file_fcs, pt);
+            }
+            catch (std::exception &e) {
+                auto str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
+                exit("load_fc2_xml", str_error.c_str());
+            }
+        }
+    }
+    // read from the file of the given name
+    else if (mode == 1){
         try {
-            read_xml(file_fc2, pt);
+            read_xml(xml_filename, pt);
         }
         catch (std::exception &e) {
-            auto str_error = "Cannot open file FC2XML ( " + file_fc2 + " )";
-            exit("load_fc2_xml", str_error.c_str());
-        }
-    } else {
-        try {
-            read_xml(file_fcs, pt);
-        }
-        catch (std::exception &e) {
-            auto str_error = "Cannot open file FCSXML ( " + file_fcs + " )";
+            auto str_error = "Cannot open file FC2XML ( " + xml_filename + " )";
             exit("load_fc2_xml", str_error.c_str());
         }
     }
 
-    fc2_ext.clear();
-
-    BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
-                    const auto &child = child_.second;
-                    const auto str_p1 = child.get<std::string>("<xmlattr>.pair1");
-                    const auto str_p2 = child.get<std::string>("<xmlattr>.pair2");
-
-                    ss1.str("");
-                    ss2.str("");
-                    ss1.clear();
-                    ss2.clear();
-
-                    ss1 << str_p1;
-                    ss2 << str_p2;
-
-                    ss1 >> atm1 >> xyz1;
-                    ss2 >> atm2 >> xyz2 >> cell_s;
-
-                    fcext_tmp.atm1 = atm1 - 1;
-                    fcext_tmp.xyz1 = xyz1 - 1;
-                    fcext_tmp.atm2 = atm2 - 1;
-                    fcext_tmp.xyz2 = xyz2 - 1;
-                    fcext_tmp.cell_s = cell_s - 1;
-                    fcext_tmp.fcs_val = boost::lexical_cast<double>(child.data());
-
-                    fc2_ext.push_back(fcext_tmp);
-                }
-    pt.clear();
-}
-
-// changed load_fc2_xml so that you can read harmonic IFCs from arbitrary file 
-// and write the result to arbitrary array.
-void Fcs_phonon::load_fc2_xml_tmp(std::string xml_filename, std::vector<FcsClassExtent> &fc2_vec)
-{
-    using namespace boost::property_tree;
-
-    unsigned int atm1, atm2, xyz1, xyz2, cell_s;
-    ptree pt;
-    std::stringstream ss1, ss2;
-    FcsClassExtent fcext_tmp;
-
-    try {
-        read_xml(xml_filename, pt);
-    }
-    catch (std::exception &e) {
-        auto str_error = "Cannot open file FC2XML ( " + xml_filename + " )";
-        exit("load_fc2_xml", str_error.c_str());
-    }
-    
     fc2_vec.clear();
 
     BOOST_FOREACH (const ptree::value_type &child_, pt.get_child("Data.ForceConstants.HARMONIC")) {
