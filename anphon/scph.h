@@ -247,35 +247,32 @@ private:
                                   double **,
                                   std::complex<double> ***);
 
-    void compute_del_v1_strain_from_harmonic(std::complex<double> **,
-                                             const std::complex<double> * const* const* const);
+    void compute_del_v1_del_umn(std::complex<double> **,
+                                const std::complex<double> * const* const* const);
  
-    void compute_del_v1_strain_from_cubic(std::complex<double> **,
-                                          const std::complex<double> * const* const* const);
+    void compute_del2_v1_del_umn2(std::complex<double> **,
+                                  const std::complex<double> * const* const* const);
 
-    void compute_del_v1_strain_from_quartic(std::complex<double> **,
-                                            const std::complex<double> * const* const* const);
+    void compute_del3_v1_del_umn3(std::complex<double> **,
+                                  const std::complex<double> * const* const* const);
 
-    void compute_del_v2_strain_from_cubic(std::complex<double> ***,
-                                          const std::complex<double> * const* const* const);
+    void compute_del_v2_del_umn(std::complex<double> ***,
+                                const std::complex<double> * const* const* const);
     
-    void compute_del_v2_strain_from_quartic(std::complex<double> ***,
-                                            const std::complex<double> * const* const* const);
+    void compute_del2_v2_del_umn2(std::complex<double> ***,
+                                  const std::complex<double> * const* const* const);
 
-    void compute_del_v3_strain_from_quartic(std::complex<double> ****,
-                                            const std::complex<double> * const* const* const);
+    void compute_del_v3_del_umn(std::complex<double> ****,
+                                const std::complex<double> * const* const* const);
 
-    void calculate_del_v2_strain_from_cubic_by_finite_difference(const std::complex<double> * const* const* const,
-                                                                 std::complex<double> ***);
+    void calculate_delv2_delumn_finite_difference(const std::complex<double> * const* const* const,
+                                                  std::complex<double> ***);
 
-    void read_del_v2_strain_from_cubic_in_kspace(const std::complex<double> * const* const* const,
-                                                 std::complex<double> ***);
+    void read_del_v2_del_umn_in_kspace(const std::complex<double> * const* const* const,
+                                       std::complex<double> ***);
     
-    void calculate_del_v2_strain_from_cubic_by_finite_difference_from_allmode(const std::complex<double> * const* const* const,
-                                                                              std::complex<double> ***);
-
-    void calculate_del_v1_strain_from_harmonic_by_finite_difference_from_allmode(std::complex<double> **,
-                                                                                 const std::complex<double> * const* const* const); 
+    void calculate_delv1_delumn_finite_difference(std::complex<double> **,
+                                                  const std::complex<double> * const* const* const); 
                                                                 
     void make_supercell_mapping_by_symmetry_operations(int **);
 
@@ -297,96 +294,96 @@ private:
 
     FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
 
-    void calculate_del_v0_strain_with_strain_displace(std::complex<double> *, 
-                                               double *,
-                                               double **,
-                                               double ***,
-                                               double **,
-                                               double **,
-                                               std::complex<double> **,
-                                               std::complex<double> **,
-                                               std::complex<double> **,
-                                               std::complex<double> ***,
-                                               std::complex<double> ***,
-                                               std::complex<double> ****,
-                                               double *,
-                                               double );
+    void calculate_del_v0_del_umn_renorm(std::complex<double> *, 
+                                         double *,
+                                         double **,
+                                         double ***,
+                                         double **,
+                                         double **,
+                                         std::complex<double> **,
+                                         std::complex<double> **,
+                                         std::complex<double> **,
+                                         std::complex<double> ***,
+                                         std::complex<double> ***,
+                                         std::complex<double> ****,
+                                         double *,
+                                         double );
 
                                             
-    void calculate_del_v1_strain_with_strain_displace(std::complex<double> **, 
-                                                      double **,
-                                                      std::complex<double> **,
-                                                      std::complex<double> **,
-                                                      std::complex<double> **,
-                                                      std::complex<double> ***,
-                                                      std::complex<double> ***,
-                                                      std::complex<double> ****,
-                                                      double *);
+    void calculate_del_v1_del_umn_renorm(std::complex<double> **, 
+                                         double **,
+                                         std::complex<double> **,
+                                         std::complex<double> **,
+                                         std::complex<double> **,
+                                         std::complex<double> ***,
+                                         std::complex<double> ***,
+                                         std::complex<double> ****,
+                                         double *);
 
-    void calculate_C2_array_with_strain_displace(double **, 
-                                                 double **,
-                                                 double **,
-                                                 double **,
-                                                 double ***,
-                                                 std::complex<double> **,
-                                                 std::complex<double> **,
-                                                 std::complex<double> ***,
-                                                 double *);
+    void calculate_C2_array_renorm(double **, 
+                                   double **,
+                                   double **,
+                                   double **,
+                                   double ***,
+                                   std::complex<double> **,
+                                   std::complex<double> **,
+                                   std::complex<double> ***,
+                                   double *);
 
     void calculate_eta_tensor(double **, 
                               const double * const * const);
 
-    void renormalize_v0_from_strain(double &, 
-                                    double , 
-                                    double **, 
-                                    double *,
-                                    double **, 
-                                    double ***,
-                                    double **,
-                                    const double);
+    void renormalize_v0_from_umn(double &, 
+                                 double , 
+                                 double **, 
+                                 double *,
+                                 double **, 
+                                 double ***,
+                                 double **,
+                                 const double);
 
-    void renormalize_v1_array_from_strain(std::complex<double> *, 
-                                          const std::complex<double> * const ,
-                                          const std::complex<double> * const* const, 
-                                          const std::complex<double> * const* const, 
-                                          const std::complex<double> * const* const, 
-                                          const double * const* const);
+    void renormalize_v1_from_umn(std::complex<double> *, 
+                                 const std::complex<double> * const ,
+                                 const std::complex<double> * const* const, 
+                                 const std::complex<double> * const* const, 
+                                 const std::complex<double> * const* const, 
+                                 const double * const* const);
 
-    void renormalize_v2_array_from_strain(std::complex<double> **, 
-                                          std::complex<double> ***, 
-                                          std::complex<double> ***,
-                                          double **);
+    void renormalize_v2_from_umn(std::complex<double> **, 
+                                 std::complex<double> ***, 
+                                 std::complex<double> ***,
+                                 double **);
 
-    void renormalize_v3_array_from_strain(std::complex<double> ***, 
-                                          std::complex<double> ***, 
-                                          std::complex<double> ****,
-                                          double **);
+    void renormalize_v3_from_umn(std::complex<double> ***, 
+                                 std::complex<double> ***, 
+                                 std::complex<double> ****,
+                                 double **);
 
-    void renormalize_v1_array(std::complex<double> *, 
-                              std::complex<double> *, 
-                              std::complex<double> **,
-                              std::complex<double> ***, 
-                              std::complex<double> ***,
-                              double *);
+    void renormalize_v1_from_q0(std::complex<double> *, 
+                                std::complex<double> *, 
+                                std::complex<double> **,
+                                std::complex<double> ***, 
+                                std::complex<double> ***,
+                                double *);
 
-    void renormalize_v2_array(std::complex<double> **, 
-                              std::complex<double> **,
-                              std::complex<double> ***, 
-                              std::complex<double> ***,  
-                              double *);
+    void renormalize_v2_from_q0(std::complex<double> **, 
+                                std::complex<double> **,
+                                std::complex<double> ***, 
+                                std::complex<double> ***,  
+                                double *);
 
-    void renormalize_v3_array(std::complex<double> ***,
-                              std::complex<double> ***, 
-                              std::complex<double> ***, 
-                              double *);
+    void renormalize_v3_from_q0(std::complex<double> ***,
+                                std::complex<double> ***, 
+                                std::complex<double> ***, 
+                                double *);
 
-    void renormalize_v0(double &,
-                        double ,
-                        std::complex<double> *,
-                        std::complex<double> **,
-                        std::complex<double> ***,
-                        std::complex<double> ***,
-                        double *);
+    void renormalize_v0_from_q0(double &,
+                                double ,
+                                std::complex<double> *,
+                                std::complex<double> **,
+                                std::complex<double> ***,
+                                std::complex<double> ***,
+                                double *);
 
     void compute_anharmonic_v1_array(std::complex<double> *,
                                      std::complex<double> *, 
@@ -395,31 +392,31 @@ private:
                                      double ** , 
                                      const double);
 
-    void compute_anharmonic_del_v0_strain(std::complex<double> *, 
-                                          std::complex<double> *,
-                                          std::complex<double> ***,
-                                          std::complex<double> ***,
-                                          std::complex<double> ****,
-                                          double **,
-                                          double *,
-                                          std::complex<double> ***, 
-                                          double ** , 
-                                          const double);
+    void compute_anharmonic_del_v0_del_umn(std::complex<double> *, 
+                                           std::complex<double> *,
+                                           std::complex<double> ***,
+                                           std::complex<double> ***,
+                                           std::complex<double> ****,
+                                           double **,
+                                           double *,
+                                           std::complex<double> ***, 
+                                           double ** , 
+                                           const double);
 
     void compute_anharmonic_frequency(std::complex<double> ***,
-                                        double **,
-                                        std::complex<double> ***,
-                                        double,
-                                        bool &,
-                                        std::complex<double> ***,
-                                        bool,
-                                        std::complex<double> **,
-                                        const unsigned int verbosity);
+                                      double **,
+                                      std::complex<double> ***,
+                                      double,
+                                      bool &,
+                                      std::complex<double> ***,
+                                      bool,
+                                      std::complex<double> **,
+                                      const unsigned int verbosity);
 
     void compute_renormalized_harmonic_frequency(double **,
-                                    std::complex<double> ***,
-                                    std::complex<double> **,
-                                    const unsigned int );
+                                                 std::complex<double> ***,
+                                                 std::complex<double> **,
+                                                 const unsigned int );
 
     void exec_interpolation(const unsigned int [3],
                             std::complex<double> ***,
@@ -430,53 +427,53 @@ private:
                             std::complex<double> ***);
 
     void r2q(const double *,
-                unsigned int,
-                unsigned int,
-                unsigned int,
-                unsigned int,
-                std::complex<double> ***,
-                std::complex<double> **) const;
+             unsigned int,
+             unsigned int,
+             unsigned int,
+             unsigned int,
+             std::complex<double> ***,
+             std::complex<double> **) const;
 
     void diagonalize_interpolated_matrix(std::complex<double> **,
-                                            double *,
-                                            std::complex<double> **,
-                                            bool) const;
+                                         double *,
+                                         std::complex<double> **,
+                                         bool) const;
 
     void find_degeneracy(std::vector<int> *degeneracy_out,
-                            unsigned int nk_in,
-                            double **eval_in) const;
+                         unsigned int nk_in,
+                         double **eval_in) const;
 
     static double distance(double *,
-                            double *);
+                           double *);
 
     void symmetrize_dynamical_matrix(unsigned int,
-                                        Eigen::MatrixXcd &) const;
+                                     Eigen::MatrixXcd &) const;
 
     void replicate_dymat_for_all_kpoints(std::complex<double> ***) const;
 
     static void duplicate_xk_boundary(double *,
-                                        std::vector<std::vector<double>> &);
+                                      std::vector<std::vector<double>> &);
 
     void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
-                                            const unsigned int NT,
-                                            const int type = 0);
+                                         const unsigned int NT,
+                                         const int type = 0);
 
     static void mpi_bcast_complex(std::complex<double> ****data,
-                                    const unsigned int NT,
-                                    const unsigned int nk,
-                                    const unsigned int ns);
+                                  const unsigned int NT,
+                                  const unsigned int nk,
+                                  const unsigned int ns);
 
     void get_derivative_central_diff(const double delta_t,
-                                        const unsigned int nk,
-                                        double **omega0,
-                                        double **omega2,
-                                        double **domega_dt);
+                                     const unsigned int nk,
+                                     double **omega0,
+                                     double **omega2,
+                                     double **domega_dt);
 
     void compute_free_energy_bubble_SCPH(const unsigned int [3],
-                                            std::complex<double> ****);
+                                         std::complex<double> ****);
 
     void bubble_correction(std::complex<double> ****,
-                            std::complex<double> ****);
+                           std::complex<double> ****);
 
     std::vector<std::complex<double>> get_bubble_selfenergy(const KpointMeshUniform *kmesh_in,
                                                             const unsigned int ns_in,
