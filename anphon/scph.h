@@ -330,6 +330,11 @@ private:
                                    std::complex<double> ***,
                                    double *);
 
+    void calculate_C2_array_ZSISA(double **,
+                                  double **,
+                                  std::complex<double> **,
+                                  double **);
+
     void calculate_eta_tensor(double **, 
                               const double * const * const);
 
@@ -402,6 +407,21 @@ private:
                                            std::complex<double> ***, 
                                            double ** , 
                                            const double);
+
+    void compute_ZSISA_stress(double **,
+                              std::complex<double> *,
+                              std::complex<double> ***,
+                              double **,
+                              std::complex<double> *,
+                              std::complex<double> **,
+                              std::complex<double> *,
+                              std::vector<int> &);
+
+    void compute_vZSISA_stress(std::complex<double> *,
+                               double **,
+                               std::complex<double> *,
+                               std::complex<double> *,
+                               double **);
 
     void compute_anharmonic_frequency(std::complex<double> ***,
                                       double **,
