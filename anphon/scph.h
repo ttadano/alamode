@@ -155,7 +155,7 @@ private:
     void load_scph_dymat_from_file(std::complex<double> ****,
                                        std::string);
 
-    void store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in,
+    void store_scph_dymat_to_file(const std::complex<double> *const *const *const *,
                                     std::string);
 
     void load_V0_from_file(double *);
@@ -193,25 +193,22 @@ private:
     void calculate_u0(const double * const, double * const);
 
     void calculate_force_in_real_space(const std::complex<double> * const, 
-                                       double * const);
+                                       double *);
 
-    void transform_to_real_space_at_Gamma(const std::complex<double> * const, 
-                                          double * const);
-
-    void update_cell_coordinate(double *q0,
-                                double *u0,
-                                double **u_tensor,
-                                const std::complex<double> * const v1_array_atT,
-                                const double * const* const omega2_array,
-                                const std::complex<double> * const del_v0_strain_atT,
-                                const double * const* const C2_array,
-                                const std::complex<double> * const* const* const cmat_convert,
-                                const std::vector<int> &harm_optical_modes,
-                                double *delta_q0,
-                                double *delta_u0,
-                                double *delta_u_tensor,
-                                double &du0,
-                                double &du_tensor);
+    void update_cell_coordinate(double *,
+                                double *,
+                                double **,
+                                const std::complex<double> * const ,
+                                const double * const* const ,
+                                const std::complex<double> * const ,
+                                const double * const* const ,
+                                const std::complex<double> * const* const* const ,
+                                const std::vector<int> &,
+                                double *,
+                                double *,
+                                double *,
+                                double &,
+                                double &);
 
     void postprocess(std::complex<double> ****,
                         std::complex<double> ****,
@@ -510,11 +507,11 @@ private:
     void compute_cmat(std::complex<double> ***,
                       const std::complex<double> * const* const* const);
 
-    void calc_v1_array_vib(std::complex<double> *, 
+    void calc_v1_vib(std::complex<double> *, 
                            std::complex<double> ***,
                            const double);
 
-    void calc_del_v0_strain_vib(std::complex<double> *, 
+    void calc_del_v0_del_umn_vib(std::complex<double> *, 
                                 std::complex<double> ***, 
                                 double);
 
