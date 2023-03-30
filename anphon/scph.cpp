@@ -1355,6 +1355,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     
     if (mympi->my_rank == 0) {
 
+        precompute_dymat_harm(kmesh_dense->nk,
+                              kmesh_dense->xk,
+                              kmesh_dense->kvec_na);
+
+
         std::complex<double> ***cmat_convert;
         allocate(cmat_convert, nk, ns, ns);
 
@@ -1497,7 +1502,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
                 renormalize_v2_from_umn(delta_v2_with_umn, del_v2_del_umn, del2_v2_del_umn2, u_tensor);
                 renormalize_v3_from_umn(v3_with_umn, v3_ref, del_v3_del_umn, u_tensor);
-                
+
                 for(ik = 0; ik < nk_irred_interpolate * nk; ik++){
                     for(is = 0; is < ns*ns; is++){
                         for(is1 = 0; is1 < ns*ns; is1++){
@@ -1886,6 +1891,12 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     }
 
     if (mympi->my_rank == 0) {
+
+        precompute_dymat_harm(kmesh_dense->nk,
+                              kmesh_dense->xk,
+                              kmesh_dense->kvec_na);
+
+
 
         std::complex<double> ***cmat_convert;
         allocate(cmat_convert, nk, ns, ns);
@@ -2396,6 +2407,12 @@ void Scph::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
     }
 
     if (mympi->my_rank == 0) {
+
+        precompute_dymat_harm(kmesh_dense->nk,
+                              kmesh_dense->xk,
+                              kmesh_dense->kvec_na);
+
+
 
         vec_temp.clear();
 
