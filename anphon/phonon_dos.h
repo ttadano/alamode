@@ -37,7 +37,7 @@ public:
 
     int n_energy;
     double emin, emax, delta_e;
-    double *energy_dos;
+    std::vector<double> energy_dos;
     double *dos_phonon;
     double **pdos_phonon;
     double *longitude_dos;
@@ -55,7 +55,9 @@ public:
                                        const unsigned int *const *tetras_in,
                                        double *dos_out) const;
 
-    void set_dos_energy_grid();
+    void update_dos_energy_grid(const double emin_in,
+                                const double emax_in,
+                                const bool force_update=false);
 
 private:
     void set_default_variables();
@@ -67,7 +69,7 @@ private:
                   const unsigned int *map_k,
                   const double *const *eval,
                   const unsigned int n,
-                  const double *energy,
+                  const std::vector<double> &energy,
                   const unsigned int neval,
                   const int smearing_method,
                   const unsigned int ntetra,
@@ -77,7 +79,7 @@ private:
     void calc_atom_projected_dos(const unsigned int nk,
                                  double *const *eval,
                                  const unsigned int n,
-                                 const double *energy,
+                                 const std::vector<double> &energy,
                                  double **ret,
                                  const unsigned int neval,
                                  const unsigned int natmin,
@@ -86,7 +88,7 @@ private:
 
     void calc_two_phonon_dos(double *const *eval,
                              const unsigned int n,
-                             const double *energy,
+                             const std::vector<double> &energy,
                              const int smearing_method,
                              double ***ret) const;
 
@@ -114,7 +116,7 @@ private:
                                  const double rlavec_p[3][3],
                                  double *const *eval,
                                  const unsigned int n,
-                                 const double *energy,
+                                 const std::vector<double> &energy,
                                  double *ret,
                                  const unsigned int neval,
                                  const unsigned int natmin,

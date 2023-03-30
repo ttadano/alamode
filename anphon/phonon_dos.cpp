@@ -45,7 +45,6 @@ void Dos::set_default_variables()
     two_phonon_dos = false;
     longitudinal_projected_dos = false;
     scattering_phase_space = 0;
-    energy_dos = nullptr;
     dos_phonon = nullptr;
     pdos_phonon = nullptr;
     dos2_phonon = nullptr;
@@ -63,9 +62,6 @@ void Dos::set_default_variables()
 
 void Dos::deallocate_variables()
 {
-    if (energy_dos) {
-        deallocate(energy_dos);
-    }
     if (dos_phonon) {
         deallocate(dos_phonon);
     }
@@ -116,7 +112,7 @@ void Dos::setup()
 
     if (flag_dos) {
 
-        set_dos_energy_grid();
+        update_dos_energy_grid(emin, emax, true);
 
         dymat_dos = new DymatEigenValue(dynamical->eigenvectors,
                                         false,
@@ -134,15 +130,24 @@ void Dos::setup()
     }
 }
 
-void Dos::set_dos_energy_grid()
+void Dos::update_dos_energy_grid(const double emin_in,
+                                 const double emax_in,
+                                 const bool force_update)
 {
-    n_energy = static_cast<int>((emax - emin) / delta_e) + 1;
-    if (energy_dos) deallocate(energy_dos);
+    if (auto_set_emin || force_update) {
+        if (emin_in < 0.0) {
+            emin = emin_in;
+        } else {
+            emin = 0.0;
+        }
+    }
+    if (auto_set_emax || force_update) emax = emax_in;
 
-    allocate(energy_dos, n_energy);
-
+    n_energy = static_cast<int>((emax_in - emin_in) / delta_e) + 1;
+    energy_dos.clear();
+    energy_dos.resize(n_energy);
     for (auto i = 0; i < n_energy; ++i) {
-        energy_dos[i] = emin + delta_e * static_cast<double>(i);
+        energy_dos[i] = emin_in + delta_e * static_cast<double>(i);
     }
 }
 
@@ -160,27 +165,18 @@ void Dos::calc_dos_all()
         }
     }
 
-    if (auto_set_emin || auto_set_emax) {
-        auto emin_now = std::numeric_limits<double>::max();
-        auto emax_now = std::numeric_limits<double>::min();
+    auto emin_now = std::numeric_limits<double>::max();
+    auto emax_now = std::numeric_limits<double>::min();
 
-        for (size_t j = 0; j < kmesh_dos->nk_irred; ++j) {
-            const auto jj = kmesh_dos->kpoint_irred_all[j][0].knum;
-            for (size_t k = 0; k < neval; ++k) {
-                emin_now = std::min(emin_now, eval[k][j]);
-                emax_now = std::max(emax_now, eval[k][j]);
-            }
+    for (size_t j = 0; j < kmesh_dos->nk_irred; ++j) {
+        const auto jj = kmesh_dos->kpoint_irred_all[j][0].knum;
+        for (size_t k = 0; k < neval; ++k) {
+            emin_now = std::min(emin_now, eval[k][j]);
+            emax_now = std::max(emax_now, eval[k][j]);
         }
-        if (auto_set_emin) {
-            if (emin_now < 0.0) {
-                emin = emin_now;
-            } else {
-                emin = 0.0;
-            }
-        }
-        if (auto_set_emax) emax = emax_now + delta_e;
-        set_dos_energy_grid();
     }
+    emax_now += delta_e;
+    update_dos_energy_grid(emin_now, emax_now);
 
     if (compute_dos) {
         allocate(dos_phonon, n_energy);
@@ -248,7 +244,7 @@ void Dos::calc_dos(const unsigned int nk,
                    const unsigned int *map_k,
                    const double *const *eval,
                    const unsigned int n,
-                   const double *energy,
+                   const std::vector<double> &energy,
                    const unsigned int neval,
                    const int smearing_method,
                    const unsigned int ntetra,
@@ -296,7 +292,7 @@ void Dos::calc_dos(const unsigned int nk,
 void Dos::calc_atom_projected_dos(const unsigned int nk,
                                   double *const *eval,
                                   const unsigned int n,
-                                  const double *energy,
+                                  const std::vector<double> &energy,
                                   double **ret,
                                   const unsigned int neval,
                                   const unsigned int natmin,
@@ -376,7 +372,7 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
                                           const double rlavec_p[3][3],
                                           double *const *eval,
                                           const unsigned int n,
-                                          const double *energy,
+                                          const std::vector<double> &energy,
                                           double *ret,
                                           const unsigned int neval,
                                           const unsigned int natmin,
@@ -486,7 +482,7 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
 
 void Dos::calc_two_phonon_dos(double *const *eval_in,
                               const unsigned int n,
-                              const double *energy,
+                              const std::vector<double> &energy,
                               const int smearing_method,
                               double ***ret) const
 {
@@ -736,6 +732,7 @@ void Dos::calc_dos_from_given_frequency(const KpointMeshUniform *kmesh_in,
             eval[k][j] = writes->in_kayser(eval_in[j][k]);
         }
     }
+
 
     calc_dos(nk, kmesh_in->nk_irred,
              &kmesh_in->kmap_to_irreducible[0],

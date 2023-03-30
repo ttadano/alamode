@@ -46,7 +46,7 @@ public:
 
 struct KpointSymmetry {
 public:
-    unsigned int symmetry_op;
+    int symmetry_op;
     unsigned int knum_irred_orig;
     unsigned int knum_orig;
 };
@@ -101,6 +101,8 @@ private:
     std::vector<int> *symop_minus_at_k;
     KpointSymmetry *kpoint_map_symmetry;
 
+    std::vector<Eigen::MatrixXcd> dymat_harm_short, dymat_harm_long;
+
     int compute_Cv_anharmonic;
 
     void set_default_variables();
@@ -122,6 +124,10 @@ private:
     void store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in);
 
     void exec_scph_main(std::complex<double> ****);
+
+    void precompute_dymat_harm(const unsigned int nk_in,
+                               double **xk_in,
+                               double **kvec_in);
 
     void postprocess(std::complex<double> ****delta_dymat_scph,
                      std::complex<double> ****delta_dymat_scph_plus_bubble);
@@ -162,7 +168,8 @@ private:
                             double **,
                             double **,
                             double **,
-                            std::complex<double> ***);
+                            std::complex<double> ***,
+                            const bool use_precomputed_dymat = false);
 
     void r2q(const double *,
              unsigned int,

@@ -438,7 +438,7 @@ The self-consistent phonon mode (``MODE = SCPH``) computes temperature-dependent
 
     V_{\boldsymbol{q}ij}^{[n]} = \omega_{\boldsymbol{q}i}^{2}\delta_{ij}+\frac{1}{2}\sum_{\boldsymbol{q}_{1},k,\ell}F_{\boldsymbol{q}\boldsymbol{q}_{1},ijk\ell}\mathcal{K}_{\boldsymbol{q}_{1},k\ell}^{[n-1]}.
 
-Here, :math:`\omega_{\boldsymbol{q}j}` is the harmonic phonon frequency and :math:`F_{\boldsymbol{q}\boldsymbol{q}_{1},ijk\ell} = \Phi(\boldsymbol{q}i;-\boldsymbol{q}j;\boldsymbol{q}_{1}k;-\boldsymbol{q}_{1}\ell)` is the reciprocal representation of fourth-order force constants. The updated phonon frequency in the :math:`n`\ th iteration is obtained by diagonalizing the matrix :math:`V_{\boldsymbol{q}ij}^{[n]}` as 
+Here, :math:`\omega_{\boldsymbol{q}j}` is the harmonic phonon frequency and :math:`F_{\boldsymbol{q}\boldsymbol{q}_{1},ijk\ell} = \Phi(-\boldsymbol{q}i;\boldsymbol{q}j;\boldsymbol{q}_{1}k;-\boldsymbol{q}_{1}\ell)` is the reciprocal representation of fourth-order force constants computed using the harmonic eigenvectors. The updated phonon frequency in the :math:`n`\ th iteration is obtained by diagonalizing the matrix :math:`V_{\boldsymbol{q}ij}^{[n]}` as 
 
 .. math::
 
@@ -450,9 +450,18 @@ where :math:`\omega_{\boldsymbol{q}j}^{[n]} = (\Lambda^{[n]}_{\boldsymbol{q}jj})
 
     \mathcal{K}_{\boldsymbol{q},ij}^{[n]} &= \alpha K_{\boldsymbol{q},ij}^{[n]} + (1-\alpha) K_{\boldsymbol{q},ij}^{[n-1]},  \\
     K_{\boldsymbol{q},ij}^{[n]} 
-    &= \sum_{k} C_{\boldsymbol{q},ki}^{[n]} C_{\boldsymbol{q},kj}^{[n]*} \frac{\hbar\big[1+2n(\omega_{\boldsymbol{q}_{1}k}^{[n]})\big]}{2\omega_{\boldsymbol{q}_{1}k}^{[n]}}.
+    &= \sum_{k} C_{\boldsymbol{q},ik}^{[n]} C_{\boldsymbol{q},jk}^{[n]*} \frac{\hbar\big[1+2n(\omega_{\boldsymbol{q}k}^{[n]})\big]}{2\omega_{\boldsymbol{q}k}^{[n]}}
+    = (C^{[n]}_{\boldsymbol{q}} Q^{[n]}_{\boldsymbol{q}} C^{[n]\dagger}_{\boldsymbol{q}})_{ij},\\
+    Q_{\boldsymbol{q},ij}^{[n]} 
+    &= \frac{\hbar\big[1+2n(\omega_{\boldsymbol{q}i}^{[n]})\big]}{2\omega_{\boldsymbol{q}i}^{[n]}}\delta_{ij}.
 
-:math:`\alpha` is the mixing parameter, which can be changed via the ``MIXALPHA`` tag.
+:math:`\alpha` is the mixing parameter, which can be changed via the ``MIXALPHA`` tag, and :math:`n(\omega)` is the Bose-Einstein distribution function.
+
+When ``CLASSICAL = 1`` is given in input, the expectation value of the mean square displacement is computed using classical statistics, where the :math:`Q_{\boldsymbol{q}}` matrix is replaced by
+
+.. math::
+
+    Q_{\boldsymbol{q},ij}^{[n]} = \frac{k_{B}T}{(\omega_{\boldsymbol{q}i}^{[n]})^{2}} \delta_{ij}.
 
 The SCPH equation is solved on the irreducible :math:`\boldsymbol{q}` grid defined by the ``KMESH_INTERPOLATE`` tag.
 The :math:`\boldsymbol{q}_{1}` grid in Eq. :eq:`scph_v_iter`, given  by the ``KMESH_SCPH`` tag,  
