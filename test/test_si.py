@@ -121,12 +121,12 @@ def check_consistency_alm(project_root, abs_tol=0.01, rel_tol=1.0e-9):
     data_ref = np.loadtxt(fname_ref,
                           comments=['#', '*'],
                           skiprows=15,
-                          max_rows=25,
+                          max_rows=26,
                           usecols=[2, ])
     data_now = np.loadtxt('si222.fcs',
                           comments=['#', '*'],
                           skiprows=15,
-                          max_rows=25,
+                          max_rows=26,
                           usecols=[2, ])
     isclose_all = True
     for val1, val2 in zip(data_ref, data_now):
@@ -138,13 +138,13 @@ def check_consistency_alm(project_root, abs_tol=0.01, rel_tol=1.0e-9):
     fname_ref = '%s/example/Si/reference/si222_cubic.fcs' % project_root
     data_ref = np.loadtxt(fname_ref,
                           comments=['#', '*'],
-                          skiprows=15,
-                          max_rows=64,
+                          skiprows=43,
+                          max_rows=36,
                           usecols=[2, ])
     data_now = np.loadtxt('si222_cubic.fcs',
                           comments=['#', '*'],
-                          skiprows=15,
-                          max_rows=64,
+                          skiprows=43,
+                          max_rows=36,
                           usecols=[2, ])
     isclose_all = True
     for val1, val2 in zip(data_ref, data_now):

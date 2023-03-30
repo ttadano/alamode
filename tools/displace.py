@@ -29,101 +29,6 @@ from interface.QE import QEParser
 from interface.VASP import VaspParser
 from interface.xTAPP import XtappParser
 
-parser = argparse.ArgumentParser()
-
-parser.add_argument('--mag',
-                    type=float, default=0.02,
-                    help="Magnitude of displacement in units of \
-                        Angstrom (default: 0.02)")
-
-parser.add_argument('--prefix',
-                    type=str, default="disp",
-                    help="Prefix of the files to be created. (default: disp)")
-
-parser.add_argument('--QE',
-                    metavar='supercell.pw.in',
-                    help="Quantum-ESPRESSO input file with equilibrium atomic positions (default: None)")
-
-parser.add_argument('--VASP',
-                    metavar='SPOSCAR',
-                    help="VASP POSCAR file with equilibrium atomic \
-                        positions (default: None)")
-
-parser.add_argument('--xTAPP',
-                    metavar='supercell.cg',
-                    help="xTAPP CG file with equilibrium atomic \
-                        positions (default: None)")
-
-parser.add_argument('--LAMMPS',
-                    metavar='supercell.lammps',
-                    help="LAMMPS structure file with equilibrium atomic positions (default: None)")
-
-parser.add_argument('--OpenMX',
-                    metavar='supercell.dat',
-                    help="dat file with equilibrium atomic \
-                        positions (default: None)")
-
-parser.add_argument('-pf', '--pattern_file', metavar='prefix.pattern_*', type=str, nargs='+',
-                    help="ALM pattern file(s) generated with MODE = suggest")
-
-parser.add_argument('--random', action="store_true", dest="random", default=False,
-                    help="Generate randomly-displaced structures.")
-
-parser.add_argument('--random_normalcoord', action="store_true", dest="random_normalcoord", default=False,
-                    help="Generate randomly-displaced structures in normal coordinate basis. "
-                         "Please give the --temp option as well.")
-
-parser.add_argument('--temp', type=float, default=100,
-                    help="Target temperature of the random distribution of \
-                        Q (default: 100). Used if --MD is not given.")
-
-parser.add_argument('--ignore_imag', action="store_true", dest="ignore_imag", default=False,
-                    help="Ignore imaginary modes when generating random displacements by"
-                         "--random_normalcoord option. By default, imaginary frequency"
-                         "will be replaced with its absolute value.")
-
-parser.add_argument('-e', '--every', type=str, default="50", metavar='start:end:interval',
-                    help="Specify the range and interval of data sampling. "
-                         "--every=1:1000:10 means sampling one structure for every 10 snapshots"
-                         "from the 1st step to the 1000th step. Used if --MD is given."
-                         "(default: 50)")
-
-parser.add_argument('-md', '--load_mddata', type=str, nargs='+', default=None,
-                    help="Specify the file(s) containing displacements of MD trajectories.")
-
-parser.add_argument('--prim', type=str, default=None,
-                    help="Specify the file containing structure data of the primitive lattice.")
-
-parser.add_argument('--evec', type=str, default=None,
-                    help="Specify the filename containing eigenvalues and eigenvectors.")
-
-parser.add_argument('-nd', '--num_disp', type=int, default=1,
-                    help="Specify the number of displacement patterns.")
-
-parser.add_argument('-cl', '--classical', action="store_true", dest="classical", default=False,
-                    help="Use classical expectation value for <Q^2>.")
-
-parser.add_argument('-p', '--print', action="store_true", dest="print_disp_stdout", default=False,
-                    help="Print displacements to stdout. The unit is Angstrom.")
-
-parser.add_argument('--pes', type=str, default=None, metavar='"q_index branch_index"',
-                    help="Specify the target mode to displace atoms for calculating "
-                         "the potential energy surface. --pes='5 10' will generate displacements"
-                         "that correspond to the phonon mode at the 5th q point and the 10th branch."
-                         "Only the real part of the phonon eigenvector is used by default."
-                         "To use the imaginary part instead, please add --imag-evec option.")
-
-parser.add_argument('--imag_evec', action="store_true", dest="imag_evec", default=False,
-                    help="In the --pes mode, the imaginary part of the phonon eigenvectors"
-                         "will be used when --imag_evec option is given. By default, the"
-                         "real part of the eigenvectors are used. Please be noted that "
-                         "adding this option generates zero displacements for the phonon modes"
-                         "at the Brillouin zone center and boundaries because the eigenvectors"
-                         "at these points are purely real.")
-
-parser.add_argument('--Qrange', type=str, default=None, metavar='"Qmin Qmax"',
-                    help='Range of normal coordinate amplitude Q in units of amu^{1/2}*Angstrom')
-
 
 def check_code_options(args):
     conditions = [args.VASP is None,
@@ -218,7 +123,8 @@ def check_displace_options(args, code):
               "extract.py with --get disp option.\n" % code)
 
     if (args.pes or displacement_mode == "random_normalcoordinate") and code == "LAMMPS":
-        raise RuntimeError("sorry. --random_normalcoord and --pes are not supported for LAMMPS.")
+        raise RuntimeError(
+            "sorry. --random_normalcoord and --pes are not supported for LAMMPS.")
 
     return displacement_mode
 
@@ -276,6 +182,101 @@ def print_displacement_stdout(disp_list, codeobj):
 
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--mag',
+                        type=float, default=0.02,
+                        help="Magnitude of displacement in units of \
+                            Angstrom (default: 0.02)")
+
+    parser.add_argument('--prefix',
+                        type=str, default="disp",
+                        help="Prefix of the files to be created. (default: disp)")
+
+    parser.add_argument('--QE',
+                        metavar='supercell.pw.in',
+                        help="Quantum-ESPRESSO input file with equilibrium atomic positions (default: None)")
+
+    parser.add_argument('--VASP',
+                        metavar='SPOSCAR',
+                        help="VASP POSCAR file with equilibrium atomic \
+                            positions (default: None)")
+
+    parser.add_argument('--xTAPP',
+                        metavar='supercell.cg',
+                        help="xTAPP CG file with equilibrium atomic \
+                            positions (default: None)")
+
+    parser.add_argument('--LAMMPS',
+                        metavar='supercell.lammps',
+                        help="LAMMPS structure file with equilibrium atomic positions (default: None)")
+
+    parser.add_argument('--OpenMX',
+                        metavar='supercell.dat',
+                        help="dat file with equilibrium atomic \
+                            positions (default: None)")
+
+    parser.add_argument('-pf', '--pattern_file', metavar='prefix.pattern_*', type=str, nargs='+',
+                        help="ALM pattern file(s) generated with MODE = suggest")
+
+    parser.add_argument('--random', action="store_true", dest="random", default=False,
+                        help="Generate randomly-displaced structures.")
+
+    parser.add_argument('--random_normalcoord', action="store_true", dest="random_normalcoord", default=False,
+                        help="Generate randomly-displaced structures in normal coordinate basis. "
+                             "Please give the --temp option as well.")
+
+    parser.add_argument('--temp', type=float, default=100,
+                        help="Target temperature of the random distribution of \
+                            Q (default: 100). Used if --MD is not given.")
+
+    parser.add_argument('--ignore_imag', action="store_true", dest="ignore_imag", default=False,
+                        help="Ignore imaginary modes when generating random displacements by"
+                             "--random_normalcoord option. By default, imaginary frequency"
+                             "will be replaced with its absolute value.")
+
+    parser.add_argument('-e', '--every', type=str, default="50", metavar='start:end:interval',
+                        help="Specify the range and interval of data sampling. "
+                             "--every=1:1000:10 means sampling one structure for every 10 snapshots"
+                             "from the 1st step to the 1000th step. Used if --MD is given."
+                             "(default: 50)")
+
+    parser.add_argument('-md', '--load_mddata', type=str, nargs='+', default=None,
+                        help="Specify the file(s) containing displacements of MD trajectories.")
+
+    parser.add_argument('--prim', type=str, default=None,
+                        help="Specify the file containing structure data of the primitive lattice.")
+
+    parser.add_argument('--evec', type=str, default=None,
+                        help="Specify the filename containing eigenvalues and eigenvectors.")
+
+    parser.add_argument('-nd', '--num_disp', type=int, default=1,
+                        help="Specify the number of displacement patterns.")
+
+    parser.add_argument('-cl', '--classical', action="store_true", dest="classical", default=False,
+                        help="Use classical expectation value for <Q^2>.")
+
+    parser.add_argument('-p', '--print', action="store_true", dest="print_disp_stdout", default=False,
+                        help="Print displacements to stdout. The unit is Angstrom.")
+
+    parser.add_argument('--pes', type=str, default=None, metavar='"q_index branch_index"',
+                        help="Specify the target mode to displace atoms for calculating "
+                             "the potential energy surface. --pes='5 10' will generate displacements"
+                             "that correspond to the phonon mode at the 5th q point and the 10th branch."
+                             "Only the real part of the phonon eigenvector is used by default."
+                             "To use the imaginary part instead, please add --imag-evec option.")
+
+    parser.add_argument('--imag_evec', action="store_true", dest="imag_evec", default=False,
+                        help="In the --pes mode, the imaginary part of the phonon eigenvectors"
+                             "will be used when --imag_evec option is given. By default, the"
+                             "real part of the eigenvectors are used. Please be noted that "
+                             "adding this option generates zero displacements for the phonon modes"
+                             "at the Brillouin zone center and boundaries because the eigenvectors"
+                             "at these points are purely real.")
+
+    parser.add_argument('--Qrange', type=str, default=None, metavar='"Qmin Qmax"',
+                        help='Range of normal coordinate amplitude Q in units of amu^{1/2}*Angstrom')
 
     args = parser.parse_args()
 

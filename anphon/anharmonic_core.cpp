@@ -555,7 +555,7 @@ std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
     double omega[4];
     double ret_re = 0.0;
     double ret_im = 0.0;
-    std::complex<double> ret = std::complex<double>(0.0, 0.0);
+    auto ret = std::complex<double>(0.0, 0.0);
 
     for (i = 0; i < 4; ++i) {
         kn[i] = ks[i] / ns;
@@ -606,13 +606,14 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
     unsigned int nsize_group;
 
     const auto tune_type_now = phase_storage_in->get_tune_type();
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     if (tune_type_now == 1) {
 
 #pragma omp parallel for private(ret_in, nsize_group, j, phase)
         for (i = 0; i < ngroup_v4; ++i) {
 
-            ret_in = std::complex<double>(0.0, 0.0);
+            ret_in = complex_zero;
             nsize_group = fcs_group_v4[i].size();
 
             for (j = 0; j < nsize_group; ++j) {
@@ -640,7 +641,7 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
 #pragma omp parallel for private(ret_in, nsize_group, j, phase3)
         for (i = 0; i < ngroup_v4; ++i) {
 
-            ret_in = std::complex<double>(0.0, 0.0);
+            ret_in = complex_zero;
             nsize_group = fcs_group_v4[i].size();
 
             for (j = 0; j < nsize_group; ++j) {
@@ -659,7 +660,7 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
 #pragma omp parallel for private(ret_in, nsize_group, phase)
         for (i = 0; i < ngroup_v4; ++i) {
 
-            ret_in = std::complex<double>(0.0, 0.0);
+            ret_in = complex_zero;
             nsize_group = fcs_group_v4[i].size();
 
             for (j = 0; j < nsize_group; ++j) {

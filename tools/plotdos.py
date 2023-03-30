@@ -17,22 +17,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-# parser options
-usage = "usage: %prog [options] file1.dos file2.dos ... "
-parser = optparse.OptionParser(usage=usage)
-
-parser.add_option("--pdos", action="store_true", dest="print_pdos", default=False,
-                  help="print atom-projected phonon DOS")
-parser.add_option("--nokey", action="store_false", dest="print_key", default=True,
-                  help="don't print the key in the figure")
-parser.add_option("-u", "--unit", action="store", type="string", dest="unitname", default="kayser",
-                  help="print the band dispersion in units of UNIT. Available options are kayser, meV, and THz",
-                  metavar="UNIT")
-parser.add_option("--emin", action="store", type="float", dest="emin",
-                  help="minimum value of the energy axis")
-parser.add_option("--emax", action="store", type="float", dest="emax",
-                  help="maximum value of the energy axis")
-
 # font styles
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
 
@@ -129,19 +113,7 @@ def sum_atom_projected_dos(pdos_tmp, natoms_tmp):
     return pdos_sum
 
 
-if __name__ == '__main__':
-
-    options, args = parser.parse_args()
-    files = args[0:]
-    nfiles = len(files)
-
-    if nfiles == 0:
-        print("Usage: plotdos.py [options] file1.dos file2.dos ...")
-        print("For details of available options, please type\n$ python plotdos.py -h")
-        exit(1)
-    else:
-        print("Number of files = %d" % nfiles)
-
+def run_plot(files, unitname='kayser', print_pdos=False, print_key=False, emin=None, emax=None, show=True):
     energy_axis = []
     dos_merged = []
 
@@ -150,7 +122,7 @@ if __name__ == '__main__':
         energy_axis.append(data_tmp[:, 0])
         dos_merged.append(data_tmp[:, 1:])
 
-    energy_axis = change_xscale(energy_axis, options.unitname)
+    energy_axis = change_xscale(energy_axis, unitname)
     xmin, xmax = get_x_minmax(energy_axis)
     ymin, ymax = get_y_minmax(dos_merged)
 
@@ -164,7 +136,7 @@ if __name__ == '__main__':
 
         counter_line += 1
 
-        if options.print_pdos:
+        if print_pdos:
             symbols, natoms = get_natoms_and_symbols(files[i])
 
             if len(dos_merged[i][0, 1:]) != np.sum(natoms):
@@ -180,24 +152,24 @@ if __name__ == '__main__':
 
                     counter_line += 1
 
-    if options.unitname.lower() == "mev":
+    if unitname.lower() == "mev":
         plt.xlabel("Frequency (meV)", fontsize=16)
-    elif options.unitname.lower() == "thz":
+    elif unitname.lower() == "thz":
         plt.xlabel("Frequency (THz)", fontsize=16)
     else:
         plt.xlabel("Frequency (cm${}^{-1}$)", fontsize=16)
 
     plt.ylabel("Phonon DOS", fontsize=16, labelpad=20)
 
-    if options.emin == None and options.emax == None:
+    if emin == None and emax == None:
         factor = 1.00
         xmin *= factor
         xmax *= factor
     else:
-        if options.emin != None:
-            xmin = options.emin
-        if options.emax != None:
-            xmax = options.emax
+        if emin != None:
+            xmin = emin
+        if emax != None:
+            xmax = emax
 
         if xmin > xmax:
             print("Warning: emin > emax")
@@ -208,8 +180,42 @@ if __name__ == '__main__':
     plt.xticks(fontsize=16)
     plt.yticks([])
 
-    if options.print_key:
+    if print_key:
         plt.legend(loc='upper right', prop={'size': 12})
 
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
+
+
+if __name__ == '__main__':
+
+    usage = "usage: %prog [options] file1.dos file2.dos ... "
+    parser = optparse.OptionParser(usage=usage)
+
+    parser.add_option("--pdos", action="store_true", dest="print_pdos", default=False,
+                      help="print atom-projected phonon DOS")
+    parser.add_option("--nokey", action="store_false", dest="print_key", default=True,
+                      help="don't print the key in the figure")
+    parser.add_option("-u", "--unit", action="store", type="string", dest="unitname", default="kayser",
+                      help="print the band dispersion in units of UNIT. "
+                           "Available options are kayser, meV, and THz",
+                      metavar="UNIT")
+    parser.add_option("--emin", action="store", type="float", dest="emin",
+                      help="minimum value of the energy axis")
+    parser.add_option("--emax", action="store", type="float", dest="emax",
+                      help="maximum value of the energy axis")
+
+    options, args = parser.parse_args()
+    files = args[0:]
+    nfiles = len(files)
+
+    if nfiles == 0:
+        print("Usage: plotdos.py [options] file1.dos file2.dos ...")
+        print("For details of available options, please type\n$ python plotdos.py -h")
+        exit(1)
+    else:
+        print("Number of files = %d" % nfiles)
+
+    run_plot(files, options.unitname,
+             options.print_pdos, options.print_key, options.emin, options.emax)

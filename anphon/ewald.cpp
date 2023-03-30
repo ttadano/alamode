@@ -117,22 +117,30 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
     // Calculating convergence parameters
     invmat3(epsilon_inv, epsilon);
 
+    double lavec_s_transpose[3][3];
+
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            lavec_s_transpose[i][j] = system->lavec_s[j][i];
+        }
+    }
+
     // For calculating Coulombic (dipole-dipole) FCs
     for (icrd = 0; icrd < 3; ++icrd) {
-        lavec_norm[icrd] = std::sqrt(std::pow(system->lavec_s[icrd][0], 2.0)
-                                     + std::pow(system->lavec_s[icrd][1], 2.0)
-                                     + std::pow(system->lavec_s[icrd][2], 2.0));
+        lavec_norm[icrd] = std::sqrt(std::pow(lavec_s_transpose[icrd][0], 2.0)
+                                     + std::pow(lavec_s_transpose[icrd][1], 2.0)
+                                     + std::pow(lavec_s_transpose[icrd][2], 2.0));
 
         rlavec_norm[icrd] = std::sqrt(std::pow(system->rlavec_s[icrd][0], 2.0)
                                       + std::pow(system->rlavec_s[icrd][1], 2.0)
                                       + std::pow(system->rlavec_s[icrd][2], 2.0));
 
-        rotvec(e_lavec, system->lavec_s[icrd], epsilon_inv);
+        rotvec(e_lavec, lavec_s_transpose[icrd], epsilon_inv);
         rotvec(e_rlavec, system->rlavec_s[icrd], epsilon);
 
-        lavec_enorm = std::sqrt(system->lavec_s[icrd][0] * e_lavec[0]
-                                + system->lavec_s[icrd][1] * e_lavec[1]
-                                + system->lavec_s[icrd][2] * e_lavec[2]);
+        lavec_enorm = std::sqrt(lavec_s_transpose[icrd][0] * e_lavec[0]
+                                + lavec_s_transpose[icrd][1] * e_lavec[1]
+                                + lavec_s_transpose[icrd][2] * e_lavec[2]);
 
         rlavec_enorm = std::sqrt(system->rlavec_s[icrd][0] * e_rlavec[0]
                                  + system->rlavec_s[icrd][1] * e_rlavec[1]
@@ -159,21 +167,28 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
     num_l_sub = (2 * nl_sub[0] + 1) * (2 * nl_sub[1] + 1) * (2 * nl_sub[2] + 1);
     num_g_sub = (2 * ng_sub[0] + 1) * (2 * ng_sub[1] + 1) * (2 * ng_sub[2] + 1);
 
+    double lavec_p_transpose[3][3];
+
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            lavec_p_transpose[i][j] = system->lavec_p[j][i];
+        }
+    }
 
     // For calculating Coulombic (dipole-dipole) dynamical matrix
     for (icrd = 0; icrd < 3; ++icrd) {
-        lavec_norm[icrd] = std::sqrt(std::pow(system->lavec_p[icrd][0], 2.0)
-                                     + std::pow(system->lavec_p[icrd][1], 2.0)
-                                     + std::pow(system->lavec_p[icrd][2], 2.0));
+        lavec_norm[icrd] = std::sqrt(std::pow(lavec_p_transpose[icrd][0], 2.0)
+                                     + std::pow(lavec_p_transpose[icrd][1], 2.0)
+                                     + std::pow(lavec_p_transpose[icrd][2], 2.0));
 
         rlavec_norm[icrd] = std::sqrt(std::pow(system->rlavec_p[icrd][0], 2.0)
                                       + std::pow(system->rlavec_p[icrd][1], 2.0)
                                       + std::pow(system->rlavec_p[icrd][2], 2.0));
 
-        rotvec(e_lavec, system->lavec_p[icrd], epsilon_inv);
-        lavec_enorm = std::sqrt(system->lavec_p[icrd][0] * e_lavec[0]
-                                + system->lavec_p[icrd][1] * e_lavec[1]
-                                + system->lavec_p[icrd][2] * e_lavec[2]);
+        rotvec(e_lavec, lavec_p_transpose[icrd], epsilon_inv);
+        lavec_enorm = std::sqrt(lavec_p_transpose[icrd][0] * e_lavec[0]
+                                + lavec_p_transpose[icrd][1] * e_lavec[1]
+                                + lavec_p_transpose[icrd][2] * e_lavec[2]);
 
         rotvec(e_rlavec, system->rlavec_p[icrd], epsilon);
         rlavec_enorm = std::sqrt(system->rlavec_p[icrd][0] * e_rlavec[0]
