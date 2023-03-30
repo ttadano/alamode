@@ -162,6 +162,33 @@ private:
                                       bool,
                                       const unsigned int verbosity);
 
+    void compute_anharmonic_frequency2(std::complex<double> ***,
+                                      double **,
+                                      std::complex<double> ***,
+                                      double,
+                                      bool &,
+                                      std::complex<double> ***,
+                                      bool,
+                                      const unsigned int verbosity);
+
+    void update_frequency(const double temperature_in,
+                          const Eigen::MatrixXd &omega_in,
+                          const std::vector<Eigen::MatrixXcd> &Fmat0,
+                          const std::vector<Eigen::MatrixXcd> &evec0,
+                          std::complex<double> ***dymat0,
+                          std::complex<double> ***v4_array_all,
+                          std::complex<double> ***cmat_convert,
+                          std::vector<Eigen::MatrixXcd> &dmat,
+                          std::complex<double> ***dymat_out,
+                          std::complex<double> ***evec_out,
+                          const double alpha,
+                          const bool offdiag,
+                          Eigen::MatrixXd &omega_out);
+
+    void get_permutation_matrix(const int ns,
+                                std::complex<double> **cmat_in,
+                                Eigen::MatrixXd &permutation_matrix) const;
+
     void exec_interpolation(const unsigned int [3],
                             std::complex<double> ***,
                             unsigned int,
@@ -169,7 +196,8 @@ private:
                             double **,
                             double **,
                             std::complex<double> ***,
-                            const bool use_precomputed_dymat = false);
+                            const bool use_precomputed_dymat = false,
+                            const bool return_sqrt = true);
 
     void r2q(const double *,
              unsigned int,

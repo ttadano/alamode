@@ -902,6 +902,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
                     }
                 }
             }
+
             if (converged_prev) {
                 if (lower_temp) {
                     for (ik = 0; ik < nk; ++ik) {
@@ -919,13 +920,22 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
             }
 
             compute_anharmonic_frequency(v4_array_all,
-                                         omega2_anharm[iT],
-                                         evec_anharm_tmp,
-                                         temp,
-                                         converged_prev,
-                                         cmat_convert,
-                                         selfenergy_offdiagonal,
-                                         writes->getVerbosity());
+                                          omega2_anharm[iT],
+                                          evec_anharm_tmp,
+                                          temp,
+                                          converged_prev,
+                                          cmat_convert,
+                                          selfenergy_offdiagonal,
+                                          writes->getVerbosity());
+
+//            compute_anharmonic_frequency2(v4_array_all,
+//                                          omega2_anharm[iT],
+//                                          evec_anharm_tmp,
+//                                          temp,
+//                                          converged_prev,
+//                                          cmat_convert,
+//                                          selfenergy_offdiagonal,
+//                                          writes->getVerbosity());
 
             calc_new_dymat_with_evec(dymat_anharm[iT],
                                      omega2_anharm[iT],
@@ -2151,7 +2161,8 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
                               double **kvec_dense,
                               double **eval_out,
                               std::complex<double> ***evec_out,
-                              const bool use_precomputed_dymat)
+                              const bool use_precomputed_dymat,
+                              const bool return_sqrt)
 {
     unsigned int i, j, is;
     const auto ns = dynamical->neval;
@@ -2187,15 +2198,20 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
             }
             diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
 
-            for (is = 0; is < ns; ++is) {
-                const auto eval_tmp = eval_real[is];
-                if (eval_tmp < 0.0) {
-                    eval_vec[is] = -std::sqrt(-eval_tmp);
-                } else {
-                    eval_vec[is] = std::sqrt(eval_tmp);
+            if (return_sqrt) {
+                for (is = 0; is < ns; ++is) {
+                    const auto eval_tmp = eval_real[is];
+                    if (eval_tmp < 0.0) {
+                        eval_vec[is] = -std::sqrt(-eval_tmp);
+                    } else {
+                        eval_vec[is] = std::sqrt(eval_tmp);
+                    }
                 }
+                for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
+            } else {
+                for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_real[is];
             }
-            for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
+
         }
 
     } else {
@@ -2246,15 +2262,19 @@ void Scph::exec_interpolation(const unsigned int kmesh_orig[3],
             }
             diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
 
-            for (is = 0; is < ns; ++is) {
-                const auto eval_tmp = eval_real[is];
-                if (eval_tmp < 0.0) {
-                    eval_vec[is] = -std::sqrt(-eval_tmp);
-                } else {
-                    eval_vec[is] = std::sqrt(eval_tmp);
+            if (return_sqrt) {
+                for (is = 0; is < ns; ++is) {
+                    const auto eval_tmp = eval_real[is];
+                    if (eval_tmp < 0.0) {
+                        eval_vec[is] = -std::sqrt(-eval_tmp);
+                    } else {
+                        eval_vec[is] = std::sqrt(eval_tmp);
+                    }
                 }
+                for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
+            } else {
+                for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_real[is];
             }
-            for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
         }
         if (mat_harmonic) deallocate(mat_harmonic);
         if (mat_harmonic_na) deallocate(mat_harmonic_na);
@@ -2687,8 +2707,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
     std::cout << " Temperature = " << T_in << " K" << std::endl;
 
+    std::cout << " flag_converged = " << flag_converged << '\n';
     // Set initial values
-    
+
     for (ik = 0; ik < nk; ++ik) {
         for (is = 0; is < ns; ++is) {
 
@@ -2811,7 +2832,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                         kk = nk * ik + jk;
                         for (ks = 0; ks < ns; ++ks) {
                             Fmat(is, is) += v4_array_all[kk][i][(ns + 1) * ks]
-                                   * dmat_convert[jk](ks, ks);
+                                            * dmat_convert[jk](ks, ks);
                         }
                     }
                 }
@@ -2825,7 +2846,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                             for (ks = 0; ks < ns; ++ks) {
                                 for (unsigned int ls = 0; ls < ns; ++ls) {
                                     Fmat(is, js) += v4_array_all[kk][i][ns * ks + ls]
-                                           * dmat_convert[jk](ks, ls);
+                                                    * dmat_convert[jk](ks, ls);
                                 }
                             }
                         }
@@ -3088,6 +3109,691 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     deallocate(dymat_r_new);
     deallocate(dymat_q);
     deallocate(dymat_q_HA);
+}
+
+void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
+                                         double **omega2_anharm,
+                                         std::complex<double> ***evec_anharm_scph,
+                                         const double temp,
+                                         bool &flag_converged,
+                                         std::complex<double> ***cmat_convert,
+                                         const bool offdiag,
+                                         const unsigned int verbosity)
+{
+    // This is the main function of the SCPH equation.
+    // The detailed algorithm can be found in PRB 92, 054301 (2015).
+    // Eigen3 library is used for the compact notation of matrix-matrix products.
+
+    using namespace Eigen;
+
+    int ik, jk;
+    unsigned int i;
+    unsigned int is, js, ks;
+    unsigned int kk;
+    const auto nk = kmesh_dense->nk;
+    const auto ns = dynamical->neval;
+    unsigned int knum, knum_interpolate;
+    const auto nk_interpolate = kmesh_coarse->nk;
+    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
+
+    MatrixXd omega2_in(nk, ns), omega2_out(nk, ns);
+    MatrixXd omega2_HA(nk, ns);
+    MatrixXd omega2_in_sorted(nk, ns);
+    std::vector<MatrixXd> permutation1, permutation2, permutation3;
+    MatrixXcd Dymat(ns, ns);
+    MatrixXd permutation;
+
+    const double conv_tol = tolerance_scph;
+    double alpha = mixalpha;
+
+    std::complex<double> ***evec_new;
+    std::complex<double> ***dymat_q, ***dymat_q_HA;
+
+    std::vector<MatrixXcd> dmat_convert;
+    std::vector<MatrixXcd> evec_initial;
+    std::vector<MatrixXcd> Fmat0;
+
+    dmat_convert.resize(nk);
+    evec_initial.resize(nk);
+    Fmat0.resize(nk_irred_interpolate);
+
+    for (ik = 0; ik < nk; ++ik) {
+        dmat_convert[ik].resize(ns, ns);
+        evec_initial[ik].resize(ns, ns);
+    }
+    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
+        Fmat0[ik].resize(ns, ns);
+    }
+    const auto complex_one = std::complex<double>(1.0, 0.0);
+    const auto complex_zero = std::complex<double>(0.0, 0.0);
+
+    allocate(evec_new, nk, ns, ns);
+    allocate(dymat_q, ns, ns, nk_interpolate);
+    allocate(dymat_q_HA, ns, ns, nk_interpolate);
+
+    const auto T_in = temp;
+
+    std::vector<unsigned int> is_acoustic(ns);
+
+    std::cout << " Temperature = " << T_in << " K" << std::endl;
+
+
+    const int imix_algo = 1;
+
+    // Set initial values
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
+
+            if (flag_converged) {
+                if (omega2_anharm[ik][is] < 0.0 && std::abs(omega2_anharm[ik][is]) > 1.0e-16 && verbosity > 0) {
+                    std::cout << "Warning : Large negative frequency detected" << std::endl;
+                }
+
+                if (omega2_anharm[ik][is] < 0.0) {
+                    omega2_in(ik, is) = -omega2_anharm[ik][is];
+                } else {
+                    omega2_in(ik, is) = omega2_anharm[ik][is];
+                }
+            } else {
+                if (omega2_harmonic[ik][is] < 0.0) {
+                    omega2_in(ik, is) = -omega2_harmonic[ik][is];
+                } else {
+                    omega2_in(ik, is) = omega2_harmonic[ik][is];
+                }
+            }
+
+            omega2_HA(ik, is) = omega2_harmonic[ik][is];
+
+            for (js = 0; js < ns; ++js) {
+                // transpose evec so that evec_initial can be used as is.
+                evec_initial[ik](js, is) = evec_harmonic[ik][is][js];
+
+                if (!flag_converged) {
+                    // Initialize Cmat with identity matrix
+                    if (is == js) {
+                        cmat_convert[ik][is][js] = complex_one;
+                    } else {
+                        cmat_convert[ik][is][js] = complex_zero;
+                    }
+                }
+            }
+        }
+    }
+
+    int nacoustic;
+    auto threshould = 1.0e-24;
+    do {
+        nacoustic = 0;
+        for (is = 0; is < ns; ++is) {
+            if (std::abs(omega2_harmonic[0][is]) < threshould) {
+                is_acoustic[is] = 1;
+                ++nacoustic;
+            } else {
+                is_acoustic[is] = 0;
+            }
+        }
+        if (nacoustic > 3) {
+            exit("compute_anharmonic_frequency2",
+                 "Could not assign acoustic modes at Gamma.");
+        }
+        threshould *= 2.0;
+    } while (nacoustic < 3);
+
+    for (is = 0; is < ns; ++is) {
+        if (is_acoustic[is]) {
+            omega2_in(0, is) = 0.0;
+            omega2_HA(0, is) = 0.0;
+        }
+    }
+
+    // Set initial harmonic dymat and eigenvalues
+    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
+        knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
+        knum = kmap_interpolate_to_scph[knum_interpolate];
+        Dymat = omega2_HA.row(knum).asDiagonal();
+
+        // Harmonic dynamical matrix
+        Dymat = evec_initial[knum] * Dymat.eval() * evec_initial[knum].adjoint();
+        symmetrize_dynamical_matrix(ik, Dymat);
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                dymat_q_HA[is][js][knum_interpolate] = Dymat(is, js);
+            }
+        }
+
+        // Harmonic Fmat
+        Fmat0[ik] = omega2_HA.row(knum).asDiagonal();
+    } // close loop ik
+    replicate_dymat_for_all_kpoints(dymat_q_HA);
+
+    // Main loop
+    int iloop = 0;
+
+    permutation1.resize(nk);
+    permutation2.resize(nk);
+    permutation3.resize(nk);
+
+    for (ik = 0; ik < nk; ++ik) {
+        get_permutation_matrix(ns, cmat_convert[ik], permutation);
+        permutation1[ik] = permutation;
+    }
+
+
+    update_frequency(T_in,
+                     omega2_in,
+                     Fmat0,
+                     evec_initial,
+                     dymat_q_HA,
+                     v4_array_all,
+                     cmat_convert,
+                     dmat_convert,
+                     dymat_q,
+                     evec_new,
+                     1.0,
+                     offdiag,
+                     omega2_out);
+
+    for (ik = 0; ik < nk; ++ik) {
+        get_permutation_matrix(ns, cmat_convert[ik], permutation);
+        permutation2[ik] = permutation;
+    }
+
+
+    if (verbosity > 0) {
+        std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " :  DIFF = N/A" << std::endl;
+    }
+
+    double diff;
+
+    if (imix_algo == 0) {
+
+        omega2_in = omega2_out;
+
+        for (iloop = 1; iloop < maxiter; ++iloop) {
+
+            update_frequency(T_in,
+                             omega2_in,
+                             Fmat0,
+                             evec_initial,
+                             dymat_q_HA,
+                             v4_array_all,
+                             cmat_convert,
+                             dmat_convert,
+                             dymat_q,
+                             evec_new,
+                             1.0,
+                             offdiag,
+                             omega2_out);
+
+            omega2_out = alpha * omega2_out + (1.0 - alpha) * omega2_in;
+
+            diff = 0.0;
+            double diff2 = 0.0;
+            double omega_in, omega_out;
+
+            for (ik = 0; ik < nk_interpolate; ++ik) {
+                knum = kmap_interpolate_to_scph[ik];
+                for (is = 0; is < ns; ++is) {
+                    if (omega2_out(knum, is) >= 0.0) {
+                        omega_out = std::sqrt(omega2_out(knum, is));
+                    } else {
+                        omega_out = -std::sqrt(-omega2_out(knum, is));
+                    }
+                    if (omega2_in(knum, is) >= 0.0) {
+                        omega_in = std::sqrt(omega2_in(knum, is));
+                    } else {
+                        omega_in = -std::sqrt(-omega2_in(knum, is));
+                    }
+                    diff += (omega_out - omega_in) * (omega_out - omega_in);
+                }
+                diff2 += (omega2_out.row(knum) - omega2_in.row(knum)).norm();
+            }
+            diff /= static_cast<double>(nk_interpolate * ns);
+            diff2 /= static_cast<double>(nk_interpolate * ns);
+            diff = std::sqrt(diff);
+            diff2 = std::sqrt(diff2);
+            if (verbosity > 0) {
+                std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " : ";
+                std::cout << " DIFF = " << std::setw(15) << diff << std::endl;
+            }
+
+            if (diff < conv_tol) {
+                auto has_negative = false;
+
+                for (ik = 0; ik < nk_interpolate; ++ik) {
+                    knum = kmap_interpolate_to_scph[ik];
+                    for (is = 0; is < ns; ++is) {
+                        if (omega2_out(knum, is) < 0.0 && std::abs(omega2_out(knum, is)) > eps15) {
+                            has_negative = true;
+                            break;
+                        }
+                    }
+                }
+                if (!has_negative) {
+                    if (verbosity > 0) std::cout << "  DIFF < SCPH_TOL : break SCPH loop\n";
+                    break;
+                }
+                if (verbosity > 0) std::cout << "  DIFF < SCPH_TOL but a negative frequency is detected.\n";
+            }
+
+            omega2_in = omega2_out;
+//        omega2_in = alpha * omega2_out + (1.0 - alpha) * omega2_in;
+
+        } // end loop iteration
+
+    } else if (imix_algo == 1) {
+
+        MatrixXd omega2_prev(nk, ns), res_now(nk, ns), res_prev(nk, ns);
+        MatrixXd omega2_tmp(nk, ns);
+        VectorXd beta1_k(nk);
+        MatrixXd beta1_ks(nk, ns);
+
+        omega2_prev = omega2_in; // x_{i-1}
+        omega2_in = omega2_out; // x_{i}
+
+        double beta1, beta2;
+
+        for (iloop = 1; iloop < maxiter; ++iloop) {
+
+            update_frequency(T_in,
+                             omega2_in,
+                             Fmat0,
+                             evec_initial,
+                             dymat_q_HA,
+                             v4_array_all,
+                             cmat_convert,
+                             dmat_convert,
+                             dymat_q,
+                             evec_new,
+                             1.0,
+                             offdiag,
+                             omega2_out);
+
+            for (ik = 0; ik < nk; ++ik) {
+                get_permutation_matrix(ns, cmat_convert[ik], permutation);
+                permutation3[ik] = permutation;
+            }
+
+//            std::cout << "omega2_prev = " << omega2_prev.row(0)<< '\n';
+//            std::cout << "omega2_in   = " << omega2_in.row(0)  << '\n';
+//            std::cout << "omega2_out  = " << omega2_out.row(0) << '\n';
+
+//            std::cout << "omega2_prev perm = " << omega2_prev.row(0) * permutation1[0] << '\n';
+//            std::cout << "omega2_in perm   = " << omega2_in.row(0) * permutation2[0] << '\n';
+//            std::cout << "omega2_out perm  = " << omega2_out.row(0)  * permutation3[0] << '\n';
+
+//            std::cout << "permutation1:\n" << permutation1[0] << '\n';
+//            std::cout << "permutation2:\n" << permutation2[0] << '\n';
+//            std::cout << "permutation3:\n" << permutation3[0] << '\n';
+
+            res_now = omega2_out - omega2_in; // (f(x_i) - x_i)
+            res_prev = omega2_in - omega2_prev; // f(x_{i-1}) - x_{i-1} = x_{i} - x_{i-1}
+//
+//            for (ik = 0; ik < nk; ++ik) {
+//                res_now.row(ik) = omega2_out.row(ik) * permutation3[ik] - omega2_in.row(ik) * permutation2[ik];
+//                res_prev.row(ik) = omega2_in.row(ik) * permutation2[ik] - omega2_prev.row(ik) * permutation1[ik];
+//            }
+            std::cout << "res_prev = " << res_prev.row(0) << '\n';
+            std::cout << "rev_now  = " << res_now.row(0) << '\n';
+
+            beta1 = 0.0;
+            beta2 = 0.0;
+            auto denom = 0.0;
+            auto numerator = 0.0;
+            auto numerator2 = 0.0;
+            for (ik = 0; ik < nk_interpolate; ++ik) {
+                knum = kmap_interpolate_to_scph[ik];
+                for (is = 0; is < ns; ++is) {
+                    numerator += (res_now(knum, is) - res_prev(knum, is)) * res_now(knum, is);
+                    numerator2 += (res_prev(knum, is) - res_now(knum, is)) * res_prev(knum, is);
+                    denom += std::pow(res_now(knum, is) - res_prev(knum, is), 2.0);
+                }
+            }
+
+            beta1 = numerator / denom;
+            beta2 = numerator2 / denom;
+
+            std::cout << "Beta1 = " << beta1 << " Beta2 = " << beta2 << " Beta1 + Beta2 = " << beta1 + beta2 << '\n';
+
+//            if (iloop < 3) beta1 = 1.0;
+            beta1 = 1.0;
+
+            omega2_out = beta1 * (omega2_prev + alpha * res_prev) +
+                        (1.0 - beta1) * (omega2_in + alpha * res_now);
+//            for (ik = 0; ik < nk; ++ik) {
+//                omega2_out.row(ik) = (beta1 * (omega2_prev.row(ik) * permutation1[ik] + alpha * res_prev.row(ik))
+//                                      + (1.0 - beta1) * (omega2_in.row(ik) * permutation2[ik] + alpha * res_now.row(ik))) *
+//                                     permutation3[ik];
+//            }
+
+            std::cout << "omega2_out (after_mix) = " << omega2_out.row(0) << '\n';
+            diff = 0.0;
+            double diff2 = 0.0;
+            double omega_in, omega_out;
+
+            for (ik = 0; ik < nk_interpolate; ++ik) {
+                knum = kmap_interpolate_to_scph[ik];
+                for (is = 0; is < ns; ++is) {
+                    if (omega2_out(knum, is) >= 0.0) {
+                        omega_out = std::sqrt(omega2_out(knum, is));
+                    } else {
+                        omega_out = -std::sqrt(-omega2_out(knum, is));
+                    }
+                    if (omega2_in(knum, is) >= 0.0) {
+                        omega_in = std::sqrt(omega2_in(knum, is));
+                    } else {
+                        omega_in = -std::sqrt(-omega2_in(knum, is));
+                    }
+                    diff += (omega_out - omega_in) * (omega_out - omega_in);
+                }
+                diff2 += (omega2_out.row(knum) - omega2_in.row(knum)).norm();
+            }
+            diff /= static_cast<double>(nk_interpolate * ns);
+            diff2 /= static_cast<double>(nk_interpolate * ns);
+            diff = std::sqrt(diff);
+            diff2 = std::sqrt(diff2);
+            if (verbosity > 0) {
+                std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " : ";
+                std::cout << " DIFF = " << std::setw(15) << diff << std::endl;
+            }
+
+            if (diff < conv_tol) {
+                auto has_negative = false;
+
+                for (ik = 0; ik < nk_interpolate; ++ik) {
+                    knum = kmap_interpolate_to_scph[ik];
+                    for (is = 0; is < ns; ++is) {
+                        if (omega2_out(knum, is) < 0.0 && std::abs(omega2_out(knum, is)) > eps15) {
+                            has_negative = true;
+                            break;
+                        }
+                    }
+                }
+                if (!has_negative) {
+                    if (verbosity > 0) std::cout << "  DIFF < SCPH_TOL : break SCPH loop\n";
+                    break;
+                }
+                if (verbosity > 0) std::cout << "  DIFF < SCPH_TOL but a negative frequency is detected.\n";
+            }
+
+            omega2_prev = omega2_in;
+            omega2_in = omega2_out;
+
+            permutation1 = permutation2;
+            permutation2 = permutation3;
+//        omega2_in = alpha * omega2_out + (1.0 - alpha) * omega2_in;
+
+        } // end loop iteration
+    }
+
+    if (diff < conv_tol) {
+        if (verbosity > 0) {
+            std::cout << " Temp = " << T_in;
+            std::cout << " : convergence achieved in " << std::setw(5)
+                      << iloop + 1 << " iterations." << std::endl;
+        }
+        flag_converged = true;
+    } else {
+        if (verbosity > 0) {
+            std::cout << "Temp = " << T_in;
+            std::cout << " : not converged." << std::endl;
+        }
+        flag_converged = false;
+    }
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (is = 0; is < ns; ++is) {
+            if (omega2_out(ik, is) < 0.0) {
+                if (std::abs(omega2_out(ik, is)) <= eps10) {
+                    omega2_anharm[ik][is] = 0.0;
+                } else {
+                    omega2_anharm[ik][is] = omega2_out(ik, is);
+                }
+            } else {
+                omega2_anharm[ik][is] = omega2_out(ik, is);
+            }
+            for (js = 0; js < ns; ++js) {
+                evec_anharm_scph[ik][is][js] = evec_new[ik][is][js];
+            }
+        }
+    }
+
+    if (verbosity > 1) {
+        std::cout << "New eigenvalues" << std::endl;
+        for (ik = 0; ik < nk_interpolate; ++ik) {
+            knum = kmap_interpolate_to_scph[ik];
+            for (is = 0; is < ns; ++is) {
+                std::cout << " ik_interpolate = " << std::setw(5) << ik + 1;
+                std::cout << " is = " << std::setw(5) << is + 1;
+                std::cout << " omega2 = " << std::setw(15) << omega2_anharm[knum][is] << std::endl;
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    deallocate(evec_new);
+    deallocate(dymat_q);
+    deallocate(dymat_q_HA);
+}
+
+
+void Scph::get_permutation_matrix(const int ns, std::complex<double> **cmat_in,
+                                  Eigen::MatrixXd &permutation_matrix) const
+{
+    std::vector<int> has_visited(ns, 0);
+    permutation_matrix = Eigen::MatrixXd::Zero(ns, ns);
+
+    for (auto is = 0; is < ns; ++is) {
+
+        if (has_visited[is]) continue;
+        auto iloc = -1;
+        auto maxelem = 0.0;
+
+        for (auto js = 0; js < ns; ++js) {
+            const auto cnorm = std::abs(cmat_in[js][is]);
+            if (cnorm > maxelem && (has_visited[js] == 0)) {
+                iloc = js;
+                maxelem = cnorm;
+            }
+        }
+        if (iloc == -1) {
+            exit("get_permutation_matrix", "Band index mapping failed.");
+        } else {
+            permutation_matrix(is, iloc) = 1.0;
+            permutation_matrix(iloc, is) = 1.0;
+            has_visited[iloc] = 1;
+            has_visited[is] = 1;
+        }
+    }
+}
+
+void Scph::update_frequency(const double temperature_in,
+                            const Eigen::MatrixXd &omega2_in,
+                            const std::vector<Eigen::MatrixXcd> &Fmat0,
+                            const std::vector<Eigen::MatrixXcd> &evec0,
+                            std::complex<double> ***dymat0,
+                            std::complex<double> ***v4_array_all,
+                            std::complex<double> ***cmat_convert,
+                            std::vector<Eigen::MatrixXcd> &dmat,
+                            std::complex<double> ***dymat_out,
+                            std::complex<double> ***evec_out,
+                            const double alpha,
+                            const bool offdiag,
+                            Eigen::MatrixXd &omega2_out)
+{
+    using namespace Eigen;
+    const auto nk = kmesh_dense->nk;
+    const auto ns = dynamical->neval;
+    const auto nk_interpolate = kmesh_coarse->nk;
+
+    VectorXcd Kmat(ns);
+    MatrixXcd Cmat(ns, ns), Dmat(ns, ns);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
+    std::complex<double> ***dymat_r_new;
+
+    allocate(dymat_r_new, ns, ns, nk_interpolate);
+
+
+    for (auto ik = 0; ik < nk; ++ik) {
+        for (auto is = 0; is < ns; ++is) {
+            auto omega_tmp = omega2_in(ik, is);
+            if (std::abs(omega_tmp) < eps15) {
+//            if (omega_tmp < eps15) {
+                Kmat(is) = complex_zero;
+                std::cout << "Kmat is zero for " << std::setw(4) << ik << std::setw(5) << is << " omega = " << omega_tmp
+                          << std::endl;
+            } else {
+                // Note that the missing factor 2 in the denominator of Qmat is
+                // already considered in the v4_array_all.
+                if (thermodynamics->classical) {
+                    Kmat(is) = std::complex<double>(
+                            2.0 * temperature_in * thermodynamics->T_to_Ryd / (std::abs(omega_tmp)),
+                            0.0);
+                } else {
+                    const auto omega1 = std::sqrt(std::abs(omega_tmp));
+                    auto n1 = thermodynamics->fB(omega1, temperature_in);
+                    Kmat(is) = std::complex<double>((2.0 * n1 + 1.0) / omega1, 0.0);
+                }
+            }
+        }
+
+        for (auto is = 0; is < ns; ++is) {
+            for (auto js = 0; js < ns; ++js) {
+                Cmat(is, js) = cmat_convert[ik][is][js];
+            }
+        }
+
+        Dmat = Cmat * Kmat.asDiagonal() * Cmat.adjoint();
+        // if iloop > 0
+        dmat[ik] = alpha * Dmat.eval() + (1.0 - alpha) * dmat[ik];
+    }
+
+    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
+
+    MatrixXcd mat_tmp(ns, ns);
+    SelfAdjointEigenSolver<MatrixXcd> saes;
+
+    MatrixXcd Dymat(ns, ns);
+    MatrixXcd Fmat(ns, ns);
+
+    for (auto ik = 0; ik < nk_irred_interpolate; ++ik) {
+
+        const auto knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
+        const auto knum = kmap_interpolate_to_scph[knum_interpolate];
+
+        // Fmat harmonic
+        Fmat = Fmat0[ik];
+
+        // Anharmonic correction to Fmat
+        if (!offdiag) {
+            for (auto is = 0; is < ns; ++is) {
+                const auto i = (ns + 1) * is;
+                // OpenMP parallelization for this part turned out to be inefficient (even slower than serial version)
+                for (auto jk = 0; jk < nk; ++jk) {
+                    const auto kk = nk * ik + jk;
+                    for (auto ks = 0; ks < ns; ++ks) {
+                        Fmat(is, is) += v4_array_all[kk][i][(ns + 1) * ks]
+                                        * dmat[jk](ks, ks);
+                    }
+                }
+            }
+        } else {
+            for (auto is = 0; is < ns; ++is) {
+                for (auto js = 0; js <= is; ++js) {
+                    const auto i = ns * is + js;
+                    // OpenMP parallelization for this part turned out to be inefficient (even slower than serial version)
+                    for (auto jk = 0; jk < nk; ++jk) {
+                        const auto kk = nk * ik + jk;
+                        for (auto ks = 0; ks < ns; ++ks) {
+                            for (unsigned int ls = 0; ls < ns; ++ls) {
+                                Fmat(is, js) += v4_array_all[kk][i][ns * ks + ls]
+                                                * dmat[jk](ks, ls);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        saes.compute(Fmat);
+
+        // New eigenvector matrix E_{new}= E_{old} * C
+        mat_tmp = evec0[knum] * saes.eigenvectors();
+        Dymat = mat_tmp * saes.eigenvalues().asDiagonal() * mat_tmp.adjoint();
+        symmetrize_dynamical_matrix(ik, Dymat);
+
+        for (auto is = 0; is < ns; ++is) {
+            for (auto js = 0; js < ns; ++js) {
+                dymat_out[is][js][knum_interpolate] = Dymat(is, js);
+            }
+        }
+    } // close loop ik
+
+    replicate_dymat_for_all_kpoints(dymat_out);
+
+    // Subtract harmonic contribution to the dynamical matrix
+    for (auto ik = 0; ik < nk_interpolate; ++ik) {
+        for (auto is = 0; is < ns; ++is) {
+            for (auto js = 0; js < ns; ++js) {
+                dymat_out[is][js][ik] -= dymat0[is][js][ik];
+            }
+        }
+    }
+
+    const auto nk1 = kmesh_interpolate[0];
+    const auto nk2 = kmesh_interpolate[1];
+    const auto nk3 = kmesh_interpolate[2];
+
+    for (auto is = 0; is < ns; ++is) {
+        for (auto js = 0; js < ns; ++js) {
+            fftw_plan plan = fftw_plan_dft_3d(nk1, nk2, nk3,
+                                              reinterpret_cast<fftw_complex *>(dymat_out[is][js]),
+                                              reinterpret_cast<fftw_complex *>(dymat_r_new[is][js]),
+                                              FFTW_FORWARD, FFTW_ESTIMATE);
+            fftw_execute(plan);
+            fftw_destroy_plan(plan);
+
+            for (auto ik = 0; ik < nk_interpolate; ++ik)
+                dymat_r_new[is][js][ik] /= static_cast<double>(nk_interpolate);
+        }
+    }
+
+    double **eval_tmp;
+
+    allocate(eval_tmp, nk, ns);
+
+    exec_interpolation(kmesh_interpolate,
+                       dymat_r_new,
+                       nk,
+                       kmesh_dense->xk,
+                       kmesh_dense->kvec_na,
+                       eval_tmp,
+                       evec_out,
+                       true,
+                       false);
+
+    Eigen::MatrixXcd evec_tmp(ns, ns);
+
+    for (auto ik = 0; ik < nk; ++ik) {
+        for (auto is = 0; is < ns; ++is) {
+            for (auto js = 0; js < ns; ++js) {
+                evec_tmp(is, js) = evec_out[ik][js][is];
+            }
+        }
+
+        Cmat = evec0[ik].adjoint() * evec_tmp;
+
+        for (auto is = 0; is < ns; ++is) {
+            omega2_out(ik, is) = eval_tmp[ik][is];
+
+            for (auto js = 0; js < ns; ++js) {
+                cmat_convert[ik][is][js] = Cmat(is, js);
+            }
+        }
+    }
+    deallocate(eval_tmp);
+    deallocate(dymat_r_new);
 }
 
 
