@@ -968,9 +968,8 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
+    // We should not use OpenMP parallelization for this part because
+    // LAPACK is called inside each function, which also used thread parallelization.
     for (int ik = 0; ik < nk_in; ++ik) {
         if (nonanalytic == 3) {
             eval_k_ewald(&xk_in[ik][0],
