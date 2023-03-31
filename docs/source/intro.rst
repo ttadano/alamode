@@ -55,6 +55,15 @@ Anharmonic properties
 * Temperature-dependent effective potential method
 * Self-consistent phonon (SCPH) calculation
 * Anharmonic vibrational free-energy
+* Structural optimization at finite temperatures based on SCPH or QHA.
+
+.. Note::
+   The structural optimization of the current version CANNOT be used with thermal conductivity calculations or bubble corrections.
+   The standard SCPH dispersion and thermodynamic properties are correctly calculated for relaxed configurations.
+
+.. Note::
+   The tutorials for the structural optimizations are temporarily provided in
+   https://github.com/r-masuki/StructuralOptimizationTutorial. The tutorial for the new feature will be included in this page in the future. 
 
 Links
 -----
@@ -93,6 +102,17 @@ please cite the following paper as well:
 
   Y\. Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**\, 033601 (2019). 
   [`Link <https://journals.aps.org/prmaterials/abstract/10.1103/PhysRevMaterials.3.033601>`__]
+
+If you use the ``MIRROR_IMAGE_CONV = 1`` in program ALM, or if you use the SCPH-based structural optimization,
+please cite the following paper as well.
+
+  R\. Masuki, T. Nomoto, R. Arita, and T. Tadano, Phys. Rev. B **106**\, 224104 (2022).
+  [`Link <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.106.224104>`__]
+
+If you use the QHA-based structural optimization of ALAMODE, please cite the following paper as well.
+
+  R\. Masuki, T. Nomoto, R. Arita, and T. Tadano, arXiv:2302.04537 (2023).
+  [`Link <https://arxiv.org/abs/2302.04537>`__]
 
 
 Issues & Bug report
