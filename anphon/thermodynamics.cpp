@@ -775,13 +775,13 @@ double Thermodynamics::compute_FE_total(unsigned int iT,
 {
     double fe_total = fe_qha;
     // skip scph correction for QHA + structural optimization
-    if(scph->relax_coordinate >= 0){
+    if(scph->relax_str >= 0){
         fe_total += dfe_scph;
     }
     if (thermodynamics->calc_FE_bubble) {
         fe_total += thermodynamics->FE_bubble[iT];
     }
-    if(scph->relax_coordinate != 0){
+    if(scph->relax_str != 0){
         fe_total += scph->V0[iT];
     }
 

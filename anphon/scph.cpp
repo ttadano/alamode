@@ -71,7 +71,7 @@ void Scph::set_default_variables()
     selfenergy_offdiagonal = true;
 
     // variables related to the structural optimization
-    relax_coordinate = 0;
+    relax_str = 0;
     relax_algo = 2;
     max_str_iter = 100;
     coord_conv_tol = 1.0e-5;
@@ -91,7 +91,7 @@ void Scph::set_default_variables()
 
     renorm_3to2nd = 1;
     renorm_2to1st = 1;
-    renorm_anharmto1st = 1;
+    renorm_34to1st = 1;
 
     init_u_tensor = nullptr;
     init_u0 = nullptr;
@@ -163,8 +163,8 @@ void Scph::deallocate_variables()
 
 void Scph::setup_scph()
 {
-    //  MPI_Bcast(&relax_coordinate, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&relax_coordinate, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    //  MPI_Bcast(&relax_str, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&relax_str, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
     MPI_Bcast(&bubble, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     setup_kmesh();
@@ -196,20 +196,20 @@ void Scph::exec_scph()
     allocate(delta_harmonic_dymat_renormalize, NT, ns, ns, kmesh_coarse->nk);
     allocate(V0, NT);
 
-    // if(!relax_coordinate){
+    // if(!relax_str){
         zerofill_harmonic_dymat_renormalize(delta_harmonic_dymat_renormalize, NT);
         for(int iT = 0; iT < NT; iT++){
             V0[iT] = 0.0;
         }
     //}
 
-    if(relax_coordinate != 0 && thermodynamics->calc_FE_bubble){
+    if(relax_str != 0 && thermodynamics->calc_FE_bubble){
         exit("exec_scph",
-             "Sorry, RELAX_COORDINATE!=0 can't be used with bubble correction of the free energy.");
+             "Sorry, RELAX_STR!=0 can't be used with bubble correction of the free energy.");
     }
-    if(relax_coordinate != 0 && bubble > 0){
+    if(relax_str != 0 && bubble > 0){
         exit("exec_scph",
-             "Sorry, RELAX_COORDINATE!=0 can't be used with bubble self-energy on top of the SCPH calculation.");
+             "Sorry, RELAX_STR!=0 can't be used with bubble self-energy on top of the SCPH calculation.");
     }
 
     if (restart_scph) {
@@ -221,22 +221,22 @@ void Scph::exec_scph()
 
         // Read anharmonic correction to the dynamical matrix from the existing file
         // SCPH calculation, no structural optimization
-        if(relax_coordinate == 0){
+        if(relax_str == 0){
             load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
         }
         // SCPH + structural optimization
-        else if(relax_coordinate > 0){
+        else if(relax_str > 0){
             load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
             load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
         }
         // QHA + structural optimization
-        else/* if(relax_coordinate < 0) */{
+        else/* if(relax_str < 0) */{
             load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".renorm_harm_dymat");
             load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
         }
 
         // structural optimization
-        if(relax_coordinate != 0){
+        if(relax_str != 0){
             load_V0_from_file(V0);
         }
 
@@ -248,29 +248,29 @@ void Scph::exec_scph()
 //        }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
 
-        if(relax_coordinate == 0){
+        if(relax_str == 0){
             exec_scph_main(delta_dymat_scph);
         }
         // Calculate SCPH + structural optimization and obtain the correction to the dynamical matrix
-        else if(relax_coordinate == 1 || relax_coordinate == 2){
+        else if(relax_str == 1 || relax_str == 2){
             exec_scph_relax_cell_coordinate_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
 
-        else if(relax_coordinate == -1){
+        else if(relax_str == -1){
             exec_QHA_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
-        else if(relax_coordinate == -2){
+        else if(relax_str == -2){
             exec_perturbative_QHA(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
 
         if (mympi->my_rank == 0) {
             // write dymat to file
             // write scph dynamical matrix when scph calculation is performed
-            if(relax_coordinate >= 0){
+            if(relax_str >= 0){
                 store_scph_dymat_to_file(delta_dymat_scph, input->job_title + ".scph_dymat");
             }
             // write renormalized harmonic dynamical matrix when the crystal structure is optimized
-            if(relax_coordinate != 0){
+            if(relax_str != 0){
                 store_scph_dymat_to_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
                 store_V0_to_file(V0);
             }
@@ -1092,10 +1092,10 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
         compute_V4_elements_mpi_over_kpoint(v4_array_all,
                                             evec_harmonic,
                                             selfenergy_offdiagonal,
-                                            relax_coordinate);
+                                            relax_str);
     }
 
-    if (relax_coordinate) {
+    if (relax_str) {
         allocate(v3_array_all, nk, ns, ns * ns);
         compute_V3_elements_mpi_over_kpoint(v3_array_all,
                                             evec_harmonic,
@@ -1180,7 +1180,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
     deallocate(v4_array_all);
     deallocate(evec_anharm_tmp);
     deallocate(delta_v2_renorm);
-    if(relax_coordinate){
+    if(relax_str){
         deallocate(v3_array_all);
     }
 }
@@ -1303,7 +1303,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         compute_V4_elements_mpi_over_kpoint(v4_ref,
                                             evec_harmonic,
                                             selfenergy_offdiagonal,
-                                            relax_coordinate);
+                                            relax_str);
     }
 
     allocate(v3_ref, nk, ns, ns * ns);
@@ -1319,11 +1319,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         v1_ref[is] = 0.0;
     }
     // compute IFC renormalization by lattice relaxation
-    std::cout << " RELAX_COORDINATE = " << relax_coordinate << ": ";
-    if(relax_coordinate == 1){
+    std::cout << " RELAX_STR = " << relax_str << ": ";
+    if(relax_str == 1){
         std::cout << "Set zeros in derivatives of k-space IFCs by strain." << std::endl << std::endl;
     }
-    if(relax_coordinate == 2){
+    if(relax_str == 2){
         std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl << std::endl;
     }
 
@@ -1336,7 +1336,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     compute_del_v_strain(del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
                          del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
-                         evec_harmonic, relax_coordinate);
+                         evec_harmonic, relax_str);
 
 
     // get indices of optical modes at Gamma point
@@ -1397,7 +1397,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         fout_u0.open(input->job_title + ".atom_disp");
         
         // if the unit cell is relaxed
-        if(relax_coordinate == 2){
+        if(relax_str == 2){
             fout_step_u_tensor.open("step_u_tensor.txt");
             fout_u_tensor.open(input->job_title + ".umn_tensor");
         }
@@ -1408,11 +1408,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
         std::cout << " Start structural optimization." << std::endl;
 
-        if(relax_coordinate == 1){
+        if(relax_str == 1){
             std::cout << "  Internal coordinates are relaxed." << std::endl;
             std::cout << "  Shape of the unit cell is fixed." << std::endl << std::endl;
         }
-        else if(relax_coordinate == 2){
+        else if(relax_str == 2){
             std::cout << "  Internal coordinates and shape of the unit cell are relaxed." << std::endl << std::endl;
         }
 
@@ -1466,7 +1466,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 }std::cout << std::endl;
             }std::cout << std::endl;
 
-            if(relax_coordinate == 2){
+            if(relax_str == 2){
                 std::cout << " Initial strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
                 for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
                     std::cout << " ";
@@ -1518,12 +1518,12 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 renormalize_v0_from_q0(v0_renorm, v0_with_umn, v1_with_umn, delta_v2_with_umn, v3_with_umn, v4_with_umn, q0);
 
                 // calculate PES gradient by strain
-                if(relax_coordinate == 1){
+                if(relax_str == 1){
                     for(i1 = 0; i1 < 9; i1++){
                         del_v0_del_umn_renorm[i1] = 0.0;
                     }
                 }
-                else if(relax_coordinate == 2){
+                else if(relax_str == 2){
                     calculate_del_v0_del_umn_renorm(del_v0_del_umn_renorm, 
                                                     C1_array, C2_array, C3_array,
                                                     eta_tensor, u_tensor,
@@ -1561,12 +1561,12 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 compute_anharmonic_v1_array(v1_SCP, v1_renorm, v3_renorm, cmat_convert, omega2_anharm[iT], temp);
 
                 // calculate SCP stress tensor
-                if(relax_coordinate == 1){
+                if(relax_str == 1){
                     for(i1 = 0; i1 < 9; i1++){
                         del_v0_del_umn_SCP[i1] = 0.0;
                     }
                 }
-                else if(relax_coordinate == 2){
+                else if(relax_str == 2){
                     compute_anharmonic_del_v0_del_umn(del_v0_del_umn_SCP, 
                                                       del_v0_del_umn_renorm, del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
                                                       u_tensor, q0, cmat_convert, omega2_anharm[iT], temp);
@@ -1601,7 +1601,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 if(du0 < coord_conv_tol && du_tensor < cell_conv_tol){
                     std::cout << std::endl << std::endl;
                     std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15) << std::setprecision(6) << coord_conv_tol << std::endl;
-                    if(relax_coordinate == 2){
+                    if(relax_str == 2){
                         std::cout << " du_tensor is smaller than CELL_CONV_TOL = " << std::scientific << std::setw(15) << std::setprecision(6) << cell_conv_tol << std::endl;
                     }
                     std::cout << " Structural optimization converged in " << i_str_loop+1 << "-th loop." << std::endl;
@@ -1664,7 +1664,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         fout_q0.close();
         fout_u0.close();
         
-        if(relax_coordinate == 2){
+        if(relax_str == 2){
             fout_step_u_tensor.close();
             fout_u_tensor.close();
         }
@@ -1844,7 +1844,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         compute_V4_elements_mpi_over_kpoint(v4_ref,
                                             evec_harmonic,
                                             selfenergy_offdiagonal,
-                                            relax_coordinate);
+                                            relax_str);
     }
 
     allocate(v3_ref, nk, ns, ns * ns);
@@ -1874,7 +1874,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                          del2_v2_del_umn2,
                          del_v3_del_umn,
                          evec_harmonic,
-                         relax_coordinate);
+                         relax_str);
 
     // get indices of optical modes at Gamma point
     js = 0;
@@ -2362,7 +2362,7 @@ void Scph::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
                          del2_v1_del_umn2, nullptr,
                          del_v2_del_umn,
                          nullptr, nullptr,
-                         evec_harmonic, relax_coordinate);
+                         evec_harmonic, relax_str);
     
     // set dummy variables as zero.
     // These are used for the preparation for the postprocess
@@ -2627,13 +2627,13 @@ void Scph::set_elastic_constants(double *C1_array,
     
     // if the shape of the unit cell is relaxed,
     // read elastic constants from file
-    if(relax_coordinate == 2 || relax_coordinate == -1 || relax_coordinate == -2){
+    if(relax_str == 2 || relax_str == -1 || relax_str == -2){
         read_C1_array(C1_array);
         read_elastic_constants(C2_array, C3_array);
     }
     // if the unit cell is fixed,
     // dummy values are set in the elastic constants
-    else if(relax_coordinate == 1){
+    else if(relax_str == 1){
         for(i1 = 0; i1 < 9; i1++){
             C1_array[i1] = 0.0;
         }
@@ -2742,7 +2742,7 @@ void Scph::set_init_structure_atT(double *q0,
         calculate_u0(q0, u0);
 
         // set initial strain
-        if(relax_coordinate == 1){
+        if(relax_str == 1){
             for(i1 = 0; i1 < 3; i1++){
                 for(i2 = 0; i2 < 3; i2++){
                     u_tensor[i1][i2] = 0.0;
@@ -2765,7 +2765,7 @@ void Scph::set_init_structure_atT(double *q0,
 
         set_initial_q0(q0);
         calculate_u0(q0, u0);
-        if(relax_coordinate == 1){
+        if(relax_str == 1){
             for(i1 = 0; i1 < 3; i1++){
                 for(i2 = 0; i2 < 3; i2++){
                     u_tensor[i1][i2] = 0.0;
@@ -2785,7 +2785,7 @@ void Scph::set_init_structure_atT(double *q0,
 
             set_initial_q0(q0);
             calculate_u0(q0, u0);
-            if(relax_coordinate == 1){
+            if(relax_str == 1){
                 for(i1 = 0; i1 < 3; i1++){
                     for(i2 = 0; i2 < 3; i2++){
                         u_tensor[i1][i2] = 0.0;
@@ -2809,7 +2809,7 @@ void Scph::set_init_structure_atT(double *q0,
 
             set_initial_q0(q0);
             calculate_u0(q0, u0);
-            if(relax_coordinate == 1){
+            if(relax_str == 1){
                 for(i1 = 0; i1 < 3; i1++){
                     for(i2 = 0; i2 < 3; i2++){
                         u_tensor[i1][i2] = 0.0;
@@ -3252,7 +3252,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
             ks = (ii - ns3 * is - ns2 * js) / ns;
             ls = ii % ns;
 
-            if ((is < js) && relax_coordinate == 0) continue;
+            if ((is < js) && relax_str == 0) continue;
 
             index_tmp[0] = is;
             index_tmp[1] = js;
@@ -3513,7 +3513,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     for (ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
-                if (is < js && relax_coordinate == 0) continue;
+                if (is < js && relax_str == 0) continue;
 
                 if (icount >= nstart && icount < nend) {
                     ik_vec.push_back(ik_prod / nk_scph);
@@ -3779,7 +3779,7 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
                             std::complex<double> ***del2_v2_del_umn2,
                             std::complex<double> ****del_v3_del_umn,
                             std::complex<double> ***evec_harmonic,
-                            int relax_coordinate)
+                            int relax_str)
 {
     int ns = dynamical->neval;
     const auto nk = kmesh_dense->nk;
@@ -3787,9 +3787,9 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
 
     int i1, is1, is2, ik1;
     
-    // relax_coordinate == 1 : keep the unit cell fixed and relax internal coordinates
+    // relax_str == 1 : keep the unit cell fixed and relax internal coordinates
     // set renormalization from strain as zero
-    if(relax_coordinate == 1){
+    if(relax_str == 1){
         for(i1 = 0; i1 < 9; i1++){
             for(is1 = 0; is1 < ns; is1++){
                 del_v1_del_umn[i1][is1] = complex_zero;
@@ -3834,9 +3834,9 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
             }
         }
     }
-    // relax_coordinate == 2  : relax both the cell shape and the internal coordinate using SCP.
-    // relax_coordinate == -1 : relax both the cell shape and the internal coordinate using QHA.
-    else if(relax_coordinate == 2 || relax_coordinate == -1){
+    // relax_str == 2  : relax both the cell shape and the internal coordinate using SCP.
+    // relax_str == -1 : relax both the cell shape and the internal coordinate using QHA.
+    else if(relax_str == 2 || relax_str == -1){
 
         // first-order derivative of first-order IFCs
         if(renorm_2to1st == 0){
@@ -3859,7 +3859,7 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
         timer->print_elapsed();
 
         // second and third-order derivatives of first-order IFCs
-        if(renorm_anharmto1st == 0){
+        if(renorm_34to1st == 0){
             std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
             compute_del2_v1_del_umn2(del2_v1_del_umn2, evec_harmonic);
             std::cout << "  done!" << std::endl;
@@ -3870,7 +3870,7 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
             std::cout << "  done!" << std::endl;
             timer->print_elapsed();
         }
-        else if(renorm_anharmto1st == 1){
+        else if(renorm_34to1st == 1){
             std::cout << "  second-order derivatives of first-order IFCs (set zero) ... ";
             for(i1 = 0; i1 < 81; i1++){
                 for(is1 = 0; is1 < ns; is1++){
@@ -3925,8 +3925,8 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
         std::cout << "  done!" << std::endl; 
         timer->print_elapsed();
     }
-    // relax_coordinate == -2 : calculate lowest-order linear equation of QHA.
-    else if(relax_coordinate == -2){
+    // relax_str == -2 : calculate lowest-order linear equation of QHA.
+    else if(relax_str == -2){
 
         // first-order derivative of first-order IFCs
         if(renorm_2to1st == 0){
@@ -3949,13 +3949,13 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
         timer->print_elapsed();
 
         // second-order derivatives of 1st order IFCs
-        if(renorm_anharmto1st == 0){
+        if(renorm_34to1st == 0){
             std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
             compute_del2_v1_del_umn2(del2_v1_del_umn2, evec_harmonic);
             std::cout << "  done!" << std::endl;
             timer->print_elapsed();
         }
-        else if(renorm_anharmto1st == 1){
+        else if(renorm_34to1st == 1){
             std::cout << "  second-order derivatives of first-order IFCs (set zero) ... ";
             for(i1 = 0; i1 < 81; i1++){
                 for(is1 = 0; is1 < ns; is1++){
@@ -7411,7 +7411,7 @@ void Scph::setup_pp_interaction()
     // Prepare information for calculating ph-ph interaction coefficients.
 
     if (mympi->my_rank == 0) {
-        if (relax_coordinate || bubble > 0) {
+        if (relax_str || bubble > 0) {
             std::cout << " Preparing for calculating V3 & V4  ...";
         } else {
             std::cout << " Preparing for calculating V4  ...";
@@ -7423,8 +7423,8 @@ void Scph::setup_pp_interaction()
              "quartic_mode should be 1 for SCPH");
     }
 
-    // Setup for V3 if relax_coordinate = True.
-    if (relax_coordinate || bubble > 0) {
+    // Setup for V3 if relax_str = True.
+    if (relax_str || bubble > 0) {
         allocate(phi3_reciprocal, anharmonic_core->get_ngroup_fcs(3));
     }
     allocate(phi4_reciprocal, anharmonic_core->get_ngroup_fcs(4));
@@ -9628,7 +9628,7 @@ void Scph::update_cell_coordinate(double *q0,
             q0[harm_optical_modes[is]] += delta_q0[harm_optical_modes[is]];
         }
 
-        if(relax_coordinate == 1){
+        if(relax_str == 1){
             for(i1 = 0; i1 < 6; i1++){
                 delta_umn[i1] = 0.0;
             }
@@ -9638,7 +9638,7 @@ void Scph::update_cell_coordinate(double *q0,
                 }
             }
         }
-        else if(relax_coordinate == 2 || relax_coordinate == -1){
+        else if(relax_str == 2 || relax_str == -1){
             // prepare matrix of elastic constants and vector of del_v0_strain_atT
             for(itmp1 = 0; itmp1 < 3; itmp1++){
                     del_v0_strain_vec(itmp1) = del_v0_strain_atT[itmp1*3+itmp1];

@@ -63,7 +63,7 @@ void Symmetry::setup_symmetry()
     SymmList.clear();
 
 
-    if(phon->mode == "SCPH" && scph->relax_coordinate != 0){
+    if(phon->mode == "SCPH" && scph->relax_str != 0){
         double **xtmp_disp;
         double lavec_p_strain[3][3], rlavec_p_strain[3][3];
         double mat_strain[3][3];

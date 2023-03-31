@@ -77,7 +77,7 @@ public:
     unsigned int maxiter;
     bool print_self_consistent_fc2;
     bool selfenergy_offdiagonal;
-    int relax_coordinate;
+    int relax_str;
 
     // variables related to structural optimization
     int relax_algo;
@@ -100,7 +100,7 @@ public:
     // options of IFC renormalization
     int renorm_3to2nd;
     int renorm_2to1st;
-    int renorm_anharmto1st;
+    int renorm_34to1st;
     std::string strain_IFC_dir;
 
     // initial strain and displacement

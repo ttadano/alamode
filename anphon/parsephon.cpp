@@ -95,13 +95,13 @@ void Input::parce_input(int narg,
             exit("parse_input",
                  "&scph entry not found in the input file");
         parse_scph_vars();
-        if(scph->relax_coordinate != 0 && scph->relax_coordinate != 1){
+        if(scph->relax_str != 0 && scph->relax_str != 1){
             if(!locate_tag("&strain"))
                 exit("parse_input",
                      "&strain entry not found in the input file");
             parse_initial_strain();
         }
-        if(scph->relax_coordinate != 0){
+        if(scph->relax_str != 0){
             if(!locate_tag("&displace"))
                 exit("parse_input",
                      "&displace entry not found in the input file");
@@ -357,12 +357,12 @@ void Input::parse_scph_vars()
           "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
           "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
           "LOWER_TEMP", "WARMSTART", "BUBBLE",
-          "RELAX_COORDINATE", "RELAX_ALGO", "MAX_STR_ITER", 
-          "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STEEPEST_DECENT",
+          "RELAX_STR", "RELAX_ALGO", "MAX_STR_ITER", 
+          "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STDECENT",
           "CELL_CONV_TOL", "MIXBETA_CELL",
           "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
           "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
-          "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_ANHARMTO1ST",
+          "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_34TO1ST",
           "NAT_PRIM", "STRAIN_IFC_DIR"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
@@ -401,7 +401,7 @@ void Input::parse_scph_vars()
     unsigned int bubble = 0;
 
     // structural optimization
-    int relax_coordinate = 0;
+    int relax_str = 0;
     int relax_algo = 2;
     int max_str_iter = 100;
     double coord_conv_tol = 1.0e-5;
@@ -423,7 +423,7 @@ void Input::parse_scph_vars()
 
     int renorm_3to2nd = 1;
     int renorm_2to1st = 1;
-    int renorm_anharmto1st = 1;
+    int renorm_34to1st = 1;
 
     int nat_prim = 0;
     std::string strain_IFC_dir("");
@@ -439,10 +439,10 @@ void Input::parse_scph_vars()
     assign_val(warm_start, "WARMSTART", scph_var_dict);
     assign_val(bubble, "BUBBLE", scph_var_dict);
 
-    assign_val(relax_coordinate, "RELAX_COORDINATE", scph_var_dict);
-    if(relax_coordinate != 0 && selfenergy_offdiagonal == false){
+    assign_val(relax_str, "RELAX_STR", scph_var_dict);
+    if(relax_str != 0 && selfenergy_offdiagonal == false){
         exit("parse_scph_vars",
-             "SELF_OFFDIAG == 0 cannot be used with RELAX_COORDINATE != 0.");
+             "SELF_OFFDIAG == 0 cannot be used with RELAX_STR != 0.");
     }
     assign_val(relax_algo, "RELAX_ALGO", scph_var_dict);
     assign_val(max_str_iter, "MAX_STR_ITER", scph_var_dict);
@@ -469,12 +469,12 @@ void Input::parse_scph_vars()
 
     assign_val(renorm_3to2nd, "RENORM_3TO2ND", scph_var_dict);
     assign_val(renorm_2to1st, "RENORM_2TO1ST", scph_var_dict);
-    assign_val(renorm_anharmto1st, "RENORM_ANHARMTO1ST", scph_var_dict);
+    assign_val(renorm_34to1st, "RENORM_34TO1ST", scph_var_dict);
 
     assign_val(nat_prim, "NAT_PRIM", scph_var_dict);
-    if(relax_coordinate != 0 && nat_prim == 0){
+    if(relax_str != 0 && nat_prim == 0){
         exit("parse_scph_vars",
-             "NAT_PRIM must be specified when RELAX_COORDINATE != 0.");
+             "NAT_PRIM must be specified when RELAX_STR != 0.");
     }
 
     assign_val(strain_IFC_dir, "STRAIN_IFC_DIR", scph_var_dict);
@@ -484,8 +484,8 @@ void Input::parse_scph_vars()
 
 
     // The order to determine parameters is irregular here.
-    // This is because the restart files depend on relax_coordinate.
-    // Thus, we first read relax_coordinate.
+    // This is because the restart files depend on relax_str.
+    // Thus, we first read relax_str.
     // Then we determine restart_scph by checking the restart files.
     // Finally, we overwrite restart_scph if it is explicitly given in the input file.
 
@@ -493,17 +493,17 @@ void Input::parse_scph_vars()
     // restart mode will be automatically turned on for SCPH calculations.
     bool restart_scph = false;
     // chech dynamical matrix files
-    if(relax_coordinate == 0){
+    if(relax_str == 0){
         restart_scph = stat(file_dymat.c_str(), &st) == 0;
     }
-    else if(relax_coordinate > 0){
+    else if(relax_str > 0){
         restart_scph = (stat(file_dymat.c_str(), &st) == 0) & (stat(file_harm_dymat.c_str(), &st) == 0);
     }
     else{
         restart_scph = stat(file_harm_dymat.c_str(), &st) == 0;
     }
     // check V0 file
-    if(relax_coordinate != 0){
+    if(relax_str != 0){
         restart_scph = restart_scph & (stat(file_v0.c_str(), &st) == 0);
     }
 
@@ -572,7 +572,7 @@ void Input::parse_scph_vars()
     scph->warmstart_scph = warm_start;
     scph->bubble = bubble;
 
-    scph->relax_coordinate = relax_coordinate;
+    scph->relax_str = relax_str;
     scph->relax_algo = relax_algo;
     scph->max_str_iter = max_str_iter;
 
@@ -594,7 +594,7 @@ void Input::parse_scph_vars()
 
     scph->renorm_3to2nd = renorm_3to2nd;
     scph->renorm_2to1st = renorm_2to1st;
-    scph->renorm_anharmto1st = renorm_anharmto1st;
+    scph->renorm_34to1st = renorm_34to1st;
 
     scph->natmin_tmp = nat_prim;
     scph->strain_IFC_dir = strain_IFC_dir;
