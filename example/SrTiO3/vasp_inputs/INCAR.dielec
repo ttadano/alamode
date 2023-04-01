@@ -1,0 +1,22 @@
+general:
+ System = STO
+ LREAL = .False.
+ ENCUT  =    550
+ ISMEAR = 0; SIGMA = 0.05;
+ EDIFF = 1.0E-8
+
+ PREC = Accurate
+ ADDGRID = .True.
+
+ ALGO = Normal
+
+# IBRION = 2
+# NSW = 100
+# ISIF = 3
+
+kpar=8
+GGA=PS
+
+lepsilon=.T.
+
+NELM = 200
