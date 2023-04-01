@@ -609,7 +609,7 @@ Description of input variables
  :Default: 1
  :Type: Integer
 
- :Description: Specify as 3x:math:`\alpha` + :math:`\mu`. :math:`\alpha` denotes the atom index in the primitive cell and :math:`\mu` is the xyz index, where both indices are zero-indexed.
+ :Description: Specify as :math:`3\times\alpha + \mu`. :math:`\alpha` denotes the atom index in the primitive cell and :math:`\mu` is the xyz index, where both indices are zero-indexed.
                Both indices are zero-indexed. See the description of :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>` for details.
                This option is used only when ``SET_INIT_STR = 3``.
 
@@ -623,7 +623,7 @@ Description of input variables
  :Type: Double
 
  :Description: The crystal structure is judged to be back to the high-symmetry phase if 
-               :math:`u^{(0)}` [``COOLING_U0_INDEX``] <` ``COOLING_U0_THR``. 
+               :math:`u^{(0)}` [``COOLING_U0_INDEX``] < ``COOLING_U0_THR``. 
                This option is useful in cooling calculations because small displacements to the high-symmetry structure is required to induce spontaneous symmetry breaking.
                This option is used only when ``SET_INIT_STR = 3``.
  
