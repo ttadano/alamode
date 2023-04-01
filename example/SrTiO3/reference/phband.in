@@ -1,10 +1,9 @@
 &general
- PREFIX = STO222
+ PREFIX = STO222_NA3
  MODE = phonons
  NKD = 3; KD = Sr Ti O
- FCSXML = STO222.xml 
- NONANALYTIC = 0; BORNINFO = BORN
- TMIN =200; TMAX = 1000; DT = 100
+ FCSXML = STO_anharm.xml 
+ NONANALYTIC = 3; BORNINFO = BORN
 /
 
 &cell
