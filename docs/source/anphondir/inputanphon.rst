@@ -481,6 +481,7 @@ Description of input variables
 
  :Default: 0
  :Type: Integer
+
 ````
 
 .. _anphon_relax_algo:
@@ -498,6 +499,7 @@ Description of input variables
  :Description: Algorithm to update the crystal structure in structural optimization. 
                This option is used only when ``RELAX_STR = 1, -2, -1``.
                ``RELAX_ALGO = 1`` works properly only when the unit cell is fixed (``RELAX_STR = 1``).
+
 ````
 
 .. _anphon_alpha_stdecent:
@@ -730,6 +732,7 @@ Description of input variables
 
   This option is used only when ``RELAX_STR = -2, -1, 2``.
   To use ``RENORM_3TO2ND = 2``, the entries of the rotation matrices of all symmetry operations must be either 0 or :math:`\pm` 1 in Cartesian representation.
+
 ````
 
 .. _anphon_strain_ifc_dir:
@@ -823,6 +826,7 @@ Please specify the initial displacement gradient tensor :math:`u_{\mu \nu}` for 
  u_yx u_yy u_yz
  u_zx u_zy u_zz
  /
+
 ````
 
 Note that a user need to give a symmetric matrix.

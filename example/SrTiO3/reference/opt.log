@@ -1,0 +1,369 @@
+ +-----------------------------------------------------------------+
+ +                         Program ALM                             +
+ +                             Ver.  1.5.0                         +
+ +-----------------------------------------------------------------+
+
+ Number of OpenMP threads = 8
+
+ Job started at Sun Apr  2 02:49:05 2023
+
+
+ Input variables:
+ -------------------------------------------------------------------
+ General:
+  PREFIX = STO_anharm
+  MODE = optimize
+  NAT = 40; NKD = 3
+  PRINTSYM = 0; TOLERANCE = 0.001
+  KD =   Sr  Ti   O
+  FCSYM_BASIS = Lattice
+  PERIODIC =   1  1  1
+  MAGMOM = 
+  FCS_ALAMODE = 1;  NMAXSAVE = 3
+  FC3_SHENGBTE = 0
+  FC2_QEFC = 0
+  HESSIAN = 0
+  FC_ZERO_THR = 1e-12
+
+ Interaction:
+  NORDER = 5
+  NBODY =   2  3  3  2  2
+
+ Optimize:
+  LMODEL = elastic-net
+  DFSET = DFSET_AIMD+random
+  NDATA = 40; NSTART = 1; NEND = 40   SKIP = 
+
+  ICONST = 11
+  ROTAXIS = 
+  FC2XML = STO222.xml
+  FC3XML = 
+
+  SPARSE = 0
+  SPARSESOLVER = SimplicialLDLT
+  CONV_TOL = 1e-08
+  MAXITER = 10000
+  MIRROR_IMAGE_CONV = 0
+
+ Elastic-net related variables:
+  CV =     0
+  DFSET_CV = DFSET_AIMD+random
+  NDATA_CV = 40; NSTART_CV = 1; NEND_CV = 40
+
+  L1_RATIO = 1
+  L1_ALPHA = 3.4548e-06
+  CV_MINALPHA = -1; CV_MAXALPHA = -1;  CV_NALPHA = 50
+  STANDARDIZE = 1
+  ENET_DNORM = 1
+  NWRITE =  1000
+  DEBIAS_OLS = 0
+
+ -------------------------------------------------------------------
+
+ SYSTEM
+ ======
+
+  Lattice Vector
+    1.472600e+01   0.000000e+00   0.000000e+00 : a1
+    0.000000e+00   1.472600e+01   0.000000e+00 : a2
+    0.000000e+00   0.000000e+00   1.472600e+01 : a3
+
+  Cell volume = 3.193408e+03
+
+  Reciprocal Lattice Vector
+    4.266729e-01   0.000000e+00   0.000000e+00 : b1
+    0.000000e+00   4.266729e-01   0.000000e+00 : b2
+    0.000000e+00   0.000000e+00   4.266729e-01 : b3
+
+  Atomic species:
+     1   Sr
+     2   Ti
+     3    O
+
+  Atomic positions in fractional basis and atomic species
+     1   0.000000e+00   0.000000e+00   0.000000e+00    1
+     2   0.000000e+00   0.000000e+00   5.000000e-01    1
+     3   0.000000e+00   5.000000e-01   0.000000e+00    1
+     4   0.000000e+00   5.000000e-01   5.000000e-01    1
+     5   5.000000e-01   0.000000e+00   0.000000e+00    1
+     6   5.000000e-01   0.000000e+00   5.000000e-01    1
+     7   5.000000e-01   5.000000e-01   0.000000e+00    1
+     8   5.000000e-01   5.000000e-01   5.000000e-01    1
+     9   2.500000e-01   2.500000e-01   2.500000e-01    2
+    10   2.500000e-01   2.500000e-01   7.500000e-01    2
+    11   2.500000e-01   7.500000e-01   2.500000e-01    2
+    12   2.500000e-01   7.500000e-01   7.500000e-01    2
+    13   7.500000e-01   2.500000e-01   2.500000e-01    2
+    14   7.500000e-01   2.500000e-01   7.500000e-01    2
+    15   7.500000e-01   7.500000e-01   2.500000e-01    2
+    16   7.500000e-01   7.500000e-01   7.500000e-01    2
+    17   0.000000e+00   2.500000e-01   2.500000e-01    3
+    18   0.000000e+00   2.500000e-01   7.500000e-01    3
+    19   0.000000e+00   7.500000e-01   2.500000e-01    3
+    20   0.000000e+00   7.500000e-01   7.500000e-01    3
+    21   2.500000e-01   0.000000e+00   2.500000e-01    3
+    22   2.500000e-01   0.000000e+00   7.500000e-01    3
+    23   2.500000e-01   2.500000e-01   0.000000e+00    3
+    24   2.500000e-01   2.500000e-01   5.000000e-01    3
+    25   2.500000e-01   5.000000e-01   2.500000e-01    3
+    26   2.500000e-01   5.000000e-01   7.500000e-01    3
+    27   2.500000e-01   7.500000e-01   0.000000e+00    3
+    28   2.500000e-01   7.500000e-01   5.000000e-01    3
+    29   5.000000e-01   2.500000e-01   2.500000e-01    3
+    30   5.000000e-01   2.500000e-01   7.500000e-01    3
+    31   5.000000e-01   7.500000e-01   2.500000e-01    3
+    32   5.000000e-01   7.500000e-01   7.500000e-01    3
+    33   7.500000e-01   0.000000e+00   2.500000e-01    3
+    34   7.500000e-01   0.000000e+00   7.500000e-01    3
+    35   7.500000e-01   2.500000e-01   0.000000e+00    3
+    36   7.500000e-01   2.500000e-01   5.000000e-01    3
+    37   7.500000e-01   5.000000e-01   2.500000e-01    3
+    38   7.500000e-01   5.000000e-01   7.500000e-01    3
+    39   7.500000e-01   7.500000e-01   0.000000e+00    3
+    40   7.500000e-01   7.500000e-01   5.000000e-01    3
+
+
+  Time Elapsed: 0.006059 sec.
+
+ -------------------------------------------------------------------
+
+ SYMMETRY
+ ========
+
+  Space group: Pm-3m (221)
+  Number of symmetry operations = 384
+
+  Given system is not a primitive cell.
+  There are     8 translation operations.
+  Primitive cell contains 5 atoms
+
+  **Cell-Atom Correspondens Below**
+  CELL |  ATOM
+     1 |     1    9   17   21   23
+       | 
+     2 |     2   10   18   22   24
+       | 
+     3 |     3   11   19   25   27
+       | 
+     4 |     4   12   20   26   28
+       | 
+     5 |     5   13   29   33   35
+       | 
+     6 |     6   14   30   34   36
+       | 
+     7 |     7   15   31   37   39
+       | 
+     8 |     8   16   32   38   40
+       | 
+
+  Time Elapsed: 0.016796 sec.
+
+ -------------------------------------------------------------------
+
+ INTERACTION
+ ===========
+
+  +++ Cutoff Radii Matrix (NKD x NKD matrix) +++
+   HARMONIC
+     None     None     None
+     None     None     None
+     None     None     None
+
+    ANHARM3
+     None     None     None
+     None     None     None
+     None     None     None
+
+    ANHARM4
+       12       12       12
+       12       12       12
+       12       12       12
+
+    ANHARM5
+       12       12       12
+       12       12       12
+       12       12       12
+
+    ANHARM6
+       12       12       12
+       12       12       12
+       12       12       12
+
+
+  List of neighboring atoms below.
+  Format [N th-nearest shell, distance (Number of atoms on the shell)]
+
+    1 ( Sr):   1   5.20643 ( 12) -  17(  O)  18(  O)  19(  O)  20(  O)
+                                    21(  O)  22(  O)  23(  O)  27(  O)
+                                    33(  O)  34(  O)  35(  O)  39(  O)
+               2   6.37655 (  8) -   9( Ti)  10( Ti)  11( Ti)  12( Ti)
+                                    13( Ti)  14( Ti)  15( Ti)  16( Ti)
+               3     7.363 (  3) -   2( Sr)   3( Sr)   5( Sr)
+               4    9.0178 ( 12) -  24(  O)  25(  O)  26(  O)  28(  O)
+                                    29(  O)  30(  O)  31(  O)  32(  O)
+                                    36(  O)  37(  O)  38(  O)  40(  O)
+               5   10.4129 (  3) -   4( Sr)   6( Sr)   7( Sr)
+               6   12.7531 (  1) -   8( Sr)
+
+    9 ( Ti):   1    3.6815 (  6) -  17(  O)  21(  O)  23(  O)  24(  O)
+                                    25(  O)  29(  O)
+               2   6.37655 (  8) -   1( Sr)   2( Sr)   3( Sr)   4( Sr)
+                                     5( Sr)   6( Sr)   7( Sr)   8( Sr)
+               3     7.363 (  3) -  10( Ti)  11( Ti)  13( Ti)
+               4   8.23208 ( 12) -  18(  O)  19(  O)  22(  O)  26(  O)
+                                    27(  O)  28(  O)  30(  O)  31(  O)
+                                    33(  O)  35(  O)  36(  O)  37(  O)
+               5   10.4129 (  3) -  12( Ti)  14( Ti)  15( Ti)
+               6   11.0445 (  6) -  20(  O)  32(  O)  34(  O)  38(  O)
+                                    39(  O)  40(  O)
+               7   12.7531 (  1) -  16( Ti)
+
+   17 (  O):   1    3.6815 (  2) -   9( Ti)  13( Ti)
+               2   5.20643 ( 12) -   1( Sr)   2( Sr)   3( Sr)   4( Sr)
+                                    21(  O)  23(  O)  24(  O)  25(  O)
+                                    33(  O)  35(  O)  36(  O)  37(  O)
+               3     7.363 (  3) -  18(  O)  19(  O)  29(  O)
+               4   8.23208 (  4) -  10( Ti)  11( Ti)  14( Ti)  15( Ti)
+               5    9.0178 ( 12) -   5( Sr)   6( Sr)   7( Sr)   8( Sr)
+                                    22(  O)  26(  O)  27(  O)  28(  O)
+                                    34(  O)  38(  O)  39(  O)  40(  O)
+               6   10.4129 (  3) -  20(  O)  30(  O)  31(  O)
+               7   11.0445 (  2) -  12( Ti)  16( Ti)
+               8   12.7531 (  1) -  32(  O)
+
+   21 (  O):   1    3.6815 (  2) -   9( Ti)  11( Ti)
+               2   5.20643 ( 12) -   1( Sr)   2( Sr)   5( Sr)   6( Sr)
+                                    17(  O)  19(  O)  23(  O)  24(  O)
+                                    27(  O)  28(  O)  29(  O)  31(  O)
+               3     7.363 (  3) -  22(  O)  25(  O)  33(  O)
+               4   8.23208 (  4) -  10( Ti)  12( Ti)  13( Ti)  15( Ti)
+               5    9.0178 ( 12) -   3( Sr)   4( Sr)   7( Sr)   8( Sr)
+                                    18(  O)  20(  O)  30(  O)  32(  O)
+                                    35(  O)  36(  O)  39(  O)  40(  O)
+               6   10.4129 (  3) -  26(  O)  34(  O)  37(  O)
+               7   11.0445 (  2) -  14( Ti)  16( Ti)
+               8   12.7531 (  1) -  38(  O)
+
+   23 (  O):   1    3.6815 (  2) -   9( Ti)  10( Ti)
+               2   5.20643 ( 12) -   1( Sr)   3( Sr)   5( Sr)   7( Sr)
+                                    17(  O)  18(  O)  21(  O)  22(  O)
+                                    25(  O)  26(  O)  29(  O)  30(  O)
+               3     7.363 (  3) -  24(  O)  27(  O)  35(  O)
+               4   8.23208 (  4) -  11( Ti)  12( Ti)  13( Ti)  14( Ti)
+               5    9.0178 ( 12) -   2( Sr)   4( Sr)   6( Sr)   8( Sr)
+                                    19(  O)  20(  O)  31(  O)  32(  O)
+                                    33(  O)  34(  O)  37(  O)  38(  O)
+               6   10.4129 (  3) -  28(  O)  36(  O)  39(  O)
+               7   11.0445 (  2) -  15( Ti)  16( Ti)
+               8   12.7531 (  1) -  40(  O)
+
+  For  ANHARM4, interactions related to more than 3 atoms will be neglected.
+  For  ANHARM5, interactions related to more than 2 atoms will be neglected.
+  For  ANHARM6, interactions related to more than 2 atoms will be neglected.
+  Time Elapsed: 1.52261 sec.
+
+ -------------------------------------------------------------------
+
+ FORCE CONSTANT
+ ==============
+
+  Symmetry is handled in crystallographic (fractional) coordinates.
+
+  Number of  HARMONIC FCs : 49
+  Number of   ANHARM3 FCs : 746
+  Number of   ANHARM4 FCs : 4527
+  Number of   ANHARM5 FCs : 386
+  Number of   ANHARM6 FCs : 1143
+
+  Time Elapsed: 4.1616 sec.
+
+ -------------------------------------------------------------------
+
+ CONSTRAINT
+ ==========
+
+  ICONST = 1: Constraints for translational invariance
+              will be considered.
+
+  FC2XML is given : Harmonic force constants will be 
+                    fixed to the values given in STO222.xml
+
+  Generating constraints for translational invariance ...
+   HARMONIC ... done.
+    ANHARM3 ... done.
+    ANHARM4 ... done.
+    ANHARM5 ... done.
+    ANHARM6 ... done.
+  Finished !
+
+  Number of constraints [T-inv, R-inv (self), R-inv (cross)]:
+   HARMONIC      4    0    0
+    ANHARM3     48    0    0
+    ANHARM4   2312    0    0
+    ANHARM5    343    0    0
+    ANHARM6   1018    0    0
+
+  Constraints of T-inv and R-inv (self) are merged.
+  If there are redundant constraints, they are removed in this process.
+
+  Number of inequivalent constraints (self, cross) : 
+   HARMONIC      4    0
+    ANHARM3     48    0
+    ANHARM4   2312    0
+    ANHARM5    343    0
+    ANHARM6   1018    0
+
+  ICONST >= 10 : Constraints will be considered algebraically.
+
+  Number of free HARMONIC FCs : 0
+  Number of free  ANHARM3 FCs : 698
+  Number of free  ANHARM4 FCs : 2215
+  Number of free  ANHARM5 FCs : 43
+  Number of free  ANHARM6 FCs : 125
+
+  Time Elapsed: 5.76052 sec.
+
+ -------------------------------------------------------------------
+
+ OPTIMIZATION
+ ============
+
+  LMODEL = elastic-net
+
+  Training data file (DFSET) : DFSET_AIMD+random
+
+  NSTART = 1; NEND = 40
+  40 entries will be used for training.
+
+  Total Number of Parameters : 6851
+  Total Number of Free Parameters : 3081
+
+  Elastic-net minimization with the following parameters:
+   L1_RATIO = 1
+   ENET_DNORM =               1
+  STANDARDIZE = 1 : Standardization will be performed for matrix A and vector b.
+                    The ENET_DNORM-tag will be neglected.
+
+   L1_ALPHA =      3.4548e-06
+   CONV_TOL =           1e-08
+   MAXITER = 10000
+
+  RESIDUAL (%): 2.30451
+  Number of non-zero  HARMONIC FCs : 0
+  Number of non-zero   ANHARM3 FCs : 530
+  Number of non-zero   ANHARM4 FCs : 1340
+  Number of non-zero   ANHARM5 FCs : 37
+  Number of non-zero   ANHARM6 FCs : 83
+
+
+  Time Elapsed: 39.8828 sec.
+
+ -------------------------------------------------------------------
+
+ The following files are created:
+
+ Force constants in a human-readable format : STO_anharm.fcs
+ Input data for the phonon code ANPHON      : STO_anharm.xml
+
+ Job finished at Sun Apr  2 02:49:54 2023
+

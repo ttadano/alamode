@@ -57,6 +57,7 @@ By issuing the command
 the script generates a supercell (``SPOSCAR``), generates an input for **alm** (``ALM0.in``), run **alm**, and passes the output files to ``displace.py``.
 The above command finishes quickly, and you can find two displaced structures (``harm_0.01_{1,2}.POSCAR``) generated in the working directory.
 
+.. _tutorial_PbTe_step2:
 
 2. Run DFT calculations and get forces
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -89,6 +90,8 @@ In this tutorial, we have placed the VASP outputs in ``vasp_outputs/`` directory
     $ python ${ALAMODE_ROOT}/tools/extract.py --VASP SPOSCAR vasp_outputs/vasprun_?.xml > DFSET_harmonic
 
 
+.. _tutorial_PbTe_step3:
+
 3. Fit second-order force constants
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -100,6 +103,7 @@ Please just run
 
 The script generates an input for **alm** (``ALM1.in``) and calls **alm**. Please check if the fitting error in the log file (``ALM1.log``) is reasonably small. The second-order force constants are saved in ``super444_0.01.xml``.
 
+.. _tutorial_PbTe_step4:
 
 4. Compute dielectric tensor and Born effective charges
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,6 +129,7 @@ Currently, this parsing feature is supported only for VASP.
 
 We provide the pre-generated file ``PbTe.born`` in the ``reference/`` directory, so you can copy it to the working directory to move forward.
 
+.. _tutorial_PbTe_step5:
 
 5. Phonon calculations
 ~~~~~~~~~~~~~~~~~~~~~~

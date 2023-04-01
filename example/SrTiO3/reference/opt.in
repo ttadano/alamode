@@ -19,7 +19,7 @@
  LMODEL = enet
 
  NDATA = 40
- DFSET = ../data/DFSET_AIMD+random
+ DFSET = DFSET_AIMD+random
  FC2XML = STO222.xml
 
  CV = 0

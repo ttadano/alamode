@@ -13,7 +13,7 @@ NORDER = 1
 *-* None
 /
 &optimize
- DFSET = ../data/DFSET_harmonic
+ DFSET = DFSET_harmonic
 /
 
 &cell

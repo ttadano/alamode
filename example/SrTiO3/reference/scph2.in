@@ -1,0 +1,35 @@
+&general
+ PREFIX = STO_scph2-2
+ MODE = SCPH
+ NKD = 3; KD = Sr Ti O
+ FCSXML = STO_anharm.xml 
+ NONANALYTIC = 3; BORNINFO = BORN
+ TMIN =0; TMAX = 1000; DT = 50
+ DELTA_E = 1.0
+/
+
+&cell
+7.363
+1.0 0.0 0.0 
+0.0 1.0 0.0
+0.0 0.0 1.0
+/
+
+&kpoint
+2
+10 10 10
+/
+
+&scph
+ SELF_OFFDIAG = 0
+ MAXITER = 500
+ MIXALPHA = 0.2
+ KMESH_INTERPOLATE = 2 2 2
+ KMESH_SCPH = 2 2 2
+/
+
+&analysis
+ PRINTMSD = 1
+/
+
+

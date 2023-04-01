@@ -1,11 +1,11 @@
  +-----------------------------------------------------------------+
  +                         Program ALM                             +
- +                             Ver.  1.4.0                         +
+ +                             Ver.  1.5.0                         +
  +-----------------------------------------------------------------+
 
  Number of OpenMP threads = 8
 
- Job started at Thu Jun 23 17:20:32 2022
+ Job started at Sun Apr  2 02:45:01 2023
 
 
  Input variables:
@@ -23,7 +23,7 @@
   FC3_SHENGBTE = 0
   FC2_QEFC = 0
   HESSIAN = 0
-  FC_ZERO_THR = 0
+  FC_ZERO_THR = 1e-12
 
  Interaction:
   NORDER = 1
@@ -31,7 +31,7 @@
 
  Optimize:
   LMODEL = least-squares
-  DFSET = ../data/DFSET_harmonic
+  DFSET = DFSET_harmonic
   NDATA = 4; NSTART = 1; NEND = 4   SKIP = 
 
   ICONST = 11
@@ -110,7 +110,7 @@
     40   7.500000e-01   7.500000e-01   5.000000e-01    3
 
 
-  Time Elapsed: 0.002829 sec.
+  Time Elapsed: 0.001197 sec.
 
  -------------------------------------------------------------------
 
@@ -143,7 +143,7 @@
      8 |     8   16   32   38   40
        | 
 
-  Time Elapsed: 0.021222 sec.
+  Time Elapsed: 0.010625 sec.
 
  -------------------------------------------------------------------
 
@@ -224,7 +224,7 @@
                7   11.0445 (  2) -  15( Ti)  16( Ti)
                8   12.7531 (  1) -  40(  O)
 
-  Time Elapsed: 0.023888 sec.
+  Time Elapsed: 0.012187 sec.
 
  -------------------------------------------------------------------
 
@@ -235,7 +235,7 @@
 
   Number of  HARMONIC FCs : 49
 
-  Time Elapsed: 0.028384 sec.
+  Time Elapsed: 0.015006 sec.
 
  -------------------------------------------------------------------
 
@@ -262,7 +262,7 @@
 
   Number of free HARMONIC FCs : 45
 
-  Time Elapsed: 0.029052 sec.
+  Time Elapsed: 0.015499 sec.
 
  -------------------------------------------------------------------
 
@@ -271,7 +271,7 @@
 
   LMODEL = least-squares
 
-  Training data file (DFSET) : ../data/DFSET_harmonic
+  Training data file (DFSET) : DFSET_harmonic
 
   NSTART = 1; NEND = 4
   4 entries will be used for training.
@@ -287,7 +287,7 @@
   Residual sum of squares for the solution: 0.000208475
   Fitting error (%) : 1.53358
 
-  Time Elapsed: 0.033557 sec.
+  Time Elapsed: 0.018698 sec.
 
  -------------------------------------------------------------------
 
@@ -296,5 +296,5 @@
  Force constants in a human-readable format : STO222.fcs
  Input data for the phonon code ANPHON      : STO222.xml
 
- Job finished at Thu Jun 23 17:20:32 2022
+ Job finished at Sun Apr  2 02:45:01 2023
 
