@@ -21,7 +21,7 @@ Users Guide
    quickstart
    alm_root
    anphon_root
-   tutorial
+   tutorial_pages/silicon
    faq
 
 
