@@ -31,6 +31,37 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/version.hpp>
 #include <cmath>
 
+namespace PHON_NS{
+bool less_FcsAlignedForGruneisen2(const FcsAlignedForGruneisen &obj1, const FcsAlignedForGruneisen &obj2){
+    std::vector<unsigned int> array_a, array_b;
+    array_a.clear();
+    array_b.clear();
+    int len = obj1.pairs.size();
+    for (int i = 0; i < len - 2; ++i) {
+        array_a.push_back(obj1.pairs[i].index);
+        array_a.push_back(obj1.pairs[i].tran);
+        array_b.push_back(obj2.pairs[i].index);
+        array_b.push_back(obj2.pairs[i].tran);
+    }
+    for (int i = 0; i < len - 2; ++i) {
+        array_a.push_back(obj1.pairs[i].cell_s);
+        array_b.push_back(obj2.pairs[i].cell_s);
+    }
+
+    array_a.push_back(obj1.pairs[len - 2].index);
+    array_a.push_back(obj1.pairs[len - 2].tran);
+    array_b.push_back(obj2.pairs[len - 2].index);
+    array_b.push_back(obj2.pairs[len - 2].tran);
+
+    array_a.push_back(obj1.pairs[len - 1].index);
+    array_a.push_back(obj1.pairs[len - 1].tran);
+    array_b.push_back(obj2.pairs[len - 1].index);
+    array_b.push_back(obj2.pairs[len - 1].tran);
+    return std::lexicographical_compare(array_a.begin(), array_a.end(),
+                                        array_b.begin(), array_b.end());
+}
+}
+
 using namespace PHON_NS;
 
 Gruneisen::Gruneisen(PHON *phon) : Pointers(phon)

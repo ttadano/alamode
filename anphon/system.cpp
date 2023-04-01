@@ -15,6 +15,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "memory.h"
 #include "constants.h"
 #include "symmetry_core.h"
+#include "scph.h"
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -411,6 +412,11 @@ void System::load_system_info_from_XML()
                                    "Data.Symmetry.NumberOfTranslations"));
 
         natmin = nat / ntran;
+
+        if (scph->natmin_tmp != 0 && scph->natmin_tmp != natmin)
+            exit("load_system_info_from_XML",
+                 "The number of atoms in the primitive cell (NATMIN) in the FCSXML file"
+                 " \n is not consistent with NAT_PRIM given in the the input file.");
 
         // Parse lattice vectors
 

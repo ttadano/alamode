@@ -95,6 +95,18 @@ void Input::parce_input(int narg,
             exit("parse_input",
                  "&scph entry not found in the input file");
         parse_scph_vars();
+        if(scph->relax_str != 0 && scph->relax_str != 1){
+            if(!locate_tag("&strain"))
+                exit("parse_input",
+                     "&strain entry not found in the input file");
+            parse_initial_strain();
+        }
+        if(scph->relax_str != 0){
+            if(!locate_tag("&displace"))
+                exit("parse_input",
+                     "&displace entry not found in the input file");
+            parse_initial_displace();
+        }
     }
 }
 
@@ -342,9 +354,16 @@ void Input::parse_scph_vars()
 
     struct stat st{};
     const std::vector<std::string> input_list{
-            "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
-            "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-            "LOWER_TEMP", "WARMSTART", "BUBBLE"
+          "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+          "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+          "LOWER_TEMP", "WARMSTART", "BUBBLE",
+          "RELAX_STR", "RELAX_ALGO", "MAX_STR_ITER", 
+          "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STDECENT",
+          "CELL_CONV_TOL", "MIXBETA_CELL",
+          "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
+          "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
+          "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_34TO1ST",
+          "NAT_PRIM", "STRAIN_IFC_DIR"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -367,34 +386,128 @@ void Input::parse_scph_vars()
     }
 
     auto file_dymat = this->job_title + ".scph_dymat";
+    auto file_harm_dymat = this->job_title + ".renorm_harm_dymat";
+    auto file_v0 = this->job_title + ".V0";
 
     // Default values
 
     auto tolerance_scph = 1.0e-10;
     unsigned int maxiter = 1000;
     auto mixalpha = 0.1;
-    auto selenergy_offdiagonal = true;
+    auto selfenergy_offdiagonal = true;
     unsigned int ialgo_scph = 0;
     auto lower_temp = true;
     auto warm_start = true;
     unsigned int bubble = 0;
 
-    // if file_dymat exists in the current directory,
-    // restart mode will be automatically turned on for SCPH calculations.
+    // structural optimization
+    int relax_str = 0;
+    int relax_algo = 2;
+    int max_str_iter = 100;
+    double coord_conv_tol = 1.0e-5;
+    double mixbeta_coord = 0.5;
+    double alpha_steepest_decent = 1.0e4; 
 
-    auto restart_scph = stat(file_dymat.c_str(), &st) == 0;
+    double cell_conv_tol = 1.0e-5;
+    double mixbeta_cell = 0.5;
+
+    int set_init_str = 1;
+    int cooling_u0_index = 0;
+    double cooling_u0_thr = 0.001;
+
+
+    double add_hess_diag = 100.0; // [cm^{-1}]
+    double stat_pressure = 0.0; // [GPa]
+
+    int qha_scheme = 0;
+
+    int renorm_3to2nd = 1;
+    int renorm_2to1st = 1;
+    int renorm_34to1st = 1;
+
+    int nat_prim = 0;
+    std::string strain_IFC_dir("");
 
     // Assign given values
 
-    assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
     assign_val(maxiter, "MAXITER", scph_var_dict);
     assign_val(mixalpha, "MIXALPHA", scph_var_dict);
-    assign_val(selenergy_offdiagonal, "SELF_OFFDIAG", scph_var_dict);
+    assign_val(selfenergy_offdiagonal, "SELF_OFFDIAG", scph_var_dict);
     assign_val(ialgo_scph, "IALGO", scph_var_dict);
     assign_val(tolerance_scph, "TOL_SCPH", scph_var_dict);
     assign_val(lower_temp, "LOWER_TEMP", scph_var_dict);
     assign_val(warm_start, "WARMSTART", scph_var_dict);
     assign_val(bubble, "BUBBLE", scph_var_dict);
+
+    assign_val(relax_str, "RELAX_STR", scph_var_dict);
+    if(relax_str != 0 && selfenergy_offdiagonal == false){
+        exit("parse_scph_vars",
+             "SELF_OFFDIAG == 0 cannot be used with RELAX_STR != 0.");
+    }
+    assign_val(relax_algo, "RELAX_ALGO", scph_var_dict);
+    assign_val(max_str_iter, "MAX_STR_ITER", scph_var_dict);
+    assign_val(coord_conv_tol, "COORD_CONV_TOL", scph_var_dict);
+
+    if(relax_algo == 1){
+        assign_val(alpha_steepest_decent, "ALPHA_STEEPEST_DECENT", scph_var_dict);
+    }
+    else if(relax_algo == 2){
+        assign_val(mixbeta_coord, "MIXBETA_COORD", scph_var_dict);
+    }
+
+    assign_val(cell_conv_tol, "CELL_CONV_TOL", scph_var_dict);
+    if(relax_algo == 2){
+        assign_val(mixbeta_cell, "MIXBETA_CELL", scph_var_dict);
+    }
+
+    assign_val(set_init_str, "SET_INIT_STR", scph_var_dict);
+    assign_val(cooling_u0_index, "COOLING_U0_INDEX", scph_var_dict);
+    assign_val(cooling_u0_thr, "COOLING_U0_THR", scph_var_dict);
+    assign_val(add_hess_diag, "ADD_HESS_DIAG", scph_var_dict);
+    assign_val(stat_pressure, "STAT_PRESSURE", scph_var_dict);
+    assign_val(qha_scheme, "QHA_SCHEME", scph_var_dict);
+
+    assign_val(renorm_3to2nd, "RENORM_3TO2ND", scph_var_dict);
+    assign_val(renorm_2to1st, "RENORM_2TO1ST", scph_var_dict);
+    assign_val(renorm_34to1st, "RENORM_34TO1ST", scph_var_dict);
+
+    assign_val(nat_prim, "NAT_PRIM", scph_var_dict);
+    if(relax_str != 0 && nat_prim == 0){
+        exit("parse_scph_vars",
+             "NAT_PRIM must be specified when RELAX_STR != 0.");
+    }
+
+    assign_val(strain_IFC_dir, "STRAIN_IFC_DIR", scph_var_dict);
+    if(strain_IFC_dir != "" && strain_IFC_dir.at(strain_IFC_dir.length()-1) != '/'){
+        strain_IFC_dir = strain_IFC_dir + "/";
+    }
+
+
+    // The order to determine parameters is irregular here.
+    // This is because the restart files depend on relax_str.
+    // Thus, we first read relax_str.
+    // Then we determine restart_scph by checking the restart files.
+    // Finally, we overwrite restart_scph if it is explicitly given in the input file.
+
+    // if file_dymat exists in the current directory,
+    // restart mode will be automatically turned on for SCPH calculations.
+    bool restart_scph = false;
+    // chech dynamical matrix files
+    if(relax_str == 0){
+        restart_scph = stat(file_dymat.c_str(), &st) == 0;
+    }
+    else if(relax_str > 0){
+        restart_scph = (stat(file_dymat.c_str(), &st) == 0) & (stat(file_harm_dymat.c_str(), &st) == 0);
+    }
+    else{
+        restart_scph = stat(file_harm_dymat.c_str(), &st) == 0;
+    }
+    // check V0 file
+    if(relax_str != 0){
+        restart_scph = restart_scph & (stat(file_v0.c_str(), &st) == 0);
+    }
+
+    assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
@@ -452,17 +565,319 @@ void Input::parse_scph_vars()
     scph->mixalpha = mixalpha;
     scph->maxiter = maxiter;
     scph->restart_scph = restart_scph;
-    scph->selfenergy_offdiagonal = selenergy_offdiagonal;
+    scph->selfenergy_offdiagonal = selfenergy_offdiagonal;
     scph->ialgo = ialgo_scph;
     scph->tolerance_scph = tolerance_scph;
     scph->lower_temp = lower_temp;
     scph->warmstart_scph = warm_start;
     scph->bubble = bubble;
 
+    scph->relax_str = relax_str;
+    scph->relax_algo = relax_algo;
+    scph->max_str_iter = max_str_iter;
+
+    scph->coord_conv_tol = coord_conv_tol;
+    scph->mixbeta_coord = mixbeta_coord;
+    scph->alpha_steepest_decent = alpha_steepest_decent;
+
+    scph->cell_conv_tol = cell_conv_tol;
+    scph->mixbeta_cell = mixbeta_cell;
+
+    scph->set_init_str = set_init_str;
+    scph->cooling_u0_index = cooling_u0_index;
+    scph->cooling_u0_thr = cooling_u0_thr;
+
+    scph->add_hess_diag = add_hess_diag;
+    scph->stat_pressure = stat_pressure;
+
+    scph->qha_scheme = qha_scheme;
+
+    scph->renorm_3to2nd = renorm_3to2nd;
+    scph->renorm_2to1st = renorm_2to1st;
+    scph->renorm_34to1st = renorm_34to1st;
+
+    scph->natmin_tmp = nat_prim;
+    scph->strain_IFC_dir = strain_IFC_dir;
+
     kmesh_v.clear();
     kmesh_interpolate_v.clear();
 
     scph_var_dict.clear();
+}
+
+void Input::parse_initial_strain()
+{
+    int i, j;
+    double u_tensor_tmp[3][3];
+    std::string line;
+    std::string line_wo_comment, line_tmp;
+    std::vector<std::string> line_vec, line_split;
+    std::string::size_type pos_first_comment_tag;
+
+    line_vec.clear();
+
+    if (from_stdin) {
+
+        while (std::getline(std::cin, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+
+    } else {
+        while (std::getline(ifs_input, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+    }
+
+    if (line_vec.size() != 3) {
+        exit("parse_initial_strain",
+             "Too few or too much lines for the &strain field.\n \
+                                            The number of valid lines for the &cell field should be 3.");
+    }
+
+    for (i = 0; i < 3; ++i) {
+
+        line = line_vec[i];
+        split(line_split, line,
+              boost::is_any_of("\t "), boost::token_compress_on);
+
+
+        // u_tensor
+        if (line_split.size() == 3) {
+            for (j = 0; j < 3; ++j) {
+                u_tensor_tmp[i][j] = boost::lexical_cast<double>(line_split[j]);
+            }
+        } else {
+            exit("parse_initial_strain",
+                    "Unacceptable format for &strain field.");
+        }
+    }
+
+    allocate(scph->init_u_tensor, 3, 3);
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            scph->init_u_tensor[i][j] = u_tensor_tmp[i][j];
+        }
+    }
+}
+
+void Input::parse_initial_displace()
+{
+    int natmin = scph->natmin_tmp;
+    int i, j;
+    int itmp, jtmp;
+    int ixyz;
+    int iat;
+    std::string line;
+    std::string line_wo_comment, line_tmp;
+    std::vector<std::string> line_vec, line_split;
+    std::string::size_type pos_first_comment_tag;
+
+    int input_mode;
+    int nline;
+
+    double unit;
+    double a[3][3];
+    double **u_fractional, **u_xyz;
+    allocate(u_fractional, natmin, 3);
+    allocate(u_xyz, natmin, 3);
+
+    if (from_stdin) {
+
+        while (std::getline(std::cin, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+
+    } else {
+        while (std::getline(ifs_input, line)) {
+
+            // Ignore comment region
+            pos_first_comment_tag = line.find_first_of('#');
+
+            if (pos_first_comment_tag == std::string::npos) {
+                line_wo_comment = line;
+            } else {
+                line_wo_comment = line.substr(0, pos_first_comment_tag);
+            }
+
+            trim_if(line_wo_comment, boost::is_any_of("\t\r\n "));
+
+            if (line_wo_comment.empty()) continue;
+            if (is_endof_entry(line_wo_comment)) break;
+
+            line_vec.push_back(line_wo_comment);
+        }
+    }
+
+    if (line_vec.size() == 0) {
+        exit("parse_initial_displace",
+             "Too few lines for the &displace field.");
+    }
+            
+    line = line_vec[0];
+    split(line_split, line,
+          boost::is_any_of("\t "), boost::token_compress_on);
+
+    if (line_split.size() == 1) {
+        input_mode = boost::lexical_cast<int>(line_split[0]);
+    } else {
+        exit("parse_cell_parameter",
+                "Unacceptable format for &cell field.");
+    }
+
+    if(input_mode < 0 || input_mode >= 2){
+        exit("parse_cell_parameter",
+                "Invalid value of input_mode");
+    }
+
+    // read displacements
+    if(input_mode == 0){
+        if (line_vec.size() != 5 + natmin) {
+            exit("parse_initial_displace",
+                "Too few or too many lines for the &displace field.");
+        }
+
+        // read cell information
+        for (i = 1; i < 5; ++i) {
+
+            line = line_vec[i];
+            split(line_split, line,
+                boost::is_any_of("\t "), boost::token_compress_on);
+
+            if (i == 1) {
+                // read unit
+                if (line_split.size() == 1) {
+                    unit = boost::lexical_cast<double>(line_split[0]);
+                } else {
+                    exit("parse_cell_parameter",
+                        "Unacceptable format for &displace field.");
+                }
+
+            } else {
+                // Lattice vectors a1, a2, a3
+                if (line_split.size() == 3) {
+                    for (j = 0; j < 3; ++j) {
+                        a[i - 2][j] = boost::lexical_cast<double>(line_split[j]);
+                    }
+                } else {
+                    exit("parse_cell_parameter",
+                        "Unacceptable format for &displace field.");
+                }
+            }
+        }
+        
+        for(itmp = 0; itmp < 3; itmp++){
+            for(ixyz = 0; ixyz < 3; ixyz++){
+                a[itmp][ixyz] *= unit;
+            }
+        }
+
+        // read fractional coordinate
+        for(i = 5; i < 5+natmin; i++){
+            line = line_vec[i];
+            split(line_split, line,
+                boost::is_any_of("\t "), boost::token_compress_on);
+
+            if (line_split.size() == 3) {
+                for (j = 0; j < 3; ++j) {
+                    u_fractional[i - 5][j] = boost::lexical_cast<double>(line_split[j]);
+                }
+            } else {
+                exit("parse_cell_parameter",
+                    "Unacceptable format for &displace field.");
+            }
+        }
+
+        // transform to xyz coordinate
+        for(iat = 0; iat < natmin; iat++){
+            for(ixyz = 0; ixyz < 3; ixyz++){
+                u_xyz[iat][ixyz] = 0.0;
+                for(itmp = 0; itmp < 3; itmp++){
+                    u_xyz[iat][ixyz] += a[itmp][ixyz] * u_fractional[iat][itmp];
+                }
+            }
+        }
+
+    }
+    else if(input_mode == 1){
+        if (line_vec.size() != 1 + natmin) {
+            exit("parse_initial_displace",
+                "Too few or too many lines for the &displace field.");
+        }
+
+        for(i = 1; i < 1+natmin; i++){
+
+            line = line_vec[i];
+            split(line_split, line,
+                boost::is_any_of("\t "), boost::token_compress_on);
+
+            if (line_split.size() == 3) {
+                for (j = 0; j < 3; ++j) {
+                    u_xyz[i - 1][j] = boost::lexical_cast<double>(line_split[j]);
+                }
+            } else {
+                exit("parse_cell_parameter",
+                    "Unacceptable format for &displace field.");
+            }
+        }
+    }
+
+    // Copy the values to appropriate classes 
+    allocate(scph->init_u0, natmin*3);
+    for(iat = 0; iat < natmin; iat++){
+        for(ixyz = 0; ixyz < 3; ixyz++){
+            scph->init_u0[iat*3+ixyz] = u_xyz[iat][ixyz];
+        }
+    }
+
+    deallocate(u_fractional);
+    deallocate(u_xyz);
+
 }
 
 void Input::parse_analysis_vars(const bool use_default_values)

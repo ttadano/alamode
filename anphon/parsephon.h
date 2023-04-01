@@ -45,6 +45,10 @@ private:
 
     void parse_scph_vars();
 
+    void parse_initial_strain();
+
+    void parse_initial_displace();
+
     void parse_cell_parameter();
 
     void parse_kpoints();
