@@ -1,5 +1,5 @@
 
-.. _label_tutorial_02:
+.. _label_tutorial_si_lammps:
 
 .. raw:: html
 
@@ -18,11 +18,11 @@ As a simple example, we calculate phonon dispersion curves of Si using the Still
 First, you need to make two input files for LAMMPS: :red:`in.sw` and :red:`Si222.lammps` (file name is arbitrary, though).
 :red:`in.sw` is the main input file for LAMMPS, in which the type of the empirical force field is defined as follows:
 
-.. literalinclude:: ../../example/Si_LAMMPS/in.sw
+.. literalinclude:: ../../../example/Si_LAMMPS/in.sw
 
 In the file :red:`Si222.lammps`, the lattice vectors and atomic positions of a relaxed supercell structure are defined as follows:
 
-.. literalinclude:: ../../example/Si_LAMMPS/Si222.lammps
+.. literalinclude:: ../../../example/Si_LAMMPS/Si222.lammps
    :lines: 1-30
 
 Next, please generate a set of structure files for displaced configurations using 

@@ -13,7 +13,7 @@
 Silicon
 -------
 
-.. figure:: ../img/si222.png
+.. figure:: ../../img/si222.png
    :scale: 40%
    :align: center
 
@@ -39,7 +39,7 @@ Change directory to **example/Si** and open file :red:`si_alm.in`.
 This file is an input for the code **alm** which estimate interatomic force constants (**IFC**) by least square fitting.
 In the file, the crystal structure of a 2x2x2 conventional supercell of Si is specified in the **&cell** and the **&position** fields as the following:
 
-.. literalinclude:: ../../example/Si/reference/si_alm1.in
+.. literalinclude:: ../../../example/Si/reference/si_alm1.in
    :lines: 1-30
 
 Replace the lattice constant of the supercell (20.406 Bohr) by your own value.
@@ -171,7 +171,7 @@ You can find files :red:`si222.fcs` and :red:`si222.xml` in the working director
 The file :red:`si222.fcs` contains all IFCs in Rydberg atomic units.
 You can find symmetrically irreducible sets of IFCs in the first part as:
 
-.. literalinclude:: ../../example/Si/reference/si222.fcs
+.. literalinclude:: ../../../example/Si/reference/si222.fcs
    :lines: 1-40
 
 Harmonic IFCs :math:`\Phi_{\mu\nu}(i,j)` in the supercell are given in the third column
@@ -196,7 +196,7 @@ The other file :red:`si222.xml` contains crystal structure, symmetry, IFCs, and 
 
 Open the file :red:`si_phband.in` and edit it for your system.
 
-.. literalinclude:: ../../example/Si/reference/si_phband.in
+.. literalinclude:: ../../../example/Si/reference/si_phband.in
 
 Please specify the XML file you obtained in step 3 by the ``FCSXML``-tag as above. 
 In the **&cell**-field, you need to define the lattice vector of a **primitive cell**.
@@ -210,7 +210,7 @@ Then, execute **anphon**
 which creates a file :red:`si222.bands` in the working directory.
 In this file, phonon frequencies along the given reciprocal path are printed in units of cm\ :sup:`-1` as:
 
-.. literalinclude:: ../../example/Si/reference/si222.bands
+.. literalinclude:: ../../../example/Si/reference/si222.bands
    :lines: 1-10
 
 You can plot the phonon dispersion relation with gnuplot or any other plot software.
@@ -223,7 +223,7 @@ For visualizing phonon dispersion relations, we provide a Python script :red:`pl
 
 Then, the phonon dispersion is displayed as follows:
 
-.. image:: ../img/Si_phband_DFT.png
+.. image:: ../../img/Si_phband_DFT.png
    :scale: 30
    :align: center
 
@@ -256,7 +256,7 @@ The command
 
 will show the phonon DOS of Si by a pop-up window:
 
-.. image:: ../img/Si_phdos_DFT.png
+.. image:: ../../img/Si_phdos_DFT.png
    :scale: 30
    :align: center
 
@@ -376,7 +376,7 @@ You can plot this file using gnuplot (or any other plotting softwares) as follow
     gnuplot> set ylabel "Lattice thermal conductivity (W/mK)"
     gnuplot> plot "si222.kl" usi 1:2 w lp
 
-.. figure:: ../img/si_kappa.png
+.. figure:: ../../img/si_kappa.png
    :scale: 40%
    :align: center
 
@@ -427,7 +427,7 @@ You can extract phonon lifetime from this file as follows::
     gnuplot> set ylabel "Phonon lifetime (ps)"
     gnuplot> plot "tau300K_10.dat" using 3:4 w p
 
-.. figure:: ../img/si_tau.png
+.. figure:: ../../img/si_tau.png
    :scale: 40%
    :align: center
 
@@ -448,7 +448,7 @@ Following the procedure below, you can obtain the :ref:`cumulative thermal condu
     gnuplot> set ylabel "Cumulative kappa (W/mK)"
     gnuplot> plot "cumulative_300K_10.dat" using 1:2 w lp
 
-.. figure:: ../img/si_cumulative.png
+.. figure:: ../../img/si_cumulative.png
    :scale: 40%
    :align: center
 
@@ -502,7 +502,7 @@ After the calculation finishes, you can find the file :red:`si222.kl_spec` which
     gnuplot> set ylabel "Spectrum of kappa (W/mK/cm^{-1})"
     gnuplot> plot "si222_300K_10.kl_spec" using 2:3 w l lt 2 lw 2
 
-.. figure:: ../img/si_kappa_spec.png
+.. figure:: ../../img/si_kappa_spec.png
    :scale: 40%
    :align: center
 
