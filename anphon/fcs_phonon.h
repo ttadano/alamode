@@ -142,8 +142,8 @@ public:
     bool update_fc2;
 
     void load_fc2_xml(std::vector<FcsClassExtent> &,
-                          int,
-                          std::string);
+                      int,
+                      std::string);
 
 private:
     bool require_cubic;

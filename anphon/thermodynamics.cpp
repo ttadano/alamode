@@ -712,7 +712,7 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
                                           std::complex<double> ***evec,
                                           double **eval_harm_renormalized,
                                           std::complex<double> ***evec_harm_renormalized) const
-{   
+{
     using namespace Eigen;
     const auto nk = dos->kmesh_dos->nk;
     const auto ns = dynamical->neval;
@@ -736,11 +736,11 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
         MatrixXcd Cmat(ns, ns);
 
         // calculate Cmat
-        for(int js = 0; js < ns; js++){
-            for(int ks = 0; ks < ns; ks++){
+        for (int js = 0; js < ns; js++) {
+            for (int ks = 0; ks < ns; ks++) {
                 Cmat(js, ks) = 0.0;
-                for(int ls = 0; ls < ns; ls++){
-                    Cmat(js, ks) += std::conj(evec_harm_renormalized[ik][js][ls]) 
+                for (int ls = 0; ls < ns; ls++) {
+                    Cmat(js, ks) += std::conj(evec_harm_renormalized[ik][js][ls])
                                     * evec[ik][ks][ls];
                 }
             }
@@ -749,11 +749,10 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
         auto tmp_c = std::complex<double>(0.0, 0.0);
         double omega2_harm;
 
-        for(int js = 0; js < ns; js++){
-            if(eval_harm_renormalized[ik][js] < 0.0){
+        for (int js = 0; js < ns; js++) {
+            if (eval_harm_renormalized[ik][js] < 0.0) {
                 omega2_harm = -std::pow(eval_harm_renormalized[ik][js], 2);
-            }
-            else{
+            } else {
                 omega2_harm = std::pow(eval_harm_renormalized[ik][js], 2);
             }
             tmp_c += std::conj(Cmat(js, is)) * omega2_harm * Cmat(js, is);
@@ -775,13 +774,13 @@ double Thermodynamics::compute_FE_total(unsigned int iT,
 {
     double fe_total = fe_qha;
     // skip scph correction for QHA + structural optimization
-    if(scph->relax_str >= 0){
+    if (scph->relax_str >= 0) {
         fe_total += dfe_scph;
     }
     if (thermodynamics->calc_FE_bubble) {
         fe_total += thermodynamics->FE_bubble[iT];
     }
-    if(scph->relax_str != 0){
+    if (scph->relax_str != 0) {
         fe_total += scph->V0[iT];
     }
 

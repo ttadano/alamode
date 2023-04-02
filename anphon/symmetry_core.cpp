@@ -63,7 +63,7 @@ void Symmetry::setup_symmetry()
     SymmList.clear();
 
 
-    if(phon->mode == "SCPH" && scph->relax_str != 0){
+    if (phon->mode == "SCPH" && scph->relax_str != 0) {
         double **xtmp_disp;
         double lavec_p_strain[3][3], rlavec_p_strain[3][3];
         double mat_strain[3][3];
@@ -71,24 +71,23 @@ void Symmetry::setup_symmetry()
         int i, j;
         int iat;
 
-        if(scph->init_u_tensor){
-            for(i = 0; i < 3; i++){
-                for(j = 0; j < 3; j++){
+        if (scph->init_u_tensor) {
+            for (i = 0; i < 3; i++) {
+                for (j = 0; j < 3; j++) {
                     mat_strain[i][j] = scph->init_u_tensor[i][j];
                 }
                 mat_strain[i][i] += 1.0;
             }
             matmul3(lavec_p_strain, mat_strain, system->lavec_p);
             invmat3(rlavec_p_strain, lavec_p_strain);
-            for(i = 0; i < 3; i++){
-                for(j = 0; j < 3; j++){
-                    rlavec_p_strain[i][j] *= 2.0*pi;
+            for (i = 0; i < 3; i++) {
+                for (j = 0; j < 3; j++) {
+                    rlavec_p_strain[i][j] *= 2.0 * pi;
                 }
             }
-        }
-        else{
-            for(i = 0; i < 3; i++){
-                for(j = 0; j < 3; j++){
+        } else {
+            for (i = 0; i < 3; i++) {
+                for (j = 0; j < 3; j++) {
                     lavec_p_strain[i][j] = system->lavec_p[i][j];
                     rlavec_p_strain[i][j] = system->rlavec_p[i][j];
                 }
@@ -96,19 +95,19 @@ void Symmetry::setup_symmetry()
         }
 
         allocate(xtmp_disp, natmin, 3);
-        for(iat = 0; iat < natmin; iat++){
+        for (iat = 0; iat < natmin; iat++) {
 
             // set displacement
-            for(i = 0; i < 3; i++){
-                xtmp_disp[iat][i] = scph->init_u0[iat*3+i];
+            for (i = 0; i < 3; i++) {
+                xtmp_disp[iat][i] = scph->init_u0[iat * 3 + i];
             }
             rotvec(xtmp_disp[iat], xtmp_disp[iat], rlavec_p_strain);
-            for (i = 0; i < 3; i++){
+            for (i = 0; i < 3; i++) {
                 xtmp_disp[iat][i] /= 2.0 * pi;
             }
 
             // add original position
-            for(i = 0; i < 3; i++){
+            for (i = 0; i < 3; i++) {
                 xtmp_disp[iat][i] += xtmp[iat][i];
             }
         }
@@ -131,30 +130,30 @@ void Symmetry::setup_symmetry()
                                      xtmp,
                                      kdtmp,
                                      SymmList_ref);
-            
+
         }
 
         deallocate(xtmp_disp);
 
-    }else{
+    } else {
         if (mympi->my_rank == 0) {
             std::cout << " Symmetry" << std::endl;
             std::cout << " ========" << std::endl << std::endl;
             setup_symmetry_operation(natmin,
-                                    nsym,
-                                    system->lavec_p,
-                                    system->rlavec_p,
-                                    xtmp,
-                                    kdtmp,
-                                    SymmList);
+                                     nsym,
+                                     system->lavec_p,
+                                     system->rlavec_p,
+                                     xtmp,
+                                     kdtmp,
+                                     SymmList);
 
             setup_symmetry_operation(natmin,
-                                    nsym_ref,
-                                    system->lavec_p,
-                                    system->rlavec_p,
-                                    xtmp,
-                                    kdtmp,
-                                    SymmList_ref);
+                                     nsym_ref,
+                                     system->lavec_p,
+                                     system->rlavec_p,
+                                     xtmp,
+                                     kdtmp,
+                                     SymmList_ref);
         }
     }
 

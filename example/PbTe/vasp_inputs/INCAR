@@ -1,0 +1,20 @@
+  general:
+  System = PbTe_rocksalt
+  ISTART =  0 ; ICHARG=2
+  ENCUT  =    600
+  ISMEAR = 2; SIGMA = 0.2;
+  EDIFF = 1.0E-9
+
+  LSCALAPACK = .False.
+  ADDGRID = .True.
+  PREC = Accurate
+  
+  LREAL = .False.
+  NPAR = 8; KPAR = 4
+
+  LWAVE = .False.;LCHARG = .False.
+
+  GGA = PS
+
+
+

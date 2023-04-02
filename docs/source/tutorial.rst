@@ -1,20 +1,10 @@
-
-.. _label_tutorial:
-
-.. raw:: html
-
-    <style> .red {color:red} </style>
-
-.. role:: red
-
 Tutorial
 ========
 
-Input files prepared for this tutorial are located in the **example/** directory of the ALAMODE package.
+.. toctree::
+   :maxdepth: 1
 
-#. :ref:`Silicon <label_tutorial_01>`
-#. :ref:`Silicon with LAMMPS <label_tutorial_02>`
-
-
-.. include:: tutorial_pages/01_silicon.rst
-.. include:: tutorial_pages/02_silicon_lammps.rst
+   tutorial_pages/silicon
+   tutorial_pages/silicon_lammps
+   tutorial_pages/pbte_nonanalytic_correction
+   tutorial_pages/sto_scph

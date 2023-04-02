@@ -2266,7 +2266,7 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
     const auto delta_omega = dos->delta_e;
     double omega2[2];
 
-    const double Omega_min= 0.0;
+    const double Omega_min = 0.0;
     double Omega_max;
 
 //    auto emin_now = std::numeric_limits<double>::max();
@@ -2275,7 +2275,8 @@ void ModeAnalysis::print_spectral_function(const unsigned int NT,
 
     for (auto ik = 0; ik < dos->kmesh_dos->nk_irred; ++ik) {
         for (auto is = 0; is < ns; ++is) {
-            omega_tmp = writes->in_kayser(dos->dymat_dos->get_eigenvalues()[dos->kmesh_dos->kpoint_irred_all[ik][0].knum][is]);
+            omega_tmp = writes->in_kayser(
+                    dos->dymat_dos->get_eigenvalues()[dos->kmesh_dos->kpoint_irred_all[ik][0].knum][is]);
 //            emin_now = std::min(emin_now, omega_tmp);
             emax_now = std::max(emax_now, omega_tmp);
         }
