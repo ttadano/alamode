@@ -35,8 +35,14 @@ Then, equation :eq:`omega2` can be denoted as
     \Lambda(\boldsymbol{q}) = W^{\dagger}(\boldsymbol{q})D(\boldsymbol{q})W(\boldsymbol{q}).
 
 
-When one needs to capture the LO\-TO splitting near the zone-center by the supercell approach,
-it is necessary to add the non\-analytic part of the dynamical matrix defined by
+Non-analytic correction
+-----------------------
+
+When one needs to capture the LO\-TO splitting near the zone-center, it is necessary to account for the long\-range correction to the dynamical matrix. 
+In the **anphon** code, three different approaches are implemented: the Parlinski's method [1]_ (``NONANALYTIC = 1``), the mixed-space approach [2]_  (``NONANALYTIC = 2``), and the Ewald summation method (``NONANALYTIC = 3``). 
+
+The first two methods are rather simple and add the non-analytic part of the dynamical matrix with different weighting factors.
+The non-analytic part of the dynamical matrix is defined as
 
 .. math::
 
@@ -44,26 +50,56 @@ it is necessary to add the non\-analytic part of the dynamical matrix defined by
     \frac{4\pi e^{2}}{V} \frac{(Z_{\kappa}^{*}\boldsymbol{q})_{\mu}(Z_{\kappa^{\prime}}^{*}\boldsymbol{q})_{\nu}}{\boldsymbol{q}\cdot\epsilon^{\infty}\boldsymbol{q}},
 
 where :math:`V` is the volume of the primitive cell, :math:`Z_{\kappa}^{*}` is the Born effective charge tensor of atom :math:`\kappa`, 
-and :math:`\epsilon^{\infty}` is the dielectric constant tensor, respectively.
-In program *anphon*, either the Parlinski's way [1]_ or the mixed-space approach [2]_ can be used. 
-In the Parlinski's approach (``NONANALYTIC = 1``), the total dynamical matrix is given by
+and :math:`\epsilon^{\infty}` is the electronic dielectric permittivity tensor, respectively.
+
+Parlinski's approach (``NONANALYTIC = 1``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the Parlinski's approach [1]_ , the total dynamical matrix is given by
 
 .. math::
 
     D(\boldsymbol{q}) + D^{\textrm{NA}}(\boldsymbol{q})\exp{(-q^{2}/\sigma^{2})},
 
-where :math:`\sigma` is a damping factor. 
-:math:`\sigma` must be chosen carefully so that the non-analytic contribution
-becomes negligible at Brillouin zone boundaries.
-In the mixed-space approach (``NONANALYTIC = 2``), the total dynamical matrix is given by
+where :math:`\sigma` is a damping factor (``NA_SIGMA``). 
+:math:`\sigma` must be chosen carefully so that the non-analytic contribution becomes negligible at Brillouin zone (BZ) boundaries. 
+Too large :math:`\sigma` can result in a discontinuity of phonon dispersion at the BZ boundaries, while too small :math:`\sigma` can yield a large oscillation of the LO phonon frequencies as going away from :math:`\boldsymbol{q}=0`. So, an appropriate :math:`\sigma` value needs to be chosen in an *ad hoc* way.
+
+
+Mixed-space approach (``NONANALYTIC = 2``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the mixed-space approach [2]_ , the total dynamical matrix is given by
 
 .. math::
 
     D(\boldsymbol{q}) + D^{\textrm{NA}}(\boldsymbol{q})\frac{1}{N}\sum_{\ell^{\prime}}\exp{\left[i\boldsymbol{q}\cdot(\boldsymbol{r}(\ell^{\prime})-\boldsymbol{r}(\ell))\right]}.
 
-The second term vanishes at commensurate :math:`\boldsymbol{q}` points other than :math:`\Gamma` point (:math:`\boldsymbol{q} = 0`).
+The second term vanishes at the :math:`\boldsymbol{q}` points commensurate with the supercell except for the :math:`\Gamma` point (:math:`\boldsymbol{q} = 0`).
+No adjustable parameters exist in this approach. In many cases, the mixed-space approach give reasonable dispersion curves. 
+However, it can still yield a discontinuity in the phonon dispersion at BZ boundaries when the boundary point is incommensurate with the supercell size.
 
-To include the non-analytic term, one needs to set ``NONANALYTIC > 0`` and give appropriate ``BORNINFO`` and ``NA_SIGMA`` tags.
+
+Ewald method (``NONANALYTIC = 3``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Ewald summation technique [10]_ is more accurate and therefore recommended in general.
+In this method, we first decompose the harmonic force constants computed in a supercell into the long\-range dipole-dipole (DD) components and the short\-range ones as follows
+
+.. math:: 
+
+    \Phi_{\mu\nu}^{\mathrm{SR}}(\ell\kappa;\ell^{\prime}\kappa^{\prime})= \Phi_{\mu\nu}(\ell\kappa;\ell^{\prime}\kappa^{\prime}) - \Phi_{\mu\nu}^{\mathrm{DD}}(\ell\kappa;\ell^{\prime}\kappa^{\prime}).
+
+
+After the short\-range components are obtained, they are used in equation :eq:`dymat` to obtain the short\-range dynamical matrix :math:`D_{\mu\nu}^{\mathrm{SR}}(\kappa\kappa^{\prime};\boldsymbol{q})`. Then, the total dynamical matrix is constructed as
+
+.. math:: 
+
+    D_{\mu\nu}(\kappa\kappa^{\prime};\boldsymbol{q}) = D^{\mathrm{SR}}_{\mu\nu}(\kappa\kappa^{\prime};\boldsymbol{q}) +  D^{\mathrm{DD}}_{\mu\nu}(\kappa\kappa^{\prime};\boldsymbol{q}).
+
+The long\-range terms, :math:`\Phi_{\mu\nu}^{\mathrm{DD}}(\ell\kappa;\ell^{\prime}\kappa^{\prime})` and :math:`D^{\mathrm{DD}}_{\mu\nu}(\kappa\kappa^{\prime};\boldsymbol{q})`, can be calculated from :math:`\epsilon^{\infty}` and :math:`Z_{\kappa}^{*}` using the Ewald summation technique.
+
+To include the non-analytic correction with ``NONANALYTIC > 0``, one also need to give ``BORNINFO``.
 
 
 Group velocity
@@ -501,4 +537,7 @@ When ``SELF_OFFDIAG = 1``, the off-diagonal elements are also calculated, and th
 .. [8] M\. Simoncelli, N. Marzari, and F. Mauri, Nat. Phys. **15**, 809 (2019).
 
 .. [9] P\. B. Allen and J. L. Feldman, Phys. Rev. B **48**, 12581 (1993).
+
+.. [10] X\. Gonze and C. Lee, Phys. Rev. B **55**, 10355 (1997).
+  
 

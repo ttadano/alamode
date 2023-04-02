@@ -172,7 +172,7 @@ Description of input variables
 
  :Default: 0
  :Type: Integer
- :Description: When ``NONANALYTIC > 0``, appropriate ``NA_SIGMA`` and ``BORNINFO`` have to be given.
+ :Description: When ``NONANALYTIC > 0``, appropriate ``BORNINFO`` needs to be given. If ``NONANALYTIC = 1``, one may need to adjust the ``NA_SIGMA`` value to obtain reasonably smooth dispersion curves.
 
 ````
 
@@ -1203,7 +1203,7 @@ Please specify the initial atomic displacements :math:`u^{(0)}_{\alpha \mu}` [Bo
 Format of BORNINFO
 ~~~~~~~~~~~~~~~~~~
 
-When one wants to consider the LO-TO splitting near the :math:`\Gamma` point, it is necessary to set ``NONANALYTIC = 1`` and
+When one wants to consider the LO-TO splitting near the :math:`\Gamma` point, it is necessary to set ``NONANALYTIC > 0`` and
 provide ``BORNINFO`` file containing dielectric tensor :math:`\epsilon^{\infty}` and Born effective charge :math:`Z^{*}`.
 In ``BORNINFO`` file, the dielectric tensor should be written in first 3 lines which are followed by Born effective charge tensors
 for each atom as the following.

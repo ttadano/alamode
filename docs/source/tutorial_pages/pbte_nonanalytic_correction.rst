@@ -188,7 +188,7 @@ Finally, we plot all results together to see the difference.
    :align: center
 
 
-We can see that ``NONANALYTIC=2`` and ``NONANALYTIC=3`` give smoother dispersion than ``NONALAYTIC=1``. 
+We can see that ``NONANALYTIC = 2`` and ``NONANALYTIC = 3`` give smoother dispersion than ``NONANALYTIC = 1``. 
 For these two method, the NA correction becomes exactly zero at the commensurate :math:`\boldsymbol{q}` points (other than :math:`\boldsymbol{q}\longrightarrow 0`). In the present calculation, we used a 4x4x4 supercell of the primitive cell. Hence, the NA correction should be zero at the Brillouin zone boundaries (X and L points) as well as the midpoint of the each high-symmetry line (e.g., :math:`\boldsymbol{q}=(1/4, 1/4, 0)`). We can confirm this from the above figure, where the blue, red, and magenta curves perfectly intersect with each other at these commensurate points, whereas the green curve does not.
 
-In general, we recommend using ``NONANALYTIC=3`` as it correctly separates the short- and long-range terms and calculates the NA correction in the reciprocal space accurately using the Ewald summation method. It can also avoid abrupt jumps or discontinuties in dispersion curves at Brillouin zone boundaries, which can happen with ``NONALALYTIC=2`` when the BZ boundary is not commensurate with the supercell size.
+In general, we recommend using ``NONANALYTIC = 3`` as it correctly separates the short- and long-range terms and calculates the NA correction in the reciprocal space accurately using the Ewald summation method. It can also avoid abrupt jumps or discontinuties in dispersion curves at Brillouin zone boundaries, which can happen with ``NONALALYTIC = 2`` when the BZ boundary is not commensurate with the supercell size.
