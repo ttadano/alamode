@@ -31,8 +31,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/version.hpp>
 #include <cmath>
 
-namespace PHON_NS{
-bool less_FcsAlignedForGruneisen2(const FcsAlignedForGruneisen &obj1, const FcsAlignedForGruneisen &obj2){
+namespace PHON_NS {
+bool less_FcsAlignedForGruneisen2(const FcsAlignedForGruneisen &obj1, const FcsAlignedForGruneisen &obj2)
+{
     std::vector<unsigned int> array_a, array_b;
     array_a.clear();
     array_b.clear();

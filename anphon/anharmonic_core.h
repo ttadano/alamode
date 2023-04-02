@@ -190,7 +190,7 @@ public:
     void calc_phi3_reciprocal(const double *xk1,
                               const double *xk2,
                               const int ngroup_v3_in,
-                              std::vector<double, std::allocator<double>>  *fcs_group_v3_in,
+                              std::vector<double, std::allocator<double>> *fcs_group_v3_in,
                               const std::vector<RelativeVector> *relvec_v3_in,
                               const PhaseFactorStorage *phase_storage_in,
                               std::complex<double> *ret);
@@ -212,8 +212,8 @@ public:
     std::vector<RelativeVector> *get_relvec(const unsigned int order) const;
 
     void calc_analytic_k_from_FcsArrayWithCell(const double *,
-                         const std::vector<FcsArrayWithCell> &,
-                         std::complex<double> **) const;
+                                               const std::vector<FcsArrayWithCell> &,
+                                               std::complex<double> **) const;
 
 
 private:

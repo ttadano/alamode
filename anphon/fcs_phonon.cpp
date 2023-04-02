@@ -155,7 +155,7 @@ void Fcs_phonon::load_fc2_xml(std::vector<FcsClassExtent> &fc2_vec,
     FcsClassExtent fcext_tmp;
 
     // read from the input file
-    if(mode == 0){
+    if (mode == 0) {
         if (update_fc2) {
             try {
                 read_xml(file_fc2, pt);
@@ -174,8 +174,8 @@ void Fcs_phonon::load_fc2_xml(std::vector<FcsClassExtent> &fc2_vec,
             }
         }
     }
-    // read from the file of the given name
-    else if (mode == 1){
+        // read from the file of the given name
+    else if (mode == 1) {
         try {
             read_xml(xml_filename, pt);
         }

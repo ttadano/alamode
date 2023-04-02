@@ -409,7 +409,7 @@ std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
 void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
                                           const double *xk2,
                                           const int ngroup_v3_in,
-                                          std::vector<double, std::allocator<double>>  *fcs_group_v3_in,
+                                          std::vector<double, std::allocator<double>> *fcs_group_v3_in,
                                           const std::vector<RelativeVector> *relvec_v3_in,
                                           const PhaseFactorStorage *phase_storage_in,
                                           std::complex<double> *ret)
@@ -1525,14 +1525,14 @@ int **AnharmonicCore::get_evec_index(const unsigned int order) const
 
 std::vector<RelativeVector> *AnharmonicCore::get_relvec(const unsigned int order) const
 {
-    if(order == 3) return relvec_v3;
-    if(order == 4) return relvec_v4;
+    if (order == 3) return relvec_v3;
+    if (order == 4) return relvec_v4;
     return nullptr;
 }
 
 void AnharmonicCore::calc_analytic_k_from_FcsArrayWithCell(const double *xk_in,
-                         const std::vector<FcsArrayWithCell> &fc2_in,
-                         std::complex<double> **dymat_out) const
+                                                           const std::vector<FcsArrayWithCell> &fc2_in,
+                                                           std::complex<double> **dymat_out) const
 {
     int i;
     const auto nmode = 3 * system->natmin;
@@ -1554,9 +1554,9 @@ void AnharmonicCore::calc_analytic_k_from_FcsArrayWithCell(const double *xk_in,
             for (iz = -1; iz <= 1; ++iz) {
                 if (ix == 0 && iy == 0 && iz == 0) continue;
 
-                xshift_s[icell][0] = ix*1.0;
-                xshift_s[icell][1] = iy*1.0;
-                xshift_s[icell][2] = iz*1.0;
+                xshift_s[icell][0] = ix * 1.0;
+                xshift_s[icell][1] = iy * 1.0;
+                xshift_s[icell][2] = iz * 1.0;
 
                 ++icell;
             }
@@ -1571,12 +1571,12 @@ void AnharmonicCore::calc_analytic_k_from_FcsArrayWithCell(const double *xk_in,
 
     for (const auto &it: fc2_in) {
 
-        const auto atm1_p = it.pairs[0].index/3;
-        const auto atm2_p = it.pairs[1].index/3;
+        const auto atm1_p = it.pairs[0].index / 3;
+        const auto atm2_p = it.pairs[1].index / 3;
         const auto atm1_s = system->map_p2s_anharm[atm1_p][0];
         const auto atm2_s = system->map_p2s_anharm[atm2_p][it.pairs[1].tran];
-        const auto xyz1 = it.pairs[0].index%3;
-        const auto xyz2 = it.pairs[1].index%3;
+        const auto xyz1 = it.pairs[0].index % 3;
+        const auto xyz2 = it.pairs[1].index % 3;
         const auto icell = it.pairs[1].cell_s;
 
         for (i = 0; i < 3; ++i) {
@@ -1590,7 +1590,8 @@ void AnharmonicCore::calc_analytic_k_from_FcsArrayWithCell(const double *xk_in,
         const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
 
         dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
-                += it.fcs_val * std::exp(im * phase) / std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
+                += it.fcs_val * std::exp(im * phase) /
+                   std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
     }
 
     deallocate(xshift_s);

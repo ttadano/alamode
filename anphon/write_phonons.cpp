@@ -153,14 +153,13 @@ void Writes::write_input_vars()
         // variables related to structural optimization
         std::cout << std::endl;
         std::cout << "  RELAX_STR = " << scph->relax_str << std::endl;
-        if(scph->relax_str){
+        if (scph->relax_str) {
             std::cout << "  RELAX_ALGO = " << scph->relax_algo << std::endl;
             std::cout << "  MAX_STR_ITER = " << scph->max_str_iter << std::endl;
             std::cout << "  COORD_CONV_TOL = " << scph->coord_conv_tol << std::endl;
-            if(scph->relax_algo == 1){
+            if (scph->relax_algo == 1) {
                 std::cout << "  ALPHA_STEEPEST_DECENT = " << scph->alpha_steepest_decent << std::endl;
-            }
-            else if(scph->relax_algo == 2){
+            } else if (scph->relax_algo == 2) {
                 std::cout << "  MIXBETA_COORD = " << scph->mixbeta_coord << std::endl;
             }
             std::cout << "  CELL_CONV_TOL = " << scph->cell_conv_tol << std::endl;
@@ -173,10 +172,10 @@ void Writes::write_input_vars()
             std::cout << "  ADD_HESS_DIAG = " << scph->add_hess_diag << std::endl;
             std::cout << "  STAT_PRESSURE = " << scph->stat_pressure << std::endl;
 
-            if(scph->relax_str == -1){
+            if (scph->relax_str == -1) {
                 std::cout << "  QHA_SCHEME = " << scph->qha_scheme << std::endl;
             }
-            if(scph->relax_str != 0){
+            if (scph->relax_str != 0) {
                 std::cout << "  RENORM_3TO2ND = " << scph->renorm_3to2nd << std::endl;
                 std::cout << "  RENORM_2TO1ST = " << scph->renorm_2to1st << std::endl;
                 std::cout << "  RENORM_34TO1ST = " << scph->renorm_34to1st << std::endl;
@@ -2961,7 +2960,7 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
              "cannot open file_thermo");
 
     // write header 
-    if(scph->relax_str > 1) {
+    if (scph->relax_str > 1) {
         ofs_thermo << " # The renormalized static potential is also shown." << std::endl;
     }
     if (thermodynamics->calc_FE_bubble) {
@@ -2974,14 +2973,14 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
     }
     ofs_thermo << ", F_{vib} (QHA term) [Ry]";
     // do not write scph correction in QHA + structural optimization
-    if(scph->relax_str >= 0){
+    if (scph->relax_str >= 0) {
         ofs_thermo << ", F_{vib} (SCPH correction) [Ry]";
     }
-    if(thermodynamics->calc_FE_bubble){
+    if (thermodynamics->calc_FE_bubble) {
         ofs_thermo << ", F_{vib} (Bubble correction) [Ry]";
     }
     // write renormalized zero-th order IFC
-    if(scph->relax_str != 0){
+    if (scph->relax_str != 0) {
         ofs_thermo << ", Phi0 [Ry]";
     }
     ofs_thermo << ", F_{total} [Ry]";
@@ -3012,14 +3011,14 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
         }
         ofs_thermo << std::setw(18) << FE_QHA[iT];
         // skip scph correction for QHA + structural optimization
-        if(scph->relax_str >= 0){
+        if (scph->relax_str >= 0) {
             ofs_thermo << std::setw(18) << dFE_scph[iT];
         }
         if (thermodynamics->calc_FE_bubble) {
             ofs_thermo << std::setw(18) << thermodynamics->FE_bubble[iT];
         }
 
-        if(scph->relax_str != 0){
+        if (scph->relax_str != 0) {
             ofs_thermo << std::setw(18) << scph->V0[iT];
         }
         ofs_thermo << std::setw(18) << FE_total[iT];

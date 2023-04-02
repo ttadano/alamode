@@ -42,7 +42,7 @@
 #include <vector>
 
 #if defined(WIN32) || defined(_WIN32)
-                                                                                                                        #pragma comment(lib, "libfftw3-3.lib")
+#pragma comment(lib, "libfftw3-3.lib")
 #pragma comment(lib, "libfftw3f-3.lib")
 #pragma comment(lib, "libfftw3l-3.lib")
 #endif

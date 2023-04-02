@@ -95,14 +95,14 @@ void Input::parce_input(int narg,
             exit("parse_input",
                  "&scph entry not found in the input file");
         parse_scph_vars();
-        if(scph->relax_str != 0 && scph->relax_str != 1){
-            if(!locate_tag("&strain"))
+        if (scph->relax_str != 0 && scph->relax_str != 1) {
+            if (!locate_tag("&strain"))
                 exit("parse_input",
                      "&strain entry not found in the input file");
             parse_initial_strain();
         }
-        if(scph->relax_str != 0){
-            if(!locate_tag("&displace"))
+        if (scph->relax_str != 0) {
+            if (!locate_tag("&displace"))
                 exit("parse_input",
                      "&displace entry not found in the input file");
             parse_initial_displace();
@@ -354,16 +354,16 @@ void Input::parse_scph_vars()
 
     struct stat st{};
     const std::vector<std::string> input_list{
-          "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
-          "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-          "LOWER_TEMP", "WARMSTART", "BUBBLE",
-          "RELAX_STR", "RELAX_ALGO", "MAX_STR_ITER", 
-          "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STDECENT",
-          "CELL_CONV_TOL", "MIXBETA_CELL",
-          "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
-          "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
-          "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_34TO1ST",
-          "NAT_PRIM", "STRAIN_IFC_DIR"
+            "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
+            "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
+            "LOWER_TEMP", "WARMSTART", "BUBBLE",
+            "RELAX_STR", "RELAX_ALGO", "MAX_STR_ITER",
+            "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STDECENT",
+            "CELL_CONV_TOL", "MIXBETA_CELL",
+            "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
+            "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
+            "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_34TO1ST",
+            "NAT_PRIM", "STRAIN_IFC_DIR"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -406,7 +406,7 @@ void Input::parse_scph_vars()
     int max_str_iter = 100;
     double coord_conv_tol = 1.0e-5;
     double mixbeta_coord = 0.5;
-    double alpha_steepest_decent = 1.0e4; 
+    double alpha_steepest_decent = 1.0e4;
 
     double cell_conv_tol = 1.0e-5;
     double mixbeta_cell = 0.5;
@@ -440,7 +440,7 @@ void Input::parse_scph_vars()
     assign_val(bubble, "BUBBLE", scph_var_dict);
 
     assign_val(relax_str, "RELAX_STR", scph_var_dict);
-    if(relax_str != 0 && selfenergy_offdiagonal == false){
+    if (relax_str != 0 && selfenergy_offdiagonal == false) {
         exit("parse_scph_vars",
              "SELF_OFFDIAG == 0 cannot be used with RELAX_STR != 0.");
     }
@@ -448,15 +448,15 @@ void Input::parse_scph_vars()
     assign_val(max_str_iter, "MAX_STR_ITER", scph_var_dict);
     assign_val(coord_conv_tol, "COORD_CONV_TOL", scph_var_dict);
 
-    if(relax_algo == 1){
-        assign_val(alpha_steepest_decent, "ALPHA_STEEPEST_DECENT", scph_var_dict);
-    }
-    else if(relax_algo == 2){
+    if (relax_algo == 1) {
+        assign_val(alpha_steepest_decent,
+                   "ALPHA_STEEPEST_DECENT", scph_var_dict);
+    } else if (relax_algo == 2) {
         assign_val(mixbeta_coord, "MIXBETA_COORD", scph_var_dict);
     }
 
     assign_val(cell_conv_tol, "CELL_CONV_TOL", scph_var_dict);
-    if(relax_algo == 2){
+    if (relax_algo == 2) {
         assign_val(mixbeta_cell, "MIXBETA_CELL", scph_var_dict);
     }
 
@@ -472,13 +472,13 @@ void Input::parse_scph_vars()
     assign_val(renorm_34to1st, "RENORM_34TO1ST", scph_var_dict);
 
     assign_val(nat_prim, "NAT_PRIM", scph_var_dict);
-    if(relax_str != 0 && nat_prim == 0){
+    if (relax_str != 0 && nat_prim == 0) {
         exit("parse_scph_vars",
              "NAT_PRIM must be specified when RELAX_STR != 0.");
     }
 
     assign_val(strain_IFC_dir, "STRAIN_IFC_DIR", scph_var_dict);
-    if(strain_IFC_dir != "" && strain_IFC_dir.at(strain_IFC_dir.length()-1) != '/'){
+    if (strain_IFC_dir != "" && strain_IFC_dir.at(strain_IFC_dir.length() - 1) != '/') {
         strain_IFC_dir = strain_IFC_dir + "/";
     }
 
@@ -493,17 +493,15 @@ void Input::parse_scph_vars()
     // restart mode will be automatically turned on for SCPH calculations.
     bool restart_scph = false;
     // chech dynamical matrix files
-    if(relax_str == 0){
+    if (relax_str == 0) {
         restart_scph = stat(file_dymat.c_str(), &st) == 0;
-    }
-    else if(relax_str > 0){
-        restart_scph = (stat(file_dymat.c_str(), &st) == 0) & (stat(file_harm_dymat.c_str(), &st) == 0);
-    }
-    else{
+    } else if (relax_str > 0) {
+        restart_scph = (stat(file_dymat.c_str(), &st) == 0) && (stat(file_harm_dymat.c_str(), &st) == 0);
+    } else {
         restart_scph = stat(file_harm_dymat.c_str(), &st) == 0;
     }
     // check V0 file
-    if(relax_str != 0){
+    if (relax_str != 0) {
         restart_scph = restart_scph & (stat(file_v0.c_str(), &st) == 0);
     }
 
@@ -678,7 +676,7 @@ void Input::parse_initial_strain()
             }
         } else {
             exit("parse_initial_strain",
-                    "Unacceptable format for &strain field.");
+                 "Unacceptable format for &strain field.");
         }
     }
 
@@ -703,7 +701,7 @@ void Input::parse_initial_displace()
     std::vector<std::string> line_vec, line_split;
     std::string::size_type pos_first_comment_tag;
 
-    int input_mode;
+    int input_mode{-1};
     int nline;
 
     double unit;
@@ -758,7 +756,7 @@ void Input::parse_initial_displace()
         exit("parse_initial_displace",
              "Too few lines for the &displace field.");
     }
-            
+
     line = line_vec[0];
     split(line_split, line,
           boost::is_any_of("\t "), boost::token_compress_on);
@@ -767,19 +765,19 @@ void Input::parse_initial_displace()
         input_mode = boost::lexical_cast<int>(line_split[0]);
     } else {
         exit("parse_cell_parameter",
-                "Unacceptable format for &cell field.");
+             "Unacceptable format for &cell field.");
     }
 
-    if(input_mode < 0 || input_mode >= 2){
+    if (input_mode < 0 || input_mode >= 2) {
         exit("parse_cell_parameter",
-                "Invalid value of input_mode");
+             "Invalid value of input_mode");
     }
 
     // read displacements
-    if(input_mode == 0){
+    if (input_mode == 0) {
         if (line_vec.size() != 5 + natmin) {
             exit("parse_initial_displace",
-                "Too few or too many lines for the &displace field.");
+                 "Too few or too many lines for the &displace field.");
         }
 
         // read cell information
@@ -787,7 +785,7 @@ void Input::parse_initial_displace()
 
             line = line_vec[i];
             split(line_split, line,
-                boost::is_any_of("\t "), boost::token_compress_on);
+                  boost::is_any_of("\t "), boost::token_compress_on);
 
             if (i == 1) {
                 // read unit
@@ -795,7 +793,7 @@ void Input::parse_initial_displace()
                     unit = boost::lexical_cast<double>(line_split[0]);
                 } else {
                     exit("parse_cell_parameter",
-                        "Unacceptable format for &displace field.");
+                         "Unacceptable format for &displace field.");
                 }
 
             } else {
@@ -806,22 +804,22 @@ void Input::parse_initial_displace()
                     }
                 } else {
                     exit("parse_cell_parameter",
-                        "Unacceptable format for &displace field.");
+                         "Unacceptable format for &displace field.");
                 }
             }
         }
-        
-        for(itmp = 0; itmp < 3; itmp++){
-            for(ixyz = 0; ixyz < 3; ixyz++){
+
+        for (itmp = 0; itmp < 3; itmp++) {
+            for (ixyz = 0; ixyz < 3; ixyz++) {
                 a[itmp][ixyz] *= unit;
             }
         }
 
         // read fractional coordinate
-        for(i = 5; i < 5+natmin; i++){
+        for (i = 5; i < 5 + natmin; i++) {
             line = line_vec[i];
             split(line_split, line,
-                boost::is_any_of("\t "), boost::token_compress_on);
+                  boost::is_any_of("\t "), boost::token_compress_on);
 
             if (line_split.size() == 3) {
                 for (j = 0; j < 3; ++j) {
@@ -829,32 +827,31 @@ void Input::parse_initial_displace()
                 }
             } else {
                 exit("parse_cell_parameter",
-                    "Unacceptable format for &displace field.");
+                     "Unacceptable format for &displace field.");
             }
         }
 
         // transform to xyz coordinate
-        for(iat = 0; iat < natmin; iat++){
-            for(ixyz = 0; ixyz < 3; ixyz++){
+        for (iat = 0; iat < natmin; iat++) {
+            for (ixyz = 0; ixyz < 3; ixyz++) {
                 u_xyz[iat][ixyz] = 0.0;
-                for(itmp = 0; itmp < 3; itmp++){
+                for (itmp = 0; itmp < 3; itmp++) {
                     u_xyz[iat][ixyz] += a[itmp][ixyz] * u_fractional[iat][itmp];
                 }
             }
         }
 
-    }
-    else if(input_mode == 1){
+    } else if (input_mode == 1) {
         if (line_vec.size() != 1 + natmin) {
             exit("parse_initial_displace",
-                "Too few or too many lines for the &displace field.");
+                 "Too few or too many lines for the &displace field.");
         }
 
-        for(i = 1; i < 1+natmin; i++){
+        for (i = 1; i < 1 + natmin; i++) {
 
             line = line_vec[i];
             split(line_split, line,
-                boost::is_any_of("\t "), boost::token_compress_on);
+                  boost::is_any_of("\t "), boost::token_compress_on);
 
             if (line_split.size() == 3) {
                 for (j = 0; j < 3; ++j) {
@@ -862,16 +859,16 @@ void Input::parse_initial_displace()
                 }
             } else {
                 exit("parse_cell_parameter",
-                    "Unacceptable format for &displace field.");
+                     "Unacceptable format for &displace field.");
             }
         }
     }
 
     // Copy the values to appropriate classes 
-    allocate(scph->init_u0, natmin*3);
-    for(iat = 0; iat < natmin; iat++){
-        for(ixyz = 0; ixyz < 3; ixyz++){
-            scph->init_u0[iat*3+ixyz] = u_xyz[iat][ixyz];
+    allocate(scph->init_u0, natmin * 3);
+    for (iat = 0; iat < natmin; iat++) {
+        for (ixyz = 0; ixyz < 3; ixyz++) {
+            scph->init_u0[iat * 3 + ixyz] = u_xyz[iat][ixyz];
         }
     }
 

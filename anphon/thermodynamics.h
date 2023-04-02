@@ -109,7 +109,7 @@ public:
                                 std::complex<double> ****evec_in,
                                 double *FE_bubble);
 
-    double FE_scph_correction(unsigned int ,
+    double FE_scph_correction(unsigned int,
                               double **,
                               std::complex<double> ***,
                               double **,
@@ -118,7 +118,7 @@ public:
     double compute_FE_total(unsigned int,
                             double,
                             double);
-                            
+
 };
-    
+
 }

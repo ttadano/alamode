@@ -409,11 +409,11 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
         rotvec(xq_cart, xq_cart, rlavec_p, 'T');
 
         const double norm = std::sqrt(xq_cart[0] * xq_cart[0]
-                + xq_cart[1] * xq_cart[1]
-                + xq_cart[2] * xq_cart[2]);
+                                      + xq_cart[1] * xq_cart[1]
+                                      + xq_cart[2] * xq_cart[2]);
 
         if (norm > eps) {
-            for (i = 0; i <3; ++i) xq_cart[i] /= norm;
+            for (i = 0; i < 3; ++i) xq_cart[i] /= norm;
         }
 
         for (i = 0; i < 3; ++i) qvec(i) = xq_cart[i];
@@ -443,36 +443,36 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
 #ifdef _OPENMP
 #pragma omp parallel private (weight)
 #endif
-        {
-            allocate(weight, nk);
+    {
+        allocate(weight, nk);
 #ifdef _OPENMP
 #pragma omp for
 #endif
-            for (i = 0; i < n; ++i) {
-                ret[i] = 0.0;
+        for (i = 0; i < n; ++i) {
+            ret[i] = 0.0;
 
-                for (unsigned int k = 0; k < neval; ++k) {
-                    if (smearing_method == -1) {
-                        integration->calc_weight_tetrahedron(nk, kmap_identity,
-                                                             eval[k], energy[i],
-                                                             tetra_nodes_dos->get_ntetra(),
-                                                             tetra_nodes_dos->get_tetras(),
-                                                             weight);
-                    } else {
-                        integration->calc_weight_smearing(nk, nk, kmap_identity,
-                                                          eval[k], energy[i],
-                                                          smearing_method,
-                                                          weight);
-                    }
+            for (unsigned int k = 0; k < neval; ++k) {
+                if (smearing_method == -1) {
+                    integration->calc_weight_tetrahedron(nk, kmap_identity,
+                                                         eval[k], energy[i],
+                                                         tetra_nodes_dos->get_ntetra(),
+                                                         tetra_nodes_dos->get_tetras(),
+                                                         weight);
+                } else {
+                    integration->calc_weight_smearing(nk, nk, kmap_identity,
+                                                      eval[k], energy[i],
+                                                      smearing_method,
+                                                      weight);
+                }
 
-                    for (unsigned int j = 0; j < nk; ++j) {
-                        ret[i] += proj[k][j] * weight[j];
-                    }
+                for (unsigned int j = 0; j < nk; ++j) {
+                    ret[i] += proj[k][j] * weight[j];
                 }
             }
-
-            deallocate(weight);
         }
+
+        deallocate(weight);
+    }
     deallocate(proj);
     deallocate(kmap_identity);
 
