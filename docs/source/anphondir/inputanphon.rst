@@ -223,7 +223,7 @@ Description of input variables
 
 * EMIN, EMAX, DELTA_E-tags : Energy range and its stride in units of kayser (cm\ :sup:`-1`)
 
- :Default: ``EMIN = 0``, ``EMAX = 1000``, ``DELTA_E = 10``
+ :Default: ``EMIN`` and ``EMAX`` are set automatically from the eigenfrequencies as of ver. 1.5.0. The default value for ``DELTA_E`` is 10.0.
  :Type: Double
 
 ````
@@ -287,6 +287,25 @@ Description of input variables
  :Default: 0
  :Type: Integer
  :Description: When ``CLASSICAL = 1``, all thermodynamic functions including the occupation function, heat capacity, and mean square displacements are calculated using the classical formulae. This option may be useful when comparing the lattice dynamics and molecular dynamics results.
+
+
+ .. list-table:: Comparison of quantum and classical values
+    :header-rows: 1
+
+    * - Function
+      - Quantum (``CLASSICAL = 0``)
+      - Classical (``CLASSICAL = 1``)
+    * - Occupation number
+      - :math:`\displaystyle n_\mathrm{B}=\frac{1}{\exp(\beta\hbar\omega) - 1}`
+      - :math:`\displaystyle n_\mathrm{C}=\frac{1}{\beta\hbar\omega}`
+    * - Mode specific heat
+      - :math:`\displaystyle c_{q} = k_{\mathrm{B}}\left[\frac{\beta\hbar\omega_q}{2}\mathrm{csch}\bigg({\frac{\beta\hbar\omega_q}{2}}\bigg)\right]^2`
+      - :math:`\displaystyle c_{q} = k_{\mathrm{B}}`
+    * - MSD of normal mode :math:`\braket{Q^{*}_qQ_q}`
+      - :math:`\displaystyle \frac{\hbar (1 + n_{\mathrm{B}})}{2\omega_q}`
+      - :math:`\displaystyle \frac{1}{\beta\omega_{q}^{2}}`
+
+
 
 ````
 
