@@ -97,7 +97,7 @@ void Fcs_phonon::setup(std::string mode)
             maxorder = 2;
             require_quartic = false;
         }
-    } else if (mode == "SCPH") {
+    } else if (mode == "SCPH" || mode == "QHA") {
         require_cubic = true;
         require_quartic = true;
         maxorder = 3;

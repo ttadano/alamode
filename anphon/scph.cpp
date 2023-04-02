@@ -3914,7 +3914,7 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
             }
             std::cout << "  done!" << std::endl;
             timer->print_elapsed();
-        }else if (renorm_34to1st == 1) {
+        } else if (renorm_34to1st == 1) {
             std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
             compute_del2_v1_del_umn2(del2_v1_del_umn2, evec_harmonic);
             std::cout << "  done!" << std::endl;

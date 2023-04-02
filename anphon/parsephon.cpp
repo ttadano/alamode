@@ -96,7 +96,13 @@ void Input::parce_input(int narg,
                  "&scph entry not found in the input file");
         parse_scph_vars();
     }
-    if ((phon->mode == "SCPH" || phon->mode == "QHA") && scph->relax_str != 0){
+    if (phon->mode == "QHA") {
+        if (!locate_tag("&qha"))
+            exit("parse_input",
+                 "&qha entry not found in the input file");
+        parse_qha_vars();
+    }
+    if ((phon->mode == "SCPH" || phon->mode == "QHA") && scph->relax_str != 0) {
         if(!locate_tag("&structure_opt"))
             exit("parse_input",
                  "&structure_opt entry not found in the input file");
@@ -379,7 +385,7 @@ void Input::parse_scph_vars()
 
     for (auto &no_default: no_defaults) {
         if (scph_var_dict.find(no_default) == scph_var_dict.end()) {
-            exit("parse_general_vars",
+            exit("parse_scph_vars",
                  "The following variable is not found in &scph input region: ",
                  no_default.c_str());
         }
@@ -434,11 +440,11 @@ void Input::parse_scph_vars()
         }
 
         if (kmesh_v.size() != 3) {
-            exit("parse_general_vars",
+            exit("parse_scph_vars",
                  "The number of entries for KMESH_SCPH has to be 3.");
         }
     } else {
-        exit("parse_general_vars",
+        exit("parse_scph_vars",
              "Please specify KMESH_SCPH for mode = SCPH");
     }
 
@@ -457,11 +463,11 @@ void Input::parse_scph_vars()
         }
 
         if (kmesh_interpolate_v.size() != 3) {
-            exit("parse_general_vars",
+            exit("parse_scph_vars",
                  "The number of entries for KMESH_INTERPOLATE has to be 3.");
         }
     } else {
-        exit("parse_general_vars",
+        exit("parse_scph_vars",
              "Please specify KMESH_INTERPOLATE for mode = SCPH");
     }
 
@@ -486,6 +492,103 @@ void Input::parse_scph_vars()
     kmesh_interpolate_v.clear();
 
     scph_var_dict.clear();
+}
+
+void Input::parse_qha_vars()
+{
+    // Read input parameters in the &qha-field.
+
+    struct stat st{};
+    const std::vector<std::string> input_list{
+            "KMESH_QHA", "KMESH_INTERPOLATE",
+            "LOWER_TEMP", "RELAX_STR"
+    };
+    std::vector<std::string> no_defaults{"KMESH_QHA", "KMESH_INTERPOLATE"};
+    std::vector<int> kmesh_v, kmesh_interpolate_v;
+
+    std::map<std::string, std::string> qha_var_dict;
+
+    get_var_dict(input_list, qha_var_dict);
+
+    for (auto &no_default: no_defaults) {
+        if (qha_var_dict.find(no_default) == qha_var_dict.end()) {
+            exit("parse_qha_vars",
+                 "The following variable is not found in &qha input region: ",
+                 no_default.c_str());
+        }
+    }
+
+    auto lower_temp = true;
+    int relax_str = 1;
+
+    assign_val(lower_temp, "LOWER_TEMP", qha_var_dict);
+    assign_val(relax_str, "RELAX_STR", qha_var_dict);
+
+    auto str_tmp = qha_var_dict["KMESH_QHA"];
+
+    if (!str_tmp.empty()) {
+
+        std::istringstream is(str_tmp);
+
+        while (true) {
+            str_tmp.clear();
+            is >> str_tmp;
+            if (str_tmp.empty()) {
+                break;
+            }
+            kmesh_v.push_back(my_cast<unsigned int>(str_tmp));
+        }
+
+        if (kmesh_v.size() != 3) {
+            exit("parse_qha_vars",
+                 "The number of entries for KMESH_SCPH has to be 3.");
+        }
+    } else {
+        exit("parse_qha_vars",
+             "Please specify KMESH_SCPH for mode = SCPH");
+    }
+
+    str_tmp = qha_var_dict["KMESH_INTERPOLATE"];
+    if (!str_tmp.empty()) {
+
+        std::istringstream is(str_tmp);
+
+        while (true) {
+            str_tmp.clear();
+            is >> str_tmp;
+            if (str_tmp.empty()) {
+                break;
+            }
+            kmesh_interpolate_v.push_back(my_cast<unsigned int>(str_tmp));
+        }
+
+        if (kmesh_interpolate_v.size() != 3) {
+            exit("parse_qha_vars",
+                 "The number of entries for KMESH_INTERPOLATE has to be 3.");
+        }
+    } else {
+        exit("parse_qha_vars",
+             "Please specify KMESH_INTERPOLATE for mode = SCPH");
+    }
+
+    // Copy the values to appropriate classes.
+
+    for (auto i = 0; i < 3; ++i) {
+        scph->kmesh_scph[i] = kmesh_v[i];
+        scph->kmesh_interpolate[i] = kmesh_interpolate_v[i];
+    }
+    scph->lower_temp = lower_temp;
+    scph->relax_str = relax_str;
+
+    // Set other values
+    scph->selfenergy_offdiagonal = true;
+    scph->restart_scph = false;
+
+    kmesh_v.clear();
+    kmesh_interpolate_v.clear();
+
+    qha_var_dict.clear();
+
 }
 
 void Input::parse_stropt_vars()

@@ -45,6 +45,8 @@ private:
 
     void parse_scph_vars();
 
+    void parse_qha_vars();
+
     void parse_stropt_vars();
 
     void parse_initial_strain();

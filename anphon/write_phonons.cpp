@@ -153,6 +153,18 @@ void Writes::write_input_vars()
         // variables related to structural optimization
         std::cout << std::endl;
         std::cout << "  RELAX_STR = " << scph->relax_str << std::endl;
+    } else if (phon->mode == "QHA") {
+        std::cout << " QHA:" << std::endl;
+        std::cout << "  KMESH_INTERPOLATE = ";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_interpolate[i];
+        std::cout << std::endl;
+        std::cout << "  KMESH_QHA         = ";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_scph[i];
+        std::cout << std::endl;
+        std::cout << "  LOWER_TEMP = " << scph->lower_temp << std::endl;
+        // variables related to structural optimization
+        std::cout << "  RELAX_STR = " << scph->relax_str << std::endl;
+
     }
     std::cout << std::endl;
 
@@ -192,9 +204,10 @@ void Writes::write_input_vars()
             std::cout << "  RENORM_34TO1ST = " << scph->renorm_34to1st << std::endl;
             std::cout << "  STRAIN_IFC_DIR = " << scph->strain_IFC_dir << std::endl;
         }
-        std::cout << "  NAT_PRIM = " << scph->natmin_tmp << std::endl;    
+        std::cout << "  NAT_PRIM = " << scph->natmin_tmp << std::endl;  
+        std::cout << std::endl;  
     }
-    std::cout << std::endl;
+    
 
     std::cout << " Kpoint:" << std::endl;
     std::cout << "  KPMODE (1st entry for &kpoint) = "
@@ -258,6 +271,8 @@ void Writes::write_input_vars()
         //  std::cout << "  FSTATE_K = " << anharmonic_core->calc_fstate_k << std::endl;
 
     } else if (phon->mode == "SCPH") {
+        // Do nothing
+    } else if (phon->mode == "QHA") {
         // Do nothing
     } else {
         exit("write_input_vars", "This cannot happen");
