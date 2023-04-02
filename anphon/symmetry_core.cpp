@@ -147,13 +147,6 @@ void Symmetry::setup_symmetry()
                                      kdtmp,
                                      SymmList);
 
-            setup_symmetry_operation(natmin,
-                                     nsym_ref,
-                                     system->lavec_p,
-                                     system->rlavec_p,
-                                     xtmp,
-                                     kdtmp,
-                                     SymmList_ref);
         }
     }
 
@@ -165,11 +158,15 @@ void Symmetry::setup_symmetry()
         std::cout << std::endl;
         std::cout << "  Number of symmetry operations : "
                   << nsym << std::endl;
-        std::cout << "  Number of symmetry operations in reference structure : "
-                  << nsym_ref << std::endl << std::endl;
+        if(phon->mode == "SCPH" && scph->relax_str != 0){
+            std::cout << "  Number of symmetry operations in reference structure : "
+                    << nsym_ref << std::endl << std::endl;
+        }
 
         gensym_withmap(xtmp, kdtmp, SymmList, SymmListWithMap);
-        gensym_withmap(xtmp, kdtmp, SymmList_ref, SymmListWithMap_ref);
+        if(phon->mode == "SCPH" && scph->relax_str != 0){
+            gensym_withmap(xtmp, kdtmp, SymmList_ref, SymmListWithMap_ref);
+        }
     }
 
     deallocate(xtmp);
