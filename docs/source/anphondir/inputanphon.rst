@@ -481,6 +481,7 @@ Description of input variables
 
  :Default: 0
  :Type: Integer
+
 ````
 
 .. _anphon_relax_algo:
@@ -498,6 +499,7 @@ Description of input variables
  :Description: Algorithm to update the crystal structure in structural optimization. 
                This option is used only when ``RELAX_STR = 1, -2, -1``.
                ``RELAX_ALGO = 1`` works properly only when the unit cell is fixed (``RELAX_STR = 1``).
+
 ````
 
 .. _anphon_alpha_stdecent:
@@ -531,7 +533,9 @@ Description of input variables
  :Default: 100.0
  :Type: Double
 
- :Description: The squared ``ADD_HESS_DIAG`` is added to the diagonal components of estimated Hessians, which is used to update crystal structures in structural optimization. 
+ :Description: The squared ``ADD_HESS_DIAG`` is added to the diagonal components of estimated Hessians, 
+               which is used to update crystal structures in structural optimization.
+               ``ADD_HESS_DIAG`` makes the calculation more robust in the presence of soft modes near the structural phase transition, but setting large values will make the convergence slower.
                This option is used only when ``RELAX_ALGO = 2``.
 
 ````
@@ -544,7 +548,7 @@ Description of input variables
  :Type: Double
 
  :Description: The value is interpreted in units of Angstrom.
-               This option is used only when ``RELAX_ALGO = 1, 2, -1``.
+               This option is used only when ``RELAX_STR = 1, 2, -1``.
 
 ````
 
@@ -555,7 +559,7 @@ Description of input variables
  :Default: 0.5
  :Type: Double
 
- :Description: This option is used only when ``RELAX_ALGO = 1, 2, -1``.
+ :Description: This option is used only when ``RELAX_STR = 1, 2, -1``.
 
 ````
 
@@ -566,7 +570,7 @@ Description of input variables
  :Default: 1.0e-5
  :Type: Double
 
- :Description: This option is used only when ``RELAX_ALGO = 2, -1``.
+ :Description: This option is used only when ``RELAX_STR = 2, -1``.
 
 ````
 
@@ -577,7 +581,7 @@ Description of input variables
  :Default: 0.5
  :Type: Double
 
- :Description: This option is used only when ``RELAX_ALGO = 1, 2, -1``.
+ :Description: This option is used only when ``RELAX_STR = 1, 2, -1``.
 
 ````
 
@@ -595,7 +599,7 @@ Description of input variables
  :Type: Integer
 
  :Description: This option specifies how to set the initial structure of structural optimization at different temperatures.
-               This option is used only when ``RELAX_ALGO = 1, 2, -1``.
+               This option is used only when ``RELAX_STR = 1, 2, -1``.
                The initial structure at the initial temperature is set from the input file in all options.
                The initial structure of the input file is read from ``&strain`` field and ``&displace`` field.
                When ``SET_INIT_STR = 3`` and the crystal structure converges to the high-symmetry phase in the previous temprature, the initial displacement from the input file is used. The criterion to distinguish low-symmetry and high-symmetry phases is explained in :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>`.
@@ -606,12 +610,12 @@ Description of input variables
 
 * COOLING_U0_INDEX-tag = 0, 1, ..., 3x ``NAT_PRIM`` -1
 
- :Default: 1
+ :Default: 0
  :Type: Integer
 
  :Description: Specify as :math:`3\times\alpha + \mu`. :math:`\alpha` denotes the atom index in the primitive cell and :math:`\mu` is the xyz index, where both indices are zero-indexed.
-               Both indices are zero-indexed. See the description of :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>` for details.
-               This option is used only when ``SET_INIT_STR = 3``.
+  See the description of :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>` for details.
+  This option is used only when ``SET_INIT_STR = 3``.
 
 ````
 
@@ -679,9 +683,9 @@ Description of input variables
  :Default: 1
  :Type: Integer
 
- :Description: This option specifies the method to calculate first-order derivatives of first-order IFCs with respect to strain. 
+ :Description: This option specifies the method to calculate first-order derivatives of first-order IFCs with respect to strain
  
-  :math:`\frac{\partial \Phi_{\mu}(0\alpha)}{\partial u_{\mu_1 \nu_1} }`,
+  :math:`\frac{\partial \Phi_{\mu}(0\alpha)}{\partial u_{\mu_1 \nu_1} }`.
 
   This option is used only when ``RELAX_STR = -2, -1, 2``.
   Note that ``RENORM_2TO1ST = 0`` requires rotational invariance on IFCs, which is not checked in program ANPHON. We recommend using ``RENORM_2TO1ST = 1`` because finite-difference method gives more accurate values for strain-IFC couplings.
@@ -730,6 +734,7 @@ Description of input variables
 
   This option is used only when ``RELAX_STR = -2, -1, 2``.
   To use ``RENORM_3TO2ND = 2``, the entries of the rotation matrices of all symmetry operations must be either 0 or :math:`\pm` 1 in Cartesian representation.
+
 ````
 
 .. _anphon_strain_ifc_dir:
@@ -823,7 +828,6 @@ Please specify the initial displacement gradient tensor :math:`u_{\mu \nu}` for 
  u_yx u_yy u_yz
  u_zx u_zy u_zz
  /
-````
 
 Note that a user need to give a symmetric matrix.
 
