@@ -675,12 +675,12 @@ Description of input variables
 * RENORM_2TO1ST-tag = 0 | 1 | 2
 
  === ==============================================================
-  0   Real-space IFC renormalization. (not recommended)
-  1   Finite difference method with respect to strain.
-  2   Set zero.
+  0   Set zero.
+  1   Real-space IFC renormalization. (not recommended)
+  2   Finite difference method with respect to strain.
  === ==============================================================
 
- :Default: 1
+ :Default: 2
  :Type: Integer
 
  :Description: This option specifies the method to calculate first-order derivatives of first-order IFCs with respect to strain
@@ -688,8 +688,8 @@ Description of input variables
   :math:`\frac{\partial \Phi_{\mu}(0\alpha)}{\partial u_{\mu_1 \nu_1} }`.
 
   This option is used only when ``RELAX_STR = -2, -1, 2``.
-  Note that ``RENORM_2TO1ST = 0`` requires rotational invariance on IFCs, which is not checked in program ANPHON. We recommend using ``RENORM_2TO1ST = 1`` because finite-difference method gives more accurate values for strain-IFC couplings.
-  ``RENORM_2TO1ST = 2`` can be used for high-symmetry materials, for which users need to check the validity to use the option.
+  Note that ``RENORM_2TO1ST = 1`` requires rotational invariance on IFCs, which is not checked in program ANPHON.
+  ``RENORM_2TO1ST = 0`` can be used for high-symmetry materials, for which users need to check the validity to use the option.
 
 ````
 
@@ -698,11 +698,11 @@ Description of input variables
 * RENORM_34TO1ST-tag = 0 | 1 
 
  === ==============================================================
-  0   Real-space IFC renormalization.
-  1   Set zero.
+  0   Set zero.
+  1   Real-space IFC renormalization.
  === ==============================================================
 
- :Default: 1
+ :Default: 0
  :Type: Integer
 
  :Description: This option specifies the method to calculate second and higher-order derivatives of first-order IFCs with respect to strain. 
@@ -711,21 +711,21 @@ Description of input variables
   :math:`\frac{\partial^3 \Phi_{\mu}(0\alpha)}{\partial u_{\mu_1 \nu_1} \partial u_{\mu_2 \nu_2} \partial u_{\mu_3 \nu_3}}`  
 
   This option is used only when ``RELAX_STR = -2, -1, 2``.
-  Note that ``RENORM_34TO1ST = 0`` requires rotational invariance on IFCs, which users need to check by themselves.
+  Note that ``RENORM_34TO1ST = 1`` requires rotational invariance on IFCs, which users need to check by themselves.
 
 ````
 
 .. _anphon_renorm_3to2nd:
 
-* RENORM_3TO2ND-tag = 0 | 1 | 2
+* RENORM_3TO2ND-tag = 1 | 2 | 3
 
  === ==============================================================
-  0   Real-space IFC renormalization.
-  1   Finite difference method (Read input from all six strain patterns).
-  2   Finite difference method (Read input from specified strain patterns).
+  1   Real-space IFC renormalization.
+  2   Finite difference method (Read input from all six strain patterns).
+  3   Finite difference method (Read input from specified strain patterns).
  === ==============================================================
 
- :Default: 1
+ :Default: 2
  :Type: Integer
 
  :Description: This option specifies the method to calculate first-order derivatives of harmonic IFCs with respect to strain.
@@ -733,7 +733,7 @@ Description of input variables
   :math:`\frac{\partial \Phi_{\mu_1 \mu_2}(0\alpha_1, R \alpha_2)}{\partial u_{\mu \nu}}`
 
   This option is used only when ``RELAX_STR = -2, -1, 2``.
-  To use ``RENORM_3TO2ND = 2``, the entries of the rotation matrices of all symmetry operations must be either 0 or :math:`\pm` 1 in Cartesian representation.
+  To use ``RENORM_3TO2ND = 3``, the entries of the rotation matrices of all symmetry operations must be either 0 or :math:`\pm` 1 in Cartesian representation.
 
 ````
 

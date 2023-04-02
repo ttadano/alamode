@@ -89,9 +89,9 @@ void Scph::set_default_variables()
 
     qha_scheme = 0;
 
-    renorm_3to2nd = 1;
-    renorm_2to1st = 1;
-    renorm_34to1st = 1;
+    renorm_3to2nd = 2;
+    renorm_2to1st = 2;
+    renorm_34to1st = 0;
 
     init_u_tensor = nullptr;
     init_u0 = nullptr;
@@ -3878,34 +3878,25 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
 
         // first-order derivative of first-order IFCs
         if (renorm_2to1st == 0) {
-            std::cout << "  first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
-            compute_del_v1_del_umn(del_v1_del_umn, evec_harmonic);
-        } else if (renorm_2to1st == 1) {
-            std::cout << "  first-order derivatives of first-order IFCs (finite difference method) ... ";
-            calculate_delv1_delumn_finite_difference(del_v1_del_umn, evec_harmonic);
-        } else if (renorm_2to1st == 2) {
             std::cout << "  first-order derivatives of first-order IFCs (set as zero) ... ";
             for (i1 = 0; i1 < 9; i1++) {
                 for (is1 = 0; is1 < ns; is1++) {
                     del_v1_del_umn[i1][is1] = complex_zero;
                 }
             }
+        } else if (renorm_2to1st == 1) {
+            std::cout << "  first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
+            compute_del_v1_del_umn(del_v1_del_umn, evec_harmonic);
+
+        } else if (renorm_2to1st == 2) {
+            std::cout << "  first-order derivatives of first-order IFCs (finite difference method) ... ";
+            calculate_delv1_delumn_finite_difference(del_v1_del_umn, evec_harmonic);
         }
         std::cout << "  done!" << std::endl;
         timer->print_elapsed();
 
         // second and third-order derivatives of first-order IFCs
         if (renorm_34to1st == 0) {
-            std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
-            compute_del2_v1_del_umn2(del2_v1_del_umn2, evec_harmonic);
-            std::cout << "  done!" << std::endl;
-            timer->print_elapsed();
-
-            std::cout << "  third-order derivatives of first-order IFCs (from quartic IFCs) ... ";
-            compute_del3_v1_del_umn3(del3_v1_del_umn3, evec_harmonic);
-            std::cout << "  done!" << std::endl;
-            timer->print_elapsed();
-        } else if (renorm_34to1st == 1) {
             std::cout << "  second-order derivatives of first-order IFCs (set zero) ... ";
             for (i1 = 0; i1 < 81; i1++) {
                 for (is1 = 0; is1 < ns; is1++) {
@@ -3923,21 +3914,31 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
             }
             std::cout << "  done!" << std::endl;
             timer->print_elapsed();
-        }
+        }else if (renorm_34to1st == 1) {
+            std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
+            compute_del2_v1_del_umn2(del2_v1_del_umn2, evec_harmonic);
+            std::cout << "  done!" << std::endl;
+            timer->print_elapsed();
+
+            std::cout << "  third-order derivatives of first-order IFCs (from quartic IFCs) ... ";
+            compute_del3_v1_del_umn3(del3_v1_del_umn3, evec_harmonic);
+            std::cout << "  done!" << std::endl;
+            timer->print_elapsed();
+        } 
 
         // first-order derivatives of harmonic IFCs
-        if (renorm_3to2nd == 0) {
+        if (renorm_3to2nd == 1) {
             std::cout << "  first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
             compute_del_v2_del_umn(del_v2_del_umn, evec_harmonic);
-        } else if (renorm_3to2nd == 1 || renorm_3to2nd == 2) {
+        } else if (renorm_3to2nd == 2 || renorm_3to2nd == 3) {
             std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method)" << std::endl;
-            if (renorm_3to2nd == 1) {
+            if (renorm_3to2nd == 2) {
                 std::cout << "  use inputs with all strain patterns ... ";
-            } else if (renorm_3to2nd == 2) {
+            } else if (renorm_3to2nd == 3) {
                 std::cout << "  use inputs with specified strain patterns ... ";
             }
             calculate_delv2_delumn_finite_difference(evec_harmonic, del_v2_del_umn);
-        } else if (renorm_3to2nd == 3) {
+        } else if (renorm_3to2nd == 4) {
             std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
             std::cout << "  (read from file in k-space representation) ... ";
             read_del_v2_del_umn_in_kspace(evec_harmonic, del_v2_del_umn);
@@ -3962,29 +3963,25 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
 
         // first-order derivative of first-order IFCs
         if (renorm_2to1st == 0) {
-            std::cout << "  first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
-            compute_del_v1_del_umn(del_v1_del_umn, evec_harmonic);
-        } else if (renorm_2to1st == 1) {
-            std::cout << "  first-order derivatives of first-order IFCs (finite difference method) ... ";
-            calculate_delv1_delumn_finite_difference(del_v1_del_umn, evec_harmonic);
-        } else if (renorm_2to1st == 2) {
             std::cout << "  first-order derivatives of first-order IFCs (set as zero) ... ";
             for (i1 = 0; i1 < 9; i1++) {
                 for (is1 = 0; is1 < ns; is1++) {
                     del_v1_del_umn[i1][is1] = complex_zero;
                 }
             }
+        } else if (renorm_2to1st == 1) {
+            std::cout << "  first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
+            compute_del_v1_del_umn(del_v1_del_umn, evec_harmonic);
+
+        } else if (renorm_2to1st == 2) {
+            std::cout << "  first-order derivatives of first-order IFCs (finite difference method) ... ";
+            calculate_delv1_delumn_finite_difference(del_v1_del_umn, evec_harmonic);
         }
         std::cout << "  done!" << std::endl;
         timer->print_elapsed();
 
         // second-order derivatives of 1st order IFCs
         if (renorm_34to1st == 0) {
-            std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
-            compute_del2_v1_del_umn2(del2_v1_del_umn2, evec_harmonic);
-            std::cout << "  done!" << std::endl;
-            timer->print_elapsed();
-        } else if (renorm_34to1st == 1) {
             std::cout << "  second-order derivatives of first-order IFCs (set zero) ... ";
             for (i1 = 0; i1 < 81; i1++) {
                 for (is1 = 0; is1 < ns; is1++) {
@@ -3993,21 +3990,26 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
             }
             std::cout << "  done!" << std::endl;
             timer->print_elapsed();
-        }
+        } else if (renorm_34to1st == 1) {
+            std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
+            compute_del2_v1_del_umn2(del2_v1_del_umn2, evec_harmonic);
+            std::cout << "  done!" << std::endl;
+            timer->print_elapsed();
+        } 
 
         // first-order derivatives of harmonic IFCs
-        if (renorm_3to2nd == 0) {
+        if (renorm_3to2nd == 1) {
             std::cout << "  first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
             compute_del_v2_del_umn(del_v2_del_umn, evec_harmonic);
-        } else if (renorm_3to2nd == 1 || renorm_3to2nd == 2) {
+        } else if (renorm_3to2nd == 2 || renorm_3to2nd == 3) {
             std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method)" << std::endl;
-            if (renorm_3to2nd == 1) {
+            if (renorm_3to2nd == 2) {
                 std::cout << "  use inputs with all strain patterns ..." << std::endl;
-            } else if (renorm_3to2nd == 2) {
+            } else if (renorm_3to2nd == 3) {
                 std::cout << "  use inputs with specified strain patterns ..." << std::endl;
             }
             calculate_delv2_delumn_finite_difference(evec_harmonic, del_v2_del_umn);
-        } else if (renorm_3to2nd == 3) {
+        } else if (renorm_3to2nd == 4) {
             std::cout << "  first-order derivatives of harmonic IFCs" << std::endl;
             std::cout << "  (read from file in k-space representation) ... ";
             read_del_v2_del_umn_in_kspace(evec_harmonic, del_v2_del_umn);
@@ -4920,7 +4922,7 @@ void Scph::calculate_delv2_delumn_finite_difference(const std::complex<double> *
     }
 
     // check weight_sum
-    if (renorm_3to2nd == 1) {
+    if (renorm_3to2nd == 2) {
         for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
             for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
                 if (std::fabs(weight_sum[ixyz1][ixyz2] - 1.0) < eps6) {
@@ -4931,7 +4933,7 @@ void Scph::calculate_delv2_delumn_finite_difference(const std::complex<double> *
                 }
             }
         }
-    } else if (renorm_3to2nd == 2) {
+    } else if (renorm_3to2nd == 3) {
         // finite difference method.
         // read input from specified strain modes.
         for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
@@ -4956,7 +4958,7 @@ void Scph::calculate_delv2_delumn_finite_difference(const std::complex<double> *
     make_inverse_translation_mapping(inv_translation_mapping);
 
     // symmetrize and replicate
-    if (renorm_3to2nd == 1) {
+    if (renorm_3to2nd == 2) {
         // input is given for all strain modes.
         for (isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++) {
 
@@ -5009,7 +5011,7 @@ void Scph::calculate_delv2_delumn_finite_difference(const std::complex<double> *
                 }
             }
         }
-    } else if (renorm_3to2nd == 2) {
+    } else if (renorm_3to2nd == 3) {
         for (isymm = 0; isymm < symmetry->SymmListWithMap_ref.size(); isymm++) {
 
             // make mapping of xyz by the rotation matrix
@@ -5029,7 +5031,7 @@ void Scph::calculate_delv2_delumn_finite_difference(const std::complex<double> *
             for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                 if (mapping_xyz[ixyz1] == -1) {
                     exit("calculate_delv2_delumn_finite_difference",
-                         "RENORM_3TO2ND == 2 cannot be used for this material.");
+                         "RENORM_3TO2ND == 3 cannot be used for this material.");
                 }
             }
 

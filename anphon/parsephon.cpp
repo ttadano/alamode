@@ -421,9 +421,9 @@ void Input::parse_scph_vars()
 
     int qha_scheme = 0;
 
-    int renorm_3to2nd = 1;
-    int renorm_2to1st = 1;
-    int renorm_34to1st = 1;
+    int renorm_3to2nd = 2;
+    int renorm_2to1st = 2;
+    int renorm_34to1st = 0;
 
     int nat_prim = 0;
     std::string strain_IFC_dir("");
