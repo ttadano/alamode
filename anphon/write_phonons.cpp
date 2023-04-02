@@ -153,36 +153,46 @@ void Writes::write_input_vars()
         // variables related to structural optimization
         std::cout << std::endl;
         std::cout << "  RELAX_STR = " << scph->relax_str << std::endl;
-        if (scph->relax_str) {
-            std::cout << "  RELAX_ALGO = " << scph->relax_algo << std::endl;
-            std::cout << "  MAX_STR_ITER = " << scph->max_str_iter << std::endl;
-            std::cout << "  COORD_CONV_TOL = " << scph->coord_conv_tol << std::endl;
-            if (scph->relax_algo == 1) {
-                std::cout << "  ALPHA_STEEPEST_DECENT = " << scph->alpha_steepest_decent << std::endl;
-            } else if (scph->relax_algo == 2) {
-                std::cout << "  MIXBETA_COORD = " << scph->mixbeta_coord << std::endl;
-            }
+    }
+    std::cout << std::endl;
+
+    if ((phon->mode == "SCPH" || phon->mode == "QHA") && scph->relax_str != 0) {
+        std::cout << " Structure_opt:" << std::endl;
+
+        std::cout << "  RELAX_ALGO = " << scph->relax_algo << std::endl;
+        std::cout << "  MAX_STR_ITER = " << scph->max_str_iter << std::endl;
+        std::cout << "  COORD_CONV_TOL = " << scph->coord_conv_tol << std::endl;
+        if (scph->relax_str == 2 || scph->relax_str == -1) {
             std::cout << "  CELL_CONV_TOL = " << scph->cell_conv_tol << std::endl;
-            std::cout << "  MIXBETA_CELL = " << scph->mixbeta_cell << std::endl;
-
-            std::cout << "  SET_INIT_STR = " << scph->set_init_str << std::endl;
-            std::cout << "  COOLING_U0_INDEX = " << scph->cooling_u0_index << std::endl;
-            std::cout << "  COOLING_U0_THR = " << scph->cooling_u0_thr << std::endl;
-
-            std::cout << "  ADD_HESS_DIAG = " << scph->add_hess_diag << std::endl;
-            std::cout << "  STAT_PRESSURE = " << scph->stat_pressure << std::endl;
-
-            if (scph->relax_str == -1) {
-                std::cout << "  QHA_SCHEME = " << scph->qha_scheme << std::endl;
-            }
-            if (scph->relax_str != 0) {
-                std::cout << "  RENORM_3TO2ND = " << scph->renorm_3to2nd << std::endl;
-                std::cout << "  RENORM_2TO1ST = " << scph->renorm_2to1st << std::endl;
-                std::cout << "  RENORM_34TO1ST = " << scph->renorm_34to1st << std::endl;
-                std::cout << "  NAT_PRIM = " << scph->natmin_tmp << std::endl;
-                std::cout << "  STRAIN_IFC_DIR = " << scph->strain_IFC_dir << std::endl;
+        }
+        if (scph->relax_algo == 1) {
+            std::cout << "  ALPHA_STEEPEST_DECENT = " << scph->alpha_steepest_decent << std::endl;
+        } else if (scph->relax_algo == 2) {
+            std::cout << "  MIXBETA_COORD = " << scph->mixbeta_coord << std::endl;
+            if (scph->relax_str == 2 || scph->relax_str == -1) {
+                std::cout << "  MIXBETA_CELL = " << scph->mixbeta_cell << std::endl;
             }
         }
+
+        std::cout << "  SET_INIT_STR = " << scph->set_init_str << std::endl;
+        if (scph->set_init_str == 3) {
+            std::cout << "  COOLING_U0_INDEX = " << scph->cooling_u0_index << std::endl;
+            std::cout << "  COOLING_U0_THR = " << scph->cooling_u0_thr << std::endl;
+        }
+
+        std::cout << "  ADD_HESS_DIAG = " << scph->add_hess_diag << std::endl;
+        std::cout << "  STAT_PRESSURE = " << scph->stat_pressure << std::endl;
+
+        if (scph->relax_str == -1) {
+            std::cout << "  QHA_SCHEME = " << scph->qha_scheme << std::endl;
+        }
+        if (scph->relax_str == 2 || scph->relax_str == -1 || scph->relax_str == -2) {
+            std::cout << "  RENORM_3TO2ND = " << scph->renorm_3to2nd << std::endl;
+            std::cout << "  RENORM_2TO1ST = " << scph->renorm_2to1st << std::endl;
+            std::cout << "  RENORM_34TO1ST = " << scph->renorm_34to1st << std::endl;
+            std::cout << "  STRAIN_IFC_DIR = " << scph->strain_IFC_dir << std::endl;
+        }
+        std::cout << "  NAT_PRIM = " << scph->natmin_tmp << std::endl;    
     }
     std::cout << std::endl;
 

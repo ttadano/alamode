@@ -86,7 +86,7 @@ PHON::PHON(int narg,
 
         execute_RTA();
 
-    } else if (mode == "SCPH") {
+    } else if (mode == "SCPH" || mode == "QHA") {
 
         execute_self_consistent_phonon();
 

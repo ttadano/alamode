@@ -95,6 +95,13 @@ void Input::parce_input(int narg,
             exit("parse_input",
                  "&scph entry not found in the input file");
         parse_scph_vars();
+    }
+    if ((phon->mode == "SCPH" || phon->mode == "QHA") && scph->relax_str != 0){
+        if(!locate_tag("&structure_opt"))
+            exit("parse_input",
+                 "&structure_opt entry not found in the input file");
+        parse_stropt_vars();
+        
         if (scph->relax_str != 0 && scph->relax_str != 1) {
             if (!locate_tag("&strain"))
                 exit("parse_input",
@@ -356,14 +363,7 @@ void Input::parse_scph_vars()
     const std::vector<std::string> input_list{
             "KMESH_SCPH", "KMESH_INTERPOLATE", "MIXALPHA", "MAXITER",
             "RESTART_SCPH", "IALGO", "SELF_OFFDIAG", "TOL_SCPH",
-            "LOWER_TEMP", "WARMSTART", "BUBBLE",
-            "RELAX_STR", "RELAX_ALGO", "MAX_STR_ITER",
-            "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STDECENT",
-            "CELL_CONV_TOL", "MIXBETA_CELL",
-            "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
-            "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
-            "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_34TO1ST",
-            "NAT_PRIM", "STRAIN_IFC_DIR"
+            "LOWER_TEMP", "WARMSTART", "BUBBLE", "RELAX_STR"
     };
     std::vector<std::string> no_defaults{"KMESH_SCPH", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -385,12 +385,12 @@ void Input::parse_scph_vars()
         }
     }
 
+    // restart mode will be automatically turned on for SCPH calculations.
     auto file_dymat = this->job_title + ".scph_dymat";
-    auto file_harm_dymat = this->job_title + ".renorm_harm_dymat";
-    auto file_v0 = this->job_title + ".V0";
+    bool restart_scph = false;
+    restart_scph = stat(file_dymat.c_str(), &st) == 0;
 
     // Default values
-
     auto tolerance_scph = 1.0e-10;
     unsigned int maxiter = 1000;
     auto mixalpha = 0.1;
@@ -399,37 +399,11 @@ void Input::parse_scph_vars()
     auto lower_temp = true;
     auto warm_start = true;
     unsigned int bubble = 0;
-
-    // structural optimization
     int relax_str = 0;
-    int relax_algo = 2;
-    int max_str_iter = 100;
-    double coord_conv_tol = 1.0e-5;
-    double mixbeta_coord = 0.5;
-    double alpha_steepest_decent = 1.0e4;
-
-    double cell_conv_tol = 1.0e-5;
-    double mixbeta_cell = 0.5;
-
-    int set_init_str = 1;
-    int cooling_u0_index = 0;
-    double cooling_u0_thr = 0.001;
-
-
-    double add_hess_diag = 100.0; // [cm^{-1}]
-    double stat_pressure = 0.0; // [GPa]
-
-    int qha_scheme = 0;
-
-    int renorm_3to2nd = 2;
-    int renorm_2to1st = 2;
-    int renorm_34to1st = 0;
-
-    int nat_prim = 0;
-    std::string strain_IFC_dir("");
 
     // Assign given values
 
+    assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
     assign_val(maxiter, "MAXITER", scph_var_dict);
     assign_val(mixalpha, "MIXALPHA", scph_var_dict);
     assign_val(selfenergy_offdiagonal, "SELF_OFFDIAG", scph_var_dict);
@@ -438,74 +412,11 @@ void Input::parse_scph_vars()
     assign_val(lower_temp, "LOWER_TEMP", scph_var_dict);
     assign_val(warm_start, "WARMSTART", scph_var_dict);
     assign_val(bubble, "BUBBLE", scph_var_dict);
-
     assign_val(relax_str, "RELAX_STR", scph_var_dict);
     if (relax_str != 0 && selfenergy_offdiagonal == false) {
         exit("parse_scph_vars",
-             "SELF_OFFDIAG == 0 cannot be used with RELAX_STR != 0.");
+             "SELF_OFFDIAG = 0 cannot be used when RELAX_STR != 0.");
     }
-    assign_val(relax_algo, "RELAX_ALGO", scph_var_dict);
-    assign_val(max_str_iter, "MAX_STR_ITER", scph_var_dict);
-    assign_val(coord_conv_tol, "COORD_CONV_TOL", scph_var_dict);
-
-    if (relax_algo == 1) {
-        assign_val(alpha_steepest_decent,
-                   "ALPHA_STEEPEST_DECENT", scph_var_dict);
-    } else if (relax_algo == 2) {
-        assign_val(mixbeta_coord, "MIXBETA_COORD", scph_var_dict);
-    }
-
-    assign_val(cell_conv_tol, "CELL_CONV_TOL", scph_var_dict);
-    if (relax_algo == 2) {
-        assign_val(mixbeta_cell, "MIXBETA_CELL", scph_var_dict);
-    }
-
-    assign_val(set_init_str, "SET_INIT_STR", scph_var_dict);
-    assign_val(cooling_u0_index, "COOLING_U0_INDEX", scph_var_dict);
-    assign_val(cooling_u0_thr, "COOLING_U0_THR", scph_var_dict);
-    assign_val(add_hess_diag, "ADD_HESS_DIAG", scph_var_dict);
-    assign_val(stat_pressure, "STAT_PRESSURE", scph_var_dict);
-    assign_val(qha_scheme, "QHA_SCHEME", scph_var_dict);
-
-    assign_val(renorm_3to2nd, "RENORM_3TO2ND", scph_var_dict);
-    assign_val(renorm_2to1st, "RENORM_2TO1ST", scph_var_dict);
-    assign_val(renorm_34to1st, "RENORM_34TO1ST", scph_var_dict);
-
-    assign_val(nat_prim, "NAT_PRIM", scph_var_dict);
-    if (relax_str != 0 && nat_prim == 0) {
-        exit("parse_scph_vars",
-             "NAT_PRIM must be specified when RELAX_STR != 0.");
-    }
-
-    assign_val(strain_IFC_dir, "STRAIN_IFC_DIR", scph_var_dict);
-    if (strain_IFC_dir != "" && strain_IFC_dir.at(strain_IFC_dir.length() - 1) != '/') {
-        strain_IFC_dir = strain_IFC_dir + "/";
-    }
-
-
-    // The order to determine parameters is irregular here.
-    // This is because the restart files depend on relax_str.
-    // Thus, we first read relax_str.
-    // Then we determine restart_scph by checking the restart files.
-    // Finally, we overwrite restart_scph if it is explicitly given in the input file.
-
-    // if file_dymat exists in the current directory,
-    // restart mode will be automatically turned on for SCPH calculations.
-    bool restart_scph = false;
-    // chech dynamical matrix files
-    if (relax_str == 0) {
-        restart_scph = stat(file_dymat.c_str(), &st) == 0;
-    } else if (relax_str > 0) {
-        restart_scph = (stat(file_dymat.c_str(), &st) == 0) && (stat(file_harm_dymat.c_str(), &st) == 0);
-    } else {
-        restart_scph = stat(file_harm_dymat.c_str(), &st) == 0;
-    }
-    // check V0 file
-    if (relax_str != 0) {
-        restart_scph = restart_scph & (stat(file_v0.c_str(), &st) == 0);
-    }
-
-    assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
@@ -569,8 +480,108 @@ void Input::parse_scph_vars()
     scph->lower_temp = lower_temp;
     scph->warmstart_scph = warm_start;
     scph->bubble = bubble;
-
     scph->relax_str = relax_str;
+
+    kmesh_v.clear();
+    kmesh_interpolate_v.clear();
+
+    scph_var_dict.clear();
+}
+
+void Input::parse_stropt_vars()
+{
+    // Read input parameters in the &structure_opt-field.
+
+    struct stat st{};
+    const std::vector<std::string> input_list{
+            "RELAX_ALGO", "MAX_STR_ITER",
+            "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STDECENT",
+            "CELL_CONV_TOL", "MIXBETA_CELL",
+            "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
+            "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
+            "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_34TO1ST",
+            "NAT_PRIM", "STRAIN_IFC_DIR"
+    };
+
+    std::map<std::string, std::string> stropt_var_dict;
+
+    if (from_stdin) {
+        std::cin.ignore();
+    } else {
+        ifs_input.ignore();
+    }
+
+    get_var_dict(input_list, stropt_var_dict);
+
+    // used to determine restart options
+    auto file_dymat = this->job_title + ".scph_dymat";
+    auto file_harm_dymat = this->job_title + ".renorm_harm_dymat";
+    auto file_v0 = this->job_title + ".V0";
+
+    int relax_algo = 2;
+    int max_str_iter = 100;
+    double coord_conv_tol = 1.0e-5;
+    double mixbeta_coord = 0.5;
+    double alpha_steepest_decent = 1.0e4;
+
+    double cell_conv_tol = 1.0e-5;
+    double mixbeta_cell = 0.5;
+
+    int set_init_str = 1;
+    int cooling_u0_index = 0;
+    double cooling_u0_thr = 0.001;
+
+    double add_hess_diag = 100.0; // [cm^{-1}]
+    double stat_pressure = 0.0; // [GPa]
+    int qha_scheme = 0;
+
+    int renorm_3to2nd = 2;
+    int renorm_2to1st = 2;
+    int renorm_34to1st = 0;
+
+    int nat_prim = 0;
+    std::string strain_IFC_dir("");
+
+    assign_val(relax_algo, "RELAX_ALGO", stropt_var_dict);
+    assign_val(max_str_iter, "MAX_STR_ITER", stropt_var_dict);
+    assign_val(coord_conv_tol, "COORD_CONV_TOL", stropt_var_dict);
+
+    if (relax_algo == 1) {
+        assign_val(alpha_steepest_decent,
+                   "ALPHA_STEEPEST_DECENT", stropt_var_dict);
+    } else if (relax_algo == 2) {
+        assign_val(mixbeta_coord, "MIXBETA_COORD", stropt_var_dict);
+    }
+
+    assign_val(cell_conv_tol, "CELL_CONV_TOL", stropt_var_dict);
+    if (relax_algo == 2) {
+        assign_val(mixbeta_cell, "MIXBETA_CELL", stropt_var_dict);
+    }
+
+    assign_val(set_init_str, "SET_INIT_STR", stropt_var_dict);
+    assign_val(cooling_u0_index, "COOLING_U0_INDEX", stropt_var_dict);
+    assign_val(cooling_u0_thr, "COOLING_U0_THR", stropt_var_dict);
+    assign_val(add_hess_diag, "ADD_HESS_DIAG", stropt_var_dict);
+    assign_val(stat_pressure, "STAT_PRESSURE", stropt_var_dict);
+    assign_val(qha_scheme, "QHA_SCHEME", stropt_var_dict);
+
+    assign_val(renorm_3to2nd, "RENORM_3TO2ND", stropt_var_dict);
+    assign_val(renorm_2to1st, "RENORM_2TO1ST", stropt_var_dict);
+    assign_val(renorm_34to1st, "RENORM_34TO1ST", stropt_var_dict);
+
+    assign_val(nat_prim, "NAT_PRIM", stropt_var_dict);
+    if (nat_prim == 0) {
+        exit("parse_stropt_vars",
+             "NAT_PRIM must be correctly specified when RELAX_STR != 0.");
+    }
+    assign_val(strain_IFC_dir, "STRAIN_IFC_DIR", stropt_var_dict);
+    if (strain_IFC_dir != "" && strain_IFC_dir.at(strain_IFC_dir.length() - 1) != '/') {
+        strain_IFC_dir = strain_IFC_dir + "/";
+    }
+
+    bool restart_scph = (stat(file_dymat.c_str(), &st) == 0) && (stat(file_harm_dymat.c_str(), &st) == 0);
+    restart_scph = restart_scph & (stat(file_v0.c_str(), &st) == 0);
+
     scph->relax_algo = relax_algo;
     scph->max_str_iter = max_str_iter;
 
@@ -597,10 +608,8 @@ void Input::parse_scph_vars()
     scph->natmin_tmp = nat_prim;
     scph->strain_IFC_dir = strain_IFC_dir;
 
-    kmesh_v.clear();
-    kmesh_interpolate_v.clear();
+    stropt_var_dict.clear();
 
-    scph_var_dict.clear();
 }
 
 void Input::parse_initial_strain()
