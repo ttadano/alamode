@@ -10,7 +10,7 @@ Format of input files
 Each input file should consist of entry fields.
 Available entry fields are 
 
-**&general**, **&cell**, **&analysis**, **&kpoint**, **&strain**, and **&displace**.
+**&general**, **&cell**, **&scph**, **&qha**, **&structure_opt**, **&kpoint**, **&strain**, and **&displace**.
 
 The format of the input file is the same as that of *alm* which can be found :ref:`here <reference_input_alm>`.
 
@@ -31,14 +31,17 @@ List of supported input variables
    :ref:`PRINTSYM <anphon_printsym>`, :ref:`RESTART <anphon_restart>`, :ref:`TMIN <anphon_tmin>`, :ref:`TOLERANCE <anphon_tolerance>`
    :ref:`TRISYM <anphon_trisym>`
    **&scph**
-   :ref:`ADD_HESS_DIAG <anphon_add_hess_diag>`, :ref:`ALPHA_STDECENT <anphon_alpha_stdecent>`, :ref:`BUBBLE <anphon_bubble>`, :ref:`CELL_CONV_TOL <anphon_cell_conv_tol>`
-   :ref:`COOLING_U0_INDEX <anphon_cooling_u0_index>`, :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>`, :ref:`COORD_CONV_TOL <anphon_coord_conv_tol>`, :ref:`IALGO <anphon_ialgo>`
-   :ref:`KMESH_INTERPOLATE <anphon_kmesh_interpolate>`, :ref:`KMESH_SCPH <anphon_kmesh_scph>`, :ref:`LOWER_TEMP <anphon_lower_temp>`, :ref:`MAX_STR_ITER <anphon_max_str_iter>`
-   :ref:`MAXITER <anphon_maxiter>`, :ref:`MIXALPHA <anphon_mixalpha>`, :ref:`MIXBETA_CELL <anphon_mixbeta_cell>`, :ref:`MIXBETA_COORD <anphon_mixbeta_coord>`
-   :ref:`NAT_PRIM <anphon_nat_prim>`, :ref:`QHA_SCHEME <anphon_qha_scheme>`, :ref:`RELAX_ALGO <anphon_relax_algo>`, :ref:`RELAX_STR <anphon_relax_str>`
-   :ref:`RENORM_2TO1ST <anphon_renorm_2to1st>`, :ref:`RENORM_34TO1ST <anphon_renorm_34to1st>`, :ref:`RENORM_3TO2ND <anphon_renorm_3to2nd>`, :ref:`RESTART_SCPH <anphon_restart_scph>`
-   :ref:`SELF_OFFDIAG <anphon_self_offdiag>`, :ref:`SET_INIT_STR <anphon_set_init_str>`, :ref:`STAT_PRESSURE <anphon_stat_pressure>`, :ref:`STRAIN_IFC_DIR <anphon_strain_ifc_dir>`
-   :ref:`TOL_SCPH <anphon_tol_scph>`, :ref:`WARMSTART <anphon_warmstart>`
+   :ref:`BUBBLE <anphon_bubble>`, :ref:`IALGO <anphon_ialgo>`, :ref:`KMESH_INTERPOLATE <anphon_kmesh_interpolate>`, :ref:`KMESH_SCPH <anphon_kmesh_scph>`
+   :ref:`LOWER_TEMP <anphon_lower_temp>`, :ref:`MAXITER <anphon_maxiter>`, :ref:`MIXALPHA <anphon_mixalpha>`, :ref:`RELAX_STR <anphon_relax_str>`
+   :ref:`RESTART_SCPH <anphon_restart_scph>`, :ref:`SELF_OFFDIAG <anphon_self_offdiag>`, :ref:`TOL_SCPH <anphon_tol_scph>`, :ref:`WARMSTART <anphon_warmstart>`
+   **&qha**
+   :ref:`KMESH_INTERPOLATE <anphon_qha_kmesh_interpolate>`, :ref:`KMESH_QHA <anphon_qha_kmesh_qha>`, :ref:`LOWER_TEMP <anphon_qha_lower_temp>`, :ref:`RELAX_STR <anphon_qha_relax_str>`
+   **&structure_opt**
+   :ref:`ADD_HESS_DIAG <anphon_add_hess_diag>`, :ref:`ALPHA_STDECENT <anphon_alpha_stdecent>`, :ref:`CELL_CONV_TOL <anphon_cell_conv_tol>`, :ref:`COOLING_U0_INDEX <anphon_cooling_u0_index>`
+   :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>`, :ref:`COORD_CONV_TOL <anphon_coord_conv_tol>`, :ref:`MAX_STR_ITER <anphon_max_str_iter>`, :ref:`MIXBETA_CELL <anphon_mixbeta_cell>`
+   :ref:`MIXBETA_COORD <anphon_mixbeta_coord>`, :ref:`NAT_PRIM <anphon_nat_prim>`, :ref:`QHA_SCHEME <anphon_qha_scheme>`, :ref:`RELAX_ALGO <anphon_relax_algo>`
+   :ref:`RENORM_2TO1ST <anphon_renorm_2to1st>`, :ref:`RENORM_34TO1ST <anphon_renorm_34to1st>`, :ref:`RENORM_3TO2ND <anphon_renorm_3to2nd>`, :ref:`SET_INIT_STR <anphon_set_init_str>`
+   :ref:`STAT_PRESSURE <anphon_stat_pressure>`, :ref:`STRAIN_IFC_DIR <anphon_strain_ifc_dir>`
    **&analysis**
    :ref:`ANIME <anphon_anime>`, :ref:`ANIME_FRAMES <anphon_anime_frames>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`GRUNEISEN <anphon_gruneisen>`
    :ref:`ISOFACT <anphon_isofact>`, :ref:`ISOTOPE <anphon_isotope>`, :ref:`KAPPA_COHERENT <anphon_kappa_coherent>`, :ref:`KAPPA_SPEC <anphon_kappa_spec>`
@@ -484,6 +487,68 @@ Description of input variables
 
 ````
 
+"&qha"-field (Read only when ``MODE = QHA``)
+++++++++++++++++++++++++++++++++++++++++++++++
+
+.. _anphon_qha_kmesh_interpolate:
+
+* KMESH_INTERPOLATE-tag = k1, k2, k3
+
+ :Default: None
+ :Type: Array of integers
+ :Description: In the structural optimization based on quasiharmonic approximation (QHA), 
+               the interpolation is done using the 
+               :math:`k` mesh defined by ``KMESH_INTERPOLATE``. 
+
+````
+
+.. _anphon_qha_kmesh_qha:
+
+* KMESH_QHA-tag = k1, k2, k3
+
+ :Default: None
+ :Type: Array of integers
+ :Description: This :math:`k` mesh is used for the QHA-based structural optimization. 
+               Each value of ``KMESH_QHA`` must be equal to or a multiple of the number of ``KMESH_INTERPOLATE`` in the same direction.
+
+````
+
+.. _anphon_qha_relax_str:
+
+* RELAX_STR-tag = 0 | 1 | 2 | -1 | -2
+
+ === ==============================================================
+  0   Don't relax the crystal structure
+  1   Relax atomic positions using SCPH.
+  2   Relax atomic positions and cell shape using SCPH.
+  -1  Relax atomic positions and cell shape using QHA.
+  -2  Lowest-order QHA.
+ === ==============================================================
+
+ :Default: 0
+ :Type: Integer
+
+````
+
+
+.. _anphon_qha_lower_temp:
+
+* LOWER_TEMP-tag = 0 | 1
+
+ === ===============================================================================
+  0   The structural optimization start from ``TMIN`` to ``TMAX``. (Raise the temperature)
+  1   The structural optimization start from ``TMAX`` to ``TMIN``. (Lower the temperature)
+ === ===============================================================================
+
+ :Default: 1
+ :Type: Integer
+
+````
+
+
+"&structure_opt"-field
+++++++++++++++++
+
 .. _anphon_relax_algo:
 
 * RELAX_ALGO-tag = 1 | 2
@@ -745,8 +810,6 @@ Description of input variables
  :Type: String
 
 ````
-
-
 
 "&cell"-field
 +++++++++++++

@@ -103,10 +103,10 @@ void Input::parce_input(int narg,
         parse_qha_vars();
     }
     if ((phon->mode == "SCPH" || phon->mode == "QHA") && scph->relax_str != 0) {
-        if(!locate_tag("&structure_opt"))
+        if(!locate_tag("&relax"))
             exit("parse_input",
-                 "&structure_opt entry not found in the input file");
-        parse_stropt_vars();
+                 "&relax entry not found in the input file");
+        parse_relax_vars();
         
         if (scph->relax_str != 0 && scph->relax_str != 1) {
             if (!locate_tag("&strain"))
@@ -591,9 +591,9 @@ void Input::parse_qha_vars()
 
 }
 
-void Input::parse_stropt_vars()
+void Input::parse_relax_vars()
 {
-    // Read input parameters in the &structure_opt-field.
+    // Read input parameters in the &relax-field.
 
     struct stat st{};
     const std::vector<std::string> input_list{
@@ -674,7 +674,7 @@ void Input::parse_stropt_vars()
 
     assign_val(nat_prim, "NAT_PRIM", stropt_var_dict);
     if (nat_prim == 0) {
-        exit("parse_stropt_vars",
+        exit("parse_relax_vars",
              "NAT_PRIM must be correctly specified when RELAX_STR != 0.");
     }
     assign_val(strain_IFC_dir, "STRAIN_IFC_DIR", stropt_var_dict);
