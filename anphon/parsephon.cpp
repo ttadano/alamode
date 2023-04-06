@@ -541,11 +541,11 @@ void Input::parse_qha_vars()
 
         if (kmesh_v.size() != 3) {
             exit("parse_qha_vars",
-                 "The number of entries for KMESH_SCPH has to be 3.");
+                 "The number of entries for KMESH_QHA has to be 3.");
         }
     } else {
         exit("parse_qha_vars",
-             "Please specify KMESH_SCPH for mode = SCPH");
+             "Please specify KMESH_QHA for mode = QHA");
     }
 
     str_tmp = qha_var_dict["KMESH_INTERPOLATE"];
@@ -568,7 +568,7 @@ void Input::parse_qha_vars()
         }
     } else {
         exit("parse_qha_vars",
-             "Please specify KMESH_INTERPOLATE for mode = SCPH");
+             "Please specify KMESH_INTERPOLATE for mode = QHA");
     }
 
     // Copy the values to appropriate classes.
