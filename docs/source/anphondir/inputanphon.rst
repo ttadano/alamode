@@ -10,7 +10,7 @@ Format of input files
 Each input file should consist of entry fields.
 Available entry fields are 
 
-**&general**, **&cell**, **&scph**, **&qha**, **&structure_opt**, **&kpoint**, **&strain**, and **&displace**.
+**&general**, **&cell**, **&scph**, **&qha**, **&relax**, **&kpoint**, **&strain**, and **&displace**.
 
 The format of the input file is the same as that of *alm* which can be found :ref:`here <reference_input_alm>`.
 
@@ -36,7 +36,7 @@ List of supported input variables
    :ref:`RESTART_SCPH <anphon_restart_scph>`, :ref:`SELF_OFFDIAG <anphon_self_offdiag>`, :ref:`TOL_SCPH <anphon_tol_scph>`, :ref:`WARMSTART <anphon_warmstart>`
    **&qha**
    :ref:`KMESH_INTERPOLATE <anphon_qha_kmesh_interpolate>`, :ref:`KMESH_QHA <anphon_qha_kmesh_qha>`, :ref:`LOWER_TEMP <anphon_qha_lower_temp>`, :ref:`RELAX_STR <anphon_qha_relax_str>`
-   **&structure_opt**
+   **&relax**
    :ref:`ADD_HESS_DIAG <anphon_add_hess_diag>`, :ref:`ALPHA_STDECENT <anphon_alpha_stdecent>`, :ref:`CELL_CONV_TOL <anphon_cell_conv_tol>`, :ref:`COOLING_U0_INDEX <anphon_cooling_u0_index>`
    :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>`, :ref:`COORD_CONV_TOL <anphon_coord_conv_tol>`, :ref:`MAX_STR_ITER <anphon_max_str_iter>`, :ref:`MIXBETA_CELL <anphon_mixbeta_cell>`
    :ref:`MIXBETA_COORD <anphon_mixbeta_coord>`, :ref:`NAT_PRIM <anphon_nat_prim>`, :ref:`QHA_SCHEME <anphon_qha_scheme>`, :ref:`RELAX_ALGO <anphon_relax_algo>`
@@ -546,7 +546,7 @@ Description of input variables
 ````
 
 
-"&structure_opt"-field
+"&relax"-field
 ++++++++++++++++
 
 .. _anphon_relax_algo:
