@@ -224,13 +224,13 @@ void Scph::exec_scph()
         if (relax_str == 0) {
             load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
         }
-            // SCPH + structural optimization
-        else if (relax_str > 0) {
+        // SCPH + structural optimization
+        else if (phon->mode == "SCPH" && relax_str != 0) {
             load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
             load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
         }
-            // QHA + structural optimization
-        else/* if(relax_str < 0) */{
+        // QHA + structural optimization
+        else if (phon->mode == "QHA") {
             load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".renorm_harm_dymat");
             load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
         }
@@ -251,19 +251,23 @@ void Scph::exec_scph()
         if (relax_str == 0) {
             exec_scph_main(delta_dymat_scph);
         }
-            // Calculate SCPH + structural optimization and obtain the correction to the dynamical matrix
-        else if (relax_str == 1 || relax_str == 2) {
+        // SCPH + structural optimization
+        else if (phon->mode == "SCPH" && relax_str != 0) {
             exec_scph_relax_cell_coordinate_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
-        } else if (relax_str == -1) {
+        } 
+        // QHA + structural optimization
+        else if (phon->mode == "QHA" && (relax_str == 1 || relax_str == 2)) {
             exec_QHA_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
-        } else if (relax_str == -2) {
+        } 
+        // lowest-order QHA
+        else if (phon->mode == "QHA" && relax_str == 3) {
             exec_perturbative_QHA(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
 
         if (mympi->my_rank == 0) {
             // write dymat to file
             // write scph dynamical matrix when scph calculation is performed
-            if (relax_str >= 0) {
+            if (phon->mode == "SCPH") {
                 store_scph_dymat_to_file(delta_dymat_scph, input->job_title + ".scph_dymat");
             }
             // write renormalized harmonic dynamical matrix when the crystal structure is optimized
@@ -1642,13 +1646,15 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             }
             std::cout << std::endl;
 
-            std::cout << " Final strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
-            for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
-                std::cout << " ";
-                for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
-                    std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
+            if (relax_str == 2) {
+                std::cout << " Final strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
+                for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
+                    std::cout << " ";
+                    for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
+                        std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
+                    }
+                    std::cout << std::endl;
                 }
-                std::cout << std::endl;
             }
             if (i_temp_loop == NT - 1) {
                 std::cout << " ----------------------------------------------------------------" << std::endl
@@ -1749,6 +1755,7 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     int is1, is2, i1;
     int iat1, ixyz1, ixyz2;
     std::string str_tmp;
+    static auto complex_zero = std::complex<double>(0.0, 0.0);
 
     const auto nk = kmesh_dense->nk;
     const auto nk_interpolate = kmesh_coarse->nk;
@@ -1881,6 +1888,15 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         v1_ref[is] = 0.0;
     }
 
+    // compute IFC renormalization by lattice relaxation
+    std::cout << " RELAX_STR = " << relax_str << ": ";
+    if (relax_str == 1) {
+        std::cout << "Set zeros in derivatives of k-space IFCs by strain." << std::endl << std::endl;
+    }
+    if (relax_str == 2) {
+        std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl << std::endl;
+    }
+
     allocate(del_v1_del_umn, 9, ns);
     allocate(del2_v1_del_umn2, 81, ns);
     allocate(del3_v1_del_umn3, 729, ns);
@@ -1952,15 +1968,24 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         fout_step_u0.open("step_u0.txt");
         fout_q0.open(input->job_title + ".normal_disp");
         fout_u0.open(input->job_title + ".atom_disp");
-        fout_step_u_tensor.open("step_u_tensor.txt");
-        fout_u_tensor.open(input->job_title + ".umn_tensor");
+        // if the unit cell is relaxed
+        if (relax_str == 2) {
+            fout_step_u_tensor.open("step_u_tensor.txt");
+            fout_u_tensor.open(input->job_title + ".umn_tensor");
+        }
 
         write_resfile_header(fout_q0, fout_u0, fout_u_tensor);
 
         i_temp_loop = -1;
 
         std::cout << " Start structural optimization." << std::endl;
-        std::cout << " Internal coordinates and shape of the unit cell are relaxed." << std::endl << std::endl;
+        if (relax_str == 1) {
+            std::cout << "  Internal coordinates are relaxed." << std::endl;
+            std::cout << "  Shape of the unit cell is fixed." << std::endl << std::endl;
+        } else if (relax_str == 2) {
+            std::cout << "  Internal coordinates and shape of the unit cell are relaxed." << std::endl << std::endl;
+        }
+
 
         for (double temp: vec_temp) {
             i_temp_loop++;
@@ -1990,15 +2015,17 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             }
             std::cout << std::endl;
 
-            std::cout << " Initial strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
-            for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
-                std::cout << " ";
-                for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
-                    std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
+            if (relax_str == 2) {
+                std::cout << " Initial strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
+                for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
+                    std::cout << " ";
+                    for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
+                        std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
+                    }
+                    std::cout << std::endl;
                 }
                 std::cout << std::endl;
             }
-            std::cout << std::endl;
 
             write_stepresfile_header_atT(fout_step_q0, fout_step_u0, fout_step_u_tensor, temp);
 
@@ -2053,20 +2080,33 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                     }
                 }
 
-                // calculate renormalized stress tensor
-                calculate_del_v0_del_umn_renorm(del_v0_del_umn_renorm,
-                                                C1_array, C2_array, C3_array,
-                                                eta_tensor, u_tensor,
-                                                del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
-                                                del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
-                                                q0, pvcell);
+                
+                if (relax_str == 1) {
+                    for (i1 = 0; i1 < 9; i1++) {
+                        del_v0_del_umn_renorm[i1] = 0.0;
+                    }
+                    for (i1 = 0; i1 < 9; i1++) {
+                        for (is1 = 0; is1 < ns; is1++) {
+                            del_v1_del_umn_renorm[i1][is1] = complex_zero;
+                        }
+                    }
 
-                // calculate renormalized strain-force coupling for ZSISA and v-ZSISA.
-                calculate_del_v1_del_umn_renorm(del_v1_del_umn_renorm,
-                                                u_tensor,
-                                                del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
-                                                del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
-                                                q0);
+                } else if (relax_str == 2) {
+                    // calculate renormalized stress tensor
+                    calculate_del_v0_del_umn_renorm(del_v0_del_umn_renorm,
+                                                    C1_array, C2_array, C3_array,
+                                                    eta_tensor, u_tensor,
+                                                    del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
+                                                    del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
+                                                    q0, pvcell);
+
+                    // calculate renormalized strain-force coupling for ZSISA and v-ZSISA.
+                    calculate_del_v1_del_umn_renorm(del_v1_del_umn_renorm,
+                                                    u_tensor,
+                                                    del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
+                                                    del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
+                                                    q0);
+                }
 
                 compute_renormalized_harmonic_frequency(omega2_harm_renorm[iT],
                                                         evec_harm_renorm_tmp,
@@ -2087,51 +2127,58 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 // This is because we truncate the Taylor expansion of PES at the fourth order (?)
                 compute_anharmonic_v1_array(v1_QHA, v1_renorm, v3_renorm, cmat_convert, omega2_harm_renorm[iT], temp);
 
-                compute_anharmonic_del_v0_del_umn(del_v0_del_umn_QHA,
-                                                  del_v0_del_umn_renorm,
-                                                  del_v2_del_umn,
-                                                  del2_v2_del_umn2,
-                                                  del_v3_del_umn,
-                                                  u_tensor, q0, cmat_convert,
-                                                  omega2_harm_renorm[iT], temp);
-
-                compute_ZSISA_stress(delq_delu_ZSISA, del_v0_del_umn_ZSISA,
-                                     cmat_convert, omega2_harm_renorm[iT], del_v0_del_umn_QHA,
-                                     del_v1_del_umn_renorm, v1_QHA, harm_optical_modes);
-
-                // qha_scheme == 1 : ZSISA
-                if (qha_scheme == 1) {
-                    // overwrite v1_QHA by zero-temperature first-order IFCs.
-                    for (is = 0; is < ns; is++) {
-                        v1_QHA[is] = v1_renorm[is];
-                    }
-                    // overwrite finite-temperature stress tensor
+                if (relax_str == 1) {
                     for (i1 = 0; i1 < 9; i1++) {
-                        del_v0_del_umn_QHA[i1] = del_v0_del_umn_ZSISA[i1];
+                        del_v0_del_umn_QHA[i1] = complex_zero;
                     }
                 }
+                else if (relax_str == 2) {
+                    compute_anharmonic_del_v0_del_umn(del_v0_del_umn_QHA,
+                                                    del_v0_del_umn_renorm,
+                                                    del_v2_del_umn,
+                                                    del2_v2_del_umn2,
+                                                    del_v3_del_umn,
+                                                    u_tensor, q0, cmat_convert,
+                                                    omega2_harm_renorm[iT], temp);
 
-                // calculate renormalized second-order elastic constants
-                calculate_C2_array_renorm(C2_array_renorm,
-                                          u_tensor, eta_tensor, C2_array, C3_array,
-                                          del2_v1_del_umn2, del3_v1_del_umn3, del2_v2_del_umn2, q0);
+                    compute_ZSISA_stress(delq_delu_ZSISA, del_v0_del_umn_ZSISA,
+                                        cmat_convert, omega2_harm_renorm[iT], del_v0_del_umn_QHA,
+                                        del_v1_del_umn_renorm, v1_QHA, harm_optical_modes);
 
-                calculate_C2_array_ZSISA(C2_array_ZSISA, C2_array_renorm,
-                                         del_v1_del_umn_renorm, delq_delu_ZSISA);
-
-                compute_vZSISA_stress(del_v0_del_umn_vZSISA,
-                                      C2_array_ZSISA, del_v0_del_umn_renorm, del_v0_del_umn_ZSISA,
-                                      u_tensor);
-
-                // qha_scheme == 2 : v-ZSISA
-                // overwrite finite-temperature force and stress tensor
-                if (qha_scheme == 2) {
-                    for (is = 0; is < ns; is++) {
-                        v1_QHA[is] = v1_renorm[is];
+                    // qha_scheme == 1 : ZSISA
+                    if (qha_scheme == 1) {
+                        // overwrite v1_QHA by zero-temperature first-order IFCs.
+                        for (is = 0; is < ns; is++) {
+                            v1_QHA[is] = v1_renorm[is];
+                        }
+                        // overwrite finite-temperature stress tensor
+                        for (i1 = 0; i1 < 9; i1++) {
+                            del_v0_del_umn_QHA[i1] = del_v0_del_umn_ZSISA[i1];
+                        }
                     }
 
-                    for (i1 = 0; i1 < 9; i1++) {
-                        del_v0_del_umn_QHA[i1] = del_v0_del_umn_vZSISA[i1];
+                    // calculate renormalized second-order elastic constants
+                    calculate_C2_array_renorm(C2_array_renorm,
+                                            u_tensor, eta_tensor, C2_array, C3_array,
+                                            del2_v1_del_umn2, del3_v1_del_umn3, del2_v2_del_umn2, q0);
+
+                    calculate_C2_array_ZSISA(C2_array_ZSISA, C2_array_renorm,
+                                            del_v1_del_umn_renorm, delq_delu_ZSISA);
+
+                    compute_vZSISA_stress(del_v0_del_umn_vZSISA,
+                                        C2_array_ZSISA, del_v0_del_umn_renorm, del_v0_del_umn_ZSISA,
+                                        u_tensor);
+
+                    // qha_scheme == 2 : v-ZSISA
+                    // overwrite finite-temperature force and stress tensor
+                    if (qha_scheme == 2) {
+                        for (is = 0; is < ns; is++) {
+                            v1_QHA[is] = v1_renorm[is];
+                        }
+
+                        for (i1 = 0; i1 < 9; i1++) {
+                            del_v0_del_umn_QHA[i1] = del_v0_del_umn_vZSISA[i1];
+                        }
                     }
                 }
 
@@ -2164,8 +2211,10 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                     std::cout << std::endl << std::endl;
                     std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15)
                               << std::setprecision(6) << coord_conv_tol << std::endl;
-                    std::cout << " du_tensor is smaller than CELL_CONV_TOL = " << std::scientific << std::setw(15)
-                              << std::setprecision(6) << cell_conv_tol << std::endl;
+                    if (relax_str == 2) {
+                        std::cout << " du_tensor is smaller than CELL_CONV_TOL = " << std::scientific << std::setw(15)
+                                << std::setprecision(6) << cell_conv_tol << std::endl;
+                    }
                     std::cout << " Structural optimization converged in " << i_str_loop + 1 << "-th loop." << std::endl
                               << std::endl;
                     std::cout << " break structural loop." << std::endl << std::endl;
@@ -2190,13 +2239,15 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             }
             std::cout << std::endl;
 
-            std::cout << " Final strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
-            for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
-                std::cout << " ";
-                for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
-                    std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
+            if (relax_str == 2){
+                std::cout << " Final strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
+                for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
+                    std::cout << " ";
+                    for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
+                        std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
+                    }
+                    std::cout << std::endl;
                 }
-                std::cout << std::endl;
             }
             if (i_temp_loop == NT - 1) {
                 std::cout << " ----------------------------------------------------------------" << std::endl
@@ -2230,6 +2281,10 @@ void Scph::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         fout_step_u0.close();
         fout_q0.close();
         fout_u0.close();
+        if (relax_str == 2) {
+            fout_step_u_tensor.close();
+            fout_u_tensor.close();
+        }
 
         deallocate(cmat_convert);
 
@@ -2670,7 +2725,7 @@ void Scph::set_elastic_constants(double *C1_array,
 
     // if the shape of the unit cell is relaxed,
     // read elastic constants from file
-    if (relax_str == 2 || relax_str == -1 || relax_str == -2) {
+    if (relax_str == 2 || relax_str == 3) {
         read_C1_array(C1_array);
         read_elastic_constants(C2_array, C3_array);
     }
@@ -3872,9 +3927,8 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
             }
         }
     }
-        // relax_str == 2  : relax both the cell shape and the internal coordinate using SCP.
-        // relax_str == -1 : relax both the cell shape and the internal coordinate using QHA.
-    else if (relax_str == 2 || relax_str == -1) {
+    // relax_str == 2  : relax both the cell shape and the internal coordinates.
+    else if (relax_str == 2) {
 
         // first-order derivative of first-order IFCs
         if (renorm_2to1st == 0) {
@@ -3958,8 +4012,8 @@ void Scph::compute_del_v_strain(std::complex<double> **del_v1_del_umn,
         std::cout << "  done!" << std::endl;
         timer->print_elapsed();
     }
-        // relax_str == -2 : calculate lowest-order linear equation of QHA.
-    else if (relax_str == -2) {
+    // relax_str == 3 : calculate lowest-order linear equation of QHA.
+    else if (relax_str == 3) {
 
         // first-order derivative of first-order IFCs
         if (renorm_2to1st == 0) {
@@ -10393,7 +10447,7 @@ void Scph::update_cell_coordinate(double *q0,
                     u_tensor[i1][i2] = 0.0;
                 }
             }
-        } else if (relax_str == 2 || relax_str == -1) {
+        } else if (relax_str == 2) {
             // prepare matrix of elastic constants and vector of del_v0_strain_atT
             for (itmp1 = 0; itmp1 < 3; itmp1++) {
                 del_v0_strain_vec(itmp1) = del_v0_strain_atT[itmp1 * 3 + itmp1];

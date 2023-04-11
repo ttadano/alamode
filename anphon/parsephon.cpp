@@ -108,18 +108,16 @@ void Input::parce_input(int narg,
                  "&relax entry not found in the input file");
         parse_relax_vars();
         
-        if (scph->relax_str != 0 && scph->relax_str != 1) {
+        if (scph->relax_str != 1) {
             if (!locate_tag("&strain"))
                 exit("parse_input",
                      "&strain entry not found in the input file");
             parse_initial_strain();
         }
-        if (scph->relax_str != 0) {
-            if (!locate_tag("&displace"))
-                exit("parse_input",
-                     "&displace entry not found in the input file");
-            parse_initial_displace();
-        }
+        if (!locate_tag("&displace"))
+            exit("parse_input",
+                    "&displace entry not found in the input file");
+        parse_initial_displace();
     }
 }
 
