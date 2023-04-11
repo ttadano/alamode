@@ -413,10 +413,10 @@ void System::load_system_info_from_XML()
 
         natmin = nat / ntran;
 
-        if (scph->natmin_tmp != 0 && scph->natmin_tmp != natmin)
+        if (scph->relax_str != 0 && scph->init_u0.size() != natmin*3)
             exit("load_system_info_from_XML",
                  "The number of atoms in the primitive cell (NATMIN) in the FCSXML file"
-                 " \n is not consistent with NAT_PRIM given in the the input file.");
+                 " \n is not consistent with the &displace field in the input file.");
 
         // Parse lattice vectors
 

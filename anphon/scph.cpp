@@ -94,8 +94,6 @@ void Scph::set_default_variables()
     renorm_34to1st = 0;
 
     init_u_tensor = nullptr;
-    init_u0 = nullptr;
-    natmin_tmp = 0;
 
     kmap_interpolate_to_scph = nullptr;
     evec_harmonic = nullptr;
@@ -147,9 +145,6 @@ void Scph::deallocate_variables()
     }
     if (init_u_tensor) {
         deallocate(init_u_tensor);
-    }
-    if (init_u0) {
-        deallocate(init_u0);
     }
     if (V0) {
         deallocate(V0);

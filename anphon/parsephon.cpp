@@ -117,6 +117,7 @@ void Input::parce_input(int narg,
         if (!locate_tag("&displace"))
             exit("parse_input",
                     "&displace entry not found in the input file");
+
         parse_initial_displace();
     }
 }
@@ -601,7 +602,7 @@ void Input::parse_relax_vars()
             "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
             "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
             "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_34TO1ST",
-            "NAT_PRIM", "STRAIN_IFC_DIR"
+            "STRAIN_IFC_DIR"
     };
 
     std::map<std::string, std::string> stropt_var_dict;
@@ -640,7 +641,6 @@ void Input::parse_relax_vars()
     int renorm_2to1st = 2;
     int renorm_34to1st = 0;
 
-    int nat_prim = 0;
     std::string strain_IFC_dir("");
 
     assign_val(relax_algo, "RELAX_ALGO", stropt_var_dict);
@@ -670,11 +670,6 @@ void Input::parse_relax_vars()
     assign_val(renorm_2to1st, "RENORM_2TO1ST", stropt_var_dict);
     assign_val(renorm_34to1st, "RENORM_34TO1ST", stropt_var_dict);
 
-    assign_val(nat_prim, "NAT_PRIM", stropt_var_dict);
-    if (nat_prim == 0) {
-        exit("parse_relax_vars",
-             "NAT_PRIM must be correctly specified when RELAX_STR != 0.");
-    }
     assign_val(strain_IFC_dir, "STRAIN_IFC_DIR", stropt_var_dict);
     if (strain_IFC_dir != "" && strain_IFC_dir.at(strain_IFC_dir.length() - 1) != '/') {
         strain_IFC_dir = strain_IFC_dir + "/";
@@ -706,7 +701,6 @@ void Input::parse_relax_vars()
     scph->renorm_2to1st = renorm_2to1st;
     scph->renorm_34to1st = renorm_34to1st;
 
-    scph->natmin_tmp = nat_prim;
     scph->strain_IFC_dir = strain_IFC_dir;
 
     stropt_var_dict.clear();
@@ -801,7 +795,7 @@ void Input::parse_initial_strain()
 
 void Input::parse_initial_displace()
 {
-    int natmin = scph->natmin_tmp;
+
     int i, j;
     int itmp, jtmp;
     int ixyz;
@@ -816,9 +810,8 @@ void Input::parse_initial_displace()
 
     double unit;
     double a[3][3];
-    double **u_fractional, **u_xyz;
-    allocate(u_fractional, natmin, 3);
-    allocate(u_xyz, natmin, 3);
+    std::vector<std::vector<double>> u_fractional, u_xyz;
+    std::vector<double> vec_tmp(3);
 
     if (from_stdin) {
 
@@ -874,21 +867,26 @@ void Input::parse_initial_displace()
     if (line_split.size() == 1) {
         input_mode = boost::lexical_cast<int>(line_split[0]);
     } else {
-        exit("parse_cell_parameter",
-             "Unacceptable format for &cell field.");
+        exit("parse_initial_displace",
+             "Unacceptable format for &displace field.");
     }
 
     if (input_mode < 0 || input_mode >= 2) {
-        exit("parse_cell_parameter",
+        exit("parse_initial_displace",
              "Invalid value of input_mode");
     }
 
     // read displacements
+    u_fractional.clear();
+    u_xyz.clear();
+
     if (input_mode == 0) {
-        if (line_vec.size() != 5 + natmin) {
-            exit("parse_initial_displace",
-                 "Too few or too many lines for the &displace field.");
-        }
+        // check the number of input lines later because
+        // system->natmin has not been set at this stage.
+        // if (line_vec.size() != 5 + natmin) {
+        //     exit("parse_initial_displace",
+        //          "Too few or too many lines for the &displace field.");
+        // }
 
         // read cell information
         for (i = 1; i < 5; ++i) {
@@ -902,7 +900,7 @@ void Input::parse_initial_displace()
                 if (line_split.size() == 1) {
                     unit = boost::lexical_cast<double>(line_split[0]);
                 } else {
-                    exit("parse_cell_parameter",
+                    exit("parse_initial_displace",
                          "Unacceptable format for &displace field.");
                 }
 
@@ -913,7 +911,7 @@ void Input::parse_initial_displace()
                         a[i - 2][j] = boost::lexical_cast<double>(line_split[j]);
                     }
                 } else {
-                    exit("parse_cell_parameter",
+                    exit("parse_initial_displace",
                          "Unacceptable format for &displace field.");
                 }
             }
@@ -926,38 +924,45 @@ void Input::parse_initial_displace()
         }
 
         // read fractional coordinate
-        for (i = 5; i < 5 + natmin; i++) {
+        for (i = 5; i < line_vec.size(); i++) {
+
             line = line_vec[i];
             split(line_split, line,
                   boost::is_any_of("\t "), boost::token_compress_on);
 
             if (line_split.size() == 3) {
                 for (j = 0; j < 3; ++j) {
-                    u_fractional[i - 5][j] = boost::lexical_cast<double>(line_split[j]);
+                    vec_tmp[j] = boost::lexical_cast<double>(line_split[j]);
                 }
+                u_fractional.push_back(vec_tmp);
             } else {
-                exit("parse_cell_parameter",
+                exit("parse_initial_displace",
                      "Unacceptable format for &displace field.");
             }
         }
 
         // transform to xyz coordinate
-        for (iat = 0; iat < natmin; iat++) {
+        for (iat = 0; iat < u_fractional.size(); iat++) {
             for (ixyz = 0; ixyz < 3; ixyz++) {
-                u_xyz[iat][ixyz] = 0.0;
+                vec_tmp[ixyz] = 0.0;
                 for (itmp = 0; itmp < 3; itmp++) {
-                    u_xyz[iat][ixyz] += a[itmp][ixyz] * u_fractional[iat][itmp];
-                }
+                    vec_tmp[ixyz] += a[itmp][ixyz] * u_fractional[iat][itmp];
+                } 
             }
+            u_xyz.push_back(vec_tmp);
         }
 
     } else if (input_mode == 1) {
-        if (line_vec.size() != 1 + natmin) {
-            exit("parse_initial_displace",
-                 "Too few or too many lines for the &displace field.");
-        }
 
-        for (i = 1; i < 1 + natmin; i++) {
+        // check the number of input lines later because
+        // system->natmin has not been set at this stage.
+
+        // if (line_vec.size() != 1 + natmin) {
+        //     exit("parse_initial_displace",
+        //          "Too few or too many lines for the &displace field.");
+        // }
+
+        for (i = 1; i < line_vec.size(); i++) {
 
             line = line_vec[i];
             split(line_split, line,
@@ -965,8 +970,9 @@ void Input::parse_initial_displace()
 
             if (line_split.size() == 3) {
                 for (j = 0; j < 3; ++j) {
-                    u_xyz[i - 1][j] = boost::lexical_cast<double>(line_split[j]);
+                    vec_tmp[j] = boost::lexical_cast<double>(line_split[j]);
                 }
+                u_xyz.push_back(vec_tmp);
             } else {
                 exit("parse_cell_parameter",
                      "Unacceptable format for &displace field.");
@@ -975,15 +981,12 @@ void Input::parse_initial_displace()
     }
 
     // Copy the values to appropriate classes 
-    allocate(scph->init_u0, natmin * 3);
-    for (iat = 0; iat < natmin; iat++) {
+    scph->init_u0.clear();
+    for (iat = 0; iat < u_xyz.size(); iat++) {
         for (ixyz = 0; ixyz < 3; ixyz++) {
-            scph->init_u0[iat * 3 + ixyz] = u_xyz[iat][ixyz];
+            scph->init_u0.push_back(u_xyz[iat][ixyz]);
         }
     }
-
-    deallocate(u_fractional);
-    deallocate(u_xyz);
 
 }
 

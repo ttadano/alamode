@@ -204,7 +204,6 @@ void Writes::write_input_vars()
             std::cout << "  RENORM_34TO1ST = " << scph->renorm_34to1st << std::endl;
             std::cout << "  STRAIN_IFC_DIR = " << scph->strain_IFC_dir << std::endl;
         }
-        std::cout << "  NAT_PRIM = " << scph->natmin_tmp << std::endl;  
         std::cout << std::endl;  
     }
     

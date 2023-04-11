@@ -105,8 +105,7 @@ public:
 
     // initial strain and displacement
     double **init_u_tensor = nullptr;
-    double *init_u0 = nullptr;
-    int natmin_tmp;
+    std::vector<double> init_u0;
 
     // zero-th order term of the potential energy surface
     double *V0 = nullptr;
