@@ -63,7 +63,8 @@ void Symmetry::setup_symmetry()
     SymmList.clear();
 
 
-    if (phon->mode == "SCPH" && scph->relax_str != 0) {
+    if ( (phon->mode == "SCPH" && scph->relax_str != 0) ||
+         (phon->mode == "QHA"  && scph->relax_str != 0)) {
         double **xtmp_disp;
         double lavec_p_strain[3][3], rlavec_p_strain[3][3];
         double mat_strain[3][3];
@@ -158,13 +159,15 @@ void Symmetry::setup_symmetry()
         std::cout << std::endl;
         std::cout << "  Number of symmetry operations : "
                   << nsym << std::endl;
-        if(phon->mode == "SCPH" && scph->relax_str != 0){
+        if((phon->mode == "SCPH" && scph->relax_str != 0) ||
+           (phon->mode == "QHA"  && scph->relax_str != 0)) {
             std::cout << "  Number of symmetry operations in reference structure : "
                     << nsym_ref << std::endl << std::endl;
         }
 
         gensym_withmap(xtmp, kdtmp, SymmList, SymmListWithMap);
-        if(phon->mode == "SCPH" && scph->relax_str != 0){
+        if((phon->mode == "SCPH" && scph->relax_str != 0) ||
+           (phon->mode == "QHA"  && scph->relax_str != 0)) {
             gensym_withmap(xtmp, kdtmp, SymmList_ref, SymmListWithMap_ref);
         }
     }
