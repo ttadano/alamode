@@ -502,7 +502,7 @@ void Input::parse_qha_vars()
     struct stat st{};
     const std::vector<std::string> input_list{
             "KMESH_QHA", "KMESH_INTERPOLATE",
-            "LOWER_TEMP", "RELAX_STR"
+            "LOWER_TEMP", "RELAX_STR", "QHA_SCHEME"
     };
     std::vector<std::string> no_defaults{"KMESH_QHA", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -521,9 +521,12 @@ void Input::parse_qha_vars()
 
     auto lower_temp = true;
     int relax_str = 1;
+    int qha_scheme = 0;
 
     assign_val(lower_temp, "LOWER_TEMP", qha_var_dict);
     assign_val(relax_str, "RELAX_STR", qha_var_dict);
+    assign_val(qha_scheme, "QHA_SCHEME", qha_var_dict);
+
     if (relax_str == 0) {
         exit("parse_qha_vars",
              "RELAX_STR = 0 is not supported when mode = QHA.");
@@ -584,6 +587,7 @@ void Input::parse_qha_vars()
     }
     scph->lower_temp = lower_temp;
     scph->relax_str = relax_str;
+    scph->qha_scheme = qha_scheme;
 
     // Set other values
     scph->selfenergy_offdiagonal = true;
@@ -606,7 +610,7 @@ void Input::parse_relax_vars()
             "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STDECENT",
             "CELL_CONV_TOL", "MIXBETA_CELL",
             "SET_INIT_STR", "COOLING_U0_INDEX", "COOLING_U0_THR",
-            "ADD_HESS_DIAG", "STAT_PRESSURE", "QHA_SCHEME",
+            "ADD_HESS_DIAG", "STAT_PRESSURE",
             "RENORM_3TO2ND", "RENORM_2TO1ST", "RENORM_34TO1ST",
             "STRAIN_IFC_DIR"
     };
@@ -641,7 +645,6 @@ void Input::parse_relax_vars()
 
     double add_hess_diag = 100.0; // [cm^{-1}]
     double stat_pressure = 0.0; // [GPa]
-    int qha_scheme = 0;
 
     int renorm_3to2nd = 2;
     int renorm_2to1st = 2;
@@ -670,7 +673,6 @@ void Input::parse_relax_vars()
     assign_val(cooling_u0_thr, "COOLING_U0_THR", stropt_var_dict);
     assign_val(add_hess_diag, "ADD_HESS_DIAG", stropt_var_dict);
     assign_val(stat_pressure, "STAT_PRESSURE", stropt_var_dict);
-    assign_val(qha_scheme, "QHA_SCHEME", stropt_var_dict);
 
     assign_val(renorm_3to2nd, "RENORM_3TO2ND", stropt_var_dict);
     assign_val(renorm_2to1st, "RENORM_2TO1ST", stropt_var_dict);
@@ -700,8 +702,6 @@ void Input::parse_relax_vars()
 
     scph->add_hess_diag = add_hess_diag;
     scph->stat_pressure = stat_pressure;
-
-    scph->qha_scheme = qha_scheme;
 
     scph->renorm_3to2nd = renorm_3to2nd;
     scph->renorm_2to1st = renorm_2to1st;
