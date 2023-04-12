@@ -107,6 +107,8 @@ void Input::parce_input(int narg,
             exit("parse_input",
                  "&relax entry not found in the input file");
         parse_relax_vars();
+
+        check_relax_vars();
         
         if (scph->relax_str != 1) {
             if (!locate_tag("&strain"))
@@ -522,6 +524,10 @@ void Input::parse_qha_vars()
 
     assign_val(lower_temp, "LOWER_TEMP", qha_var_dict);
     assign_val(relax_str, "RELAX_STR", qha_var_dict);
+    if (relax_str == 0) {
+        exit("parse_qha_vars",
+             "RELAX_STR = 0 is not supported when mode = QHA.");
+    }
 
     auto str_tmp = qha_var_dict["KMESH_QHA"];
 
@@ -706,6 +712,53 @@ void Input::parse_relax_vars()
     stropt_var_dict.clear();
 
 }
+
+void Input::check_relax_vars()
+{
+
+    std::fstream fin_test;
+
+    // structural optimization
+    if (scph->relax_str != 0) {
+
+        if (thermodynamics->calc_FE_bubble) {
+            exit("check_relax_vars",
+                 "Sorry, RELAX_STR!=0 can't be used with bubble correction of the free energy.");
+        }
+        if (scph->bubble > 0) {
+            exit("check_relax_vars",
+                 "Sorry, RELAX_STR!=0 can't be used with bubble self-energy on top of the SCPH calculation.");
+        }
+
+        // relax the shape of the unit cell
+        if (scph->relax_str == 2 || scph->relax_str == 3) {
+            // strain-force coupling
+            if (scph->renorm_2to1st == 2) {
+                fin_test.open(scph->strain_IFC_dir + "strain_force.in");
+
+                if (!fin_test) {
+                    exit("check_relax_vars",
+                         "strain_force.in is required in STRAIN_IFC_DIR when RENORM_2TO1ST = 2.");
+                }
+                fin_test.close();
+            }
+
+            // strain-IFC coupling
+            if (scph->renorm_3to2nd == 2 || scph->renorm_3to2nd == 3) {
+                fin_test.open(scph->strain_IFC_dir + "strain_harmonic.in");
+
+                if (!fin_test) {
+                    exit("check_relax_vars",
+                        "strain_harmonic.in is required in STRAIN_IFC_DIR when RENORM_3TO2ND >= 2.");
+                }
+
+                fin_test.close();
+            }
+        }
+    }
+
+}
+
 
 void Input::parse_initial_strain()
 {
