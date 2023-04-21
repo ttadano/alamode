@@ -27,7 +27,7 @@ General
 * Extraction of harmonic and anharmonic force constants based on the supercell approach
 * Applicable to any crystal structures and low-dimensional systems
 * Accurate treatment of translational and rotational invariance
-* Interface to VASP, Quantum-ESPRESSO, xTAPP, and LAMMPS codes
+* Interface to VASP, Quantum-ESPRESSO, OpenMX, xTAPP, and LAMMPS codes
 * Mainly written in C++, parallelized with MPI+OpenMP
 
 Harmonic properties
@@ -78,7 +78,7 @@ License
 
 .. |copy|   unicode:: U+000A9 
 
-Copyright |copy| 2014–2021 Terumasa Tadano
+Copyright |copy| 2014-2023 Terumasa Tadano
 
 This software is distributed under the MIT license.
 See the LICENSE.txt file for license rights and limitations. 
@@ -89,29 +89,38 @@ How to Cite ALAMODE
 
 Please cite the following article when you use ALAMODE:
 
-  T\. Tadano, Y. Gohda, and S. Tsuneyuki, J. Phys.: Condens. Matter **26**\ , 225402 (2014) 
+.. list-table:: ALAMODE papers
+    :header-rows: 1
+
+    * - Reference number
+      - Features
+    * - [1]_
+      - General citation paper for all features of ALAMODE
+    * - [2]_
+      - Self-consistent phonon (SCP) method (``MODE = SCPH``)
+    * - [3]_
+      - Anharmonic free energies within SCP or improved SCP (ISC)
+    * - [4]_
+      - SCP-based structural optimization or ``MIRROR_IMAGE_CONV = 1`` in the **alm** code
+    * - [5]_
+      - QHA-based structural optimization
+
+References
+^^^^^^^^^^
+
+.. [1] T\. Tadano, Y. Gohda, and S. Tsuneyuki, J. Phys.: Condens. Matter **26**\ , 225402 (2014) 
   [`Link <http://iopscience.iop.org/0953-8984/26/22/225402/>`__].
 
-If you use the self-consistent phonon (SCPH) method, please cite the following paper as well:
-
-  T\. Tadano and S. Tsuneyuki, Phys. Rev. B **92**\ , 054301 (2015). 
+.. [2] T\. Tadano and S. Tsuneyuki, Phys. Rev. B **92**\ , 054301 (2015). 
   [`Link <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.92.054301>`__]
 
-If you use ALAMODE to compute anharmonic vibrational free-energies in your research paper,
-please cite the following paper as well:
-
-  Y\. Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**\, 033601 (2019). 
+.. [3] Y\. Oba, T. Tadano, R. Akashi, and S. Tsuneyuki, Phys. Rev. Materials **3**\, 033601 (2019). 
   [`Link <https://journals.aps.org/prmaterials/abstract/10.1103/PhysRevMaterials.3.033601>`__]
 
-If you use the ``MIRROR_IMAGE_CONV = 1`` in program ALM, or if you use the SCPH-based structural optimization,
-please cite the following paper as well.
-
-  R\. Masuki, T. Nomoto, R. Arita, and T. Tadano, Phys. Rev. B **106**\, 224104 (2022).
+.. [4] R\. Masuki, T. Nomoto, R. Arita, and T. Tadano, Phys. Rev. B **106**\, 224104 (2022).
   [`Link <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.106.224104>`__]
 
-If you use the QHA-based structural optimization of ALAMODE, please cite the following paper as well.
-
-  R\. Masuki, T. Nomoto, R. Arita, and T. Tadano, arXiv:2302.04537 (2023).
+.. [5] R\. Masuki, T. Nomoto, R. Arita, and T. Tadano, arXiv:2302.04537 (2023).
   [`Link <https://arxiv.org/abs/2302.04537>`__]
 
 
