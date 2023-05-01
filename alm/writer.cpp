@@ -27,10 +27,11 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
-#include <boost/asio/ip/host_name.hpp>
-
 #include <highfive/H5File.hpp>
 #include <highfive/H5Easy.hpp>
+#ifdef _BOOST_LIBRARY_LINKABLE
+#include <boost/asio/ip/host_name.hpp>
+#endif
 
 using namespace ALM_NS;
 
@@ -46,6 +47,7 @@ Writer::Writer() : output_maxorder(5), compression_level(1)
 
 Writer::~Writer() = default;
 
+
 void Writer::write_input_vars(const std::unique_ptr<System> &system,
                               const std::unique_ptr<Symmetry> &symmetry,
                               const std::unique_ptr<Cluster> &cluster,
@@ -56,6 +58,8 @@ void Writer::write_input_vars(const std::unique_ptr<System> &system,
                               const std::unique_ptr<Files> &files,
                               const std::string run_mode) const
 {
+    // write docstrings
+
     size_t i;
 
     const auto nat = system->get_supercell().number_of_atoms;
@@ -855,6 +859,7 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
 
     // ALAMODE version
     dump(file, "/version", ALAMODE_VERSION);
+
 
     // Hostname
     // This part necessitates the program to be linked with boost libraries,
