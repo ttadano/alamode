@@ -120,8 +120,8 @@ References
 .. [4] R\. Masuki, T. Nomoto, R. Arita, and T. Tadano, Phys. Rev. B **106**\, 224104 (2022).
   [`Link <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.106.224104>`__]
 
-.. [5] R\. Masuki, T. Nomoto, R. Arita, and T. Tadano, arXiv:2302.04537 (2023).
-  [`Link <https://arxiv.org/abs/2302.04537>`__]
+.. [5] R\. Masuki, T. Nomoto, R. Arita, and T. Tadano, Phys. Rev. B **107**\, 134119 (2023).
+  [`Link <https://journals.aps.org/prb/abstract/10.1103/PhysRevB.107.134119>`__]
 
 
 Issues & Bug report
