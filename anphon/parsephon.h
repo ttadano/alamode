@@ -45,6 +45,12 @@ private:
 
     void parse_scph_vars();
 
+    void parse_qha_vars();
+
+    void parse_relax_vars();
+
+    void check_relax_vars();
+
     void parse_initial_strain();
 
     void parse_initial_displace();

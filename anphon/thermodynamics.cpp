@@ -774,7 +774,7 @@ double Thermodynamics::compute_FE_total(unsigned int iT,
 {
     double fe_total = fe_qha;
     // skip scph correction for QHA + structural optimization
-    if (scph->relax_str >= 0) {
+    if (phon->mode == "SCPH") {
         fe_total += dfe_scph;
     }
     if (thermodynamics->calc_FE_bubble) {

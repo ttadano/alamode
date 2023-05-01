@@ -86,7 +86,7 @@ PHON::PHON(int narg,
 
         execute_RTA();
 
-    } else if (mode == "SCPH") {
+    } else if (mode == "SCPH" || mode == "QHA") {
 
         execute_self_consistent_phonon();
 
@@ -274,12 +274,32 @@ void PHON::execute_RTA() const
 void PHON::execute_self_consistent_phonon() const
 {
     if (mympi->my_rank == 0) {
-        std::cout << "                        MODE = SCPH                           " << std::endl;
-        std::cout << "                                                             " << std::endl;
-        std::cout << "      Self-consistent phonon calculation to estimate         " << std::endl;
-        std::cout << "      anharmonic phonon frequencies.                         " << std::endl;
-        std::cout << "      Harmonic and quartic force constants will be used.  " << std::endl;
-        std::cout << std::endl;
+        if (mode == "SCPH" && scph->relax_str == 0) {
+            std::cout << "                        MODE = SCPH                          " << std::endl;
+            std::cout << "                                                             " << std::endl;
+            std::cout << "      Self-consistent phonon calculation to estimate         " << std::endl;
+            std::cout << "      anharmonic phonon frequencies.                         " << std::endl;
+            std::cout << "      Harmonic and quartic force constants will be used.     " << std::endl;
+            std::cout << std::endl;
+        }
+        else if (mode == "SCPH" && scph->relax_str != 0) {
+            std::cout << "                        MODE = SCPH                          " << std::endl;
+            std::cout << "                                                             " << std::endl;
+            std::cout << "      Self-consistent phonon calculation to compute          " << std::endl;
+            std::cout << "      anharmonic phonon frequencies and crystal structure    " << std::endl;
+            std::cout << "      at finite temperatures.                                " << std::endl;
+            std::cout << "      Harmonic to quartic force constants will be used.      " << std::endl;
+            std::cout << std::endl;
+        }
+        else if(mode == "QHA") {
+            std::cout << "                        MODE = QHA                           " << std::endl;
+            std::cout << "                                                             " << std::endl;
+            std::cout << "      QHA calculation to compute crystal structure           " << std::endl;
+            std::cout << "      at finite temperatures.                         " << std::endl;
+            std::cout << "      Harmonic to quartic force constants will be used.      " << std::endl;
+            std::cout << std::endl;
+
+        }
     }
 
     setup_base();
