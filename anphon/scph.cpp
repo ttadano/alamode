@@ -5318,25 +5318,25 @@ void Scph::calculate_delv2_delumn_finite_difference(const std::complex<double> *
     }
 
     // write the result in k-space and (alpha,mu) representation in a file
-    std::ofstream fout_B_array_kspace;
-    fout_B_array_kspace.open("B_array_kspace.txt");
+    // std::ofstream fout_B_array_kspace;
+    // fout_B_array_kspace.open("B_array_kspace.txt");
 
-    for(ik = 0; ik < nk; ik++){
-        std::cout << kmesh_dense->xk[ik][0] << " " << kmesh_dense->xk[ik][1] << " " << kmesh_dense->xk[ik][2] << std::endl;
-    }
+    // for(ik = 0; ik < nk; ik++){
+    //     std::cout << kmesh_dense->xk[ik][0] << " " << kmesh_dense->xk[ik][1] << " " << kmesh_dense->xk[ik][2] << std::endl;
+    // }
 
 
-    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
-        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
-            for(ik = 0; ik < nk; ik++){
-                for(is = 0; is < ns*ns; is++){
-                    fout_B_array_kspace << std::scientific << std::setprecision(15);
-                    fout_B_array_kspace << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].real() << " " << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].imag() << std::endl;
-                }
-            }
-        }
-    }
-    fout_B_array_kspace.close();
+    // for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+    //     for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+    //         for(ik = 0; ik < nk; ik++){
+    //             for(is = 0; is < ns*ns; is++){
+    //                 fout_B_array_kspace << std::scientific << std::setprecision(15);
+    //                 fout_B_array_kspace << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].real() << " " << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].imag() << std::endl;
+    //             }
+    //         }
+    //     }
+    // }
+    // fout_B_array_kspace.close();
 
 
     deallocate(dphi2_dumn_realspace_tmp);
