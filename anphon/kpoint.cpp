@@ -734,7 +734,7 @@ void KpointMeshUniform::reduce_kpoints(const unsigned int nsym,
 
             // Time-reversal symmetry
 
-            if (time_reversal_symmetry) {
+            if (0) {
 
                 for (i = 0; i < 3; ++i) xk_sym[i] *= -1.0;
 
