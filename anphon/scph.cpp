@@ -4629,6 +4629,45 @@ void Scph::read_del_v2_del_umn_in_kspace(const std::complex<double> *const *cons
         }
     }
     deallocate(del_v2_del_umn_alphamu);
+
+    // assign ASR
+    int *is_acoustic;
+    allocate(is_acoustic, 3*natmin);
+
+    double threshold_acoustic = 1.0e-16;
+    int count_acoustic = 0;
+    const auto complex_zero = std::complex<double>(0.0, 0.0);
+
+    for(is = 0; is < ns; is++){
+        if(std::fabs(omega2_harmonic[0][is]) < threshold_acoustic){
+            is_acoustic[is] = 1;
+            count_acoustic++;
+        }
+        else{
+            is_acoustic[is] = 0;
+        }
+    }
+
+    // check number of acoustic modes
+    if(count_acoustic != 3){
+        std::cout << "Warning in calculate_del_v2_strain_from_cubic_by_finite_difference: ";
+        std::cout << count_acoustic << " acoustic modes are detected in Gamma point." << std::endl << std::endl; 
+    }
+
+    // set acoustic sum rule (ASR)
+    for(ixyz1 = 0; ixyz1 < 9; ixyz1++){
+        for(is = 0; is < ns; is++){
+            // mode is is an acoustic mode at Gamma point
+            if(is_acoustic[is] == 0){
+                continue;
+            }
+            for(js = 0; js < ns; js++){
+                del_v2_del_umn[ixyz1][0][is*ns+js] = complex_zero;
+                del_v2_del_umn[ixyz1][0][js*ns+is] = complex_zero;
+            }
+        }
+    }
+
 }
 
 
@@ -4858,6 +4897,12 @@ void Scph::calculate_delv2_delumn_finite_difference(const std::complex<double> *
     allocate(dphi2_dumn_realspace_in, 3, 3, natmin * 3, nat * 3);
     allocate(dphi2_dumn_realspace_symm, 3, 3, natmin * 3, nat * 3);
     allocate(count_tmp, 3, 3, natmin * 3, nat * 3);
+
+    // temporary 
+    // (alpha,mu) representation in k-space
+    std::complex<double> ***del_v2_strain_from_cubic_alphamu;
+    allocate(del_v2_strain_from_cubic_alphamu, 9, nk, ns*ns);
+
 
     for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
         for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
@@ -5207,6 +5252,13 @@ void Scph::calculate_delv2_delumn_finite_difference(const std::complex<double> *
             for (ik = 0; ik < nk; ik++) {
                 r2q(kmesh_dense->xk[ik], nk1, nk2, nk3, ns, dymat_new, dymat_tmp);
 
+                // (alpha,mu) representation in k-space (this is temporary)
+                for(is = 0; is < ns; is++){
+                    for(js = 0; js < ns; js++){
+                        del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is*ns+js] = dymat_tmp[is][js];
+                    }
+                }
+
                 // transform to mode representation
                 for (is = 0; is < ns; is++) {
                     for (js = 0; js < ns; js++) {
@@ -5264,6 +5316,28 @@ void Scph::calculate_delv2_delumn_finite_difference(const std::complex<double> *
             }
         }
     }
+
+    // write the result in k-space and (alpha,mu) representation in a file
+    std::ofstream fout_B_array_kspace;
+    fout_B_array_kspace.open("B_array_kspace.txt");
+
+    for(ik = 0; ik < nk; ik++){
+        std::cout << kmesh_dense->xk[ik][0] << " " << kmesh_dense->xk[ik][1] << " " << kmesh_dense->xk[ik][2] << std::endl;
+    }
+
+
+    for(ixyz1 = 0; ixyz1 < 3; ixyz1++){
+        for(ixyz2 = 0; ixyz2 < 3; ixyz2++){
+            for(ik = 0; ik < nk; ik++){
+                for(is = 0; is < ns*ns; is++){
+                    fout_B_array_kspace << std::scientific << std::setprecision(15);
+                    fout_B_array_kspace << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].real() << " " << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].imag() << std::endl;
+                }
+            }
+        }
+    }
+    fout_B_array_kspace.close();
+
 
     deallocate(dphi2_dumn_realspace_tmp);
     deallocate(dphi2_dumn_realspace_symm);
