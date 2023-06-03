@@ -35,13 +35,13 @@ List of supported input variables
    :ref:`LOWER_TEMP <anphon_lower_temp>`, :ref:`MAXITER <anphon_maxiter>`, :ref:`MIXALPHA <anphon_mixalpha>`, :ref:`RELAX_STR <anphon_relax_str>`
    :ref:`RESTART_SCPH <anphon_restart_scph>`, :ref:`SELF_OFFDIAG <anphon_self_offdiag>`, :ref:`TOL_SCPH <anphon_tol_scph>`, :ref:`WARMSTART <anphon_warmstart>`
    **&qha**
-   :ref:`KMESH_INTERPOLATE <anphon_qha_kmesh_interpolate>`, :ref:`KMESH_QHA <anphon_qha_kmesh_qha>`, :ref:`LOWER_TEMP <anphon_qha_lower_temp>`, :ref:`RELAX_STR <anphon_qha_relax_str>`
+   :ref:`KMESH_INTERPOLATE <anphon_qha_kmesh_interpolate>`, :ref:`KMESH_QHA <anphon_qha_kmesh_qha>`, :ref:`LOWER_TEMP <anphon_qha_lower_temp>`, :ref:`QHA_SCHEME <anphon_qha_scheme>`
+   :ref:`RELAX_STR <anphon_qha_relax_str>`
    **&relax**
    :ref:`ADD_HESS_DIAG <anphon_add_hess_diag>`, :ref:`ALPHA_STDECENT <anphon_alpha_stdecent>`, :ref:`CELL_CONV_TOL <anphon_cell_conv_tol>`, :ref:`COOLING_U0_INDEX <anphon_cooling_u0_index>`
    :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>`, :ref:`COORD_CONV_TOL <anphon_coord_conv_tol>`, :ref:`MAX_STR_ITER <anphon_max_str_iter>`, :ref:`MIXBETA_CELL <anphon_mixbeta_cell>`
-   :ref:`MIXBETA_COORD <anphon_mixbeta_coord>`, :ref:`QHA_SCHEME <anphon_qha_scheme>`, :ref:`RELAX_ALGO <anphon_relax_algo>`, :ref:`RENORM_2TO1ST <anphon_renorm_2to1st>`
-   :ref:`RENORM_34TO1ST <anphon_renorm_34to1st>`, :ref:`RENORM_3TO2ND <anphon_renorm_3to2nd>`, :ref:`SET_INIT_STR <anphon_set_init_str>`, :ref:`STAT_PRESSURE <anphon_stat_pressure>`
-   :ref:`STRAIN_IFC_DIR <anphon_strain_ifc_dir>`
+   :ref:`MIXBETA_COORD <anphon_mixbeta_coord>`,  :ref:`RELAX_ALGO <anphon_relax_algo>`, :ref:`RENORM_2TO1ST <anphon_renorm_2to1st>`, :ref:`RENORM_34TO1ST <anphon_renorm_34to1st>`
+   :ref:`RENORM_3TO2ND <anphon_renorm_3to2nd>`, :ref:`SET_INIT_STR <anphon_set_init_str>`, :ref:`STAT_PRESSURE <anphon_stat_pressure>`, :ref:`STRAIN_IFC_DIR <anphon_strain_ifc_dir>`
    **&analysis**
    :ref:`ANIME <anphon_anime>`, :ref:`ANIME_FRAMES <anphon_anime_frames>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`GRUNEISEN <anphon_gruneisen>`
    :ref:`ISOFACT <anphon_isofact>`, :ref:`ISOTOPE <anphon_isotope>`, :ref:`KAPPA_COHERENT <anphon_kappa_coherent>`, :ref:`KAPPA_SPEC <anphon_kappa_spec>`
@@ -561,6 +561,24 @@ Description of input variables
 
 ````
 
+.. _anphon_qha_scheme:
+
+* QHA_SCHEME-tag = 0 | 1 | 2
+
+ === ==============================================================
+  0   Full optimization within QHA.
+  1   zero-static internal stress approximation (ZSISA).
+  2   volumetric ZSISA (v-ZSISA).
+ === ==============================================================
+
+ :Default: 0
+ :Type: Integer
+
+ :Description: This option is used only when ``mode = QHA`` and ``RELAX_STR = 2``.
+
+````
+
+
 
 "&relax"-field (Read only when ``RELAX_STR != 0``)
 ++++++++++++++++
@@ -720,23 +738,6 @@ Description of input variables
 
  :Default: 0.0
  :Type: Double
-
-````
-
-.. _anphon_qha_scheme:
-
-* QHA_SCHEME-tag = 0 | 1 | 2
-
- === ==============================================================
-  0   Full optimization within QHA.
-  1   zero-static internal stress approximation (ZSISA).
-  2   volumetric ZSISA (v-ZSISA).
- === ==============================================================
-
- :Default: 0
- :Type: Integer
-
- :Description: This option is used only when ``mode = QHA`` and ``RELAX_STR = 2``.
 
 ````
 
