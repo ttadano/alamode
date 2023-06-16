@@ -475,4 +475,4 @@ class OpenmxParser(object):
         if len(etot) == 0:
             raise RuntimeError("Total energy not found.")
 
-        return np.array(etot, dtype=np.float)
+        return np.array(etot, dtype=float)
