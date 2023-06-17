@@ -108,7 +108,8 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const std::string &basis_force_constant,
                                    const int nmaxsave,
                                    const double fc_zero_threshold,
-                                   const int compression_level)
+                                   const int compression_level,
+                                   const std::string &format_pattern)
 {
     size_t i;
 
@@ -130,6 +131,7 @@ void InputSetter::set_general_vars(ALM *alm,
     alm->set_forceconstant_basis(basis_force_constant);
     alm->set_nmaxsave(nmaxsave);
     alm->set_compression_level(compression_level);
+    alm->set_pattern_format(format_pattern);
 
     if (mode == "suggest") {
         alm->set_displacement_basis(str_disp_basis);

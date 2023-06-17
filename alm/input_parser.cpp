@@ -264,13 +264,15 @@ void InputParser::parse_general_vars(ALM *alm)
     std::vector<std::string> kdname_v, periodic_v;
     std::vector<std::string> supercell_v, primcell_v;
     std::string structure_file{};
+    std::string format_pattern;
 
     const std::vector<std::string> input_list{
             "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
             "DBASIS", "TRIMEVEN", "VERBOSITY",
             "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FCSYM_BASIS",
             "NMAXSAVE", "FC3_SHENGBTE", "FC2_QEFC", "FCS_ALAMODE", "FC_ZERO_THR",
-            "SUPERCELL", "PRIMCELL", "STRUCTURE_FILE", "COMPRESSION"
+            "SUPERCELL", "PRIMCELL", "STRUCTURE_FILE", "COMPRESSION",
+            "FORMAT_PATTERN"
     };
     std::vector<std::string> no_defaults{"PREFIX", "MODE"};
     std::map<std::string, std::string> general_var_dict;
@@ -449,6 +451,11 @@ void InputParser::parse_general_vars(ALM *alm)
     } else {
         assign_val(fc_zero_threshold, "FC_ZERO_THR", general_var_dict);
     }
+    if (!general_var_dict["FORMAT_PATTERN"].empty()) {
+        assign_val(format_pattern, "FORMAT_PATTERN", general_var_dict);
+    } else {
+        format_pattern = "yaml";
+    }
 
     if (mode == "suggest") {
         if (general_var_dict["DBASIS"].empty()) {
@@ -485,7 +492,8 @@ void InputParser::parse_general_vars(ALM *alm)
                                    basis_force_constant,
                                    nmaxsave,
                                    fc_zero_threshold,
-                                   compression_level);
+                                   compression_level,
+                                   format_pattern);
 
     kdname_v.clear();
     periodic_v.clear();

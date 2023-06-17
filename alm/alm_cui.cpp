@@ -84,7 +84,8 @@ void ALMCUI::run(const int narg,
         }
     } else if (run_mode == "suggest") {
         alm->run_suggest();
-        alm->writer->write_displacement_pattern(alm->cluster,
+        alm->writer->write_displacement_pattern(alm->system,
+                                                alm->cluster,
                                                 alm->displace,
                                                 alm->files->get_prefix(),
                                                 alm->get_verbosity());

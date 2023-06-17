@@ -222,6 +222,10 @@ public:
 
     std::string get_input_var(const std::string &key) const;
 
+    void set_pattern_format(const std::string &format_name) const;
+
+    std::string get_format_pattern() const;
+
 private:
 
     int verbosity;

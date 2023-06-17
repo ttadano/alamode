@@ -70,7 +70,8 @@ public:
                           const std::string &basis_force_constant,
                           const int nmaxsave,
                           const double fc_zero_threshold,
-                          const int compression_level);
+                          const int compression_level,
+                          const std::string &format_pattern);
 
     void set_optimize_vars(ALM *alm,
                            const std::vector<std::vector<double>> &u_train_in,

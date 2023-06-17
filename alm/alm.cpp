@@ -801,3 +801,13 @@ std::string ALM::get_input_var(const std::string &key) const
 {
     return writer->get_input_var(key);
 }
+
+void ALM::set_pattern_format(const std::string &format_name) const
+{
+    writer->set_format_patternfile(format_name);
+}
+
+std::string ALM::get_format_pattern() const
+{
+    return writer->get_format_patternfile();
+}

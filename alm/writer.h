@@ -120,8 +120,9 @@ public:
                           const std::unique_ptr<Optimize> &optimize,
                           const std::unique_ptr<Files> &files,
                           const std::string run_mode) const;
-
-    void write_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
+    
+    void write_displacement_pattern(const std::unique_ptr<System> &system,
+                                    const std::unique_ptr<Cluster> &cluster,
                                     const std::unique_ptr<Displace> &displace,
                                     const std::string prefix,
                                     const int verbosity) const;
@@ -155,6 +156,10 @@ public:
     void set_input_vars(const std::map<std::string, std::string> &input_var_dict);
 
     std::string get_input_var(const std::string &key) const;
+
+    void set_format_patternfile(const std::string &format_name);
+
+    std::string get_format_patternfile() const;
 
 private:
     void write_force_constants(const std::unique_ptr<Cluster> &cluster,
@@ -229,6 +234,7 @@ private:
     int output_maxorder, compression_level;
     std::string file_fcs, file_hes;
     std::string filename_fcs;
+    std::string format_pattern;
 
     std::map<std::string, std::string> input_variables;
 

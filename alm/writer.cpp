@@ -27,8 +27,10 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
+#include <boost/algorithm/string.hpp>
 #include <highfive/H5File.hpp>
 #include <highfive/H5Easy.hpp>
+
 #ifdef _BOOST_LIBRARY_LINKABLE
 #include <boost/asio/ip/host_name.hpp>
 #endif
@@ -43,6 +45,7 @@ Writer::Writer() : output_maxorder(5), compression_level(1)
     save_format_flags["qefc"] = 0;
     save_format_flags["hessian"] = 0;
     filename_fcs = "";
+    format_pattern = "yaml";
 }
 
 Writer::~Writer() = default;
@@ -424,7 +427,8 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
     }
 }
 
-void Writer::write_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
+void Writer::write_displacement_pattern(const std::unique_ptr<System> &system,
+                                        const std::unique_ptr<Cluster> &cluster,
                                         const std::unique_ptr<Displace> &displace,
                                         const std::string prefix,
                                         const int verbosity) const
@@ -436,49 +440,164 @@ void Writer::write_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
 
     if (verbosity > 0) {
         std::cout << " Suggested displacement patterns are printed in the following files: " << std::endl;
+        if (format_pattern == "old")
+            std::cout << " FORMAT_PATTERN = old is set in the input. The old format will be used.\n";
     }
 
-    for (auto order = 0; order < maxorder; ++order) {
+    if (format_pattern == "yaml") {
+        for (auto order = 0; order < maxorder; ++order) {
 
-        if (order == 0) {
-            file_disp_pattern = prefix + ".pattern_HARMONIC";
-        } else {
-            file_disp_pattern = prefix + ".pattern_ANHARM"
-                                + std::to_string(order + 2);
-        }
-
-        ofs_pattern.open(file_disp_pattern.c_str(), std::ios::out);
-        if (!ofs_pattern) {
-            exit("write_displacement_pattern",
-                 "Cannot open file_disp_pattern");
-        }
-
-        auto counter = 0;
-
-        ofs_pattern << "Basis : " << displace->get_disp_basis()[0] << std::endl;
-
-        for (auto entry: displace->get_pattern_all(order)) {
-            ++counter;
-
-            ofs_pattern << std::setw(5) << counter << ":"
-                        << std::setw(5) << entry.atoms.size() << std::endl;
-            for (size_t i = 0; i < entry.atoms.size(); ++i) {
-                ofs_pattern << std::setw(7) << entry.atoms[i] + 1;
-                for (auto j = 0; j < 3; ++j) {
-                    ofs_pattern << std::setw(15) << entry.directions[3 * i + j];
-                }
-                ofs_pattern << std::endl;
+            if (order == 0) {
+                file_disp_pattern = prefix + ".pattern_HARMONIC";
+            } else {
+                file_disp_pattern = prefix + ".pattern_ANHARM"
+                                    + std::to_string(order + 2);
             }
+
+            ofs_pattern.open(file_disp_pattern.c_str(), std::ios::out);
+            if (!ofs_pattern) {
+                exit("write_displacement_pattern",
+                     "Cannot open file_disp_pattern");
+            }
+
+            auto counter = 0;
+
+            ofs_pattern << "ALM_version: " << ALAMODE_VERSION << '\n';
+            ofs_pattern << "structure:\n";
+            ofs_pattern << "  elements: [";
+            for (auto i = 0; i < system->get_supercell().number_of_elems; ++i) {
+                ofs_pattern << system->get_kdname()[i];
+                if (i == system->get_supercell().number_of_elems - 1) {
+                    ofs_pattern << "]";
+                } else {
+                    ofs_pattern << ", ";
+                }
+            }
+            ofs_pattern << '\n';
+            ofs_pattern << "  supercell:\n";
+            ofs_pattern << "    lattice_vectors: [";
+            for (auto j = 0; j < 3; ++j) {
+                if (j > 0) ofs_pattern << "                      ";
+                for (auto i = 0; i < 3; ++i) {
+                    ofs_pattern << std::setw(15) << system->get_supercell().lattice_vector(i, j);
+                    if (j == 2 && i == 2) {
+                        ofs_pattern << "]";
+                    } else {
+                        ofs_pattern << ", ";
+                    }
+                }
+                ofs_pattern << '\n';
+            }
+            ofs_pattern << "    coordinates: [";
+            for (auto j = 0; j < system->get_supercell().number_of_atoms; ++j) {
+                if (j > 0) ofs_pattern << "                  ";
+                for (auto i = 0; i < 3; ++i) {
+                    ofs_pattern << std::setw(15) << system->get_supercell().x_fractional(j, i);
+                    if ((j == system->get_supercell().number_of_atoms - 1) && i == 2) {
+                        ofs_pattern << "]";
+                    } else {
+                        ofs_pattern << ", ";
+                    }
+                }
+                ofs_pattern << '\n';
+            }
+            ofs_pattern << "    atomic_index: [";
+            for (auto j = 0; j < system->get_supercell().number_of_atoms; ++j) {
+                if (j > 0) ofs_pattern << "                   ";
+                ofs_pattern << system->get_supercell().kind[j];
+                if (j == system->get_supercell().number_of_atoms - 1) {
+                    ofs_pattern << "]";
+                } else {
+                    ofs_pattern << ", ";
+                }
+                ofs_pattern << '\n';
+            }
+
+            ofs_pattern << "displacements:\n";
+            ofs_pattern << "  basis: " << displace->get_disp_basis()[0] << std::endl;
+            ofs_pattern << "  patterns:\n";
+            for (auto entry: displace->get_pattern_all(order)) {
+                ++counter;
+
+                ofs_pattern << "  - id: " << counter << '\n';
+                ofs_pattern << "    atoms: [";
+                for (size_t i = 0; i < entry.atoms.size(); ++i) {
+                    ofs_pattern << entry.atoms[i] + 1;
+                    if (i == entry.atoms.size() - 1) {
+                        ofs_pattern << "]";
+                    } else {
+                        ofs_pattern << ", ";
+                    }
+                }
+                ofs_pattern << '\n';
+                ofs_pattern << "    directions:      [";
+                for (size_t i = 0; i < entry.atoms.size(); ++i) {
+                    if (i > 0) ofs_pattern << "                      ";
+                    for (auto j = 0; j < 3; ++j) {
+                        ofs_pattern << std::setw(15) << entry.directions[3 * i + j];
+                        if ((i == entry.atoms.size() - 1) && j == 2) {
+                            ofs_pattern << "]";
+                        } else {
+                            ofs_pattern << ", ";
+                        }
+                    }
+                    ofs_pattern << '\n';
+                }
+            }
+
+            ofs_pattern.close();
+
+            if (verbosity > 0) {
+                std::cout << "  " << cluster->get_ordername(order)
+                          << " : " << file_disp_pattern << std::endl;
+            }
+
         }
 
-        ofs_pattern.close();
+    } else if (format_pattern == "old") {
+        for (auto order = 0; order < maxorder; ++order) {
 
-        if (verbosity > 0) {
-            std::cout << "  " << cluster->get_ordername(order)
-                      << " : " << file_disp_pattern << std::endl;
+            if (order == 0) {
+                file_disp_pattern = prefix + ".pattern_HARMONIC";
+            } else {
+                file_disp_pattern = prefix + ".pattern_ANHARM"
+                                    + std::to_string(order + 2);
+            }
+
+            ofs_pattern.open(file_disp_pattern.c_str(), std::ios::out);
+            if (!ofs_pattern) {
+                exit("write_displacement_pattern",
+                     "Cannot open file_disp_pattern");
+            }
+
+            auto counter = 0;
+
+            ofs_pattern << "Basis : " << displace->get_disp_basis()[0] << std::endl;
+
+            for (auto entry: displace->get_pattern_all(order)) {
+                ++counter;
+
+                ofs_pattern << std::setw(5) << counter << ":"
+                            << std::setw(5) << entry.atoms.size() << std::endl;
+                for (size_t i = 0; i < entry.atoms.size(); ++i) {
+                    ofs_pattern << std::setw(7) << entry.atoms[i] + 1;
+                    for (auto j = 0; j < 3; ++j) {
+                        ofs_pattern << std::setw(15) << entry.directions[3 * i + j];
+                    }
+                    ofs_pattern << std::endl;
+                }
+            }
+
+            ofs_pattern.close();
+
+            if (verbosity > 0) {
+                std::cout << "  " << cluster->get_ordername(order)
+                          << " : " << file_disp_pattern << std::endl;
+            }
+
         }
-
     }
+
     if (verbosity > 0) std::cout << std::endl;
 }
 
@@ -902,7 +1021,7 @@ void Writer::write_structures_h5(H5Easy::File &file,
     dump(file, "/" + celltype + "/number_of_elements", cell.number_of_elems);
     dump(file, "/" + celltype + "/fractional_coordinate", cell.x_fractional);
     std::vector<int> kind_copy(cell.kind);
-    for (auto &it : kind_copy) it -= 1;
+    for (auto &it: kind_copy) it -= 1;
     dump(file, "/" + celltype + "/atomic_kinds", kind_copy);
     dump(file, "/" + celltype + "/elements", kind_names);
     dump(file, "/" + celltype + "/spin_polarized", spin.lspin ? 1 : 0);
@@ -1423,6 +1542,24 @@ std::string Writer::get_input_var(const std::string &key) const
     } else {
         return "";
     }
+}
+
+void Writer::set_format_patternfile(const std::string &format_name)
+{
+    auto format_lower = boost::algorithm::to_lower_copy(format_name);
+
+    if (format_name != "yaml" and format_name != "old") {
+        warn("set_format_patternfile",
+             "Invalid format. The default YAML format will be used");
+        format_lower = "yaml";
+    }
+
+    format_pattern = format_lower;
+}
+
+std::string Writer::get_format_patternfile() const
+{
+    return format_pattern;
 }
 
 
