@@ -39,7 +39,6 @@ except ModuleNotFoundError:
 class VaspParser(object):
 
     def __init__(self):
-        #self._support_h5parse = importlib.util.find_spec("py4vasp") is not None
         self._support_h5parse = find_spec("py4vasp") is not None
         self._prefix = None
         self._lattice_vector = None
@@ -112,14 +111,21 @@ class VaspParser(object):
         self._x_fractional = xf
         self._initial_structure_loaded = True
 
-    def generate_structures(self, prefix, header_list, disp_list):
+    def update_initial_structure(self, structure_dict):
+        print(structure_dict)
+
+    def generate_structures(self, prefix, header_list, disp_list, updated_structure=None):
 
         self._set_number_of_zerofill(len(disp_list))
         self._prefix = prefix
         self._counter = 1
 
-        for header, disp in zip(header_list, disp_list):
-            self._generate_input(header, disp)
+        if updated_structure:
+            for header, disp in zip(header_list, disp_list):
+                self._generate_input2(header, disp, updated_structure)
+        else:
+            for header, disp in zip(header_list, disp_list):
+                self._generate_input(header, disp)
 
     def parse(self, initial_poscar, target_files, offset_file, str_unit,
               output_flags, filter_emin=None, filter_emax=None):
@@ -201,6 +207,49 @@ class VaspParser(object):
             for i in range(len(disp)):
                 for j in range(3):
                     f.write("%20.15f" % (self._x_fractional[i][j] + disp[i][j]))
+                f.write("\n")
+
+        self._counter += 1
+
+    def _generate_input2(self, header, disp, updated_structure):
+
+        filename = self._prefix + str(self._counter).zfill(self._nzerofills) + ".POSCAR"
+        lavec = updated_structure['lattice_vector'] * self._BOHR_TO_ANGSTROM
+
+        kd = updated_structure['kd']
+        kd_uniq = []
+        for entry in kd:
+            if entry not in kd_uniq:
+                kd_uniq.append(entry)
+
+        nat_elem = []
+        for entry in kd_uniq:
+            nat_elem.append(kd.count(entry))
+
+        x_fractional = updated_structure['x_fractional']
+
+        with open(filename, 'w') as f:
+            f.write("%s\n" % header)
+            f.write("%s\n" % "1.0")
+            for i in range(3):
+                f.write("%20.15f %20.15f %20.15f\n" % (lavec[0][i],
+                                                       lavec[1][i],
+                                                       lavec[2][i]))
+
+            for i in range(len(self._elements)):
+                f.write("%s " % self._elements[i])
+            if len(self._elements) > 0:
+                f.write("\n")
+
+            for i in range(len(nat_elem)):
+                f.write("%d " % nat_elem[i])
+            f.write("\n")
+
+            f.write("Direct\n")
+
+            for i in range(len(disp)):
+                for j in range(3):
+                    f.write("%20.15f" % (x_fractional[i][j] + disp[i][j]))
                 f.write("\n")
 
         self._counter += 1

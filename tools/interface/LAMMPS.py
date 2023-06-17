@@ -85,7 +85,7 @@ class LammpsParser(object):
         self._charges = charges
         self._initial_structure_loaded = True
 
-    def generate_structures(self, prefix, header_list, disp_list):
+    def generate_structures(self, prefix, header_list, disp_list, updated_structure=None):
 
         self._set_number_of_zerofill(len(disp_list))
         self._prefix = prefix
