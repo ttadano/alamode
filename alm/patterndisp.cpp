@@ -48,9 +48,6 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
     std::string preferred_basis;
     std::vector<int> group_tmp;
     ConstraintSparseForm *constsym;
-    std::vector<std::vector<double>> const_tmp;
-
-    std::vector<int> pairs;
     std::set<int> *include_set;
     std::set<DispAtomSet> *dispset;
 
@@ -79,9 +76,6 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
     } else {
         preferred_basis = "Lattice";
     }
-
-    // std::cout << "Preferred_basis = " << preferred_basis << std::endl;
-    // std::cout << ncompat_cart << " " << ncompat_latt << std::endl;
 
     allocate(fc_table, maxorder);
     allocate(fc_zeros, maxorder);
@@ -220,7 +214,7 @@ std::string Displace::get_disp_basis() const
     return disp_basis;
 }
 
-void Displace::set_disp_basis(const std::string disp_basis_in)
+void Displace::set_disp_basis(const std::string &disp_basis_in)
 {
     disp_basis = disp_basis_in;
 }
@@ -247,11 +241,10 @@ void Displace::generate_pattern_all(const int maxorder,
                                     const Eigen::Matrix3d &lavec,
                                     const std::unique_ptr<Symmetry> &symmetry,
                                     const std::set<DispAtomSet> *dispset_in,
-                                    const std::string preferred_basis) const
+                                    const std::string &preferred_basis) const
 {
     size_t i, j;
     int order;
-    //double disp_tmp[3];
     Eigen::Vector3d disp_tmp;
 
     std::vector<int> atoms, vec_tmp, nums;
@@ -320,11 +313,6 @@ void Displace::generate_pattern_all(const int maxorder,
                     if (preferred_basis == "Lattice") {
                         disp_tmp = lavec.inverse() * disp_tmp;
                         disp_tmp /= disp_tmp.norm(); // Do we really need this?
-                        //rotvec(disp_tmp, disp_tmp, lavec);
-                        //double norm = 0.0;
-                        //for (j = 0; j < 3; ++j) norm += disp_tmp[j] * disp_tmp[j];
-                        //norm = std::sqrt(norm);
-                        //for (j = 0; j < 3; ++j) disp_tmp[j] /= norm;
                     }
 
                     for (j = 0; j < 3; ++j) {
@@ -367,10 +355,10 @@ void Displace::generate_signvecs(const int N,
 void Displace::find_unique_sign_pairs(const int natom_disp_in,
                                       const size_t nat,
                                       const std::unique_ptr<Symmetry> &symmetry,
-                                      const std::vector<std::vector<int>> sign_in,
+                                      const std::vector<std::vector<int>> &sign_in,
                                       const std::vector<int> &pair_in,
                                       std::vector<std::vector<int>> &sign_out,
-                                      const std::string preferred_basis) const
+                                      const std::string &preferred_basis) const
 {
     size_t isym, i;
     int j, k;
@@ -384,7 +372,7 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
 
     std::vector<int> symnum_vec;
     std::vector<int>::const_iterator loc;
-    std::vector<int> atom_tmp, pair_tmp;
+    std::vector<int> pair_tmp;
     std::vector<std::vector<int>> sign_found;
     std::vector<int> sign_tmp;
     std::vector<int> list_disp_atom;
@@ -413,7 +401,7 @@ void Displace::find_unique_sign_pairs(const int natom_disp_in,
         disp[pair_in[i] / 3][pair_in[i] % 3] = 1.0;
     }
 
-    const size_t natom_disp = static_cast<size_t>(natom_disp_in);
+    const auto natom_disp = static_cast<size_t>(natom_disp_in);
 
     // Find symmetry operations which can be used to
     // reduce the number of sign patterns (+, -) of displacements

@@ -129,7 +129,7 @@ public:
 
     std::string get_disp_basis() const;
 
-    void set_disp_basis(const std::string);
+    void set_disp_basis(const std::string &);
 
     const std::vector<AtomWithDirection> &get_pattern_all(const int) const;
 
@@ -149,7 +149,7 @@ private:
                               const Eigen::Matrix3d &lavec,
                               const std::unique_ptr<Symmetry> &symmetry,
                               const std::set<DispAtomSet> *dispset_in,
-                              const std::string preferred_basis) const;
+                              const std::string &preferred_basis) const;
 
     void generate_signvecs(const int,
                            std::vector<std::vector<int>> &,
@@ -158,9 +158,9 @@ private:
     void find_unique_sign_pairs(const int natom_disp_in,
                                 const size_t nat,
                                 const std::unique_ptr<Symmetry> &symmetry,
-                                const std::vector<std::vector<int>> sign_in,
+                                const std::vector<std::vector<int>> &sign_in,
                                 const std::vector<int> &pair_in,
                                 std::vector<std::vector<int>> &sign_out,
-                                const std::string preferred_basis) const;
+                                const std::string &preferred_basis) const;
 };
 }
