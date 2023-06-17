@@ -154,7 +154,16 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
 
         size_t m = 0;
 
+        auto fc_table_copy = fc_table[order];
+
+        auto nbeg = 0;
+        auto nend = 0;
+
         for (size_t i = 0; i < nequiv[order].size(); ++i) {
+
+            nend += nequiv[order][i];
+            std::sort(fc_table_copy.begin() + nbeg, fc_table_copy.begin() + nend);
+            nbeg = nend;
 
             if (include_set[order].find(i) != include_set[order].end()) {
 
@@ -164,7 +173,8 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
                 // Here, duplicate entries will be removed.
                 // For example, (iij) will be reduced to (ij).
                 for (auto j = 0; j < order + 1; ++j) {
-                    group_tmp.push_back(fc_table[order][m].elems[j]);
+                    group_tmp.push_back(fc_table_copy[m].elems[j]);
+
                 }
                 group_tmp.erase(std::unique(group_tmp.begin(), group_tmp.end()),
                                 group_tmp.end());
