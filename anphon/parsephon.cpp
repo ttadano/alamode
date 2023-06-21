@@ -77,10 +77,10 @@ void Input::parce_input(int narg,
              "&general entry not found in the input file");
     parse_general_vars();
 
-    if (!locate_tag("&cell"))
-        exit("parse_input",
-             "&cell entry not found in the input file");
-    parse_cell_parameter();
+    //if (!locate_tag("&cell"))
+    //    exit("parse_input",
+    //         "&cell entry not found in the input file");
+    if (locate_tag("&cell")) parse_cell_parameter();
 
     const auto use_defaults_for_analysis = !locate_tag("&analysis");
     parse_analysis_vars(use_defaults_for_analysis);
