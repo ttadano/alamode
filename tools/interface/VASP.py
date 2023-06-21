@@ -123,6 +123,7 @@ class VaspParser(object):
         if updated_structure:
             for header, disp in zip(header_list, disp_list):
                 self._generate_input2(header, disp, updated_structure)
+            self._generate_original_supercell(updated_structure)
         else:
             for header, disp in zip(header_list, disp_list):
                 self._generate_input(header, disp)
@@ -181,7 +182,7 @@ class VaspParser(object):
 
         return disp_merged
 
-    def _generate_input(self, header, disp):
+    def _generate_input(self, header, disp, save_supercell_structure=True):
 
         filename = self._prefix + str(self._counter).zfill(self._nzerofills) + ".POSCAR"
 
@@ -253,6 +254,46 @@ class VaspParser(object):
                 f.write("\n")
 
         self._counter += 1
+
+    def _generate_original_supercell(self, structure):
+
+        filename = "SPOSCAR0"
+        lavec = structure['lattice_vector'] * self._BOHR_TO_ANGSTROM
+        kd = structure['kd']
+        kd_uniq = []
+        for entry in kd:
+            if entry not in kd_uniq:
+                kd_uniq.append(entry)
+
+        nat_elem = []
+        for entry in kd_uniq:
+            nat_elem.append(kd.count(entry))
+
+        x_fractional = structure['x_fractional']
+
+        with open(filename, 'w') as f:
+            f.write("Supercell without displacements\n")
+            f.write("%s\n" % "1.0")
+            for i in range(3):
+                f.write("%20.15f %20.15f %20.15f\n" % (lavec[0][i],
+                                                       lavec[1][i],
+                                                       lavec[2][i]))
+
+            for i in range(len(self._elements)):
+                f.write("%s " % self._elements[i])
+            if len(self._elements) > 0:
+                f.write("\n")
+
+            for i in range(len(nat_elem)):
+                f.write("%d " % nat_elem[i])
+            f.write("\n")
+
+            f.write("Direct\n")
+
+            for i in range(len(x_fractional)):
+                for j in range(3):
+                    f.write("%20.15f" % x_fractional[i][j])
+                f.write("\n")
 
     def _print_displacements_and_forces(self, target_files,
                                         file_offset,

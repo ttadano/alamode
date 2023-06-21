@@ -443,7 +443,7 @@ class AlamodeDisplace(object):
         if self._updated_structure:
             nat_ref = self._updated_structure['nat']
             disp = np.zeros((nat_ref, 3))
-            invlavec = self._updated_structure['inverse_lattice_vector']
+            invlavec = self._updated_structure['inverse_lattice_vector'] / self._BOHR_TO_ANGSTROM
         else:
             nat_ref = self._supercell.nat
             disp = np.zeros((nat_ref, 3))
