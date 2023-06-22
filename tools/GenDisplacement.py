@@ -327,7 +327,7 @@ class AlamodeDisplace(object):
         except:
             try:
                 for target in file_mddata:
-                    disp = np.loadtxt(target, dtype=np.float)
+                    disp = np.loadtxt(target, dtype=float)
                     disp *= self._BOHR_TO_ANGSTROM
                     disp_merged.extend(np.reshape(disp, (len(disp) // self._supercell.nat, self._supercell.nat, 3)))
             except:

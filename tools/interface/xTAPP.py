@@ -489,7 +489,7 @@ class XtappParser(object):
 
         f.close()
 
-        return np.array(x, dtype=np.float)
+        return np.array(x, dtype=float)
 
     @staticmethod
     def _get_atomicforces_xtapp(str_file, nat):
@@ -513,7 +513,7 @@ class XtappParser(object):
 
         f.close()
 
-        return np.array(force, dtype=np.float)
+        return np.array(force, dtype=float)
 
     @staticmethod
     def _get_energies_xtapp(str_file):
@@ -532,7 +532,7 @@ class XtappParser(object):
         if not found_tag:
             raise RuntimeError("%s tag not found in %s" % (search_tag, str_file))
 
-        return np.array(etot, dtype=np.float)
+        return np.array(etot, dtype=float)
 
     @staticmethod
     def _refold(x):

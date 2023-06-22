@@ -195,7 +195,7 @@ class QEParser(object):
             epot_offset = self._get_energies_pwout(file_offset)
             if epot_offset is None:
                 raise RuntimeError("File %s does not contain energy entry" % file_offset)
-            epot_offset = np.array(epot_offset, dtype=np.float)
+            epot_offset = np.array(epot_offset, dtype=float)
             if len(epot_offset) > 1:
                 raise RuntimeError("File %s contains too many energy entries" % file_offset)
 
@@ -223,7 +223,7 @@ class QEParser(object):
             if ndata_energy != num_data_disp:
                 raise RuntimeError("The numbers of displacement and energy entries are different.")
 
-            epot = np.array(epot, dtype=np.float)
+            epot = np.array(epot, dtype=float)
             epot -= epot_offset
             epot *= self._RYDBERG_TO_EV
 
@@ -941,7 +941,7 @@ class QEParser(object):
             line = f.readline()
         f.close()
 
-        x_additional = np.array(x_additional, dtype=np.float)
+        x_additional = np.array(x_additional, dtype=float)
         # The basis of the coordinate in x_additional can be different
         # from that of x. Therefore, perform basis conversion here.
         if num_data_disp_extra > 0:
@@ -999,7 +999,7 @@ class QEParser(object):
             print(search_tag_QE6, file=sys.stderr)
             return None
 
-        return np.array(force, dtype=np.float)
+        return np.array(force, dtype=float)
 
     @staticmethod
     def _get_energies_pwout(pwout_file):
@@ -1016,7 +1016,7 @@ class QEParser(object):
             print("%s tag not found in %s" % (search_tag, pwout_file), file=sys.stderr)
             return None
 
-        return np.array(etot, dtype=np.float)
+        return np.array(etot, dtype=float)
 
     @staticmethod
     def _get_borninfo_phout(phout_file):
