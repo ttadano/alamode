@@ -36,6 +36,7 @@
 #include "scph.h"
 #include "ewald.h"
 #include "dielec.h"
+#include "qha.h"
 
 #ifdef _OPENMP
 
@@ -129,6 +130,7 @@ void PHON::create_pointers()
     scph = new Scph(this);
     ewald = new Ewald(this);
     dielec = new Dielec(this);
+    qha = new Qha(this);
 }
 
 void PHON::destroy_pointers() const
@@ -153,6 +155,7 @@ void PHON::destroy_pointers() const
     delete scph;
     delete ewald;
     delete dielec;
+    delete qha;
 }
 
 void PHON::setup_base() const

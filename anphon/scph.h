@@ -77,38 +77,55 @@ public:
     unsigned int maxiter;
     bool print_self_consistent_fc2;
     bool selfenergy_offdiagonal;
-    int relax_str;
+    //int relax_str;
 
     // variables related to structural optimization
-    int relax_algo;
-    int max_str_iter;
-    double coord_conv_tol;
-    double mixbeta_coord;
-    double alpha_steepest_decent;
-    double cell_conv_tol;
-    double mixbeta_cell;
+//    int relax_algo;
+//    int max_str_iter;
+//    double coord_conv_tol;
+//    double mixbeta_coord;
+//    double alpha_steepest_decent;
+//    double cell_conv_tol;
+//    double mixbeta_cell;
 
-    int set_init_str;
-    int cooling_u0_index; // used if set_init_str is 3 
-    double cooling_u0_thr; // used if set_init_str is 3
-    double add_hess_diag;
-    double stat_pressure;
+//    int set_init_str;
+//    int cooling_u0_index; // used if set_init_str is 3
+//    double cooling_u0_thr; // used if set_init_str is 3
+//    double add_hess_diag;
+//    double stat_pressure;
 
     // optimization scheme used in QHA
     int qha_scheme;
 
     // options of IFC renormalization
-    int renorm_3to2nd;
-    int renorm_2to1st;
-    int renorm_34to1st;
-    std::string strain_IFC_dir;
+//    int renorm_3to2nd;
+//    int renorm_2to1st;
+//    int renorm_34to1st;
+//    std::string strain_IFC_dir;
 
     // initial strain and displacement
-    double **init_u_tensor = nullptr;
-    std::vector<double> init_u0;
+//    double **init_u_tensor = nullptr;
+//    std::vector<double> init_u0;
 
     // zero-th order term of the potential energy surface
-    double *V0 = nullptr;
+//    double *V0 = nullptr;
+
+    void zerofill_harmonic_dymat_renormalize(std::complex<double> ****,
+                                             unsigned int);
+
+
+    void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
+                                         const unsigned int NT,
+                                         const int type = 0);
+
+    void load_scph_dymat_from_file(std::complex<double> ****);
+
+    void load_scph_dymat_from_file(std::complex<double> ****,
+                                   std::string);
+
+    void store_scph_dymat_to_file(const std::complex<double> *const *const *const *,
+                                  std::string);
+
 
 private:
 
@@ -151,69 +168,32 @@ private:
 
     void setup_transform_symmetry();
 
-    void load_scph_dymat_from_file(std::complex<double> ****);
-
-    void load_scph_dymat_from_file(std::complex<double> ****,
-                                   std::string);
-
-    void store_scph_dymat_to_file(const std::complex<double> *const *const *const *,
-                                  std::string);
-
-    void load_V0_from_file(double *);
-
-    void store_V0_to_file(const double *const);
-
-    void zerofill_harmonic_dymat_renormalize(std::complex<double> ****,
-                                             unsigned int);
 
     void exec_scph_main(std::complex<double> ****);
 
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                               std::complex<double> ****);
 
-    void exec_QHA_relax_main(std::complex<double> ****,
-                             std::complex<double> ****);
+//    void exec_QHA_relax_main(std::complex<double> ****,
+//                             std::complex<double> ****);
+//
+//    void exec_perturbative_QHA(std::complex<double> ****,
+//                               std::complex<double> ****);
 
-    void exec_perturbative_QHA(std::complex<double> ****,
-                               std::complex<double> ****);
-
-    void read_C1_array(double *const);
-
-    void read_elastic_constants(double *const *const,
-                                double *const *const *const);
-
-    void set_initial_q0(double *const);
 
     void precompute_dymat_harm(const unsigned int nk_in,
                                double **xk_in,
                                double **kvec_in);
-
-    void set_initial_strain(double *const *const);
 
     void read_cell_opt_input(double &,
                              double &,
                              double &,
                              double &);
 
-    void calculate_u0(const double *const, double *const);
 
     void calculate_force_in_real_space(const std::complex<double> *const,
                                        double *);
 
-    void update_cell_coordinate(double *,
-                                double *,
-                                double **,
-                                const std::complex<double> *const,
-                                const double *const *const,
-                                const std::complex<double> *const,
-                                const double *const *const,
-                                const std::complex<double> *const *const *const,
-                                const std::vector<int> &,
-                                double *,
-                                double *,
-                                double *,
-                                double &,
-                                double &);
 
     void postprocess(std::complex<double> ****,
                      std::complex<double> ****,
@@ -249,50 +229,6 @@ private:
                                   double **,
                                   std::complex<double> ***);
 
-    void compute_del_v1_del_umn(std::complex<double> **,
-                                const std::complex<double> *const *const *const);
-
-    void compute_del2_v1_del_umn2(std::complex<double> **,
-                                  const std::complex<double> *const *const *const);
-
-    void compute_del3_v1_del_umn3(std::complex<double> **,
-                                  const std::complex<double> *const *const *const);
-
-    void compute_del_v2_del_umn(std::complex<double> ***,
-                                const std::complex<double> *const *const *const);
-
-    void compute_del2_v2_del_umn2(std::complex<double> ***,
-                                  const std::complex<double> *const *const *const);
-
-    void compute_del_v3_del_umn(std::complex<double> ****,
-                                const std::complex<double> *const *const *const);
-
-    void calculate_delv2_delumn_finite_difference(const std::complex<double> *const *const *const,
-                                                  std::complex<double> ***);
-
-    void read_del_v2_del_umn_in_kspace(const std::complex<double> *const *const *const,
-                                       std::complex<double> ***);
-
-    void calculate_delv1_delumn_finite_difference(std::complex<double> **,
-                                                  const std::complex<double> *const *const *const);
-
-    void make_supercell_mapping_by_symmetry_operations(int **);
-
-    void make_inverse_translation_mapping(int **);
-
-    void compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &,
-                                             std::vector<FcsArrayWithCell> &,
-                                             const int,
-                                             const int,
-                                             const int);
-
-    void compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCell> &,
-                                             std::vector<FcsArrayWithCell> &,
-                                             const int,
-                                             const int,
-                                             const int,
-                                             const int,
-                                             const int);
 
     FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
 
@@ -312,85 +248,9 @@ private:
                                          double);
 
 
-    void calculate_del_v1_del_umn_renorm(std::complex<double> **,
-                                         double **,
-                                         std::complex<double> **,
-                                         std::complex<double> **,
-                                         std::complex<double> **,
-                                         std::complex<double> ***,
-                                         std::complex<double> ***,
-                                         std::complex<double> ****,
-                                         double *);
-
-    void calculate_C2_array_renorm(double **,
-                                   double **,
-                                   double **,
-                                   double **,
-                                   double ***,
-                                   std::complex<double> **,
-                                   std::complex<double> **,
-                                   std::complex<double> ***,
-                                   double *);
-
-    void calculate_C2_array_ZSISA(double **,
-                                  double **,
-                                  std::complex<double> **,
-                                  double **);
-
     void calculate_eta_tensor(double **,
                               const double *const *const);
 
-    void renormalize_v0_from_umn(double &,
-                                 double,
-                                 double **,
-                                 double *,
-                                 double **,
-                                 double ***,
-                                 double **,
-                                 const double);
-
-    void renormalize_v1_from_umn(std::complex<double> *,
-                                 const std::complex<double> *const,
-                                 const std::complex<double> *const *const,
-                                 const std::complex<double> *const *const,
-                                 const std::complex<double> *const *const,
-                                 const double *const *const);
-
-    void renormalize_v2_from_umn(std::complex<double> **,
-                                 std::complex<double> ***,
-                                 std::complex<double> ***,
-                                 double **);
-
-    void renormalize_v3_from_umn(std::complex<double> ***,
-                                 std::complex<double> ***,
-                                 std::complex<double> ****,
-                                 double **);
-
-    void renormalize_v1_from_q0(std::complex<double> *,
-                                std::complex<double> *,
-                                std::complex<double> **,
-                                std::complex<double> ***,
-                                std::complex<double> ***,
-                                double *);
-
-    void renormalize_v2_from_q0(std::complex<double> **,
-                                std::complex<double> **,
-                                std::complex<double> ***,
-                                std::complex<double> ***,
-                                double *);
-
-    void renormalize_v3_from_q0(std::complex<double> ***,
-                                std::complex<double> ***,
-                                std::complex<double> ***,
-                                double *);
-
-    void renormalize_v0_from_q0(double &,
-                                double,
-                                std::complex<double> *,
-                                std::complex<double> **,
-                                std::complex<double> ***,
-                                std::complex<double> ***,
-                                double *);
 
     void compute_anharmonic_v1_array(std::complex<double> *,
                                      std::complex<double> *,
@@ -410,20 +270,6 @@ private:
                                            double **,
                                            const double);
 
-    void compute_ZSISA_stress(double **,
-                              std::complex<double> *,
-                              std::complex<double> ***,
-                              double **,
-                              std::complex<double> *,
-                              std::complex<double> **,
-                              std::complex<double> *,
-                              std::vector<int> &);
-
-    void compute_vZSISA_stress(std::complex<double> *,
-                               double **,
-                               std::complex<double> *,
-                               std::complex<double> *,
-                               double **);
 
     void compute_anharmonic_frequency(std::complex<double> ***,
                                       double **,
@@ -505,9 +351,6 @@ private:
     static void duplicate_xk_boundary(double *,
                                       std::vector<std::vector<double>> &);
 
-    void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
-                                         const unsigned int NT,
-                                         const int type = 0);
 
     static void mpi_bcast_complex(std::complex<double> ****data,
                                   const unsigned int NT,
@@ -545,31 +388,6 @@ private:
                      std::complex<double> ***,
                      const double);
 
-    void calc_del_v0_del_umn_vib(std::complex<double> *,
-                                 std::complex<double> ***,
-                                 double);
-
-    void compute_del_v_strain(std::complex<double> **,
-                              std::complex<double> **,
-                              std::complex<double> **,
-                              std::complex<double> ***,
-                              std::complex<double> ***,
-                              std::complex<double> ****,
-                              std::complex<double> ***,
-                              int);
-
-    void set_elastic_constants(double *C1_array,
-                               double **C2_array,
-                               double ***C3_array);
-
-
-    void set_init_structure_atT(double *q0,
-                                double **u_tensor,
-                                double *u0,
-                                bool &converged_prev,
-                                int &str_diverged,
-                                const int set_init_str,
-                                const int i_temp_loop);
 
     void write_resfile_header(std::ofstream &fout_q0,
                               std::ofstream &fout_u0,
@@ -596,10 +414,6 @@ private:
                            std::ofstream &fout_step_u0,
                            std::ofstream &fout_step_u_tensor);
 
-    void check_str_divergence(int &diverged,
-                              const double *const q0,
-                              const double *const u0,
-                              const double *const *const u_tensor);
 
 };
 

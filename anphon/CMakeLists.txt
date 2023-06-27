@@ -109,7 +109,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/thermodynamics.cpp
             ${PROJECT_SOURCE_DIR}/timer.cpp
             ${PROJECT_SOURCE_DIR}/write_phonons.cpp
-            ${PROJECT_SOURCE_DIR}/../external/niggli.c)
+            ${PROJECT_SOURCE_DIR}/../external/niggli.c qha.cpp relaxation.cpp)
 
 set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/conductivity.h
@@ -136,7 +136,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/thermodynamics.h
             ${PROJECT_SOURCE_DIR}/timer.h
-            ${PROJECT_SOURCE_DIR}/write_phonons.h)
+            ${PROJECT_SOURCE_DIR}/write_phonons.h qha.h relaxation.h)
 
 message("MPI_C_LIBRARIES = ${MPI_C_LIBRARIES}")
 message("MPI_CXX_LIBRARIES = ${MPI_CXX_LIBRARIES}")
