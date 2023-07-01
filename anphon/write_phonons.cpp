@@ -1492,8 +1492,7 @@ void Writes::write_eigenvectors_each_HDF5(const std::string &fname_evec,
                                                    *dataspace));
     int kdtmp[dims[0]];
     for (i = 0; i < system->get_primcell().number_of_atoms; ++i) {
-        k = system->get_map_p2s(0)[i][0];
-        kdtmp[i] = system->get_primcell().kind[k];
+        kdtmp[i] = system->get_primcell().kind[i];
     }
 
     dataset->write(&kdtmp[0], PredType::NATIVE_INT);
