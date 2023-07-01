@@ -167,8 +167,8 @@ void Dos::calc_dos_all()
         for (size_t j = 0; j < kmesh_dos->nk_irred; ++j) {
             const auto jj = kmesh_dos->kpoint_irred_all[j][0].knum;
             for (size_t k = 0; k < neval; ++k) {
-                emin_now = std::min(emin_now, eval[k][j]);
-                emax_now = std::max(emax_now, eval[k][j]);
+                emin_now = std::min(emin_now, eval[k][jj]);
+                emax_now = std::max(emax_now, eval[k][jj]);
             }
         }
         if (auto_set_emin) {
