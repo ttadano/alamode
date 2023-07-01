@@ -313,7 +313,7 @@ class VaspParser(object):
             x0_offset, force_offset \
                 = self._get_coordinates_and_forces(file_offset)
             epot_offset, _ = self._get_energies(file_offset)
-            epot_offset = np.array(epot_offset, dtype=np.float)
+            epot_offset = np.array(epot_offset, dtype=float)
             try:
                 x0_offset = np.reshape(x0_offset, (self._nat, 3))
             except:
@@ -344,7 +344,7 @@ class VaspParser(object):
             if ndata_energy != ndata:
                 raise RuntimeError("The numbers of displacement and energy entries are different.")
 
-            epot = np.array(epot, dtype=np.float)
+            epot = np.array(epot, dtype=float)
             epot -= epot_offset
 
             if self._print_disp:
@@ -552,7 +552,7 @@ class VaspParser(object):
                         for i in range(len(str_force)):
                             f.extend([t for t in str_force[i].split()])
 
-                return np.array(x, dtype=np.float), np.array(f, dtype=np.float)
+                return np.array(x, dtype=float), np.array(f, dtype=float)
 
             except:
                 raise RuntimeError(

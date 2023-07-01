@@ -919,7 +919,8 @@ void Writes::write_phonon_dos() const
     allocate(nat_each_kd, system->get_primcell().number_of_elems);
     for (i = 0; i < system->get_primcell().number_of_elems; ++i) nat_each_kd[i] = 0;
     for (i = 0; i < system->get_primcell().number_of_atoms; ++i) {
-        ++nat_each_kd[system->get_primcell().kind[system->get_map_p2s(0)[i][0]]];
+//        ++nat_each_kd[system->get_supercell(0).kind[system->get_map_p2s(0)[i][0]]];
+        ++nat_each_kd[system->get_primcell().kind[i]];
     }
     for (i = 0; i < system->get_primcell().number_of_elems; ++i) {
         ofs_dos << std::setw(5) << nat_each_kd[i];
