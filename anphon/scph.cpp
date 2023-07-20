@@ -162,10 +162,10 @@ void Scph::exec_scph()
 
     } else {
 
-        if (dynamical->nonanalytic == 3) {
-            exit("exec_scph",
-                 "Sorry, NONANALYTIC=3 can't be used for the main loop of the SCPH calculation.");
-        }
+//        if (dynamical->nonanalytic == 3) {
+//            exit("exec_scph",
+//                 "Sorry, NONANALYTIC=3 can't be used for the main loop of the SCPH calculation.");
+//        }
         // Solve the SCPH equation and obtain the correction to the dynamical matrix
         exec_scph_main(delta_dymat_scph);
 
@@ -1572,8 +1572,10 @@ void Scph::setup_kmesh()
 
     kmesh_coarse = new KpointMeshUniform(kmesh_interpolate);
     kmesh_dense = new KpointMeshUniform(kmesh_scph);
-    kmesh_coarse->setup(symmetry->SymmList, system->get_primcell().reciprocal_lattice_vector, false);
-    kmesh_dense->setup(symmetry->SymmList, system->get_primcell().reciprocal_lattice_vector, false);
+    kmesh_coarse->setup(symmetry->SymmList, system->get_primcell().reciprocal_lattice_vector,
+                        true);
+    kmesh_dense->setup(symmetry->SymmList, system->get_primcell().reciprocal_lattice_vector,
+                       true);
 
     if (mympi->my_rank == 0) {
 //        if (verbosity > 0) {

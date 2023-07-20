@@ -14,6 +14,7 @@
 #include "system.h"
 #include <string>
 #include <vector>
+#include <set>
 #include <Eigen/Core>
 
 namespace PHON_NS {
