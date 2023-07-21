@@ -106,6 +106,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
 
     ret = 0.0;
 
+#pragma omp parallel for reduction(+: ret)
     for (auto ik = 0; ik < nk; ++ik) {
         for (auto is = 0; is < ns; ++is) {
 
@@ -118,7 +119,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
                              * evec_in[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->get_primcell().kind[system->get_map_p2s(0)[iat][0]]] * std::norm(dprod);
+                prod += isotope_factor[system->get_primcell().kind[iat]] * std::norm(dprod);
             }
 
             const auto omega1 = eval_in[ik][is];
@@ -160,6 +161,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
     allocate(weight, nk);
 
     for (is = 0; is < ns; ++is) {
+#pragma omp parallel for
         for (ik = 0; ik < nk; ++ik) {
 
             auto prod = 0.0;
@@ -171,7 +173,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
                              * evec_in[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->get_primcell().kind[system->get_map_p2s(0)[iat][0]]] * std::norm(dprod);
+                prod += isotope_factor[system->get_primcell().kind[iat]] * std::norm(dprod);
             }
 
             weight[ik] = prod * eval_in[ik][is];
