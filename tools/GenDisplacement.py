@@ -312,7 +312,7 @@ class AlamodeDisplace(object):
                 disp_list.append(disp_pes[:, :, i])
                 self._counter += 1
 
-            return header_list, disp_list. self._updated_structure
+            return header_list, disp_list, self._updated_structure
 
         else:
             raise RuntimeError("This cannot happen")

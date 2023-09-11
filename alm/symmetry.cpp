@@ -900,6 +900,8 @@ void Symmetry::update_symmetry_operations_supercell(const ALM_NS::Cell &cell_pri
 
             // Rotation operation in the lattice basis of the supercell
             rot_latt = cell_super.lattice_vector.inverse() * rot_cart * cell_super.lattice_vector;
+//            std::cout << "rot_cart:" << rot_cart << std::endl;
+//            std::cout << "rot_latt:" << rot_latt << std::endl;
             for (auto k = 0; k < 3; ++k) {
                 for (auto m = 0; m < 3; ++m) {
                     rot_latt_int(k, m) = nint(rot_latt(k, m));

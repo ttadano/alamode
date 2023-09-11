@@ -308,6 +308,8 @@ void System::build_supercell()
     Eigen::MatrixXd R_double = R.cast<double>();
     Eigen::MatrixXd L_double = L.cast<double>();
 
+//    std::cout << "transmat_to_super:" << transmat_to_super << std::endl;
+
     supercell.lattice_vector = inputcell.lattice_vector * transmat_to_super;
     set_reciprocal_latt(supercell.lattice_vector, supercell.reciprocal_lattice_vector);
     supercell.volume = volume(supercell.lattice_vector, Direct);
@@ -337,6 +339,9 @@ void System::build_supercell()
                     DD << static_cast<double>(i), static_cast<double>(j), static_cast<double>(k);
                     DD = transmat_newprim_to_origsuper * DD + xs_f;
                     DD_mod = DD.unaryExpr([](const double x) { return std::fmod(x, 1.0); });
+//                    for (auto m = 0; m < 3; ++m) {
+//                        if (DD_mod[m] < -eps6) DD_mod[m] += 1.0;
+//                    }
                     supercell.x_fractional.row(counter) = DD_mod;
                     supercell.kind.emplace_back(kind_now);
                     if (spin_input.lspin) magmom_tmp.emplace_back(spin_input.magmom[iat]);
@@ -345,6 +350,8 @@ void System::build_supercell()
             }
         }
     }
+//
+//    std::cout << supercell.x_fractional << std::endl;
 
     supercell.x_cartesian = supercell.x_fractional * supercell.lattice_vector.transpose();
 
