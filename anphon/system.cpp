@@ -763,7 +763,7 @@ void System::get_structure_and_mapping_table_h5(const std::string &filename,
     scell_out.x_cartesian = scell_out.x_fractional * scell_out.lattice_vector.transpose();
     pcell_out.x_cartesian = pcell_out.x_fractional * pcell_out.lattice_vector.transpose();
     scell_out.volume = volume(scell_out.lattice_vector, Direct);
-    pcell_out.volume = volume(scell_out.lattice_vector, Direct);
+    pcell_out.volume = volume(pcell_out.lattice_vector, Direct);
 
     scell_out.has_entry = 1;
     pcell_out.has_entry = 1;

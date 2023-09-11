@@ -795,7 +795,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
 
                 std::complex<double> exp_phase = std::complex<double>(0.0, 0.0);
 
-                for (i = 0; i < system->get_map_p2s(1)[0].size(); ++i) {
+                for (i = 0; i < system->get_map_p2s(0)[0].size(); ++i) {
 
                     std::complex<double> exp_phase_tmp = std::complex<double>(0.0, 0.0);
                     unsigned int atm_s2 = system->get_map_p2s(0)[jat][i];
@@ -822,7 +822,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                     }
                     exp_phase += exp_phase_tmp / static_cast<double>(mindist_list[iat][atm_s2].size());
                 }
-                exp_phase /= static_cast<double>(system->get_map_p2s(1)[0].size());
+                exp_phase /= static_cast<double>(system->get_map_p2s(0)[0].size());
 
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
