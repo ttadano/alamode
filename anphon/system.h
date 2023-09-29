@@ -112,6 +112,8 @@ private:
     std::vector<double> mass_super, mass_prim;
     std::vector<double> invsqrt_mass_p;
 
+    double tolerance_for_coordinates;
+
     void set_default_variables();
 
     void deallocate_variables();

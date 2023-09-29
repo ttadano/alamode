@@ -49,6 +49,7 @@ void System::set_default_variables()
     mass_kd = nullptr;
     load_primitive_from_file = 0;
     symbol_kd.clear();
+    tolerance_for_coordinates = 1.0e-5;
 }
 
 void System::deallocate_variables()
@@ -209,7 +210,7 @@ void System::print_structure_information_stdout() const
         cout << '\n';
     }
     const auto det_mat = transformation_matrix.determinant();
-    if (std::abs(static_cast<double>(nint(det_mat)) - det_mat) > eps6) {
+    if (std::abs(static_cast<double>(nint(det_mat)) - det_mat) > eps4) {
         exit("print_structure_information_stdout",
              "The transformation matrix should be composed of integers. Something is wrong.");
     }
@@ -788,6 +789,8 @@ void System::update_primitive_lattice()
 
         Eigen::Matrix3d transmat_to_prim = supercell[0].lattice_vector.inverse() * lavec_p_input;
 
+        //std::cout << "transmat_to_prin:" << transmat_to_prim << '\n';
+
         primcell.lattice_vector = lavec_p_input;
         recips(primcell.lattice_vector, primcell.reciprocal_lattice_vector);
         primcell.volume = volume(primcell.lattice_vector, Direct);
@@ -839,7 +842,8 @@ void System::update_primitive_lattice()
                     if (xf_diff[j] < -0.5) xf_diff[j] += 1.0;
                     if (xf_diff[j] >= 0.5) xf_diff[j] -= 1.0;
                 }
-                if (xf_diff.norm() < eps6) {
+                //std::cout << "xf_diff.norm=" << xf_diff.norm() << '\n';
+                if (xf_diff.norm() < tolerance_for_coordinates) {
                     is_duplicate = true;
 
                     if (kind_unique[k] != supercell[0].kind[i]) {
@@ -958,7 +962,7 @@ void System::generate_mapping_primitive_super(const Cell &pcell,
             x2 = pcell.x_fractional.row(jat);
             xdiff = (x1 - x2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
 
-            if (xdiff.norm() < eps6 && (scell.kind[iat] == pcell.kind[jat])) {
+            if (xdiff.norm() < tolerance_for_coordinates && (scell.kind[iat] == pcell.kind[jat])) {
                 tran_d = (x1 - x2).unaryExpr([](const double x) { return static_cast<double>(nint(x)); });
                 // First move back to the fractional coordinate of the supercell and
                 // make sure that the shift vectors are in the 0<=x<1 region in that basis.
@@ -998,7 +1002,7 @@ void System::generate_mapping_primitive_super(const Cell &pcell,
                 x3 = scell.x_fractional.row(k);
                 xdiff = (x3 - x2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
 
-                if (xdiff.norm() < eps6) {
+                if (xdiff.norm() < tolerance_for_coordinates) {
                     flag_found[k] = 1;
                     map_index.insert({j, k});
                 }
