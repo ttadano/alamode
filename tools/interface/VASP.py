@@ -58,7 +58,7 @@ class VaspParser(object):
         self._print_force = True
         self._print_energy = False
         self._print_born = False
-        self._BOHR_TO_ANGSTROM = 0.5291772108
+        self._BOHR_TO_ANGSTROM = 0.529177210903
         self._RYDBERG_TO_EV = 13.60569253
 
     def load_initial_structure(self, file_in):
@@ -520,7 +520,7 @@ class VaspParser(object):
                 raise RuntimeError("failed to import py4vasp. Please install py4vasp by pip.")
 
             try:
-                obj = py4vasp.Calculation.from_path(file_to_parse)
+                obj = py4vasp.Calculation.from_file(file_to_parse)
                 forces = obj.force[:].read()
                 x = np.ravel(forces['structure']['positions'])
                 f = np.ravel(forces['forces'])
@@ -568,7 +568,7 @@ class VaspParser(object):
                 raise RuntimeError("failed to import py4vasp. Please install py4vasp by pip.")
 
             try:
-                obj = py4vasp.Calculation.from_path(file_to_parse)
+                obj = py4vasp.Calculation.from_file(file_to_parse)
                 energy = obj.energy[:].read()
 
                 etot_array = energy['free energy    TOTEN']
@@ -631,7 +631,7 @@ class VaspParser(object):
                     "Error in reading electronic dielectric tensor from the HDF5 file: %s" % file_to_parse)
 
             try:
-                obj = py4vasp.Calculation.from_path(file_to_parse)
+                obj = py4vasp.Calculation.from_file(file_to_parse)
                 borncharge = obj.born_effective_charge.read()['charge_tensors']
             except:
                 raise RuntimeError(
