@@ -239,11 +239,10 @@ private:
                                std::vector<SymmetryOperation> &symm_out) const;
 
 
-    void update_symmetry_operations_supercell(const Cell &cell_prim,
-                                              const std::vector<SymmetryOperation> &symm_prim,
-                                              const Cell &cell_super,
-                                              std::vector<SymmetryOperation> &symm_super,
-                                              std::vector<PrimitiveGroup> &atomgroup_out) const;
+    void assign_shift_vectors_supercell(const ALM_NS::Cell &cell_prim,
+                                        const std::vector<SymmetryOperation> &symm_prim,
+                                        const ALM_NS::Cell &cell_super,
+                                        std::vector<PrimitiveGroup> &atomgroup_out) const;
 
 
     void print_symmetry_infomation(const int verbosity) const;
