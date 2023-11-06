@@ -479,7 +479,7 @@ void Writer::write_displacement_pattern(const std::unique_ptr<System> &system,
             for (auto j = 0; j < 3; ++j) {
                 if (j > 0) ofs_pattern << "                      ";
                 for (auto i = 0; i < 3; ++i) {
-                    ofs_pattern << std::setw(15) << system->get_supercell().lattice_vector(i, j);
+                    ofs_pattern << std::setprecision(15) << std::setw(20) << system->get_supercell().lattice_vector(i, j);
                     if (j == 2 && i == 2) {
                         ofs_pattern << "]";
                     } else {
@@ -492,7 +492,7 @@ void Writer::write_displacement_pattern(const std::unique_ptr<System> &system,
             for (auto j = 0; j < system->get_supercell().number_of_atoms; ++j) {
                 if (j > 0) ofs_pattern << "                  ";
                 for (auto i = 0; i < 3; ++i) {
-                    ofs_pattern << std::setw(15) << system->get_supercell().x_fractional(j, i);
+                    ofs_pattern << std::setprecision(15) << std::setw(20) << system->get_supercell().x_fractional(j, i);
                     if ((j == system->get_supercell().number_of_atoms - 1) && i == 2) {
                         ofs_pattern << "]";
                     } else {
