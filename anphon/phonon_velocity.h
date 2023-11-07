@@ -49,7 +49,7 @@ public:
                                                  const Eigen::Matrix3d &lavec_p,
                                                  const Eigen::Matrix3d &rlavec_p,
                                                  const std::vector<FcsArrayWithCell> &fc2_in,
-                                                 const std::vector<FcsClassExtent> &fc2_without_dipole,
+                                                 const std::vector<FcsArrayWithCell> &fc2_without_dipole,
                                                  double **phvel_out) const;
 
     void velocity_matrix_analytic(const double *xk_in,

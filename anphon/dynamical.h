@@ -128,7 +128,8 @@ public:
 
     void eval_k_ewald(const double *,
                       const double *,
-                      const std::vector<FcsClassExtent> &,
+//                      const std::vector<FcsClassExtent> &,
+                      const std::vector<FcsArrayWithCell> &,
                       double *,
                       std::complex<double> **,
                       const bool) const;
@@ -198,7 +199,8 @@ private:
                                const double *const *xk_in,
                                const double *const *kvec_na_in,
                                const std::vector<FcsArrayWithCell> &fc2,
-                               const std::vector<FcsClassExtent> &fc2_without_dipole_in,
+//                               const std::vector<FcsClassExtent> &fc2_without_dipole_in,
+                               const std::vector<FcsArrayWithCell> &fc2_without_dipole_in,
                                const bool require_evec,
                                double **eval_ret,
                                std::complex<double> ***evec_ret);

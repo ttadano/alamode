@@ -66,7 +66,7 @@ public:
     double det_epsilon;
     double ***Born_charge;
 
-    std::vector<FcsClassExtent> fc2_without_dipole;
+    std::vector<FcsArrayWithCell> fc2_without_dipole;
 
     void init();
 

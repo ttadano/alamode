@@ -78,7 +78,7 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStr
                                                              const Eigen::Matrix3d &lavec_p,
                                                              const Eigen::Matrix3d &rlavec_p,
                                                              const std::vector<FcsArrayWithCell> &fc2_in,
-                                                             const std::vector<FcsClassExtent> &fc2_without_dipole,
+                                                             const std::vector<FcsArrayWithCell> &fc2_without_dipole,
                                                              double **phvel_out) const
 {
     unsigned int i;
@@ -768,7 +768,6 @@ void PhononVelocity::diagonalize_hermite_mat(const int n,
     deallocate(WORK);
     deallocate(mat_1D);
 }
-
 
 void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
                                               const std::vector<FcsArrayWithCell> &fc2_in,

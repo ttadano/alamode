@@ -174,7 +174,7 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
                     }
                 }
                 if (kat == -1) {
-                    exit("replicate_force_constants", "Equivalent atom cound not be found.");
+                    exit("replicate_force_constants", "Equivalent atom could not be found.");
                 } else {
                     map_now.emplace_back(kat);
                 }

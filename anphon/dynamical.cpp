@@ -461,14 +461,14 @@ void Dynamical::eval_k(const double *xk_in,
 
 void Dynamical::eval_k_ewald(const double *xk_in,
                              const double *kvec_in,
-                             const std::vector<FcsClassExtent> &fc2_in,
+                             const std::vector<FcsArrayWithCell> &fc2_in,
                              double *eval_out,
                              std::complex<double> **evec_out,
                              const bool require_evec) const
 {
     //
     // Calculate phonon energy for the specific k-point given in fractional basis
-    // Contributions from dipole-dipole interactions should be extracted from 'fc2_in'.
+    // Contributions from dipole-dipole interactions should be absent in 'fc2_in'.
     //
     unsigned int i, j;
     int icrd, jcrd;
@@ -502,9 +502,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
                     auto check = std::complex<double>(0.0, 0.0);
                     auto count = 0;
                     for (j = 0; j < nat_prim; ++j) {
-                        // TODO; replace below (map_p2s)
-                        const auto mass = system->get_mass_super()[system->get_map_p2s(0)[i][0]] *
-                                          system->get_mass_super()[system->get_map_p2s(0)[j][0]];
+                        const auto mass = system->get_mass_prim()[i] * system->get_mass_prim()[j];
                         check += std::sqrt(mass) * dymat_k[3 * i + icrd][3 * j + jcrd];
                         count += 1;
                     }
@@ -1003,7 +1001,7 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
                                       const double *const *xk_in,
                                       const double *const *kvec_na_in,
                                       const std::vector<FcsArrayWithCell> &fc2,
-                                      const std::vector<FcsClassExtent> &fc2_without_dipole_in,
+                                      const std::vector<FcsArrayWithCell> &fc2_without_dipole_in,
                                       const bool require_evec,
                                       double **eval_ret,
                                       std::complex<double> ***evec_ret)
@@ -1014,9 +1012,9 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in,
     }
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
+//#ifdef _OPENMP
+//#pragma omp parallel for
+//#endif
     for (int ik = 0; ik < nk_in; ++ik) {
         if (nonanalytic == 3) {
             eval_k_ewald(&xk_in[ik][0],
@@ -1204,13 +1202,15 @@ void Dynamical::project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
         if (iset == 1) {
             // Non degenerate case. just copy the original eigenvector
 
-            evec_new.block(0, ishift, ns, 1) = evec_orig.block(0, ishift, ns, 1);
+            evec_new.block(0, ishift, ns, 1)
+                    = evec_orig.block(0, ishift, ns, 1);
 
         } else if (iset == 2) {
             // Doubly degenerate case.
 
             if (ndirec == 0) {
-                evec_new.block(0, ishift, ns, 2) = evec_orig.block(0, ishift, ns, 2);
+                evec_new.block(0, ishift, ns, 2)
+                        = evec_orig.block(0, ishift, ns, 2);
             } else {
 
                 Eigen::MatrixXcd evec_sub = evec_orig.block(0, ishift, ns, 2);
@@ -1233,9 +1233,11 @@ void Dynamical::project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
                     std::cout << " All projections did not lift the two-fold degeneracy.\n"
                                  " Try another projection!\n";
 
-                    evec_new.block(0, ishift, ns, 2) = evec_orig.block(0, ishift, ns, 2);
+                    evec_new.block(0, ishift, ns, 2)
+                            = evec_orig.block(0, ishift, ns, 2);
                 } else {
-                    evec_new.block(0, ishift, ns, 2) = evec_sub.block(0, 0, ns, 2);
+                    evec_new.block(0, ishift, ns, 2)
+                            = evec_sub.block(0, 0, ns, 2);
                 }
             }
 
@@ -1244,14 +1246,16 @@ void Dynamical::project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
 
             if (ndirec == 0) {
 
-                evec_new.block(0, ishift, ns, 3) = evec_orig.block(0, ishift, ns, 3);
+                evec_new.block(0, ishift, ns, 3)
+                        = evec_orig.block(0, ishift, ns, 3);
 
             } else if (ndirec == 1) {
 
                 Eigen::MatrixXcd evec_sub = evec_orig.block(0, ishift, ns, 3);
                 auto is_lifted = transform_eigenvectors(xk_in, directions[0], dk, evec_sub);
 
-                evec_new.block(0, ishift, ns, 3) = evec_sub.block(0, 0, ns, 3);
+                evec_new.block(0, ishift, ns, 3)
+                        = evec_sub.block(0, 0, ns, 3);
                 if (is_lifted == 0) {
                     std::cout << " xk = ";
                     for (i = 0; i < 3; ++i) std::cout << std::setw(15) << xk_in[i];
@@ -1268,8 +1272,10 @@ void Dynamical::project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
                 Eigen::MatrixXcd evec_sub2 = evec_sub.block(0, 1, ns, 2);
                 auto is_lifted2 = transform_eigenvectors(xk_in, directions[1], dk, evec_sub2);
 
-                evec_new.block(0, ishift, ns, 1) = evec_sub.block(0, 0, ns, 1);
-                evec_new.block(0, ishift + 1, ns, 2) = evec_sub2.block(0, 0, ns, 2);
+                evec_new.block(0, ishift, ns, 1)
+                        = evec_sub.block(0, 0, ns, 1);
+                evec_new.block(0, ishift + 1, ns, 2)
+                        = evec_sub2.block(0, 0, ns, 2);
 
                 if (is_lifted1 == 0 || is_lifted2 == 0) {
                     std::cout << " xk = ";
