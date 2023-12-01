@@ -1344,6 +1344,12 @@ void KpointMeshUniform::get_unique_triplet_k(const int ik,
             ks_in[0] = knum_sym(ik1, symmlist[small_group_of_k[ik][isym]].rot);
             ks_in[1] = knum_sym(ik2, symmlist[small_group_of_k[ik][isym]].rot);
 
+            if (ks_in[0] == -1 || ks_in[1] == -1) {
+                exit("get_unique_triplet_k",
+                     "Cannot find the kpoint after rotation.\n"
+                     " This indicates that the input kmesh grid is not compatible with the lattice symmetry.");
+            }
+
             if (!flag_found[ks_in[0]]) {
                 kslist.emplace_back(2, ks_in, small_group_of_k[ik][isym]);
                 flag_found[ks_in[0]] = true;
@@ -1430,6 +1436,12 @@ void KpointMeshUniform::get_unique_quartet_k(const int ik,
                 ks_in[0] = knum_sym(ik1, symmlist[small_group_of_k[ik][isym]].rot);
                 ks_in[1] = knum_sym(ik2, symmlist[small_group_of_k[ik][isym]].rot);
                 ks_in[2] = knum_sym(ik3, symmlist[small_group_of_k[ik][isym]].rot);
+
+                if (ks_in[0] == -1 || ks_in[1] == -1 || ks_in[2] == -1) {
+                    exit("get_unique_quartet_k",
+                         "Cannot find the kpoint after rotation.\n"
+                         " This indicates that the input kmesh grid is not compatible with the lattice symmetry.");
+                }
 
                 if (!flag_found[ks_in[0]][ks_in[1]]) {
                     kslist.emplace_back(3, &ks_in[0], small_group_of_k[ik][isym]);
