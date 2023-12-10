@@ -202,7 +202,8 @@ void InputParser::parse_input(ALM *alm)
     }
 
     input_setter->set_transformation_matrices(transmat_to_super,
-                                              transmat_to_prim);
+                                              transmat_to_prim,
+                                              true);
 
     int noncollinear, time_reversal_symm, lspin;
     Eigen::MatrixXd magmom_vec;

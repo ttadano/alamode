@@ -203,10 +203,19 @@ void InputSetter::set_element_types(const std::vector<int> &kd_in,
 }
 
 void InputSetter::set_transformation_matrices(const Eigen::Matrix3d &transmat_super_in,
-                                              const Eigen::Matrix3d &transmat_prim_in)
+                                              const Eigen::Matrix3d &transmat_prim_in,
+                                              const bool transpose)
 {
-    transmat_super = transmat_super_in;
-    transmat_prim = transmat_prim_in;
+    // if the input transformation matrices are defined by (a_s, b_s, c_s)^T = M (a_p, b_p, c_p)^T,
+    // which is more understandable for human, we need to transpose the matrices to make it consistent
+    // with the definition of the lattice vectors used in the code.
+    if (transpose) {
+        transmat_super = transmat_super_in.transpose();
+        transmat_prim = transmat_prim_in.transpose();
+    } else {
+        transmat_super = transmat_super_in;
+        transmat_prim = transmat_prim_in;
+    }
 }
 
 void InputSetter::set_magnetic_vars(const int lspin_in,

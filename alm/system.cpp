@@ -310,6 +310,7 @@ void System::build_supercell()
 
 //    std::cout << "transmat_to_super:" << transmat_to_super << std::endl;
 
+    // (a_s, b_s, c_s) = (a_in, b_in, c_in) * Mat(inp->s)
     supercell.lattice_vector = inputcell.lattice_vector * transmat_to_super;
     set_reciprocal_latt(supercell.lattice_vector, supercell.reciprocal_lattice_vector);
     supercell.volume = volume(supercell.lattice_vector, Direct);
