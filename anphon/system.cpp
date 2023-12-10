@@ -192,7 +192,7 @@ void System::print_structure_information_stdout() const
 
     Eigen::Matrix3d transformation_matrix;
 
-    transformation_matrix = supercell[0].lattice_vector * primcell.lattice_vector.inverse();
+    transformation_matrix = primcell.lattice_vector.inverse() * supercell[0].lattice_vector;
 
     cout << " * Supercell for harmonic \n\n";
     for (auto i = 0; i < 3; ++i) {
