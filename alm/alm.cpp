@@ -284,6 +284,11 @@ double ALM::get_cv_l1_alpha() const
     return optimize->get_cv_l1_alpha();
 }
 
+double ALM::get_symmetry_tolerance() const
+{
+    return symmetry->get_tolerance();
+}
+
 Cell ALM::get_supercell() const
 {
     return system->get_supercell();

@@ -461,7 +461,8 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
     Eigen::Vector3d mag, mag_rot;
     Eigen::Vector3d tran;
     Eigen::Vector3d x_rot_tmp;
-    double tmp[3];
+    Eigen::Vector3d xdiff;
+    Eigen::Vector3d tmp;
     double diff;
     const auto nclass = atomtype_group.size();
 
@@ -512,7 +513,7 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
 
 #ifdef _OPENMP
 #pragma omp parallel for private(jat, tran, isok, kat, x_tmp, x_rot_tmp, is_found, lat, tmp, diff, \
-    i, j, itype, jj, kk, is_identity_matrix, mag, mag_rot, rot_tmp, rot_cart, mag_sym1, mag_sym2)
+    i, j, itype, jj, kk, is_identity_matrix, mag, mag_rot, rot_tmp, rot_cart, mag_sym1, mag_sym2, xdiff)
 #endif
         for (ii = 0; ii < atomtype_group[0].size(); ++ii) {
             jat = atomtype_group[0][ii];
@@ -555,8 +556,9 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
                             tmp[i] = std::fmod(std::abs(cell.x_fractional(lat, i) - x_rot_tmp[i]), 1.0);
                             tmp[i] = std::min<double>(tmp[i], 1.0 - tmp[i]);
                         }
-                        diff = tmp[0] * tmp[0] + tmp[1] * tmp[1] + tmp[2] * tmp[2];
-                        if (diff < tolerance * tolerance) {
+                        xdiff = cell.lattice_vector * tmp;
+                        diff = xdiff.norm(); // distance in Cartesian coordinate
+                        if (diff < tolerance) {
                             is_found = true;
                             break;
                         }
@@ -802,7 +804,7 @@ void Symmetry::assign_shift_vectors_supercell(const ALM_NS::Cell &cell_prim,
 {
     // Generate atomgroup_super for printing out the information of shift vectors to stdout
 
-    Eigen::Vector3d xtmp, xtmp2, xtmp3, xdiff, tran_d;
+    Eigen::Vector3d xtmp, xtmp2, xtmp3, xdiff, xdiff_cart, tran_d;
     Eigen::Vector3i tran;
     Eigen::MatrixXd x_super;
     std::vector<int> atom_num_prim;
@@ -828,8 +830,8 @@ void Symmetry::assign_shift_vectors_supercell(const ALM_NS::Cell &cell_prim,
         for (auto j = 0; j < cell_prim.number_of_atoms; ++j) {
             xtmp2 = cell_prim.x_fractional.row(j);
             xdiff = (xtmp - xtmp2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
-
-            if (xdiff.norm() < eps6) {
+            xdiff_cart = cell_prim.lattice_vector * xdiff;
+            if (xdiff_cart.norm() < tolerance) {
                 tran_d = (xtmp - xtmp2).unaryExpr([](const double x) { return static_cast<double>(nint(x)); });
                 // First move back to the fractional coordinate of the supercell and
                 // make sure that the shift vectors are in the 0<=x<1 region in that basis.
@@ -868,8 +870,8 @@ void Symmetry::assign_shift_vectors_supercell(const ALM_NS::Cell &cell_prim,
 
                 xtmp3 = cell_super.x_fractional.row(k);
                 xdiff = (xtmp3 - xtmp2).unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
-
-                if (xdiff.norm() < eps6) {
+                xdiff_cart = cell_super.lattice_vector * xdiff; // difference in Cartesian frame
+                if (xdiff_cart.norm() < tolerance) {
                     is_done[k] = 1;
                     map_index.insert({j, k});
                 }
@@ -926,7 +928,7 @@ void Symmetry::gen_mapping_information(const Cell &scell,
         size_t itype;
         size_t ii, jj;
         size_t jat;
-        Eigen::Vector3d xnew, xdiff;
+        Eigen::Vector3d xnew, xdiff, xdiff_cart;
         Eigen::Matrix3d rot_double;
 
 #pragma omp for private(iat, isym)
@@ -948,8 +950,8 @@ void Symmetry::gen_mapping_information(const Cell &scell,
 
                         xdiff = (scell.x_fractional.row(jat).transpose() - xnew).unaryExpr(
                                 [](const double x) { return x - static_cast<double>(nint(x)); });
-
-                        if (xdiff.norm() < tolerance) {
+                        xdiff_cart = scell.lattice_vector * xdiff;
+                        if (xdiff_cart.norm() < tolerance) {
                             map_fullsymmetry_super[iat][isym] = jat;
                             break;
                         }
@@ -982,8 +984,8 @@ void Symmetry::gen_mapping_information(const Cell &scell,
 
                         xdiff = (pcell.x_fractional.row(jat).transpose() - xnew).unaryExpr(
                                 [](const double x) { return x - static_cast<double>(nint(x)); });
-
-                        if (xdiff.norm() < tolerance) {
+                        xdiff_cart = pcell.lattice_vector * xdiff;
+                        if (xdiff_cart.norm() < tolerance) {
                             map_fullsymmetry_prim[iat][isym] = jat;
                             break;
                         }

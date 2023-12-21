@@ -147,6 +147,8 @@ public:
 
     double get_cv_l1_alpha() const;
 
+    double get_symmetry_tolerance() const;
+
     Cell get_supercell() const;
 
     std::vector<std::string> get_kdname() const;

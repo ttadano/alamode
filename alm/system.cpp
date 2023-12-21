@@ -211,7 +211,7 @@ void System::build_primcell()
     std::vector<std::vector<double>> xf_unique, magmom_unique;
     std::vector<double> xf_tmp_vec(3), magmom_tmp_vec(3);
     std::vector<int> kind_unique;
-    Eigen::VectorXd xf_tmp(3), xf_tmp2(3), xf_diff(3);
+    Eigen::VectorXd xf_tmp(3), xf_tmp2(3), xf_diff(3), xf_diff_cart(3);
 
     for (auto i = 0; i < inputcell.number_of_atoms; ++i) {
         xf_tmp = xf_prim_all.row(i);
@@ -231,7 +231,9 @@ void System::build_primcell()
                 if (xf_diff[j] < -0.5) xf_diff[j] += 1.0;
                 if (xf_diff[j] >= 0.5) xf_diff[j] -= 1.0;
             }
-            if (xf_diff.norm() < eps6) {
+
+            xf_diff_cart = primcell.lattice_vector * xf_diff;
+            if (xf_diff_cart.norm() < 1.0e-3) {
                 is_duplicate = true;
 
                 if (kind_unique[k] != inputcell.kind[i]) {
