@@ -203,7 +203,7 @@ void InputParser::parse_input(ALM *alm)
 
     input_setter->set_transformation_matrices(transmat_to_super,
                                               transmat_to_prim,
-                                              true);
+                                              autoset_primcell);
 
     int noncollinear, time_reversal_symm, lspin;
     Eigen::MatrixXd magmom_vec;
@@ -390,9 +390,17 @@ void InputParser::parse_general_vars(ALM *alm)
                                        transmat_to_super);
     // parse PRIMCELL
     split_str_by_space(general_var_dict["PRIMCELL"], primcell_v);
-    parse_transformation_matrix_string("PRIMCELL",
-                                       primcell_v,
-                                       transmat_to_prim, 1);
+    autoset_primcell = 0;
+    if (primcell_v.size() == 1) {
+        if (std::tolower(primcell_v[0][0]) == 'a') {
+            autoset_primcell = 1;
+        }
+    }
+    if (!autoset_primcell) {
+        parse_transformation_matrix_string("PRIMCELL",
+                                           primcell_v,
+                                           transmat_to_prim, 1);
+    }
 
     if (general_var_dict["TOLERANCE"].empty()) {
         tolerance = 1.0e-3;
@@ -515,7 +523,6 @@ void InputParser::parse_transformation_matrix_string(const std::string &string_c
         // if not given, use identity matrix
         transform_matrix = mat_identity;
     } else if (celldim_v.size() == 1) {
-        std::cout << celldim_v[0] << std::endl;
         std::vector<std::string> str_vec;
         boost::split(str_vec, celldim_v[0], boost::is_any_of("/"));
 

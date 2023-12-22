@@ -204,6 +204,7 @@ void InputSetter::set_element_types(const std::vector<int> &kd_in,
 
 void InputSetter::set_transformation_matrices(const Eigen::Matrix3d &transmat_super_in,
                                               const Eigen::Matrix3d &transmat_prim_in,
+                                              const int autoset_primcell_in,
                                               const bool transpose)
 {
     // if the input transformation matrices are defined by (a_s, b_s, c_s)^T = M (a_p, b_p, c_p)^T,
@@ -216,6 +217,12 @@ void InputSetter::set_transformation_matrices(const Eigen::Matrix3d &transmat_su
         transmat_super = transmat_super_in;
         transmat_prim = transmat_prim_in;
     }
+
+    if (autoset_primcell_in) {
+        // temporary set the matrix to identity matrix
+        transmat_prim = Eigen::Matrix3d::Identity();
+    }
+    autoset_primcell = autoset_primcell_in;
 }
 
 void InputSetter::set_magnetic_vars(const int lspin_in,
@@ -271,7 +278,8 @@ void InputSetter::set_geometric_structure(ALM *alm)
         }
     }
     alm->set_transformation_matrices(transmat_super_tmp,
-                                     transmat_prim_tmp);
+                                     transmat_prim_tmp,
+                                     autoset_primcell);
 
     alm->set_magnetic_params(nat_base, magmom_base, lspin, noncollinear, trevsym, str_magmom);
     deallocate(magmom_base);

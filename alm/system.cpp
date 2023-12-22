@@ -22,6 +22,10 @@
 #include <Eigen/LU>
 #include <Eigen/Geometry>
 
+extern "C" {
+#include "spglib.h"
+}
+
 using namespace ALM_NS;
 
 System::System()
@@ -179,10 +183,27 @@ void System::build_primcell()
     // The symmetry detection is not performed here as it will be done
     // when the Symmetry::init() is called.
 
+
+//    Cell cell_out;
+//    Spin spin_out;
+//    find_primitive_cell(inputcell, spin_input,
+//                        cell_out, spin_out,
+//                        symmetry_tolerance);
+//
+//
+
+    transmat_to_prim_spglib = compute_transmat_to_prim_using_spglib(inputcell,
+                                                                    symmetry_tolerance);
+
+    if (autoset_primcell) transmat_to_prim = transmat_to_prim_spglib;
+
+//    std::cout << transmat_to_prim_spglib << '\n';
+
     const auto ndiv = nint(1.0 / transmat_to_prim.determinant());
     if (inputcell.number_of_atoms % ndiv != 0) {
         exit("build_primcell",
-             "The determinant of PRIMCELL is not a divisor of NAT of the input.");
+             "The determinant of PRIMCELL is not a divisor of NAT of the input.\n"
+             " If you want to use the primitive cell detected by spglib, please set PRIMCELL = Auto.\n");
     }
 
     primcell.number_of_atoms = inputcell.number_of_atoms / ndiv;
@@ -233,13 +254,14 @@ void System::build_primcell()
             }
 
             xf_diff_cart = primcell.lattice_vector * xf_diff;
-            if (xf_diff_cart.norm() < 1.0e-3) {
+            if (xf_diff_cart.norm() < symmetry_tolerance) {
                 is_duplicate = true;
 
                 if (kind_unique[k] != inputcell.kind[i]) {
                     exit("build_primcell",
                          "Different atoms with different element types occupy the same atomic site.\n"
-                         "This is strange. Please check the PRIMCELL and input structure carefully.");
+                         " Please check the PRIMCELL and input structure carefully.\n"
+                         " If you want to use the primitive cell detected by spglib, please set PRIMCELL = Auto.\n");
                 }
 
                 if (spin_input.lspin) {
@@ -393,6 +415,11 @@ const std::vector<Eigen::MatrixXd> &System::get_x_image() const
 int *System::get_exist_image() const
 {
     return exist_image;
+}
+
+void System::set_tolerance(const double tolerance)
+{
+    symmetry_tolerance = tolerance;
 }
 
 void System::set_periodicity(const int is_periodic_in[3])
@@ -549,7 +576,7 @@ void System::set_atomtype_group(const Cell &cell_in,
 
     unsigned int i;
     AtomType type_tmp{};
-    std::set<AtomType> set_type;
+    std::set < AtomType > set_type;
     set_type.clear();
 
     for (i = 0; i < cell_in.number_of_atoms; ++i) {
@@ -586,7 +613,8 @@ void System::set_atomtype_group(const Cell &cell_in,
 }
 
 void System::set_transformation_matrices(const double transmat_to_super_in[3][3],
-                                         const double transmat_to_prim_in[3][3])
+                                         const double transmat_to_prim_in[3][3],
+                                         const int autoset_primcell_in)
 {
     for (auto i = 0; i < 3; ++i) {
         for (auto j = 0; j < 3; ++j) {
@@ -594,7 +622,88 @@ void System::set_transformation_matrices(const double transmat_to_super_in[3][3]
             transmat_to_prim(i, j) = transmat_to_prim_in[i][j];
         }
     }
+    autoset_primcell = autoset_primcell_in;
 }
+
+void System::find_primitive_cell(const Cell &cell_input,
+                                 const Spin &spin_input,
+                                 Cell &cell_out,
+                                 Spin &spin_out,
+                                 const double tolerance) const
+{
+    // const auto spg_major_version = spg_get_major_version();
+    // TODO: identify the primitive lattice with the information of magnetic ordering
+
+    size_t i, j;
+    int *types_tmp;
+    double (*position)[3];
+    double aa_tmp[3][3];
+
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            aa_tmp[i][j] = cell_input.lattice_vector(i, j);
+        }
+    }
+    const auto nat = cell_input.number_of_atoms;
+
+    allocate(position, nat);
+    allocate(types_tmp, nat);
+
+    for (i = 0; i < nat; ++i) {
+        for (j = 0; j < 3; ++j) {
+            position[i][j] = cell_input.x_fractional(i, j);
+        }
+        types_tmp[i] = cell_input.kind[i];
+    }
+
+    // Do not idealize as we want to avoid the rigid rotation of the input cell.
+    const auto nat_prim_out = spg_standardize_cell(aa_tmp,
+                                                   position,
+                                                   types_tmp,
+                                                   nat,
+                                                   1,
+                                                   1,
+                                                   tolerance);
+    for (i = 0; i < 3; ++i) {
+        for (j = 0; j < 3; ++j) {
+            cell_out.lattice_vector(i, j) = aa_tmp[i][j];
+        }
+    }
+    cell_out.number_of_atoms = nat_prim_out;
+    cell_out.x_fractional.resize(nat_prim_out, 3);
+    cell_out.kind.resize(nat_prim_out);
+    for (i = 0; i < nat_prim_out; ++i) {
+        for (j = 0; j < 3; ++j) {
+            cell_out.x_fractional(i, j) = position[i][j];
+        }
+        cell_out.kind[i] = types_tmp[i];
+    }
+    cell_out.x_cartesian = cell_out.x_fractional * cell_out.lattice_vector.transpose();
+    cell_out.number_of_elems = cell_input.number_of_elems;
+    set_reciprocal_latt(cell_out.lattice_vector,
+                        cell_out.reciprocal_lattice_vector);
+    cell_out.volume = volume(cell_out.lattice_vector, Direct);
+
+    deallocate(position);
+    deallocate(types_tmp);
+}
+
+Eigen::Matrix3d System::compute_transmat_to_prim_using_spglib(const Cell &cell_input,
+                                                                     const double symprec) const
+{
+    Eigen::Matrix3d transmat_out;
+
+    Cell cell_out;
+    Spin spin_out, spin_in;
+    find_primitive_cell(cell_input, spin_in,
+                        cell_out, spin_out,
+                        symprec);
+
+    transmat_out = cell_input.lattice_vector.inverse() * cell_out.lattice_vector;
+
+    return transmat_out;
+}
+
 
 void System::generate_coordinate_of_periodic_images()
 {

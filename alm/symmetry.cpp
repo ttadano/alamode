@@ -269,7 +269,8 @@ void Symmetry::setup_symmetry_operation(const Cell &pcell,
         warn("setup_symmetry_operation",
              "The input primitive cell is NOT a true primitive cell.\n"
              " The calculation continues, but please check again if the input PRIMCELL values are\n"
-             " correct.\n");
+             " correct. "
+             "If you want to use the primitive cell detected by spglib, please set PRIMCELL = Auto.\n");
     }
 
     if (nsym_prim * scell.number_of_atoms > nsym_super * pcell.number_of_atoms) {
@@ -1120,7 +1121,6 @@ bool Symmetry::is_proper(const Eigen::Matrix3d &rot) const
     exit("is_proper", "This cannot happen.");
     return false; // dummy to avoid compiler warning
 }
-
 
 
 //

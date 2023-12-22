@@ -81,7 +81,10 @@ public:
     void set_str_magmom(std::string);
 
     void set_transformation_matrices(const double transmat_to_super_in[3][3],
-                                     const double transmat_to_prim_in[3][3]);
+                                     const double transmat_to_prim_in[3][3],
+                                     const int autoset_primcell_in = 0);
+
+    void set_tolerance(const double tolerance);
 
     const Cell &get_supercell() const;
 
@@ -103,12 +106,21 @@ public:
 
     const std::vector<std::vector<unsigned int>> &get_atomtype_group(const std::string cell = "super") const;
 
+    Eigen::Matrix3d compute_transmat_to_prim_using_spglib(const Cell &cell_input,
+                                                                 const double symprec) const;
+
+
+
 private:
     // Variables for geometric structure
     Cell supercell, primcell, inputcell;
 
     // Transformation matrices
     Eigen::Matrix3d transmat_to_super, transmat_to_prim;
+    Eigen::Matrix3d transmat_to_prim_spglib;
+
+    int autoset_primcell;
+    double symmetry_tolerance;
 
     std::vector<std::string> kdname;
     int *is_periodic; // is_periodic[3];
@@ -145,6 +157,12 @@ private:
     void set_atomtype_group(const Cell &cell_in,
                             const Spin &spin_in,
                             std::vector<std::vector<unsigned int>> &atomtype_group_out);
+
+    void find_primitive_cell(const Cell &cell_input,
+                             const Spin &spin_input,
+                             Cell &cell_out,
+                             Spin &spin_out,
+                             const double tolerance) const;
 
     void generate_coordinate_of_periodic_images();
 

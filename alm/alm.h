@@ -78,7 +78,8 @@ public:
     void set_element_names(const std::vector<std::string> &kdname_in) const;
 
     void set_transformation_matrices(const double transmat_to_super[3][3],
-                                     const double transmat_to_prim[3][3]) const;
+                                     const double transmat_to_prim[3][3],
+                                     const int autoset_primcell_in) const;
 
     void set_magnetic_params(const size_t nat,
                              const double (*magmom)[3],

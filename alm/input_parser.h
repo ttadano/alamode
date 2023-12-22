@@ -45,6 +45,7 @@ private:
     Eigen::MatrixXd xf_input, xf_poscar;
     Eigen::Matrix3d lavec_input, lavec_poscar;
     Eigen::Matrix3d transmat_to_super, transmat_to_prim;
+    int autoset_primcell;
 
     std::vector<int> atomic_types_input, atomic_types_poscar;
     std::vector<std::string> kdname_vec, kdname_vec_poscar;

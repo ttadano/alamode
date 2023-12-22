@@ -84,6 +84,7 @@ void ALM::set_datfile_validation(const DispForceFile &dat_in) const
 void ALM::set_symmetry_tolerance(const double tolerance) const // TOLERANCE
 {
     symmetry->set_tolerance(tolerance);
+    system->set_tolerance(tolerance); // copy the same value to the system class
 }
 
 void ALM::set_displacement_param(const bool trim_dispsign_for_evenfunc) const // TRIMEVEN
@@ -115,10 +116,12 @@ void ALM::set_element_names(const std::vector<std::string> &kdname_in) const
 }
 
 void ALM::set_transformation_matrices(const double transmat_to_super[3][3],
-                                      const double transmat_to_prim[3][3]) const
+                                      const double transmat_to_prim[3][3],
+                                      const int autoset_primcell_in) const
 {
     system->set_transformation_matrices(transmat_to_super,
-                                        transmat_to_prim);
+                                        transmat_to_prim,
+                                        autoset_primcell_in);
 }
 
 void ALM::set_magnetic_params(const size_t nat,
