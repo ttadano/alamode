@@ -3346,7 +3346,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
             ks = (ii - ns3 * is - ns2 * js) / ns;
             ls = ii % ns;
 
-            if ((is < js) && relax_str == 0) continue;
+            // if ((is < js) && relax_str == 0) continue;
 
             index_tmp[0] = is;
             index_tmp[1] = js;
@@ -3436,6 +3436,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
             }
 
             // initialize temporary matrices
+#pragma omp parallel for private(js)
             for(is = 0; is < ns2; ++is){
                 for(js = 0; js < ns2; ++js){
                     v4_tmp0[is][js] = complex_zero;
@@ -3447,15 +3448,16 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
             }
 
             // copy v4 in (alpha,mu) representation to the temporary matrix
+#pragma omp parallel for private(is, js)
             for (ii = 0; ii < ngroup_v4; ++ii) {
-                // v4_array_at_kpair[ii] = phi4_reciprocal[ii] * anharmonic_core->get_invmass_factor(4)[ii];
-                // for (j = 0; j < 4; ++j) ind[ii][j] = anharmonic_core->get_evec_index(4)[ii][j];
+
                 is = ind[ii][0]*ns + ind[ii][1];
                 js = ind[ii][2]*ns + ind[ii][3];
                 v4_tmp0[is][js] = v4_array_at_kpair[ii];
             }
 
             // transform the first index
+#pragma omp parallel for private(is2_1, js2_1, is, js, ks, ls, is2_2, js2_2, is2, js2, ks2, ls2)
             for(ii = 0; ii < ns4; ++ii){
                 is2_1 = ii/ns2;
                 js2_1 = ii%ns2;
@@ -3469,6 +3471,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                 }
             }
             // transform the second index
+#pragma omp parallel for private(is2_1, js2_1, is, js, ks, ls, is2_2, js2_2, is2, js2, ks2, ls2)
             for(ii = 0; ii < ns4; ++ii){
                 is2_1 = ii/ns2;
                 js2_1 = ii%ns2;
@@ -3482,6 +3485,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                 }
             }
             // transform the third index
+#pragma omp parallel for private(is2_1, js2_1, is, js, ks, ls, is2_2, js2_2, is2, js2, ks2, ls2)
             for(ii = 0; ii < ns4; ++ii){
                 is2_1 = ii/ns2;
                 js2_1 = ii%ns2;
@@ -3496,6 +3500,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
             }
 
             // transform the fourth index
+#pragma omp parallel for private(is2_1, js2_1, is, js, ks, ls, is2_2, js2_2, is2, js2, ks2, ls2)
             for(ii = 0; ii < ns4; ++ii){
                 is2_1 = ii/ns2;
                 js2_1 = ii%ns2;
