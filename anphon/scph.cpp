@@ -3413,28 +3413,6 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
             const size_t npairs = mode_combinations.size();
 
-#pragma omp parallel for private(is, js, ks, ls, ret, i)
-            for (ii = 0; ii < npairs; ++ii) {
-
-                is = mode_combinations[ii][0];
-                js = mode_combinations[ii][1];
-                ks = mode_combinations[ii][2];
-                ls = mode_combinations[ii][3];
-
-                ret = complex_zero;
-
-                for (i = 0; i < ngroup_v4; ++i) {
-                    ret += v4_array_at_kpair[i]
-                           * evec_conj[knum][is][ind[i][0]]
-                           * evec_in[knum][js][ind[i][1]]
-                           * evec_in[jk][ks][ind[i][2]]
-                           * evec_conj[jk][ls][ind[i][3]];
-                }
-
-                // v4_mpi[ik_prod][ns * is + js][ns * ks + ls] = factor * ret;
-                v4_mpi_old_method[ns * is + js][ns * ks + ls] = factor * ret;
-            }
-
             // initialize temporary matrices
 #pragma omp parallel for private(js)
             for(is = 0; is < ns2; ++is){
@@ -3521,31 +3499,6 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
                 v4_mpi[ik_prod][is2_1][js2_1] = factor*v4_tmp4[is2_1][js2_1];
             }
-
-            // check result(debug)
-            std::cout << "ik_prod = " << ik_prod << std::endl;
-            std::cout << "is = 0, js = 0 :" << std::endl;
-            std::cout << v4_mpi_old_method[0][0] << " " << v4_mpi[ik_prod][0][0] << ", diff = " << v4_mpi_old_method[0][0] - v4_mpi[ik_prod][0][0] << std::endl;
-            std::cout << "is = 3, js = 4 :" << std::endl;
-            std::cout << v4_mpi_old_method[3][4] << " " << v4_mpi[ik_prod][3][4] << ", diff = " << v4_mpi_old_method[3][4] - v4_mpi[ik_prod][3][4] << std::endl;
-            std::cout << "is = 111, js = 95 :" << std::endl;
-            std::cout << v4_mpi_old_method[111][95] << " " << v4_mpi[ik_prod][111][95] << ", diff = " << v4_mpi_old_method[111][95] - v4_mpi[ik_prod][111][95] << std::endl;
-
-            double norm1 = 0.0;
-            double norm2 = 0.0;
-            double norm_diff = 0.0;
-            for(ii = 0; ii < ns4; ++ii){
-                is2_1 = ii/ns2;
-                js2_1 = ii%ns2;
-
-                norm1 += std::norm(v4_mpi[ik_prod][is2_1][js2_1]);
-                norm2 += std::norm(v4_mpi_old_method[is2_1][js2_1]);
-                norm_diff += std::norm(v4_mpi[ik_prod][is2_1][js2_1]-v4_mpi_old_method[is2_1][js2_1]);
-            }
-
-            std::cout << "norms : " << std::endl;
-            std::cout << norm1 << " " << norm2 << ", diff = " << norm_diff << std::endl;
-
 
 
         } else {
