@@ -3305,6 +3305,8 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     const size_t ns3 = ns * ns * ns;
     const size_t ns4 = ns * ns * ns * ns;
     size_t is, js, ks, ls;
+    size_t is2_1, js2_1, is2_2, js2_2;
+    size_t is2, js2, ks2, ls2;
     unsigned int **ind;
     unsigned int i, j;
     std::complex<double> ret;
@@ -3312,11 +3314,15 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
     const auto nk_scph = kmesh_dense->nk;
     const auto ngroup_v4 = anharmonic_core->get_ngroup_fcs(4);
+    std::cout << "ngroup_v4 = " << ngroup_v4 << std::endl;
     const auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
     constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
     std::complex<double> ***evec_conj;
+
+    std::complex<double> **v4_mpi_old_method;
+    std::complex<double> **v4_tmp0, **v4_tmp1, **v4_tmp2, **v4_tmp3, **v4_tmp4;
 
     const size_t nk2_prod = nk_reduced_interpolate * nk_scph;
 
@@ -3355,6 +3361,14 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     allocate(ind, ngroup_v4, 4);
     allocate(v4_mpi, nk2_prod, ns2, ns2);
     allocate(evec_conj, kmesh_dense->nk, ns, ns);
+
+    allocate(v4_mpi_old_method, ns2, ns2);
+    allocate(v4_tmp0, ns2, ns2);
+    allocate(v4_tmp1, ns2, ns2);
+    allocate(v4_tmp2, ns2, ns2);
+    allocate(v4_tmp3, ns2, ns2);
+    allocate(v4_tmp4, ns2, ns2);
+
 
     const long int nks2 = kmesh_dense->nk * ns2;
 
@@ -3417,8 +3431,117 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                            * evec_conj[jk][ls][ind[i][3]];
                 }
 
-                v4_mpi[ik_prod][ns * is + js][ns * ks + ls] = factor * ret;
+                // v4_mpi[ik_prod][ns * is + js][ns * ks + ls] = factor * ret;
+                v4_mpi_old_method[ns * is + js][ns * ks + ls] = factor * ret;
             }
+
+            // initialize temporary matrices
+            for(is = 0; is < ns2; ++is){
+                for(js = 0; js < ns2; ++js){
+                    v4_tmp0[is][js] = complex_zero;
+                    v4_tmp1[is][js] = complex_zero;
+                    v4_tmp2[is][js] = complex_zero;
+                    v4_tmp3[is][js] = complex_zero;
+                    v4_tmp4[is][js] = complex_zero;
+                }
+            }
+
+            // copy v4 in (alpha,mu) representation to the temporary matrix
+            for (ii = 0; ii < ngroup_v4; ++ii) {
+                // v4_array_at_kpair[ii] = phi4_reciprocal[ii] * anharmonic_core->get_invmass_factor(4)[ii];
+                // for (j = 0; j < 4; ++j) ind[ii][j] = anharmonic_core->get_evec_index(4)[ii][j];
+                is = ind[ii][0]*ns + ind[ii][1];
+                js = ind[ii][2]*ns + ind[ii][3];
+                v4_tmp0[is][js] = v4_array_at_kpair[ii];
+            }
+
+            // transform the first index
+            for(ii = 0; ii < ns4; ++ii){
+                is2_1 = ii/ns2;
+                js2_1 = ii%ns2;
+                is = is2_1/ns; // first index
+                js = is2_1%ns; // second index
+                
+                for(is2 = 0; is2 < ns; ++is2){
+                    is2_2 = is2*ns+js;
+                    v4_tmp1[is2_1][js2_1] += v4_tmp0[is2_2][js2_1]
+                           * evec_conj[knum][is][is2];
+                }
+            }
+            // transform the second index
+            for(ii = 0; ii < ns4; ++ii){
+                is2_1 = ii/ns2;
+                js2_1 = ii%ns2;
+                is = is2_1/ns; // first index
+                js = is2_1%ns; // second index
+                
+                for(js2 = 0; js2 < ns; ++js2){
+                    is2_2 = is*ns+js2;
+                    v4_tmp2[is2_1][js2_1] += v4_tmp1[is2_2][js2_1]
+                           * evec_in[knum][js][js2];
+                }
+            }
+            // transform the third index
+            for(ii = 0; ii < ns4; ++ii){
+                is2_1 = ii/ns2;
+                js2_1 = ii%ns2;
+                ks = js2_1/ns; // third index
+                ls = js2_1%ns; // fourth index
+                
+                for(ks2 = 0; ks2 < ns; ++ks2){
+                    js2_2 = ks2*ns+ls;
+                    v4_tmp3[is2_1][js2_1] += v4_tmp2[is2_1][js2_2]
+                           * evec_in[jk][ks][ks2];
+                }
+            }
+
+            // transform the fourth index
+            for(ii = 0; ii < ns4; ++ii){
+                is2_1 = ii/ns2;
+                js2_1 = ii%ns2;
+                ks = js2_1/ns; // third index
+                ls = js2_1%ns; // fourth index
+                
+                for(ls2 = 0; ls2 < ns; ++ls2){
+                    js2_2 = ks*ns+ls2;
+                    v4_tmp4[is2_1][js2_1] += v4_tmp3[is2_1][js2_2]
+                           * evec_conj[jk][ls][ls2];
+                }
+            }
+
+            // copy to the final matrix
+            for(ii = 0; ii < ns4; ++ii){
+                is2_1 = ii/ns2;
+                js2_1 = ii%ns2;
+
+                v4_mpi[ik_prod][is2_1][js2_1] = factor*v4_tmp4[is2_1][js2_1];
+            }
+
+            // check result(debug)
+            std::cout << "ik_prod = " << ik_prod << std::endl;
+            std::cout << "is = 0, js = 0 :" << std::endl;
+            std::cout << v4_mpi_old_method[0][0] << " " << v4_mpi[ik_prod][0][0] << ", diff = " << v4_mpi_old_method[0][0] - v4_mpi[ik_prod][0][0] << std::endl;
+            std::cout << "is = 3, js = 4 :" << std::endl;
+            std::cout << v4_mpi_old_method[3][4] << " " << v4_mpi[ik_prod][3][4] << ", diff = " << v4_mpi_old_method[3][4] - v4_mpi[ik_prod][3][4] << std::endl;
+            std::cout << "is = 111, js = 95 :" << std::endl;
+            std::cout << v4_mpi_old_method[111][95] << " " << v4_mpi[ik_prod][111][95] << ", diff = " << v4_mpi_old_method[111][95] - v4_mpi[ik_prod][111][95] << std::endl;
+
+            double norm1 = 0.0;
+            double norm2 = 0.0;
+            double norm_diff = 0.0;
+            for(ii = 0; ii < ns4; ++ii){
+                is2_1 = ii/ns2;
+                js2_1 = ii%ns2;
+
+                norm1 += std::norm(v4_mpi[ik_prod][is2_1][js2_1]);
+                norm2 += std::norm(v4_mpi_old_method[is2_1][js2_1]);
+                norm_diff += std::norm(v4_mpi[ik_prod][is2_1][js2_1]-v4_mpi_old_method[is2_1][js2_1]);
+            }
+
+            std::cout << "norms : " << std::endl;
+            std::cout << norm1 << " " << norm2 << ", diff = " << norm_diff << std::endl;
+
+
 
         } else {
 
@@ -3522,6 +3645,12 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     }
 
     deallocate(v4_mpi);
+    deallocate(v4_mpi_old_method);
+    deallocate(v4_tmp0);
+    deallocate(v4_tmp1);
+    deallocate(v4_tmp2);
+    deallocate(v4_tmp3);
+    deallocate(v4_tmp4);
 
     zerofill_elements_acoustic_at_gamma(omega2_harmonic, v4_out, 4);
 
