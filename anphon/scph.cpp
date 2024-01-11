@@ -3006,6 +3006,10 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
     unsigned int is, js, ks;
     unsigned int **ind;
     unsigned int i, j;
+
+    size_t js2_1, js2_2;
+    size_t is2, js2, ks2;
+
     std::complex<double> ret;
     long int ii;
 
@@ -3015,6 +3019,9 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
     static auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v3_array_at_kpair;
     std::complex<double> ***v3_mpi;
+
+    std::complex<double> **v3_mpi_old_method;
+    std::complex<double> **v3_tmp0, **v3_tmp1, **v3_tmp2, **v3_tmp3;
 
     if (mympi->my_rank == 0) {
         if (self_offdiag) {
@@ -3027,6 +3034,12 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
     allocate(v3_array_at_kpair, ngroup_v3);
     allocate(ind, ngroup_v3, 3);
     allocate(v3_mpi, nk_scph, ns, ns2);
+
+    allocate(v3_mpi_old_method, ns, ns2);
+    allocate(v3_tmp0, ns, ns2);
+    allocate(v3_tmp1, ns, ns2);
+    allocate(v3_tmp2, ns, ns2);
+    allocate(v3_tmp3, ns, ns2);
 
     for (unsigned int ik = mympi->my_rank; ik < nk_scph; ik += mympi->nprocs) {
 
@@ -3075,8 +3088,107 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
                            * std::conj(evec_in[ik][ks][ind[i][2]]);
                 }
 
-                v3_mpi[ik][is][ns * js + ks] = factor * ret;
+                // v3_mpi[ik][is][ns * js + ks] = factor * ret;
+                v3_mpi_old_method[is][ns * js + ks] = factor * ret;
             }
+
+
+            // initialize temporary matrices
+#pragma omp parallel for private(js)
+            for(is = 0; is < ns; ++is){
+                for(js = 0; js < ns2; ++js){
+                    v3_tmp0[is][js] = complex_zero;
+                    v3_tmp1[is][js] = complex_zero;
+                    v3_tmp2[is][js] = complex_zero;
+                    v3_tmp3[is][js] = complex_zero;
+                }
+            }
+
+            // copy v3 in (alpha,mu) representation to the temporary matrix
+#pragma omp parallel for private(is, js)
+            for (ii = 0; ii < ngroup_v3; ++ii) {
+
+                is = ind[ii][0];
+                js = ind[ii][1]*ns + ind[ii][2];
+                v3_tmp0[is][js] = v3_array_at_kpair[ii];
+            }
+
+            // transform the first index
+#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+                
+                for(is2 = 0; is2 < ns; ++is2){
+                    v3_tmp1[is][js2_1] += v3_tmp0[is2][js2_1]
+                           * evec_in[0][is][is2];
+                }
+            }
+
+            // transform the second index
+#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+                js = js2_1/ns; // second index
+                ks = js2_1%ns; // third index
+
+                for(js2 = 0; js2 < ns; ++js2){
+                    js2_2 = js2*ns+ks;
+                    v3_tmp2[is][js2_1] += v3_tmp1[is][js2_2]
+                           * evec_in[ik][js][js2];
+                }
+            }
+
+            // transform the third index
+#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+                js = js2_1/ns; // third index
+                ks = js2_1%ns; // fourth index
+                
+                for(ks2 = 0; ks2 < ns; ++ks2){
+                    js2_2 = js*ns+ks2;
+                    v3_tmp3[is][js2_1] += v3_tmp2[is][js2_2]
+                           * std::conj(evec_in[ik][ks][ks2]);
+                }
+            }
+
+            // copy to the final matrix
+#pragma omp parallel for private(is, js2_1)
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+
+                v3_mpi[ik][is][js2_1]  = factor*v3_tmp3[is][js2_1];
+            }
+
+            // check result(debug)
+            std::cout << "ik = " << ik << std::endl;
+            std::cout << "is = 0, js = 0 :" << std::endl;
+            std::cout << v3_mpi_old_method[0][0] << " " << v3_mpi[ik][0][0] << ", diff = " << v3_mpi_old_method[0][0] - v3_mpi[ik][0][0] << std::endl;
+
+            std::cout << "is = 3, js = 4 :" << std::endl;
+            std::cout << v3_mpi_old_method[3][4] << " " << v3_mpi[ik][3][4] << ", diff = " << v3_mpi_old_method[3][4] - v3_mpi[ik][3][4] << std::endl;
+
+            std::cout << "is = 10, js = 95 :" << std::endl;
+            std::cout << v3_mpi_old_method[10][95] << " " << v3_mpi[ik][10][95] << ", diff = " << v3_mpi_old_method[10][95] - v3_mpi[ik][10][95] << std::endl;
+
+            double norm1 = 0.0;
+            double norm2 = 0.0;
+            double norm_diff = 0.0;
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+
+                norm1 += std::norm(v3_mpi[ik][is][js2_1]);
+                norm2 += std::norm(v3_mpi_old_method[is][js2_1]);
+                norm_diff += std::norm(v3_mpi[ik][is][js2_1]-v3_mpi_old_method[is][js2_1]);
+            }
+
+            std::cout << "norms : " << std::endl;
+            std::cout << norm1 << " " << norm2 << ", diff = " << norm_diff << std::endl;
 
         } else {
 
@@ -3136,6 +3248,12 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 #endif
 
     deallocate(v3_mpi);
+    deallocate(v3_mpi_old_method);
+    deallocate(v3_tmp0);
+    deallocate(v3_tmp1);
+    deallocate(v3_tmp2);
+    deallocate(v3_tmp3);
+
 
     zerofill_elements_acoustic_at_gamma(omega2_harmonic, v3_out, 3);
 
@@ -3631,6 +3749,9 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     const size_t ns2 = ns * ns;
     const size_t ns4 = ns * ns * ns * ns;
     int is, js;
+    int is2_1, js2_1, is2_2, js2_2;
+    int is2, js2, ks2, ls2;
+
     unsigned int knum;
     unsigned int **ind;
     unsigned int i, j;
@@ -3642,6 +3763,9 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
+    std::complex<double> **v4_mpi_old_method;
+    std::complex<double> **v4_tmp0, **v4_tmp1, **v4_tmp2, **v4_tmp3, **v4_tmp4;
+
 
     std::vector<int> ik_vec, jk_vec, is_vec, js_vec;
 
@@ -3705,6 +3829,13 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     allocate(ind, ngroup_v4, 4);
     allocate(v4_mpi, nk2_prod, ns2, ns2);
 
+    allocate(v4_mpi_old_method, ns2, ns2);
+    allocate(v4_tmp0, ns2, ns2);
+    allocate(v4_tmp1, ns, ns);
+    allocate(v4_tmp2, ns2, ns2);
+    allocate(v4_tmp3, ns2, ns2);
+    allocate(v4_tmp4, ns2, ns2);
+
     for (ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
 #pragma omp parallel for private (js)
         for (is = 0; is < ns2; ++is) {
@@ -3748,6 +3879,14 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
                 v4_array_at_kpair[ii] = phi4_reciprocal[ii] * anharmonic_core->get_invmass_factor(4)[ii];
                 for (j = 0; j < 4; ++j) ind[ii][j] = anharmonic_core->get_evec_index(4)[ii][j];
             }
+
+            // copy v4 in (alpha,mu) representation to the temporary matrix
+            for (ii = 0; ii < ngroup_v4; ++ii) {
+
+                is = ind[ii][0]*ns + ind[ii][1];
+                js = ind[ii][2]*ns + ind[ii][3];
+                v4_tmp0[is][js] = v4_array_at_kpair[ii];
+            }
             ik_old = ik_now;
             jk_old = jk_now;
         }
@@ -3772,8 +3911,21 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
                        * std::conj(evec_in[jk_now][ls][ind[i][3]]);
             }
 
-            v4_mpi[ik_prod][is_prod][js] = factor * ret;
+            // v4_mpi[ik_prod][is_prod][js] = factor * ret;
+            v4_mpi_old_method[is_prod][js] = factor * ret;
         }
+
+        // initialize temporary matrix
+        for(is = 0; is < ns2; ++is){
+            for(js = 0; js < ns2; ++js){
+                v4_tmp1[is][js] = complex_zero;
+                v4_tmp2[is][js] = complex_zero;
+                v4_tmp3[is][js] = complex_zero;
+                v4_tmp4[is][js] = complex_zero;
+            }
+        }
+
+        // We need to implement mode transformation here
 
         if (mympi->my_rank == 0) {
             std::cout << " SET " << ii + 1 << " done. " << std::endl;
@@ -3836,6 +3988,12 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     }
 
     deallocate(v4_mpi);
+    deallocate(v4_mpi_old_method);
+    deallocate(v4_tmp0);
+    deallocate(v4_tmp1);
+    deallocate(v4_tmp2);
+    deallocate(v4_tmp3);
+    deallocate(v4_tmp4);
 
     zerofill_elements_acoustic_at_gamma(omega2_harmonic, v4_out, 4);
 
