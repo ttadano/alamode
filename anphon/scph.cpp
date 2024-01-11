@@ -3228,12 +3228,17 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
                                               const bool self_offdiag)
 {
 
+    std::cout << "start compute_V3_elements_for_given_IFCs" << std::endl;
+
     auto ns = dynamical->neval;
     auto ns2 = ns * ns;
     auto ns3 = ns * ns * ns;
     unsigned int is, js, ks;
     unsigned int **ind;
     unsigned int i, j;
+    size_t js2_1, js2_2;
+    size_t is2, js2, ks2;
+
     std::complex<double> ret;
     long int ii;
 
@@ -3244,10 +3249,19 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
     std::complex<double> ***v3_mpi;
     std::complex<double> *phi3_reciprocal_tmp;
 
+    std::complex<double> **v3_mpi_old_method;
+    std::complex<double> **v3_tmp0, **v3_tmp1, **v3_tmp2, **v3_tmp3;
+
     allocate(phi3_reciprocal_tmp, ngroup_v3_in);
     allocate(v3_array_at_kpair, ngroup_v3_in);
     allocate(ind, ngroup_v3_in, 3);
     allocate(v3_mpi, nk_scph, ns, ns2);
+
+    allocate(v3_mpi_old_method, ns, ns2);
+    allocate(v3_tmp0, ns, ns2);
+    allocate(v3_tmp1, ns, ns2);
+    allocate(v3_tmp2, ns, ns2);
+    allocate(v3_tmp3, ns, ns2);
 
     for (unsigned int ik = mympi->my_rank; ik < nk_scph; ik += mympi->nprocs) {
 
@@ -3296,8 +3310,109 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
                            * std::conj(evec_in[ik][ks][ind[i][2]]);
                 }
 
-                v3_mpi[ik][is][ns * js + ks] = factor * ret;
+                // v3_mpi[ik][is][ns * js + ks] = factor * ret;
+                v3_mpi_old_method[is][ns * js + ks] = factor * ret;
             }
+
+            // initialize temporary matrices
+#pragma omp parallel for private(js)
+            for(is = 0; is < ns; ++is){
+                for(js = 0; js < ns2; ++js){
+                    v3_tmp0[is][js] = complex_zero;
+                    v3_tmp1[is][js] = complex_zero;
+                    v3_tmp2[is][js] = complex_zero;
+                    v3_tmp3[is][js] = complex_zero;
+                }
+            }
+
+            // copy v3 in (alpha,mu) representation to the temporary matrix
+#pragma omp parallel for private(is, js)
+            for (ii = 0; ii < ngroup_v3_in; ++ii) {
+
+                is = ind[ii][0];
+                js = ind[ii][1]*ns + ind[ii][2];
+                v3_tmp0[is][js] = v3_array_at_kpair[ii];
+            }
+
+            // transform the first index
+#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+                
+                for(is2 = 0; is2 < ns; ++is2){
+                    v3_tmp1[is][js2_1] += v3_tmp0[is2][js2_1]
+                           * evec_in[0][is][is2];
+                }
+            }
+            
+            // transform the second index
+#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+                js = js2_1/ns; // second index
+                ks = js2_1%ns; // third index
+
+                for(js2 = 0; js2 < ns; ++js2){
+                    js2_2 = js2*ns+ks;
+                    v3_tmp2[is][js2_1] += v3_tmp1[is][js2_2]
+                           * evec_in[ik][js][js2];
+                }
+            }
+
+            // transform the third index
+#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+                js = js2_1/ns; // third index
+                ks = js2_1%ns; // fourth index
+                
+                for(ks2 = 0; ks2 < ns; ++ks2){
+                    js2_2 = js*ns+ks2;
+                    v3_tmp3[is][js2_1] += v3_tmp2[is][js2_2]
+                           * std::conj(evec_in[ik][ks][ks2]);
+                }
+            }
+
+            // copy to the final matrix
+#pragma omp parallel for private(is, js2_1)
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+
+                v3_mpi[ik][is][js2_1]  = factor*v3_tmp3[is][js2_1];
+            }
+
+            // check result(debug)
+            std::cout << "ik = " << ik << std::endl;
+            std::cout << "is = 0, js = 0 :" << std::endl;
+            std::cout << v3_mpi_old_method[0][0] << " " << v3_mpi[ik][0][0] << ", diff = " << v3_mpi_old_method[0][0] - v3_mpi[ik][0][0] << std::endl;
+
+            std::cout << "is = 3, js = 4 :" << std::endl;
+            std::cout << v3_mpi_old_method[3][4] << " " << v3_mpi[ik][3][4] << ", diff = " << v3_mpi_old_method[3][4] - v3_mpi[ik][3][4] << std::endl;
+
+            std::cout << "is = 10, js = 95 :" << std::endl;
+            std::cout << v3_mpi_old_method[10][95] << " " << v3_mpi[ik][10][95] << ", diff = " << v3_mpi_old_method[10][95] - v3_mpi[ik][10][95] << std::endl;
+
+            double norm1 = 0.0;
+            double norm2 = 0.0;
+            double norm_diff = 0.0;
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                js2_1 = ii%ns2;
+
+                norm1 += std::norm(v3_mpi[ik][is][js2_1]);
+                norm2 += std::norm(v3_mpi_old_method[is][js2_1]);
+                norm_diff += std::norm(v3_mpi[ik][is][js2_1]-v3_mpi_old_method[is][js2_1]);
+            }
+
+            std::cout << "norms : " << std::endl;
+            std::cout << norm1 << " " << norm2 << ", diff = " << norm_diff << std::endl;
+
+
+
 
         } else {
 
@@ -3357,6 +3472,11 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
 #endif
 
     deallocate(v3_mpi);
+    deallocate(v3_mpi_old_method);
+    deallocate(v3_tmp0);
+    deallocate(v3_tmp1);
+    deallocate(v3_tmp2);
+    deallocate(v3_tmp3);
 
     zerofill_elements_acoustic_at_gamma(omega2_harmonic, v3_out, 3);
 }
