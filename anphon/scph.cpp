@@ -3228,8 +3228,6 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
                                               const bool self_offdiag)
 {
 
-    std::cout << "start compute_V3_elements_for_given_IFCs" << std::endl;
-
     auto ns = dynamical->neval;
     auto ns2 = ns * ns;
     auto ns3 = ns * ns * ns;
@@ -3293,26 +3291,6 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
 
             // All matrix elements will be calculated when considering the off-diagonal
             // elements of the phonon self-energy (i.e., when considering polarization mixing).
-
-#pragma omp parallel for private(is, js, ks, ret, i)
-            for (ii = 0; ii < ns3; ++ii) {
-                is = ii / ns2;
-                js = (ii - ns2 * is) / ns;
-                ks = ii % ns;
-
-                ret = std::complex<double>(0.0, 0.0);
-
-                for (i = 0; i < ngroup_v3_in; ++i) {
-
-                    ret += v3_array_at_kpair[i]
-                           * evec_in[0][is][ind[i][0]]
-                           * evec_in[ik][js][ind[i][1]]
-                           * std::conj(evec_in[ik][ks][ind[i][2]]);
-                }
-
-                // v3_mpi[ik][is][ns * js + ks] = factor * ret;
-                v3_mpi_old_method[is][ns * js + ks] = factor * ret;
-            }
 
             // initialize temporary matrices
 #pragma omp parallel for private(js)
@@ -3384,35 +3362,6 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
 
                 v3_mpi[ik][is][js2_1]  = factor*v3_tmp3[is][js2_1];
             }
-
-            // check result(debug)
-            std::cout << "ik = " << ik << std::endl;
-            std::cout << "is = 0, js = 0 :" << std::endl;
-            std::cout << v3_mpi_old_method[0][0] << " " << v3_mpi[ik][0][0] << ", diff = " << v3_mpi_old_method[0][0] - v3_mpi[ik][0][0] << std::endl;
-
-            std::cout << "is = 3, js = 4 :" << std::endl;
-            std::cout << v3_mpi_old_method[3][4] << " " << v3_mpi[ik][3][4] << ", diff = " << v3_mpi_old_method[3][4] - v3_mpi[ik][3][4] << std::endl;
-
-            std::cout << "is = 10, js = 95 :" << std::endl;
-            std::cout << v3_mpi_old_method[10][95] << " " << v3_mpi[ik][10][95] << ", diff = " << v3_mpi_old_method[10][95] - v3_mpi[ik][10][95] << std::endl;
-
-            double norm1 = 0.0;
-            double norm2 = 0.0;
-            double norm_diff = 0.0;
-            for(ii = 0; ii < ns3; ++ii){
-                is = ii/ns2;
-                js2_1 = ii%ns2;
-
-                norm1 += std::norm(v3_mpi[ik][is][js2_1]);
-                norm2 += std::norm(v3_mpi_old_method[is][js2_1]);
-                norm_diff += std::norm(v3_mpi[ik][is][js2_1]-v3_mpi_old_method[is][js2_1]);
-            }
-
-            std::cout << "norms : " << std::endl;
-            std::cout << norm1 << " " << norm2 << ", diff = " << norm_diff << std::endl;
-
-
-
 
         } else {
 
