@@ -1311,44 +1311,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             relax_str);
     }
 
-    // debug compute_V4_elements_mpi_over_band
-    std::complex<double> ***v4_ref_over_band;
-    allocate(v4_ref_over_band, nk_irred_interpolate * kmesh_dense->nk,
-             ns * ns, ns * ns);
-    compute_V4_elements_mpi_over_band(v4_ref_over_band,
-                                    evec_harmonic,
-                                    selfenergy_offdiagonal);
-
-    double norm1, norm2, norm_diff;
-    for(int ik_prod = 0; ik_prod < nk_irred_interpolate * kmesh_dense->nk; ik_prod++){
-        std::cout << "ik_prod = " << ik_prod << std::endl;
-
-        std::cout << "is1 = 0, is2 = 0 " << std::endl;
-        std::cout << "over_kpoint : " << v4_ref[ik_prod][0][0] << ", over_band : " << v4_ref_over_band[ik_prod][0][0] << ", ";
-        std::cout << "diff : " << v4_ref[ik_prod][0][0] - v4_ref_over_band[ik_prod][0][0] << std::endl;
-
-        std::cout << "is1 = 98, is2 = 125 " << std::endl;
-        std::cout << "over_kpoint : " << v4_ref[ik_prod][98][125] << ", over_band : " << v4_ref_over_band[ik_prod][98][125] << ", ";
-        std::cout << "diff : " << v4_ref[ik_prod][98][125] - v4_ref_over_band[ik_prod][98][125] << std::endl;
-
-        // calculate norm
-        norm1 = 0.0;
-        norm2 = 0.0;
-        norm_diff = 0.0;
-        for(int itmp1 = 0; itmp1 < ns*ns; itmp1++){
-            for(int itmp2 = 0; itmp2 < ns*ns; itmp2++){
-                norm1 += std::norm(v4_ref[ik_prod][itmp1][itmp2]);
-                norm2 += std::norm(v4_ref_over_band[ik_prod][itmp1][itmp2]);
-                norm_diff += std::norm(v4_ref[ik_prod][itmp1][itmp2]-v4_ref_over_band[ik_prod][itmp1][itmp2]);
-            }
-        }
-
-        std::cout << "norm : " << std::endl;
-        std::cout << "over_kpoint : " << norm1 << ", over_band : " << norm2 << ", ";
-        std::cout << "diff : " << norm_diff << std::endl;
-    }
-
-
     allocate(v3_ref, nk, ns, ns * ns);
     allocate(v3_renorm, nk, ns, ns * ns);
     allocate(v3_with_umn, nk, ns, ns * ns);
