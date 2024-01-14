@@ -1311,6 +1311,44 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             relax_str);
     }
 
+    // debug compute_V4_elements_mpi_over_band
+    std::complex<double> ***v4_ref_over_band;
+    allocate(v4_ref_over_band, nk_irred_interpolate * kmesh_dense->nk,
+             ns * ns, ns * ns);
+    compute_V4_elements_mpi_over_band(v4_ref_over_band,
+                                    evec_harmonic,
+                                    selfenergy_offdiagonal);
+
+    double norm1, norm2, norm_diff;
+    for(int ik_prod = 0; ik_prod < nk_irred_interpolate * kmesh_dense->nk; ik_prod++){
+        std::cout << "ik_prod = " << ik_prod << std::endl;
+
+        std::cout << "is1 = 0, is2 = 0 " << std::endl;
+        std::cout << "over_kpoint : " << v4_ref[ik_prod][0][0] << ", over_band : " << v4_ref_over_band[ik_prod][0][0] << ", ";
+        std::cout << "diff : " << v4_ref[ik_prod][0][0] - v4_ref_over_band[ik_prod][0][0] << std::endl;
+
+        std::cout << "is1 = 98, is2 = 125 " << std::endl;
+        std::cout << "over_kpoint : " << v4_ref[ik_prod][98][125] << ", over_band : " << v4_ref_over_band[ik_prod][98][125] << ", ";
+        std::cout << "diff : " << v4_ref[ik_prod][98][125] - v4_ref_over_band[ik_prod][98][125] << std::endl;
+
+        // calculate norm
+        norm1 = 0.0;
+        norm2 = 0.0;
+        norm_diff = 0.0;
+        for(int itmp1 = 0; itmp1 < ns*ns; itmp1++){
+            for(int itmp2 = 0; itmp2 < ns*ns; itmp2++){
+                norm1 += std::norm(v4_ref[ik_prod][itmp1][itmp2]);
+                norm2 += std::norm(v4_ref_over_band[ik_prod][itmp1][itmp2]);
+                norm_diff += std::norm(v4_ref[ik_prod][itmp1][itmp2]-v4_ref_over_band[ik_prod][itmp1][itmp2]);
+            }
+        }
+
+        std::cout << "norm : " << std::endl;
+        std::cout << "over_kpoint : " << norm1 << ", over_band : " << norm2 << ", ";
+        std::cout << "diff : " << norm_diff << std::endl;
+    }
+
+
     allocate(v3_ref, nk, ns, ns * ns);
     allocate(v3_renorm, nk, ns, ns * ns);
     allocate(v3_with_umn, nk, ns, ns * ns);
@@ -3768,8 +3806,13 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     const size_t nk_reduced_interpolate = kmesh_coarse->nk_irred;
     const size_t ns = dynamical->neval;
     const size_t ns2 = ns * ns;
+    const size_t ns3 = ns * ns * ns;
     const size_t ns4 = ns * ns * ns * ns;
-    int is, js;
+    int is, js, ks, ls;
+    size_t is2_1, js2_1, is2_2, js2_2;
+    size_t is2, js2, ks2, ls2;
+    int is4_1;
+    int is3_1;
     unsigned int knum;
     unsigned int **ind;
     unsigned int i, j;
@@ -3781,6 +3824,9 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
+
+    std::complex<double> **v4_mpi_old_method;
+    std::complex<double> **v4_tmp0, **v4_tmp1, **v4_tmp2, **v4_tmp3, **v4_tmp4;
 
     std::vector<int> ik_vec, jk_vec, is_vec, js_vec;
 
@@ -3845,6 +3891,13 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     allocate(ind, ngroup_v4, 4);
     allocate(v4_mpi, nk2_prod, ns2, ns2);
 
+    allocate(v4_mpi_old_method, ns, ns);
+    allocate(v4_tmp0, ns2, ns2);
+    allocate(v4_tmp1, ns, ns);
+    allocate(v4_tmp2, ns, ns);
+    allocate(v4_tmp3, ns, ns);
+    allocate(v4_tmp4, ns, ns);
+
     for (ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
 #pragma omp parallel for private (js)
         for (is = 0; is < ns2; ++is) {
@@ -3890,6 +3943,20 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
             }
             ik_old = ik_now;
             jk_old = jk_now;
+
+            for(is4_1 = 0; is4_1 < ns4; is4_1++){
+                is2_1 = is4_1/ns2;
+                js2_1 = is4_1%ns2;
+                v4_tmp0[is2_1][js2_1] = complex_zero;
+            }
+
+            for (i = 0; i < ngroup_v4; ++i) {
+
+                is = ind[i][0]*ns + ind[i][1];
+                js = ind[i][2]*ns + ind[i][3];
+                v4_tmp0[is][js] = v4_array_at_kpair[i];
+            }
+
         }
 
         ik_prod = ik_now * nk_scph + jk_now;
@@ -3912,8 +3979,80 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
                        * std::conj(evec_in[jk_now][ls][ind[i][3]]);
             }
 
-            v4_mpi[ik_prod][is_prod][js] = factor * ret;
+            // v4_mpi[ik_prod][is_prod][js] = factor * ret;
+            v4_mpi_old_method[ks][ls] = factor * ret;
         }
+
+        // initialize temporary matrices
+#pragma omp parallel for private(js)
+        for(is = 0; is < ns; ++is){
+            for(js = 0; js < ns; ++js){
+                v4_tmp1[is][js] = complex_zero;
+                v4_tmp2[is][js] = complex_zero;
+                v4_tmp3[is][js] = complex_zero;
+                v4_tmp4[is][js] = complex_zero;
+            }
+        }
+
+        // transform the first and second index
+        for(is4_1 = 0; is4_1 < ns4; ++is4_1){
+
+            is2_1 = is4_1/ns2;
+            is2_2 = is4_1%ns2;
+
+            is = is2_1/ns;
+            js = is2_1%ns;
+            ks = is2_2/ns;
+            ls = is2_2%ns;
+
+            v4_tmp1[ks][ls] += v4_tmp0[is2_1][is2_2]
+                                * std::conj(evec_in[knum][is_now][is])
+                                * evec_in[knum][js_now][js];
+
+        }
+
+        // transform the third index
+        for(is3_1 = 0; is3_1 < ns3; ++is3_1){
+            is = is3_1/ns2;
+            is2 = (is3_1/ns)%ns;
+            js = is3_1%ns;
+
+            v4_tmp2[is][js] += v4_tmp1[is2][js] * evec_in[jk_now][is][is2];
+        }
+
+        // transform the fourth index
+        for(is3_1 = 0; is3_1 < ns3; ++is3_1){
+            is = is3_1/ns2;
+            is2 = (is3_1/ns)%ns;
+            js = is3_1%ns;
+
+            v4_tmp3[js][is] += v4_tmp2[js][is2] * std::conj(evec_in[jk_now][is][is2]);
+        }
+
+        // copy to the final matrix
+        for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+            is = is2_1/ns;
+            js = is2_1%ns;
+
+            v4_mpi[ik_prod][is_prod][is2_1] = factor * v4_tmp3[is][js];
+        }
+
+        // check result (debug)
+        std::cout << "set = " << ii << std::endl;
+        double norm1 = 0.0;
+        double norm2 = 0.0; 
+        double norm_diff = 0.0;
+        for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+            is = is2_1/ns;
+            js = is2_1%ns;
+
+            norm1 += std::norm(v4_mpi_old_method[is][js]);
+            norm2 += std::norm(v4_mpi[ik_prod][is_prod][is2_1]);
+
+            norm_diff += std::norm(v4_mpi_old_method[is][js]-v4_mpi[ik_prod][is_prod][is2_1]);
+        }
+
+        std::cout << "original : " << norm1 << ", new : " << norm2 << ", diff = " << norm_diff << std::endl;
 
         if (mympi->my_rank == 0) {
             std::cout << " SET " << ii + 1 << " done. " << std::endl;
@@ -3976,6 +4115,12 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     }
 
     deallocate(v4_mpi);
+    deallocate(v4_mpi_old_method);
+    deallocate(v4_tmp0);
+    deallocate(v4_tmp1);
+    deallocate(v4_tmp2);
+    deallocate(v4_tmp3);
+    deallocate(v4_tmp4);
 
     zerofill_elements_acoustic_at_gamma(omega2_harmonic, v4_out, 4);
 
