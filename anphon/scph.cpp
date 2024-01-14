@@ -3770,9 +3770,6 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     const size_t ns2 = ns * ns;
     const size_t ns4 = ns * ns * ns * ns;
     int is, js;
-    int is2_1, js2_1, is2_2, js2_2;
-    int is2, js2, ks2, ls2;
-
     unsigned int knum;
     unsigned int **ind;
     unsigned int i, j;
@@ -3784,9 +3781,6 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v4_array_at_kpair;
     std::complex<double> ***v4_mpi;
-    std::complex<double> **v4_mpi_old_method;
-    std::complex<double> **v4_tmp0, **v4_tmp1, **v4_tmp2, **v4_tmp3, **v4_tmp4;
-
 
     std::vector<int> ik_vec, jk_vec, is_vec, js_vec;
 
@@ -3850,13 +3844,6 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     allocate(ind, ngroup_v4, 4);
     allocate(v4_mpi, nk2_prod, ns2, ns2);
 
-    allocate(v4_mpi_old_method, ns2, ns2);
-    allocate(v4_tmp0, ns2, ns2);
-    allocate(v4_tmp1, ns, ns);
-    allocate(v4_tmp2, ns2, ns2);
-    allocate(v4_tmp3, ns2, ns2);
-    allocate(v4_tmp4, ns2, ns2);
-
     for (ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
 #pragma omp parallel for private (js)
         for (is = 0; is < ns2; ++is) {
@@ -3900,14 +3887,6 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
                 v4_array_at_kpair[ii] = phi4_reciprocal[ii] * anharmonic_core->get_invmass_factor(4)[ii];
                 for (j = 0; j < 4; ++j) ind[ii][j] = anharmonic_core->get_evec_index(4)[ii][j];
             }
-
-            // copy v4 in (alpha,mu) representation to the temporary matrix
-            for (ii = 0; ii < ngroup_v4; ++ii) {
-
-                is = ind[ii][0]*ns + ind[ii][1];
-                js = ind[ii][2]*ns + ind[ii][3];
-                v4_tmp0[is][js] = v4_array_at_kpair[ii];
-            }
             ik_old = ik_now;
             jk_old = jk_now;
         }
@@ -3932,21 +3911,8 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
                        * std::conj(evec_in[jk_now][ls][ind[i][3]]);
             }
 
-            // v4_mpi[ik_prod][is_prod][js] = factor * ret;
-            v4_mpi_old_method[is_prod][js] = factor * ret;
+            v4_mpi[ik_prod][is_prod][js] = factor * ret;
         }
-
-        // initialize temporary matrix
-        for(is = 0; is < ns2; ++is){
-            for(js = 0; js < ns2; ++js){
-                v4_tmp1[is][js] = complex_zero;
-                v4_tmp2[is][js] = complex_zero;
-                v4_tmp3[is][js] = complex_zero;
-                v4_tmp4[is][js] = complex_zero;
-            }
-        }
-
-        // We need to implement mode transformation here
 
         if (mympi->my_rank == 0) {
             std::cout << " SET " << ii + 1 << " done. " << std::endl;
@@ -4009,12 +3975,6 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     }
 
     deallocate(v4_mpi);
-    deallocate(v4_mpi_old_method);
-    deallocate(v4_tmp0);
-    deallocate(v4_tmp1);
-    deallocate(v4_tmp2);
-    deallocate(v4_tmp3);
-    deallocate(v4_tmp4);
 
     zerofill_elements_acoustic_at_gamma(omega2_harmonic, v4_out, 4);
 
