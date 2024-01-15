@@ -3995,64 +3995,50 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
         }
 
         // transform the first and second index
-        for(is4_1 = 0; is4_1 < ns4; ++is4_1){
-
-            is2_1 = is4_1/ns2;
-            is2_2 = is4_1%ns2;
-
-            is = is2_1/ns;
-            js = is2_1%ns;
+#pragma omp parallel for private(is2_1, is, js, ks, ls)
+        for(is2_2 = 0; is2_2 < ns2; ++is2_2){
             ks = is2_2/ns;
             ls = is2_2%ns;
 
-            v4_tmp1[ks][ls] += v4_tmp0[is2_1][is2_2]
-                                * std::conj(evec_in[knum][is_now][is])
-                                * evec_in[knum][js_now][js];
+            for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+                is = is2_1/ns;
+                js = is2_1%ns;
 
+                v4_tmp1[ks][ls] += v4_tmp0[is2_1][is2_2]
+                                    * std::conj(evec_in[knum][is_now][is])
+                                    * evec_in[knum][js_now][js];
+            }
         }
 
         // transform the third index
-        for(is3_1 = 0; is3_1 < ns3; ++is3_1){
-            is = is3_1/ns2;
-            is2 = (is3_1/ns)%ns;
-            js = is3_1%ns;
+#pragma omp parallel for private(is, js, is2)
+        for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+            is = is2_1/ns;
+            js = is2_1%ns;
 
-            v4_tmp2[is][js] += v4_tmp1[is2][js] * evec_in[jk_now][is][is2];
+            for(is2 = 0; is2 < ns; ++is2){
+                v4_tmp2[is][js] += v4_tmp1[is2][js] * evec_in[jk_now][is][is2];
+            }
         }
 
         // transform the fourth index
-        for(is3_1 = 0; is3_1 < ns3; ++is3_1){
-            is = is3_1/ns2;
-            is2 = (is3_1/ns)%ns;
-            js = is3_1%ns;
-
-            v4_tmp3[js][is] += v4_tmp2[js][is2] * std::conj(evec_in[jk_now][is][is2]);
+#pragma omp parallel for private(is, js, is2)
+        for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+            is = is2_1/ns;
+            js = is2_1%ns;
+            for(is2 = 0; is2 < ns; ++is2){
+                v4_tmp3[js][is] += v4_tmp2[js][is2] * std::conj(evec_in[jk_now][is][is2]);
+            }
         }
 
         // copy to the final matrix
+#pragma omp parallel for private(is, js)
         for(is2_1 = 0; is2_1 < ns2; ++is2_1){
             is = is2_1/ns;
             js = is2_1%ns;
 
             v4_mpi[ik_prod][is_prod][is2_1] = factor * v4_tmp3[is][js];
         }
-
-        // check result (debug)
-        std::cout << "set = " << ii << std::endl;
-        double norm1 = 0.0;
-        double norm2 = 0.0; 
-        double norm_diff = 0.0;
-        for(is2_1 = 0; is2_1 < ns2; ++is2_1){
-            is = is2_1/ns;
-            js = is2_1%ns;
-
-            norm1 += std::norm(v4_mpi_old_method[is][js]);
-            norm2 += std::norm(v4_mpi[ik_prod][is_prod][is2_1]);
-
-            norm_diff += std::norm(v4_mpi_old_method[is][js]-v4_mpi[ik_prod][is_prod][is2_1]);
-        }
-
-        std::cout << "original : " << norm1 << ", new : " << norm2 << ", diff = " << norm_diff << std::endl;
 
         if (mympi->my_rank == 0) {
             std::cout << " SET " << ii + 1 << " done. " << std::endl;
