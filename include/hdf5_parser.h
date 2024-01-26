@@ -80,8 +80,8 @@ inline void get_magnetism_from_h5(const H5Easy::File &file,
     lspin = load<int>(file, "/" + search_cell + "/spin_polarized");
     if (lspin > 0) {
         magmom = load<std::vector<std::vector<double>>>(file, "/" + search_cell + "/magnetic_moments");
-        noncollinear = load<int>(file, "/" + search_cell + "/noncollinear");
-        time_reversal_symmetry = load<int>(file, "/" + search_cell + "/time_reversal_symmetry");
+        noncollinear = loadAttribute<int>(file, "/" + search_cell + "/magnetic_moments", "noncollinear");
+        time_reversal_symmetry = loadAttribute<int>(file, "/" + search_cell + "/magnetic_moments", "time_reversal_symmetry");
     } else {
         noncollinear = 0;
         time_reversal_symmetry = 1;

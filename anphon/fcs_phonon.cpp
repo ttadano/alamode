@@ -146,7 +146,7 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
     Eigen::Vector3d relvec_tmp, relvec_tmp2;
     std::vector<std::vector<unsigned int>> map_trans;
     Eigen::Vector3d xshift, x0, x_shifted;
-    Eigen::Vector3d xdiff;
+    Eigen::Vector3d xdiff, xdiff_cart;
     std::vector<unsigned int> map_now;
 
     for (auto order = 0; order < maxorder_in; ++order) {
@@ -168,7 +168,8 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
                 for (auto jat = 0; jat < cell_tmp.number_of_atoms; ++jat) {
                     xdiff = cell_tmp.x_fractional.row(jat) - cell_tmp.x_fractional.row(iat);
                     xdiff = (xdiff + xshift).unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
-                    if (xdiff.norm() < eps6) {
+                    xdiff_cart = cell_tmp.lattice_vector * xdiff;
+                    if (xdiff_cart.norm() < 1.0e-3) {
                         kat = jat;
                         break;
                     }
