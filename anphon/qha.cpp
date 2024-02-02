@@ -41,7 +41,6 @@ void Qha::set_default_variables()
 
     evec_harmonic = nullptr;
     omega2_harmonic = nullptr;
-    kpoint_map_symmetry = nullptr;
     phi3_reciprocal = nullptr;
     phi4_reciprocal = nullptr;
 
@@ -51,7 +50,6 @@ void Qha::set_default_variables()
     phase_factor_qha = nullptr;
 
     mat_transform_sym = nullptr;
-    symop_minus_at_k = nullptr;
 }
 
 void Qha::deallocate_variables()
@@ -69,9 +67,6 @@ void Qha::deallocate_variables()
     if (omega2_harmonic) {
         deallocate(omega2_harmonic);
     }
-    if (kpoint_map_symmetry) {
-        deallocate(kpoint_map_symmetry);
-    }
     if (phi3_reciprocal) {
         deallocate(phi3_reciprocal);
     }
@@ -81,10 +76,6 @@ void Qha::deallocate_variables()
     if (mat_transform_sym) {
         deallocate(mat_transform_sym);
     }
-    if (symop_minus_at_k) {
-        deallocate(symop_minus_at_k);
-    }
-
 }
 
 void Qha::setup_qha()
@@ -140,6 +131,8 @@ void Qha::setup_kmesh()
         exit("setup_kmesh",
              "KMESH_INTERPOLATE should be a integral multiple of KMESH_SCPH");
     }
+
+    kmesh_coarse->setup_kpoint_symmetry(symmetry->SymmListWithMap);
 }
 
 void Qha::setup_eigvecs()
@@ -314,7 +307,6 @@ void Qha::setup_transform_symmetry()
     double S_cart[3][3], S_frac[3][3], S_frac_inv[3][3];
     double S_recip[3][3];
     std::complex<double> **gamma_tmp;
-    bool *flag;
 
     const auto natmin = system->natmin;
     const auto ns = dynamical->neval;
@@ -323,25 +315,14 @@ void Qha::setup_transform_symmetry()
     allocate(gamma_tmp, ns, ns);
     allocate(mat_transform_sym, nk_irred_interpolate,
              symmetry->nsym, ns, ns);
-    //allocate(small_group_at_k, nk_irred_interpolate);
-    allocate(symop_minus_at_k, nk_irred_interpolate);
-    allocate(kpoint_map_symmetry, kmesh_coarse->nk);
-    allocate(flag, kmesh_coarse->nk);
-
-    for (ik = 0; ik < kmesh_coarse->nk; ++ik) {
-        flag[ik] = false;
-    }
 
     for (ik = 0; ik < nk_irred_interpolate; ++ik) {
-
-        symop_minus_at_k[ik].clear();
 
         const auto knum = kmesh_coarse->kpoint_irred_all[ik][0].knum;
         for (icrd = 0; icrd < 3; ++icrd) {
             k[icrd] = kmesh_coarse->xk[knum][icrd];
             k_minus[icrd] = -k[icrd];
         }
-        const auto knum_minus = kmesh_coarse->kindex_minus_xk[knum];
 
         unsigned int isym = 0;
 
@@ -365,15 +346,6 @@ void Qha::setup_transform_symmetry()
             if (knum_sym == -1)
                 exit("setup_transform_symmetry",
                      "kpoint not found");
-
-            if (knum_sym == knum_minus) symop_minus_at_k[ik].push_back(isym);
-
-            if (!flag[knum_sym]) {
-                kpoint_map_symmetry[knum_sym].symmetry_op = isym;
-                kpoint_map_symmetry[knum_sym].knum_irred_orig = ik;
-                kpoint_map_symmetry[knum_sym].knum_orig = knum;
-                flag[knum_sym] = true;
-            }
 
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
@@ -414,27 +386,7 @@ void Qha::setup_transform_symmetry()
             ++isym;
         }
     }
-
-    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
-
-        const auto knum = kmesh_coarse->kpoint_irred_all[ik][0].knum;
-        for (icrd = 0; icrd < 3; ++icrd) {
-            k[icrd] = kmesh_coarse->xk[knum][icrd];
-            k_minus[icrd] = -k[icrd];
-        }
-
-        const auto knum_minus = kmesh_coarse->get_knum(k_minus);
-
-        if (!flag[knum_minus]) {
-            kpoint_map_symmetry[knum_minus].symmetry_op = -1;
-            kpoint_map_symmetry[knum_minus].knum_irred_orig = ik;
-            kpoint_map_symmetry[knum_minus].knum_orig = knum;
-            flag[knum_minus] = true;
-        }
-    }
-
     deallocate(gamma_tmp);
-    deallocate(flag);
 }
 
 void Qha::exec_qha_optimization()
@@ -840,13 +792,13 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 }
 
                 //renormalize IFC
-                relaxation->renormalize_v1_from_q0(omega2_harmonic, kmesh_coarse, kmesh_dense, kpoint_map_symmetry,
+                relaxation->renormalize_v1_from_q0(omega2_harmonic, kmesh_coarse, kmesh_dense,
                                                    v1_renorm, v1_with_umn, delta_v2_with_umn, v3_with_umn, v4_with_umn,
                                                    q0);
                 relaxation->renormalize_v2_from_q0(evec_harmonic, kmesh_coarse, kmesh_dense, kmap_coarse_to_dense,
-                                                   symop_minus_at_k, mat_transform_sym, kpoint_map_symmetry,
+                                                   mat_transform_sym,
                                                    delta_v2_renorm, delta_v2_with_umn, v3_with_umn, v4_with_umn, q0);
-                relaxation->renormalize_v3_from_q0(kmesh_dense, kpoint_map_symmetry, v3_renorm, v3_with_umn,
+                relaxation->renormalize_v3_from_q0(kmesh_dense, kmesh_coarse, v3_renorm, v3_with_umn,
                                                    v4_with_umn, q0);
                 relaxation->renormalize_v0_from_q0(omega2_harmonic, kmesh_dense,
                                                    v0_renorm, v0_with_umn, v1_with_umn, delta_v2_with_umn, v3_with_umn,
@@ -898,9 +850,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                                                                    kmesh_coarse,
                                                                    kmesh_dense,
                                                                    kmap_coarse_to_dense,
-                                                                   symop_minus_at_k,
                                                                    mat_transform_sym,
-                                                                   kpoint_map_symmetry,
                                                                    mindist_list_qha,
                                                                    writes->getVerbosity());
 
@@ -1457,11 +1407,11 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
                                                 delta_v2_with_umn, del_v2_del_umn, del2_v2_del_umn2_dummy, u_tensor);
 
             // renormalization by displacements
-            relaxation->renormalize_v1_from_q0(omega2_harmonic, kmesh_coarse, kmesh_dense, kpoint_map_symmetry,
+            relaxation->renormalize_v1_from_q0(omega2_harmonic, kmesh_coarse, kmesh_dense,
                                                v1_renorm, v1_with_umn, delta_v2_with_umn, v3_ref, v4_array_dummy, q0);
 
             relaxation->renormalize_v2_from_q0(evec_harmonic, kmesh_coarse, kmesh_dense, kmap_coarse_to_dense,
-                                               symop_minus_at_k, mat_transform_sym, kpoint_map_symmetry,
+                                               mat_transform_sym,
                                                delta_v2_renorm, delta_v2_with_umn, v3_ref, v4_array_dummy, q0);
 
             relaxation->renormalize_v0_from_q0(omega2_harmonic, kmesh_dense,
@@ -1479,9 +1429,7 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
                                                                kmesh_coarse,
                                                                kmesh_dense,
                                                                kmap_coarse_to_dense,
-                                                               symop_minus_at_k,
                                                                mat_transform_sym,
-                                                               kpoint_map_symmetry,
                                                                mindist_list_qha,
                                                                writes->getVerbosity());
 

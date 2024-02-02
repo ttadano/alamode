@@ -120,7 +120,6 @@ public:
     void renormalize_v1_from_q0(double **omega2_harmonic,
                                 const KpointMeshUniform *kmesh_coarse,
                                 const KpointMeshUniform *kmesh_dense,
-                                const KpointSymmetry *kpoint_map_symmetry,
                                 std::complex<double> *,
                                 std::complex<double> *,
                                 std::complex<double> **,
@@ -132,9 +131,7 @@ public:
                                 const KpointMeshUniform *kmesh_coarse,
                                 const KpointMeshUniform *kmesh_dense,
                                 const std::vector<int> &kmap_coarse_to_dense,
-                                std::vector<int> *symop_minus_at_k,
                                 std::complex<double> ****mat_transform_sym,
-                                KpointSymmetry *kpoint_map_symmetry,
                                 std::complex<double> **delta_v2_renorm,
                                 std::complex<double> **delta_v2_array_original,
                                 std::complex<double> ***v3_ref,
@@ -142,7 +139,7 @@ public:
                                 double *q0);
 
     void renormalize_v3_from_q0(const KpointMeshUniform *kmesh_dense,
-                                const KpointSymmetry *kpoint_map_symmetry,
+                                const KpointMeshUniform *kmesh_coarse,
                                 std::complex<double> ***,
                                 std::complex<double> ***,
                                 std::complex<double> ***,

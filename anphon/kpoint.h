@@ -367,8 +367,8 @@ public:
                                   std::vector<std::vector<double>> &) const;
 
     int get_kmap_coarse_to_dense(const KpointMeshUniform *kmesh_coarse,
-                                  const KpointMeshUniform *kmesh_dense,
-                                  std::vector<int> &kmap) const;
+                                 const KpointMeshUniform *kmesh_dense,
+                                 std::vector<int> &kmap) const;
 
 private:
     void set_default_variables();

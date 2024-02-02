@@ -132,8 +132,6 @@ private:
 
     // Local variables for handling symmetry of dynamical matrix
     std::complex<double> ****mat_transform_sym;
-    std::vector<int> *symop_minus_at_k;
-    KpointSymmetry *kpoint_map_symmetry;
 
     // Phase shift
     PhaseFactorStorage *phase_factor_qha;

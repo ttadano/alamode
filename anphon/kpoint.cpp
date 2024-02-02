@@ -1476,7 +1476,7 @@ void KpointMeshUniform::setup_kpoint_symmetry(const std::vector<SymmetryOperatio
         unsigned int isym = 0;
         for (const auto &it: symmlist) {
             for (auto icrd = 0; icrd < 3; ++icrd) {
-                for (auto jcrd =0; jcrd < 3; ++jcrd) {
+                for (auto jcrd = 0; jcrd < 3; ++jcrd) {
                     S_cart[icrd][jcrd] = it.rot[3 * icrd + jcrd];
                     S_frac[icrd][jcrd] = it.rot_real[3 * icrd + jcrd];
                     S_recip[icrd][jcrd] = it.rot_reciprocal[3 * icrd + jcrd];
@@ -1485,7 +1485,7 @@ void KpointMeshUniform::setup_kpoint_symmetry(const std::vector<SymmetryOperatio
             invmat3(S_frac_inv, S_frac);
             rotvec(Sk, k, S_recip);
 
-            for (double &x : Sk) x = x - nint(x);
+            for (double &x: Sk) x = x - nint(x);
             const auto knum_sym = get_knum(Sk);
 
             if (knum_sym == -1) {

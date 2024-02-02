@@ -199,22 +199,18 @@ public:
                                                  const KpointMeshUniform *kmesh_coarse,
                                                  const KpointMeshUniform *kmesh_dense,
                                                  const std::vector<int> &kmap_interpolate_to_scph,
-                                                 std::vector<int> *symop_minus_at_k,
                                                  std::complex<double> ****mat_transform_sym,
-                                                 KpointSymmetry *kpoint_map_symmetry,
                                                  MinimumDistList ***mindist_list,
                                                  const unsigned int verbosity);
 
     void symmetrize_dynamical_matrix(const unsigned int ik,
                                      const KpointMeshUniform *kmesh_coarse,
-                                     std::vector<int> *symop_minus_at_k,
                                      std::complex<double> ****mat_transform_sym,
                                      Eigen::MatrixXcd &dymat) const;
 
     void replicate_dymat_for_all_kpoints(const KpointMeshUniform *kmesh_coarse,
-                                                    std::complex<double> ****mat_transform_sym,
-                                                    KpointSymmetry *kpoint_map_symmetry,
-                                                    std::complex<double> ***dymat_inout) const;
+                                         std::complex<double> ****mat_transform_sym,
+                                         std::complex<double> ***dymat_inout) const;
 
     void diagonalize_interpolated_matrix(std::complex<double> **,
                                          double *,
@@ -281,8 +277,8 @@ private:
                                Eigen::MatrixXcd &evec_sub) const;
 
 
-     void duplicate_xk_boundary(double *,
-                                std::vector<std::vector<double>> &);
+    void duplicate_xk_boundary(double *,
+                               std::vector<std::vector<double>> &);
 
 
     double **xshift_s;

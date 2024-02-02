@@ -2367,7 +2367,6 @@ void Relaxation::renormalize_v3_from_umn(const KpointMeshUniform *kmesh_coarse,
 void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic,
                                         const KpointMeshUniform *kmesh_coarse,
                                         const KpointMeshUniform *kmesh_dense,
-                                        const KpointSymmetry *kpoint_map_symmetry,
                                         std::complex<double> *v1_renorm,
                                         std::complex<double> *v1_ref,
                                         std::complex<double> **delta_v2_array_original,
@@ -2376,7 +2375,7 @@ void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic,
                                         double *q0)
 {
     int is, is1, is2, is3;
-    int ik_irred0 = kpoint_map_symmetry[0].knum_irred_orig;
+    int ik_irred0 = kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig;
     const auto ns = dynamical->neval;
     double factor = 0.5 * 4.0 * kmesh_dense->nk;
     double factor2 = 1.0 / 6.0 * 4.0 * kmesh_dense->nk;
@@ -2416,9 +2415,7 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic,
                                         const KpointMeshUniform *kmesh_coarse,
                                         const KpointMeshUniform *kmesh_dense,
                                         const std::vector<int> &kmap_coarse_to_dense,
-                                        std::vector<int> *symop_minus_at_k,
                                         std::complex<double> ****mat_transform_sym,
-                                        KpointSymmetry *kpoint_map_symmetry,
                                         std::complex<double> **delta_v2_renorm,
                                         std::complex<double> **delta_v2_array_original,
                                         std::complex<double> ***v3_ref,
@@ -2476,7 +2473,7 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic,
         Dymat = evec_tmp * Dymat * evec_tmp.adjoint();
 
         // symmetrize dynamical matrix
-        dynamical->symmetrize_dynamical_matrix(ik, kmesh_coarse, symop_minus_at_k,
+        dynamical->symmetrize_dynamical_matrix(ik, kmesh_coarse,
                                                mat_transform_sym, Dymat);
 
         // store to dymat_q
@@ -2489,7 +2486,7 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic,
 
     // replicate dymat_q to all q
     dynamical->replicate_dymat_for_all_kpoints(kmesh_coarse, mat_transform_sym,
-                                               kpoint_map_symmetry, dymat_q);
+                                               dymat_q);
 
     // copy to delta_v2_renorm
     for (ik = 0; ik < nk_interpolate; ik++) {
@@ -2521,20 +2518,18 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic,
 }
 
 void Relaxation::renormalize_v3_from_q0(const KpointMeshUniform *kmesh_dense,
-                                        const KpointSymmetry *kpoint_map_symmetry,
+                                        const KpointMeshUniform *kmesh_coarse,
                                         std::complex<double> ***v3_renorm,
                                         std::complex<double> ***v3_ref,
                                         std::complex<double> ***v4_ref,
                                         double *q0)
 {
-    int ik;
-    int is1, is2, is3, js;
     const auto ns = dynamical->neval;
-    int ik_irred0 = kpoint_map_symmetry[0].knum_irred_orig;
-    int nk_scph = kmesh_dense->nk;
+    const auto ik_irred0 = kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig;
+    const auto nk_scph = kmesh_dense->nk;
 
-    for (ik = 0; ik < nk_scph; ik++) {
-        for (is1 = 0; is1 < ns; is1++) {
+    for (int ik = 0; ik < nk_scph; ik++) {
+        for (int is1 = 0; is1 < ns; is1++) {
             for (int is2 = 0; is2 < ns; is2++) {
                 for (int is3 = 0; is3 < ns; is3++) {
                     v3_renorm[ik][is1][is2 * ns + is3] = v3_ref[ik][is1][is2 * ns + is3];
