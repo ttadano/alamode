@@ -16,6 +16,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "constants.h"
 #include "symmetry_core.h"
 #include "scph.h"
+#include "relaxation.h"
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -413,7 +414,7 @@ void System::load_system_info_from_XML()
 
         natmin = nat / ntran;
 
-        if (scph->relax_str != 0 && scph->init_u0.size() != natmin*3)
+        if (relaxation->relax_str != 0 && relaxation->init_u0.size() != natmin*3)
             exit("load_system_info_from_XML",
                  "The number of atoms in the primitive cell (NATMIN) in the FCSXML file"
                  " \n is not consistent with the &displace field in the input file.");

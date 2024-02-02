@@ -86,6 +86,17 @@ private:
     bool is_irreducible_only = false;
 };
 
+struct ShiftCell {
+public:
+    int sx, sy, sz;
+};
+
+struct MinimumDistList {
+public:
+    double dist;
+    std::vector<ShiftCell> shift;
+};
+
 class Dynamical : protected Pointers {
 public:
     Dynamical(class PHON *);
@@ -164,6 +175,72 @@ public:
 
     void set_projection_directions(const std::vector<std::vector<double>> projections_in);
 
+    void r2q(const double *xk_in,
+             const unsigned int nx,
+             const unsigned int ny,
+             const unsigned int nz,
+             const unsigned int ns,
+             MinimumDistList ***mindist_list_in,
+             std::complex<double> ***dymat_r_in,
+             std::complex<double> **dymat_k_out) const;
+
+    void precompute_dymat_harm(const unsigned int nk_in,
+                               double **xk_in,
+                               double **kvec_in,
+                               std::vector<Eigen::MatrixXcd> &dymat_short,
+                               std::vector<Eigen::MatrixXcd> &dymat_long) const;
+
+
+    void compute_renormalized_harmonic_frequency(double **omega2_out,
+                                                 std::complex<double> ***evec_harm_renormalized,
+                                                 std::complex<double> **delta_v2_renorm,
+                                                 const double *const *omega2_harmonic,
+                                                 const std::complex<double> *const *const *evec_harmonic,
+                                                 const KpointMeshUniform *kmesh_coarse,
+                                                 const KpointMeshUniform *kmesh_dense,
+                                                 const std::vector<int> &kmap_interpolate_to_scph,
+                                                 std::vector<int> *symop_minus_at_k,
+                                                 std::complex<double> ****mat_transform_sym,
+                                                 KpointSymmetry *kpoint_map_symmetry,
+                                                 MinimumDistList ***mindist_list,
+                                                 const unsigned int verbosity);
+
+    void symmetrize_dynamical_matrix(const unsigned int ik,
+                                     const KpointMeshUniform *kmesh_coarse,
+                                     std::vector<int> *symop_minus_at_k,
+                                     std::complex<double> ****mat_transform_sym,
+                                     Eigen::MatrixXcd &dymat) const;
+
+    void replicate_dymat_for_all_kpoints(const KpointMeshUniform *kmesh_coarse,
+                                                    std::complex<double> ****mat_transform_sym,
+                                                    KpointSymmetry *kpoint_map_symmetry,
+                                                    std::complex<double> ***dymat_inout) const;
+
+    void diagonalize_interpolated_matrix(std::complex<double> **,
+                                         double *,
+                                         std::complex<double> **,
+                                         bool) const;
+
+    void exec_interpolation(const unsigned int kmesh_orig[3],
+                            std::complex<double> ***dymat_r,
+                            const unsigned int nk_dense,
+                            double **xk_dense,
+                            double **kvec_dense,
+                            double **eval_out,
+                            std::complex<double> ***evec_out,
+                            const std::vector<Eigen::MatrixXcd> &dymat_short,
+                            const std::vector<Eigen::MatrixXcd> &dymat_long,
+                            MinimumDistList ***mindist_list_in,
+                            const bool use_precomputed_dymat = false,
+                            const bool return_sqrt = true);
+
+
+    void calc_new_dymat_with_evec(std::complex<double> ***dymat_out,
+                                  double **omega2_in,
+                                  std::complex<double> ***evec_in,
+                                  const KpointMeshUniform *kmesh_coarse,
+                                  const std::vector<int> &kmap_interpolate_to_scph);
+
 private:
     void set_default_variables();
 
@@ -202,6 +279,11 @@ private:
                                std::vector<double> perturb_direction,
                                const double dk,
                                Eigen::MatrixXcd &evec_sub) const;
+
+
+     void duplicate_xk_boundary(double *,
+                                std::vector<std::vector<double>> &);
+
 
     double **xshift_s;
     char UPLO{};

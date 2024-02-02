@@ -24,6 +24,8 @@
 #include "phonon_velocity.h"
 #include "anharmonic_core.h"
 #include "mode_analysis.h"
+#include "relaxation.h"
+#include "qha.h"
 #include "scph.h"
 #include "symmetry_core.h"
 #include "system.h"
@@ -102,7 +104,7 @@ void Input::parce_input(int narg,
                  "&qha entry not found in the input file");
         parse_qha_vars();
     }
-    if ((phon->mode == "SCPH" || phon->mode == "QHA") && scph->relax_str != 0) {
+    if ((phon->mode == "SCPH" || phon->mode == "QHA") && relaxation->relax_str != 0) {
         if(!locate_tag("&relax"))
             exit("parse_input",
                  "&relax entry not found in the input file");
@@ -110,7 +112,7 @@ void Input::parce_input(int narg,
 
         check_relax_vars();
         
-        if (scph->relax_str != 1) {
+        if (relaxation->relax_str != 1) {
             if (!locate_tag("&strain"))
                 exit("parse_input",
                      "&strain entry not found in the input file");
@@ -487,7 +489,7 @@ void Input::parse_scph_vars()
     scph->lower_temp = lower_temp;
     scph->warmstart_scph = warm_start;
     scph->bubble = bubble;
-    scph->relax_str = relax_str;
+    relaxation->relax_str = relax_str;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();
@@ -586,8 +588,8 @@ void Input::parse_qha_vars()
         scph->kmesh_interpolate[i] = kmesh_interpolate_v[i];
     }
     scph->lower_temp = lower_temp;
-    scph->relax_str = relax_str;
-    scph->qha_scheme = qha_scheme;
+    relaxation->relax_str = relax_str;
+    qha->qha_scheme = qha_scheme;
 
     // Set other values
     scph->selfenergy_offdiagonal = true;
@@ -686,28 +688,28 @@ void Input::parse_relax_vars()
     bool restart_scph = (stat(file_dymat.c_str(), &st) == 0) && (stat(file_harm_dymat.c_str(), &st) == 0);
     restart_scph = restart_scph & (stat(file_v0.c_str(), &st) == 0);
 
-    scph->relax_algo = relax_algo;
-    scph->max_str_iter = max_str_iter;
+    relaxation->relax_algo = relax_algo;
+    relaxation->max_str_iter = max_str_iter;
 
-    scph->coord_conv_tol = coord_conv_tol;
-    scph->mixbeta_coord = mixbeta_coord;
-    scph->alpha_steepest_decent = alpha_steepest_decent;
+    relaxation->coord_conv_tol = coord_conv_tol;
+    relaxation->mixbeta_coord = mixbeta_coord;
+    relaxation->alpha_steepest_decent = alpha_steepest_decent;
 
-    scph->cell_conv_tol = cell_conv_tol;
-    scph->mixbeta_cell = mixbeta_cell;
+    relaxation->cell_conv_tol = cell_conv_tol;
+    relaxation->mixbeta_cell = mixbeta_cell;
 
-    scph->set_init_str = set_init_str;
-    scph->cooling_u0_index = cooling_u0_index;
-    scph->cooling_u0_thr = cooling_u0_thr;
+    relaxation->set_init_str = set_init_str;
+    relaxation->cooling_u0_index = cooling_u0_index;
+    relaxation->cooling_u0_thr = cooling_u0_thr;
 
-    scph->add_hess_diag = add_hess_diag;
-    scph->stat_pressure = stat_pressure;
+    relaxation->add_hess_diag = add_hess_diag;
+    relaxation->stat_pressure = stat_pressure;
 
-    scph->renorm_3to2nd = renorm_3to2nd;
-    scph->renorm_2to1st = renorm_2to1st;
-    scph->renorm_34to1st = renorm_34to1st;
+    relaxation->renorm_3to2nd = renorm_3to2nd;
+    relaxation->renorm_2to1st = renorm_2to1st;
+    relaxation->renorm_34to1st = renorm_34to1st;
 
-    scph->strain_IFC_dir = strain_IFC_dir;
+    relaxation->strain_IFC_dir = strain_IFC_dir;
 
     stropt_var_dict.clear();
 
@@ -719,7 +721,7 @@ void Input::check_relax_vars()
     std::fstream fin_test;
 
     // structural optimization
-    if (scph->relax_str != 0) {
+    if (relaxation->relax_str != 0) {
 
         if (thermodynamics->calc_FE_bubble) {
             exit("check_relax_vars",
@@ -731,10 +733,10 @@ void Input::check_relax_vars()
         }
 
         // relax the shape of the unit cell
-        if (scph->relax_str == 2 || scph->relax_str == 3) {
+        if (relaxation->relax_str == 2 || relaxation->relax_str == 3) {
             // strain-force coupling
-            if (scph->renorm_2to1st == 2) {
-                fin_test.open(scph->strain_IFC_dir + "strain_force.in");
+            if (relaxation->renorm_2to1st == 2) {
+                fin_test.open(relaxation->strain_IFC_dir + "strain_force.in");
 
                 if (!fin_test) {
                     exit("check_relax_vars",
@@ -744,8 +746,8 @@ void Input::check_relax_vars()
             }
 
             // strain-IFC coupling
-            if (scph->renorm_3to2nd == 2 || scph->renorm_3to2nd == 3) {
-                fin_test.open(scph->strain_IFC_dir + "strain_harmonic.in");
+            if (relaxation->renorm_3to2nd == 2 || relaxation->renorm_3to2nd == 3) {
+                fin_test.open(relaxation->strain_IFC_dir + "strain_harmonic.in");
 
                 if (!fin_test) {
                     exit("check_relax_vars",
@@ -837,11 +839,11 @@ void Input::parse_initial_strain()
         }
     }
 
-    allocate(scph->init_u_tensor, 3, 3);
+    allocate(relaxation->init_u_tensor, 3, 3);
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            scph->init_u_tensor[i][j] = u_tensor_tmp[i][j];
+            relaxation->init_u_tensor[i][j] = u_tensor_tmp[i][j];
         }
     }
 }
@@ -1034,10 +1036,10 @@ void Input::parse_initial_displace()
     }
 
     // Copy the values to appropriate classes 
-    scph->init_u0.clear();
+    relaxation->init_u0.clear();
     for (iat = 0; iat < u_xyz.size(); iat++) {
         for (ixyz = 0; ixyz < 3; ixyz++) {
-            scph->init_u0.push_back(u_xyz[iat][ixyz]);
+            relaxation->init_u0.push_back(u_xyz[iat][ixyz]);
         }
     }
 

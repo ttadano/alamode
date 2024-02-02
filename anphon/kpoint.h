@@ -177,6 +177,13 @@ public:
     double **kvec_na = nullptr;
 };
 
+struct KpointSymmetry {
+public:
+    int symmetry_op;
+    unsigned int knum_irred_orig;
+    unsigned int knum_orig;
+};
+
 class KpointMeshUniform {
 public:
     KpointMeshUniform() = default;;
@@ -239,6 +246,7 @@ public:
                               const bool use_permutation_symmetry,
                               std::vector<KsListGroup> &quartet,
                               const int sign = -1) const;
+
 
 private:
 
@@ -352,6 +360,10 @@ public:
     void get_commensurate_kpoints(const double [3][3],
                                   const double [3][3],
                                   std::vector<std::vector<double>> &) const;
+
+    int get_kmap_coarse_to_dense(const KpointMeshUniform *kmesh_coarse,
+                                  const KpointMeshUniform *kmesh_dense,
+                                  std::vector<int> &kmap) const;
 
 private:
     void set_default_variables();

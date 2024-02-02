@@ -9,6 +9,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "mpi_common.h"
+#include "error.h"
 #include "qha.h"
 #include "dynamical.h"
 #include "system.h"
@@ -16,6 +17,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "scph.h"
 #include "parsephon.h"
 #include "relaxation.h"
+#include "thermodynamics.h"
+#include "mathfunctions.h"
+#include "write_phonons.h"
 #include <Eigen/Core>
 
 using namespace PHON_NS;
@@ -34,12 +38,405 @@ void Qha::set_default_variables()
 {
     restart_qha = false;
     qha_scheme = 0;
+
+    evec_harmonic = nullptr;
+    omega2_harmonic = nullptr;
+    kpoint_map_symmetry = nullptr;
+    phi3_reciprocal = nullptr;
+    phi4_reciprocal = nullptr;
+
+    kmesh_coarse = nullptr;
+    kmesh_dense = nullptr;
+    mindist_list_qha = nullptr;
+    phase_factor_qha = nullptr;
+
+    mat_transform_sym = nullptr;
+    symop_minus_at_k = nullptr;
+
 //    relax_str = 0;
 }
 
 void Qha::deallocate_variables()
 {
+    if (kmesh_coarse) delete kmesh_coarse;
+    if (kmesh_dense) delete kmesh_dense;
+    if (phase_factor_qha) delete phase_factor_qha;
 
+    if (mindist_list_qha) {
+        deallocate(mindist_list_qha);
+    }
+    if (evec_harmonic) {
+        deallocate(evec_harmonic);
+    }
+    if (omega2_harmonic) {
+        deallocate(omega2_harmonic);
+    }
+    if (kpoint_map_symmetry) {
+        deallocate(kpoint_map_symmetry);
+    }
+    if (phi3_reciprocal) {
+        deallocate(phi3_reciprocal);
+    }
+    if (phi4_reciprocal) {
+        deallocate(phi4_reciprocal);
+    }
+    if (mat_transform_sym) {
+        deallocate(mat_transform_sym);
+    }
+    if (symop_minus_at_k) {
+        deallocate(symop_minus_at_k);
+    }
+
+}
+
+void Qha::setup_qha()
+{
+    setup_kmesh();
+    setup_eigvecs();
+    setup_transform_ifc();
+    setup_pp_interaction();
+    setup_transform_symmetry();
+}
+
+void Qha::setup_kmesh()
+{
+    unsigned int ik;
+    unsigned int i;
+    double xtmp[3];
+    // Setup k points for SCPH equation
+    MPI_Bcast(&kmesh_qha[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&kmesh_interpolate[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    kmesh_coarse = new KpointMeshUniform(kmesh_interpolate);
+    kmesh_dense = new KpointMeshUniform(kmesh_qha);
+    kmesh_coarse->setup(symmetry->SymmList, system->rlavec_p, true);
+    kmesh_dense->setup(symmetry->SymmList, system->rlavec_p, true);
+
+    if (mympi->my_rank == 0) {
+//        if (verbosity > 0) {
+        std::cout << " Setting up the QHA calculations ..." << std::endl << std::endl;
+        std::cout << "  Gamma-centered uniform grid with the following mesh density:" << std::endl;
+        std::cout << "  nk1:" << std::setw(5) << kmesh_qha[0] << std::endl;
+        std::cout << "  nk2:" << std::setw(5) << kmesh_qha[1] << std::endl;
+        std::cout << "  nk3:" << std::setw(5) << kmesh_qha[2] << std::endl;
+        std::cout << std::endl;
+        std::cout << "  Number of k points : " << kmesh_dense->nk << std::endl;
+        std::cout << "  Number of irreducible k points : " << kmesh_dense->nk_irred << std::endl;
+        std::cout << std::endl;
+        std::cout << "  Fourier interpolation from reciprocal to real space" << std::endl;
+        std::cout << "  will be performed with the following mesh density:" << std::endl;
+        std::cout << "  nk1:" << std::setw(5) << kmesh_interpolate[0] << std::endl;
+        std::cout << "  nk2:" << std::setw(5) << kmesh_interpolate[1] << std::endl;
+        std::cout << "  nk3:" << std::setw(5) << kmesh_interpolate[2] << std::endl;
+        std::cout << std::endl;
+        std::cout << "  Number of k points : " << kmesh_coarse->nk << std::endl;
+        std::cout << "  Number of irreducible k points : "
+                  << kmesh_coarse->nk_irred << std::endl;
+//        }
+    }
+
+    auto info_mapping = kpoint->get_kmap_coarse_to_dense(kmesh_coarse,
+                                                         kmesh_dense,
+                                                         kmap_coarse_to_dense);
+    if (info_mapping == 1) {
+        exit("setup_kmesh",
+             "KMESH_INTERPOLATE should be a integral multiple of KMESH_SCPH");
+    }
+}
+
+void Qha::setup_eigvecs()
+{
+    const auto ns = dynamical->neval;
+
+    if (mympi->my_rank == 0) {
+        std::cout << std::endl
+                  << " Diagonalizing dynamical matrices for all k points ... ";
+    }
+
+    allocate(evec_harmonic, kmesh_dense->nk, ns, ns);
+    allocate(omega2_harmonic, kmesh_dense->nk, ns);
+
+    // Calculate phonon eigenvalues and eigenvectors for all k-points for scph
+
+#pragma omp parallel for
+    for (int ik = 0; ik < kmesh_dense->nk; ++ik) {
+
+        dynamical->eval_k(kmesh_dense->xk[ik],
+                          kmesh_dense->kvec_na[ik],
+                          fcs_phonon->fc2_ext,
+                          omega2_harmonic[ik],
+                          evec_harmonic[ik], true);
+
+        for (auto is = 0; is < ns; ++is) {
+            if (std::abs(omega2_harmonic[ik][is]) < eps) {
+                omega2_harmonic[ik][is] = 1.0e-30;
+            }
+        }
+    }
+
+    if (mympi->my_rank == 0) {
+        std::cout << "done !" << std::endl;
+    }
+}
+
+void Qha::setup_transform_ifc()
+{
+    // Compute mindist_list_scph necessary to calculate dynamical matrix
+    // from the real-space force constants
+
+    int i, j;
+    int ix, iy, iz;
+    const auto nk = kmesh_coarse->nk;
+    const auto nat = system->natmin;
+    unsigned int iat;
+
+    int **shift_cell, **shift_cell_super;
+    double **xf_p;
+    double ****x_all;
+
+    const int nkx = static_cast<int>(kmesh_coarse->nk_i[0]); // This should be int (must not be unsigned int).
+    const int nky = static_cast<int>(kmesh_coarse->nk_i[1]); // same as above
+    const int nkz = static_cast<int>(kmesh_coarse->nk_i[2]); // same as above
+
+    const auto ncell = nk;
+    const auto ncell_s = 27;
+
+    allocate(shift_cell, ncell, 3);
+    allocate(shift_cell_super, ncell_s, 3);
+    allocate(xf_p, nat, 3);
+    allocate(x_all, ncell_s, ncell, nat, 3);
+
+    unsigned int icell = 0;
+    for (ix = 0; ix < nkx; ++ix) {
+        for (iy = 0; iy < nky; ++iy) {
+            for (iz = 0; iz < nkz; ++iz) {
+
+                shift_cell[icell][0] = ix;
+                shift_cell[icell][1] = iy;
+                shift_cell[icell][2] = iz;
+
+                ++icell;
+            }
+        }
+    }
+
+    for (i = 0; i < 3; ++i) shift_cell_super[0][i] = 0;
+    icell = 1;
+    for (ix = -1; ix <= 1; ++ix) {
+        for (iy = -1; iy <= 1; ++iy) {
+            for (iz = -1; iz <= 1; ++iz) {
+                if (ix == 0 && iy == 0 && iz == 0) continue;
+
+                shift_cell_super[icell][0] = ix;
+                shift_cell_super[icell][1] = iy;
+                shift_cell_super[icell][2] = iz;
+
+                ++icell;
+            }
+        }
+    }
+
+    for (i = 0; i < nat; ++i) {
+        rotvec(xf_p[i], system->xr_s[system->map_p2s[i][0]], system->lavec_s);
+        rotvec(xf_p[i], xf_p[i], system->rlavec_p);
+        for (j = 0; j < 3; ++j) xf_p[i][j] /= 2.0 * pi;
+    }
+
+    for (i = 0; i < ncell_s; ++i) {
+        for (j = 0; j < ncell; ++j) {
+            for (iat = 0; iat < nat; ++iat) {
+                x_all[i][j][iat][0] = xf_p[iat][0] + static_cast<double>(shift_cell[j][0])
+                                      + static_cast<double>(nkx * shift_cell_super[i][0]);
+                x_all[i][j][iat][1] = xf_p[iat][1] + static_cast<double>(shift_cell[j][1])
+                                      + static_cast<double>(nky * shift_cell_super[i][1]);
+                x_all[i][j][iat][2] = xf_p[iat][2] + static_cast<double>(shift_cell[j][2])
+                                      + static_cast<double>(nkz * shift_cell_super[i][2]);
+
+                rotvec(x_all[i][j][iat], x_all[i][j][iat], system->lavec_p);
+            }
+        }
+    }
+
+    double dist;
+    std::vector<DistList> dist_tmp;
+    ShiftCell shift_tmp{};
+    std::vector<int> vec_tmp;
+
+    allocate(mindist_list_qha, nat, nat, ncell);
+
+    for (iat = 0; iat < nat; ++iat) {
+        for (unsigned int jat = 0; jat < nat; ++jat) {
+            for (icell = 0; icell < ncell; ++icell) {
+
+                dist_tmp.clear();
+                for (i = 0; i < ncell_s; ++i) {
+                    dist = distance(x_all[0][0][iat], x_all[i][icell][jat]);
+                    dist_tmp.emplace_back(i, dist);
+                }
+                std::sort(dist_tmp.begin(), dist_tmp.end());
+
+                const auto dist_min = dist_tmp[0].dist;
+                mindist_list_qha[iat][jat][icell].dist = dist_min;
+
+                for (i = 0; i < ncell_s; ++i) {
+                    dist = dist_tmp[i].dist;
+
+                    if (std::abs(dist_min - dist) < eps8) {
+
+                        shift_tmp.sx = shift_cell[icell][0]
+                                       + nkx * shift_cell_super[dist_tmp[i].cell_s][0];
+                        shift_tmp.sy = shift_cell[icell][1]
+                                       + nky * shift_cell_super[dist_tmp[i].cell_s][1];
+                        shift_tmp.sz = shift_cell[icell][2]
+                                       + nkz * shift_cell_super[dist_tmp[i].cell_s][2];
+
+                        mindist_list_qha[iat][jat][icell].shift.push_back(shift_tmp);
+                    }
+                }
+
+            }
+        }
+    }
+
+    deallocate(shift_cell);
+    deallocate(shift_cell_super);
+    deallocate(xf_p);
+    deallocate(x_all);
+}
+
+void Qha::setup_transform_symmetry()
+{
+    // Construct small_group_at_k, symop_minus_at_k, and
+    // mat_transport_sym.
+
+    unsigned int ik;
+    unsigned int is, js;
+    unsigned int icrd, jcrd;
+    double x1[3], x2[3], k[3], k_minus[3], Sk[3], xtmp[3];
+    double S_cart[3][3], S_frac[3][3], S_frac_inv[3][3];
+    double S_recip[3][3];
+    std::complex<double> **gamma_tmp;
+    bool *flag;
+
+    const auto natmin = system->natmin;
+    const auto ns = dynamical->neval;
+    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
+
+    allocate(gamma_tmp, ns, ns);
+    allocate(mat_transform_sym, nk_irred_interpolate,
+             symmetry->nsym, ns, ns);
+    //allocate(small_group_at_k, nk_irred_interpolate);
+    allocate(symop_minus_at_k, nk_irred_interpolate);
+    allocate(kpoint_map_symmetry, kmesh_coarse->nk);
+    allocate(flag, kmesh_coarse->nk);
+
+    for (ik = 0; ik < kmesh_coarse->nk; ++ik) {
+        flag[ik] = false;
+    }
+
+    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
+
+        symop_minus_at_k[ik].clear();
+
+        const auto knum = kmesh_coarse->kpoint_irred_all[ik][0].knum;
+        for (icrd = 0; icrd < 3; ++icrd) {
+            k[icrd] = kmesh_coarse->xk[knum][icrd];
+            k_minus[icrd] = -k[icrd];
+        }
+        const auto knum_minus = kmesh_coarse->kindex_minus_xk[knum];
+
+        unsigned int isym = 0;
+
+        for (const auto &it: symmetry->SymmListWithMap) {
+
+            for (icrd = 0; icrd < 3; ++icrd) {
+                for (jcrd = 0; jcrd < 3; ++jcrd) {
+                    S_cart[icrd][jcrd] = it.rot[3 * icrd + jcrd];
+                    S_frac[icrd][jcrd] = it.rot_real[3 * icrd + jcrd];
+                    S_recip[icrd][jcrd] = it.rot_reciprocal[3 * icrd + jcrd];
+                }
+            }
+
+            invmat3(S_frac_inv, S_frac);
+            rotvec(Sk, k, S_recip);
+
+            for (auto i = 0; i < 3; ++i) Sk[i] = Sk[i] - nint(Sk[i]);
+
+            const auto knum_sym = kmesh_coarse->get_knum(Sk);
+
+            if (knum_sym == -1)
+                exit("setup_transform_symmetry",
+                     "kpoint not found");
+
+            if (knum_sym == knum_minus) symop_minus_at_k[ik].push_back(isym);
+
+            if (!flag[knum_sym]) {
+                kpoint_map_symmetry[knum_sym].symmetry_op = isym;
+                kpoint_map_symmetry[knum_sym].knum_irred_orig = ik;
+                kpoint_map_symmetry[knum_sym].knum_orig = knum;
+                flag[knum_sym] = true;
+            }
+
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    gamma_tmp[is][js] = std::complex<double>(0.0, 0.0);
+                }
+            }
+
+            for (unsigned int jat = 0; jat < natmin; ++jat) {
+                const auto iat = it.mapping[jat];
+
+                // Fractional coordinates of x1 and x2
+                for (icrd = 0; icrd < 3; ++icrd) {
+                    x1[icrd] = system->xr_p[system->map_p2s[iat][0]][icrd];
+                    x2[icrd] = system->xr_p[system->map_p2s[jat][0]][icrd];
+                }
+
+                rotvec(xtmp, x1, S_frac_inv);
+                for (icrd = 0; icrd < 3; ++icrd) {
+                    xtmp[icrd] = xtmp[icrd] - x2[icrd];
+                }
+
+                auto phase = 2.0 * pi * (k[0] * xtmp[0] + k[1] * xtmp[1] + k[2] * xtmp[2]);
+
+                for (icrd = 0; icrd < 3; ++icrd) {
+                    for (jcrd = 0; jcrd < 3; ++jcrd) {
+                        gamma_tmp[3 * iat + icrd][3 * jat + jcrd]
+                                = S_cart[icrd][jcrd] * std::exp(im * phase);
+                    }
+                }
+            }
+
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    mat_transform_sym[ik][isym][is][js] = gamma_tmp[is][js];
+                }
+            }
+
+            ++isym;
+        }
+    }
+
+    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
+
+        const auto knum = kmesh_coarse->kpoint_irred_all[ik][0].knum;
+        for (icrd = 0; icrd < 3; ++icrd) {
+            k[icrd] = kmesh_coarse->xk[knum][icrd];
+            k_minus[icrd] = -k[icrd];
+        }
+
+        const auto knum_minus = kmesh_coarse->get_knum(k_minus);
+
+        if (!flag[knum_minus]) {
+            kpoint_map_symmetry[knum_minus].symmetry_op = -1;
+            kpoint_map_symmetry[knum_minus].knum_irred_orig = ik;
+            kpoint_map_symmetry[knum_minus].knum_orig = knum;
+            flag[knum_minus] = true;
+        }
+    }
+
+    deallocate(gamma_tmp);
+    deallocate(flag);
 }
 
 void Qha::exec_qha_optimization()
@@ -93,7 +490,8 @@ void Qha::exec_qha_optimization()
             // write dymat to file
             // write renormalized harmonic dynamical matrix when the crystal structure is optimized
             if (relax_str != 0) {
-                scph->store_scph_dymat_to_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+                scph->store_scph_dymat_to_file(delta_harmonic_dymat_renormalize,
+                                               input->job_title + ".renorm_harm_dymat");
                 relaxation->store_V0_to_file();
             }
             scph->write_anharmonic_correction_fc2(delta_dymat_scph, NT);
@@ -102,7 +500,7 @@ void Qha::exec_qha_optimization()
 }
 
 void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
-                               std::complex<double> ****delta_harmonic_dymat_renormalize)
+                              std::complex<double> ****delta_harmonic_dymat_renormalize)
 {
     using namespace Eigen;
 
@@ -219,24 +617,39 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
     // Calculate v4 array.
     // This operation is the most expensive part of the calculation.
-    if (selfenergy_offdiagonal & (ialgo == 1)) {
-        compute_V4_elements_mpi_over_band(v4_ref,
-                                          evec_harmonic,
-                                          selfenergy_offdiagonal);
+    if (scph->selfenergy_offdiagonal & (scph->ialgo == 1)) {
+        scph->compute_V4_elements_mpi_over_band(v4_ref,
+                                                evec_harmonic,
+                                                scph->selfenergy_offdiagonal,
+                                                kmesh_coarse,
+                                                kmesh_dense,
+                                                kmap_coarse_to_dense,
+                                                phase_factor_qha,
+                                                phi4_reciprocal);
     } else {
-        compute_V4_elements_mpi_over_kpoint(v4_ref,
-                                            evec_harmonic,
-                                            selfenergy_offdiagonal,
-                                            relax_str);
+        scph->compute_V4_elements_mpi_over_kpoint(v4_ref,
+                                                  evec_harmonic,
+                                                  scph->selfenergy_offdiagonal,
+                                                  relaxation->relax_str,
+                                                  kmesh_coarse,
+                                                  kmesh_dense,
+                                                  kmap_coarse_to_dense,
+                                                  phase_factor_qha,
+                                                  phi4_reciprocal);
     }
 
     allocate(v3_ref, nk, ns, ns * ns);
     allocate(v3_renorm, nk, ns, ns * ns);
     allocate(v3_with_umn, nk, ns, ns * ns);
 
-    compute_V3_elements_mpi_over_kpoint(v3_ref,
-                                        evec_harmonic,
-                                        selfenergy_offdiagonal);
+    scph->compute_V3_elements_mpi_over_kpoint(v3_ref,
+                                              evec_harmonic,
+                                              scph->selfenergy_offdiagonal,
+                                              kmesh_coarse,
+                                              kmesh_dense,
+                                              kmap_coarse_to_dense,
+                                              phase_factor_qha,
+                                              phi3_reciprocal);
 
     // assume that the atomic forces are zero at initial structure
     for (is = 0; is < ns; is++) {
@@ -244,11 +657,11 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     }
 
     // compute IFC renormalization by lattice relaxation
-    std::cout << " RELAX_STR = " << relax_str << ": ";
-    if (relax_str == 1) {
+    std::cout << " RELAX_STR = " << relaxation->relax_str << ": ";
+    if (relaxation->relax_str == 1) {
         std::cout << "Set zeros in derivatives of k-space IFCs by strain." << std::endl << std::endl;
     }
-    if (relax_str == 2) {
+    if (relaxation->relax_str == 2) {
         std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl << std::endl;
     }
 
@@ -259,14 +672,18 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     allocate(del2_v2_del_umn2, 81, nk, ns * ns);
     allocate(del_v3_del_umn, 9, nk, ns, ns * ns);
 
-    compute_del_v_strain(del_v1_del_umn,
-                         del2_v1_del_umn2,
-                         del3_v1_del_umn3,
-                         del_v2_del_umn,
-                         del2_v2_del_umn2,
-                         del_v3_del_umn,
-                         evec_harmonic,
-                         relax_str);
+    relaxation->compute_del_v_strain(kmesh_coarse,
+                                     kmesh_dense,
+                                     del_v1_del_umn,
+                                     del2_v1_del_umn2,
+                                     del3_v1_del_umn3,
+                                     del_v2_del_umn,
+                                     del2_v2_del_umn2,
+                                     del_v3_del_umn,
+                                     omega2_harmonic,
+                                     evec_harmonic,
+                                     relaxation->relax_str,
+                                     mindist_list_qha);
 
     // get indices of optical modes at Gamma point
     js = 0;
@@ -284,9 +701,11 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
     if (mympi->my_rank == 0) {
 
-        precompute_dymat_harm(kmesh_dense->nk,
-                              kmesh_dense->xk,
-                              kmesh_dense->kvec_na);
+        dynamical->precompute_dymat_harm(kmesh_dense->nk,
+                                         kmesh_dense->xk,
+                                         kmesh_dense->kvec_na,
+                                         dymat_harm_short,
+                                         dymat_harm_long);
 
 
         std::complex<double> ***cmat_convert;
@@ -312,7 +731,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         allocate(C3_array, 9, 9, 9);
         allocate(C2_array_ZSISA, 9, 9);
 
-        set_elastic_constants(C1_array, C2_array, C3_array);
+        relaxation->set_elastic_constants(C1_array, C2_array, C3_array);
 
         // output files of structural optimization
         std::ofstream fout_step_q0, fout_step_u0;
@@ -324,20 +743,20 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         fout_q0.open(input->job_title + ".normal_disp");
         fout_u0.open(input->job_title + ".atom_disp");
         // if the unit cell is relaxed
-        if (relax_str == 2) {
+        if (relaxation->relax_str == 2) {
             fout_step_u_tensor.open("step_u_tensor.txt");
             fout_u_tensor.open(input->job_title + ".umn_tensor");
         }
 
-        write_resfile_header(fout_q0, fout_u0, fout_u_tensor);
+        relaxation->write_resfile_header(fout_q0, fout_u0, fout_u_tensor);
 
         i_temp_loop = -1;
 
         std::cout << " Start structural optimization." << std::endl;
-        if (relax_str == 1) {
+        if (relaxation->relax_str == 1) {
             std::cout << "  Internal coordinates are relaxed." << std::endl;
             std::cout << "  Shape of the unit cell is fixed." << std::endl << std::endl;
-        } else if (relax_str == 2) {
+        } else if (relaxation->relax_str == 2) {
             std::cout << "  Internal coordinates and shape of the unit cell are relaxed." << std::endl << std::endl;
         }
 
@@ -351,15 +770,16 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             std::cout << " Temperature index : " << std::setw(4) << i_temp_loop << "/" << std::setw(4) << NT
                       << std::endl << std::endl;
 
-            set_init_structure_atT(q0, u_tensor, u0,
-                                   converged_prev, str_diverged,
-                                   set_init_str, i_temp_loop);
+            relaxation->set_init_structure_atT(q0, u_tensor, u0,
+                                               converged_prev, str_diverged,
+                                               i_temp_loop,
+                                               omega2_harmonic, evec_harmonic);
 
             std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
             for (iat1 = 0; iat1 < system->natmin; iat1++) {
                 std::cout << " ";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
-                    get_xyz_string(ixyz1, str_tmp);
+                    relaxation->get_xyz_string(ixyz1, str_tmp);
                     std::cout << std::setw(10) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
                 }
                 std::cout << " :";
@@ -370,7 +790,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             }
             std::cout << std::endl;
 
-            if (relax_str == 2) {
+            if (relaxation->relax_str == 2) {
                 std::cout << " Initial strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << " ";
@@ -382,34 +802,36 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 std::cout << std::endl;
             }
 
-            write_stepresfile_header_atT(fout_step_q0, fout_step_u0, fout_step_u_tensor, temp);
+            relaxation->write_stepresfile_header_atT(fout_step_q0, fout_step_u0, fout_step_u_tensor, temp);
 
-            write_stepresfile(q0, u_tensor, u0, 0,
-                              fout_step_q0, fout_step_u0, fout_step_u_tensor);
+            relaxation->write_stepresfile(q0, u_tensor, u0, 0,
+                                          fout_step_q0, fout_step_u0, fout_step_u_tensor);
 
             std::cout << " ----------------------------------------------------------------" << std::endl;
 
             std::cout << " Start structural optimization at " << temp << " K." << std::endl;
 
-            for (i_str_loop = 0; i_str_loop < max_str_iter; i_str_loop++) {
+            for (i_str_loop = 0; i_str_loop < relaxation->max_str_iter; i_str_loop++) {
 
                 std::cout << std::endl << std::endl << " Structure loop :" << std::setw(5) << i_str_loop + 1
                           << std::endl;
 
                 // get eta tensor
-                calculate_eta_tensor(eta_tensor, u_tensor);
+                relaxation->calculate_eta_tensor(eta_tensor, u_tensor);
 
                 // calculate IFCs under strain
-                renormalize_v0_from_umn(v0_with_umn, v0_ref, eta_tensor,
-                                        C1_array, C2_array, C3_array, u_tensor, pvcell);
+                relaxation->renormalize_v0_from_umn(v0_with_umn, v0_ref, eta_tensor,
+                                                    C1_array, C2_array, C3_array, u_tensor, pvcell);
 
-                renormalize_v1_from_umn(v1_with_umn, v1_ref,
-                                        del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
-                                        u_tensor);
+                relaxation->renormalize_v1_from_umn(v1_with_umn, v1_ref,
+                                                    del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
+                                                    u_tensor);
 
-                renormalize_v2_from_umn(delta_v2_with_umn, del_v2_del_umn, del2_v2_del_umn2, u_tensor);
+                relaxation->renormalize_v2_from_umn(kmesh_coarse, kmesh_dense, kmap_coarse_to_dense,
+                                                    delta_v2_with_umn, del_v2_del_umn, del2_v2_del_umn2, u_tensor);
 
-                renormalize_v3_from_umn(v3_with_umn, v3_ref, del_v3_del_umn, u_tensor);
+                relaxation->renormalize_v3_from_umn(kmesh_coarse, kmesh_dense,
+                                                    v3_with_umn, v3_ref, del_v3_del_umn, u_tensor);
 
                 for (ik = 0; ik < nk_irred_interpolate * nk; ik++) {
                     for (is = 0; is < ns * ns; is++) {
@@ -420,11 +842,18 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 }
 
                 //renormalize IFC
-                renormalize_v1_from_q0(v1_renorm, v1_with_umn, delta_v2_with_umn, v3_with_umn, v4_with_umn, q0);
-                renormalize_v2_from_q0(delta_v2_renorm, delta_v2_with_umn, v3_with_umn, v4_with_umn, q0);
-                renormalize_v3_from_q0(v3_renorm, v3_with_umn, v4_with_umn, q0);
-                renormalize_v0_from_q0(v0_renorm, v0_with_umn, v1_with_umn, delta_v2_with_umn, v3_with_umn, v4_with_umn,
-                                       q0);
+                relaxation->renormalize_v1_from_q0(omega2_harmonic, kmesh_coarse, kmesh_dense, kpoint_map_symmetry,
+                                                   v1_renorm, v1_with_umn, delta_v2_with_umn, v3_with_umn, v4_with_umn,
+                                                   q0);
+                relaxation->renormalize_v2_from_q0(evec_harmonic, kmesh_coarse, kmesh_dense, kmap_coarse_to_dense,
+                                                   symop_minus_at_k, mat_transform_sym, kpoint_map_symmetry,
+                                                   delta_v2_renorm, delta_v2_with_umn, v3_with_umn, v4_with_umn, q0);
+                relaxation->renormalize_v3_from_q0(kmesh_dense, kpoint_map_symmetry, v3_renorm, v3_with_umn,
+                                                   v4_with_umn, q0);
+                relaxation->renormalize_v0_from_q0(omega2_harmonic, kmesh_dense,
+                                                   v0_renorm, v0_with_umn, v1_with_umn, delta_v2_with_umn, v3_with_umn,
+                                                   v4_with_umn,
+                                                   q0);
 
                 // copy v4_ref to v4_renorm
                 for (ik = 0; ik < nk_irred_interpolate * kmesh_dense->nk; ik++) {
@@ -436,7 +865,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 }
 
 
-                if (relax_str == 1) {
+                if (relaxation->relax_str == 1) {
                     for (i1 = 0; i1 < 9; i1++) {
                         del_v0_del_umn_renorm[i1] = 0.0;
                     }
@@ -446,14 +875,14 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                         }
                     }
 
-                } else if (relax_str == 2) {
+                } else if (relaxation->relax_str == 2) {
                     // calculate renormalized stress tensor
-                    calculate_del_v0_del_umn_renorm(del_v0_del_umn_renorm,
-                                                    C1_array, C2_array, C3_array,
-                                                    eta_tensor, u_tensor,
-                                                    del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
-                                                    del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
-                                                    q0, pvcell);
+                    scph->calculate_del_v0_del_umn_renorm(del_v0_del_umn_renorm,
+                                                          C1_array, C2_array, C3_array,
+                                                          eta_tensor, u_tensor,
+                                                          del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
+                                                          del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
+                                                          q0, pvcell, kmesh_dense);
 
                     // calculate renormalized strain-force coupling for ZSISA and v-ZSISA.
                     calculate_del_v1_del_umn_renorm(del_v1_del_umn_renorm,
@@ -463,14 +892,25 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                                                     q0);
                 }
 
-                compute_renormalized_harmonic_frequency(omega2_harm_renorm[iT],
-                                                        evec_harm_renorm_tmp,
-                                                        delta_v2_renorm,
-                                                        writes->getVerbosity());
+                dynamical->compute_renormalized_harmonic_frequency(omega2_harm_renorm[iT],
+                                                                   evec_harm_renorm_tmp,
+                                                                   delta_v2_renorm,
+                                                                   omega2_harmonic,
+                                                                   evec_harmonic,
+                                                                   kmesh_coarse,
+                                                                   kmesh_dense,
+                                                                   kmap_coarse_to_dense,
+                                                                   symop_minus_at_k,
+                                                                   mat_transform_sym,
+                                                                   kpoint_map_symmetry,
+                                                                   mindist_list_qha,
+                                                                   writes->getVerbosity());
 
-                calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
-                                         omega2_harm_renorm[iT],
-                                         evec_harm_renorm_tmp);
+                dynamical->calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
+                                                    omega2_harm_renorm[iT],
+                                                    evec_harm_renorm_tmp,
+                                                    kmesh_coarse,
+                                                    kmap_coarse_to_dense);
                 // delta_harmonic_dymat_renormalize is copied to dymat_anharm after structure convergence,
                 // which is required for postprocess.
 
@@ -480,21 +920,21 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 // in Scph::exec_scph_relax_cell_coordinate_main can be used for
                 // calculating the finite-temperature forces and stress tensor.
                 // This is because we truncate the Taylor expansion of PES at the fourth order (?)
-                compute_anharmonic_v1_array(v1_QHA, v1_renorm, v3_renorm, cmat_convert, omega2_harm_renorm[iT], temp);
+                scph->compute_anharmonic_v1_array(v1_QHA, v1_renorm, v3_renorm, cmat_convert, omega2_harm_renorm[iT],
+                                                  temp, kmesh_dense);
 
-                if (relax_str == 1) {
+                if (relaxation->relax_str == 1) {
                     for (i1 = 0; i1 < 9; i1++) {
                         del_v0_del_umn_QHA[i1] = complex_zero;
                     }
-                }
-                else if (relax_str == 2) {
-                    compute_anharmonic_del_v0_del_umn(del_v0_del_umn_QHA,
-                                                      del_v0_del_umn_renorm,
-                                                      del_v2_del_umn,
-                                                      del2_v2_del_umn2,
-                                                      del_v3_del_umn,
-                                                      u_tensor, q0, cmat_convert,
-                                                      omega2_harm_renorm[iT], temp);
+                } else if (relaxation->relax_str == 2) {
+                    scph->compute_anharmonic_del_v0_del_umn(del_v0_del_umn_QHA,
+                                                            del_v0_del_umn_renorm,
+                                                            del_v2_del_umn,
+                                                            del2_v2_del_umn2,
+                                                            del_v3_del_umn,
+                                                            u_tensor, q0, cmat_convert,
+                                                            omega2_harm_renorm[iT], temp, kmesh_dense);
 
                     compute_ZSISA_stress(delq_delu_ZSISA, del_v0_del_umn_ZSISA,
                                          cmat_convert, omega2_harm_renorm[iT], del_v0_del_umn_QHA,
@@ -537,18 +977,20 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                     }
                 }
 
-                update_cell_coordinate(q0, u0, u_tensor,
-                                       v1_QHA, omega2_harm_renorm[iT],
-                                       del_v0_del_umn_QHA, C2_array,
-                                       cmat_convert, harm_optical_modes,
-                                       delta_q0, delta_u0, delta_umn,
-                                       du0, du_tensor);
+                relaxation->update_cell_coordinate(q0, u0, u_tensor,
+                                                   v1_QHA, omega2_harm_renorm[iT],
+                                                   del_v0_del_umn_QHA, C2_array,
+                                                   cmat_convert, harm_optical_modes,
+                                                   delta_q0, delta_u0, delta_umn,
+                                                   du0, du_tensor,
+                                                   omega2_harmonic,
+                                                   evec_harmonic);
 
-                write_stepresfile(q0, u_tensor, u0, i_str_loop + 1,
-                                  fout_step_q0, fout_step_u0, fout_step_u_tensor);
+                relaxation->write_stepresfile(q0, u_tensor, u0, i_str_loop + 1,
+                                              fout_step_q0, fout_step_u0, fout_step_u_tensor);
 
-                check_str_divergence(str_diverged,
-                                     q0, u0, u_tensor);
+                relaxation->check_str_divergence(str_diverged,
+                                                 q0, u0, u_tensor);
 
                 if (str_diverged) {
                     converged_prev = false;
@@ -562,13 +1004,13 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                           << std::endl;
                 std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor;
 
-                if (du0 < coord_conv_tol && du_tensor < cell_conv_tol) {
+                if (du0 < relaxation->coord_conv_tol && du_tensor < relaxation->cell_conv_tol) {
                     std::cout << std::endl << std::endl;
                     std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15)
-                              << std::setprecision(6) << coord_conv_tol << std::endl;
-                    if (relax_str == 2) {
+                              << std::setprecision(6) << relaxation->coord_conv_tol << std::endl;
+                    if (relaxation->relax_str == 2) {
                         std::cout << " du_tensor is smaller than CELL_CONV_TOL = " << std::scientific << std::setw(15)
-                                  << std::setprecision(6) << cell_conv_tol << std::endl;
+                                  << std::setprecision(6) << relaxation->cell_conv_tol << std::endl;
                     }
                     std::cout << " Structural optimization converged in " << i_str_loop + 1 << "-th loop." << std::endl
                               << std::endl;
@@ -583,7 +1025,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             for (iat1 = 0; iat1 < system->natmin; iat1++) {
                 std::cout << " ";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
-                    get_xyz_string(ixyz1, str_tmp);
+                    relaxation->get_xyz_string(ixyz1, str_tmp);
                     std::cout << std::setw(10) << ("u_{" + std::to_string(iat1) + "," + str_tmp + "}");
                 }
                 std::cout << " :";
@@ -594,7 +1036,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             }
             std::cout << std::endl;
 
-            if (relax_str == 2){
+            if (relaxation->relax_str == 2) {
                 std::cout << " Final strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << " ";
@@ -612,7 +1054,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             }
 
             // record zero-th order term of PES
-            V0[iT] = v0_renorm;
+            relaxation->V0[iT] = v0_renorm;
 
             // copy delta_harmonic_dymat_renormalize to dymat_anharm
             // This process is required for postprocess.
@@ -625,9 +1067,9 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             }
 
             // print obtained structure
-            calculate_u0(q0, u0);
+            relaxation->calculate_u0(q0, u0, omega2_harmonic, evec_harmonic);
 
-            write_resfile_atT(q0, u_tensor, u0, temp, fout_q0, fout_u0, fout_u_tensor);
+            relaxation->write_resfile_atT(q0, u_tensor, u0, temp, fout_q0, fout_u0, fout_u_tensor);
 
         }
 
@@ -636,7 +1078,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         fout_step_u0.close();
         fout_q0.close();
         fout_u0.close();
-        if (relax_str == 2) {
+        if (relaxation->relax_str == 2) {
             fout_step_u_tensor.close();
             fout_u_tensor.close();
         }
@@ -697,7 +1139,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
 
 void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
-                                 std::complex<double> ****delta_harmonic_dymat_renormalize)
+                                std::complex<double> ****delta_harmonic_dymat_renormalize)
 {
     using namespace Eigen;
 
@@ -788,9 +1230,14 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
 
     allocate(v3_ref, nk, ns, ns * ns);
 
-    compute_V3_elements_mpi_over_kpoint(v3_ref,
-                                        evec_harmonic,
-                                        selfenergy_offdiagonal);
+    scph->compute_V3_elements_mpi_over_kpoint(v3_ref,
+                                              evec_harmonic,
+                                              scph->selfenergy_offdiagonal,
+                                              kmesh_coarse,
+                                              kmesh_dense,
+                                              kmap_coarse_to_dense,
+                                              phase_factor_qha,
+                                              phi3_reciprocal);
 
     // assume that the atomic forces are zero at initial structure
     for (is = 0; is < ns; is++) {
@@ -805,11 +1252,13 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
     allocate(del2_v2_del_umn2_dummy, 81, nk, ns * ns);
     allocate(del_v3_del_umn_dummy, 9, nk, ns, ns * ns);
 
-    compute_del_v_strain(del_v1_del_umn,
-                         del2_v1_del_umn2, nullptr,
-                         del_v2_del_umn,
-                         nullptr, nullptr,
-                         evec_harmonic, relax_str);
+    relaxation->compute_del_v_strain(kmesh_coarse, kmesh_dense,
+                                     del_v1_del_umn,
+                                     del2_v1_del_umn2, nullptr,
+                                     del_v2_del_umn,
+                                     nullptr, nullptr, omega2_harmonic,
+                                     evec_harmonic, relaxation->relax_str,
+                                     mindist_list_qha);
 
     // set dummy variables as zero.
     // These are used for the preparation for the postprocess
@@ -855,9 +1304,11 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
 
     if (mympi->my_rank == 0) {
 
-        precompute_dymat_harm(kmesh_dense->nk,
-                              kmesh_dense->xk,
-                              kmesh_dense->kvec_na);
+        dynamical->precompute_dymat_harm(kmesh_dense->nk,
+                                         kmesh_dense->xk,
+                                         kmesh_dense->kvec_na,
+                                         dymat_harm_short,
+                                         dymat_harm_long);
 
 
         vec_temp.clear();
@@ -873,9 +1324,9 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
         }
 
         // set elastic constants
-        set_elastic_constants(C1_array,
-                              C2_array,
-                              C3_array);
+        relaxation->set_elastic_constants(C1_array,
+                                          C2_array,
+                                          C3_array);
 
         // output files of structural optimization
         std::ofstream fout_q0, fout_u0, fout_u_tensor;
@@ -884,7 +1335,7 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
         fout_u0.open(input->job_title + ".atom_disp");
         fout_u_tensor.open(input->job_title + ".umn_tensor");
 
-        write_resfile_header(fout_q0, fout_u0, fout_u_tensor);
+        relaxation->write_resfile_header(fout_q0, fout_u0, fout_u_tensor);
 
         i_temp_loop = -1;
 
@@ -975,7 +1426,7 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
                 is2 = harm_optical_modes[is1];
                 q0[is2] = q0_umn(is1).real();
             }
-            calculate_u0(q0, u0);
+            relaxation->calculate_u0(q0, u0, omega2_harmonic, evec_harmonic);
 
             for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                 ixyz2 = (ixyz1 + 1) % 3;
@@ -987,42 +1438,59 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
             }
 
             // print obtained structure
-            calculate_u0(q0, u0);
+            relaxation->calculate_u0(q0, u0, omega2_harmonic, evec_harmonic);
 
-            write_resfile_atT(q0, u_tensor, u0, temp, fout_q0, fout_u0, fout_u_tensor);
+            relaxation->write_resfile_atT(q0, u_tensor, u0, temp, fout_q0, fout_u0, fout_u_tensor);
 
             // calculate renormalized IFCs for postprocess
             // Note that the cubic IFCs are fixed at the reference values in perturbative QHA.
 
             // renormalization by strain
-            calculate_eta_tensor(eta_tensor, u_tensor);
-            renormalize_v0_from_umn(v0_with_umn, 0.0, eta_tensor, C1_array, C2_array, C3_array, u_tensor,
-                                    0.0); // pressure is limited to zero
+            relaxation->calculate_eta_tensor(eta_tensor, u_tensor);
+            relaxation->renormalize_v0_from_umn(v0_with_umn, 0.0, eta_tensor, C1_array, C2_array, C3_array, u_tensor,
+                                                0.0); // pressure is limited to zero
 
-            renormalize_v1_from_umn(v1_with_umn, v1_ref,
-                                    del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3_dummy,
-                                    u_tensor);
+            relaxation->renormalize_v1_from_umn(v1_with_umn, v1_ref,
+                                                del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3_dummy,
+                                                u_tensor);
 
-            renormalize_v2_from_umn(delta_v2_with_umn, del_v2_del_umn, del2_v2_del_umn2_dummy, u_tensor);
+            relaxation->renormalize_v2_from_umn(kmesh_coarse, kmesh_dense, kmap_coarse_to_dense,
+                                                delta_v2_with_umn, del_v2_del_umn, del2_v2_del_umn2_dummy, u_tensor);
 
             // renormalization by displacements
-            renormalize_v1_from_q0(v1_renorm, v1_with_umn, delta_v2_with_umn, v3_ref, v4_array_dummy, q0);
+            relaxation->renormalize_v1_from_q0(omega2_harmonic, kmesh_coarse, kmesh_dense, kpoint_map_symmetry,
+                                               v1_renorm, v1_with_umn, delta_v2_with_umn, v3_ref, v4_array_dummy, q0);
 
-            renormalize_v2_from_q0(delta_v2_renorm, delta_v2_with_umn, v3_ref, v4_array_dummy, q0);
+            relaxation->renormalize_v2_from_q0(evec_harmonic, kmesh_coarse, kmesh_dense, kmap_coarse_to_dense,
+                                               symop_minus_at_k, mat_transform_sym, kpoint_map_symmetry,
+                                               delta_v2_renorm, delta_v2_with_umn, v3_ref, v4_array_dummy, q0);
 
-            renormalize_v0_from_q0(v0_renorm, v0_with_umn, v1_with_umn, delta_v2_with_umn, v3_ref, v4_array_dummy, q0);
+            relaxation->renormalize_v0_from_q0(omega2_harmonic, kmesh_dense,
+                                               v0_renorm, v0_with_umn, v1_with_umn, delta_v2_with_umn, v3_ref,
+                                               v4_array_dummy, q0);
 
-            V0[iT] = v0_renorm;
+            relaxation->V0[iT] = v0_renorm;
 
             // calculate renormalizations of harmonic IFCs, which is stored in delta_harmonic_dymat_renormalize
-            compute_renormalized_harmonic_frequency(omega2_harm_renorm[iT],
-                                                    evec_harm_renorm_tmp,
-                                                    delta_v2_renorm,
-                                                    writes->getVerbosity());
+            dynamical->compute_renormalized_harmonic_frequency(omega2_harm_renorm[iT],
+                                                               evec_harm_renorm_tmp,
+                                                               delta_v2_renorm,
+                                                               omega2_harmonic,
+                                                               evec_harmonic,
+                                                               kmesh_coarse,
+                                                               kmesh_dense,
+                                                               kmap_coarse_to_dense,
+                                                               symop_minus_at_k,
+                                                               mat_transform_sym,
+                                                               kpoint_map_symmetry,
+                                                               mindist_list_qha,
+                                                               writes->getVerbosity());
 
-            calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
-                                     omega2_harm_renorm[iT],
-                                     evec_harm_renorm_tmp);
+            dynamical->calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
+                                                omega2_harm_renorm[iT],
+                                                evec_harm_renorm_tmp,
+                                                kmesh_coarse,
+                                                kmap_coarse_to_dense);
 
             // copy delta_harmonic_dymat_renormalize to dymat_anharm
             for (is1 = 0; is1 < ns; is1++) {
@@ -1073,8 +1541,8 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
 }
 
 void Qha::calc_del_v0_del_umn_vib(std::complex<double> *del_v0_del_umn_vib,
-                                   std::complex<double> ***del_v2_del_umn,
-                                   double T_in)
+                                  std::complex<double> ***del_v2_del_umn,
+                                  double T_in)
 {
     const auto nk = kmesh_dense->nk;
     const auto ns = dynamical->neval;
@@ -1120,14 +1588,14 @@ void Qha::calc_del_v0_del_umn_vib(std::complex<double> *del_v0_del_umn_vib,
 }
 
 void Qha::calculate_del_v1_del_umn_renorm(std::complex<double> **del_v1_del_umn_renorm,
-                                           double **u_tensor,
-                                           std::complex<double> **del_v1_del_umn,
-                                           std::complex<double> **del2_v1_del_umn2,
-                                           std::complex<double> **del3_v1_del_umn3,
-                                           std::complex<double> ***del_v2_del_umn,
-                                           std::complex<double> ***del2_v2_del_umn2,
-                                           std::complex<double> ****del_v3_del_umn,
-                                           double *q0)
+                                          double **u_tensor,
+                                          std::complex<double> **del_v1_del_umn,
+                                          std::complex<double> **del2_v1_del_umn2,
+                                          std::complex<double> **del3_v1_del_umn3,
+                                          std::complex<double> ***del_v2_del_umn,
+                                          std::complex<double> ***del2_v2_del_umn2,
+                                          std::complex<double> ****del_v3_del_umn,
+                                          double *q0)
 {
     int ns = dynamical->neval;
     int nk = kmesh_dense->nk;
@@ -1220,14 +1688,14 @@ void Qha::calculate_del_v1_del_umn_renorm(std::complex<double> **del_v1_del_umn_
 
 
 void Qha::calculate_C2_array_renorm(double **C2_array_renorm,
-                                     double **u_tensor,
-                                     double **eta_tensor,
-                                     double **C2_array,
-                                     double ***C3_array,
-                                     std::complex<double> **del2_v1_del_umn2,
-                                     std::complex<double> **del3_v1_del_umn3,
-                                     std::complex<double> ***del2_v2_del_umn2,
-                                     double *q0)
+                                    double **u_tensor,
+                                    double **eta_tensor,
+                                    double **C2_array,
+                                    double ***C3_array,
+                                    std::complex<double> **del2_v1_del_umn2,
+                                    std::complex<double> **del3_v1_del_umn3,
+                                    std::complex<double> ***del2_v2_del_umn2,
+                                    double *q0)
 {
     int ns = dynamical->neval;
     double **del_eta_del_u;
@@ -1314,9 +1782,9 @@ void Qha::calculate_C2_array_renorm(double **C2_array_renorm,
 }
 
 void Qha::calculate_C2_array_ZSISA(double **C2_array_ZSISA,
-                                    double **C2_array_renorm,
-                                    std::complex<double> **del_v1_del_umn_renorm,
-                                    double **delq_delu_ZSISA)
+                                   double **C2_array_renorm,
+                                   std::complex<double> **del_v1_del_umn_renorm,
+                                   double **delq_delu_ZSISA)
 {
     // calculate ZSISA second-order elastic constants,
     // which is the elastic constants with ZSISA internal coordinates.
@@ -1336,13 +1804,13 @@ void Qha::calculate_C2_array_ZSISA(double **C2_array_ZSISA,
 
 
 void Qha::compute_ZSISA_stress(double **delq_delu_ZSISA_out,
-                                std::complex<double> *del_v0_del_umn_ZSISA_out,
-                                std::complex<double> ***cmat_convert,
-                                double **omega2_harm_renorm_in,
-                                std::complex<double> *del_v0_del_umn_QHA,
-                                std::complex<double> **del_v1_del_umn_renorm,
-                                std::complex<double> *v1_QHA,
-                                std::vector<int> &harm_optical_modes)
+                               std::complex<double> *del_v0_del_umn_ZSISA_out,
+                               std::complex<double> ***cmat_convert,
+                               double **omega2_harm_renorm_in,
+                               std::complex<double> *del_v0_del_umn_QHA,
+                               std::complex<double> **del_v1_del_umn_renorm,
+                               std::complex<double> *v1_QHA,
+                               std::vector<int> &harm_optical_modes)
 {
     using namespace Eigen;
     int i1;
@@ -1403,10 +1871,10 @@ void Qha::compute_ZSISA_stress(double **delq_delu_ZSISA_out,
 }
 
 void Qha::compute_vZSISA_stress(std::complex<double> *del_v0_del_umn_vZSISA,
-                                 double **C2_array_ZSISA,
-                                 std::complex<double> *del_v0_del_umn_renorm,
-                                 std::complex<double> *del_v0_del_umn_ZSISA,
-                                 double **u_tensor)
+                                double **C2_array_ZSISA,
+                                std::complex<double> *del_v0_del_umn_renorm,
+                                std::complex<double> *del_v0_del_umn_ZSISA,
+                                double **u_tensor)
 {
     using namespace Eigen;
 
@@ -1520,3 +1988,125 @@ void Qha::compute_vZSISA_stress(std::complex<double> *del_v0_del_umn_vZSISA,
     }
 
 }
+
+
+void Qha::calc_v1_vib(std::complex<double> *v1_vib,
+                      std::complex<double> ***v3_ref,
+                      const double T_in)
+{
+    const auto nk = kmesh_dense->nk;
+    const auto ns = dynamical->neval;
+
+    static auto complex_zero = std::complex<double>(0.0, 0.0);
+
+    int is1, is2, ik;
+    std::complex<double> Qtmp;
+    double omega1_tmp, n1;
+
+
+    for (is1 = 0; is1 < ns; is1++) {
+        v1_vib[is1] = complex_zero;
+
+        for (is2 = 0; is2 < ns; is2++) {
+            for (ik = 0; ik < nk; ik++) {
+                omega1_tmp = std::sqrt(std::fabs(omega2_harmonic[ik][is2]));
+
+                if (omega2_harmonic[ik][is2] < 0 && omega1_tmp > eps8) {
+                    std::cout << "Warning : Negative frequency is detected in perturbative QHA." << std::endl;
+                }
+
+                if (std::abs(omega1_tmp) < eps8) {
+                    Qtmp = 0.0;
+                } else {
+                    if (thermodynamics->classical) {
+                        Qtmp = std::complex<double>(2.0 * T_in * thermodynamics->T_to_Ryd / (omega1_tmp * omega1_tmp),
+                                                    0.0);
+                    } else {
+                        n1 = thermodynamics->fB(omega1_tmp, T_in);
+                        Qtmp = std::complex<double>((2.0 * n1 + 1.0) / omega1_tmp, 0.0);
+                    }
+                }
+
+                v1_vib[is1] += v3_ref[ik][is1][is2 * ns + is2] * Qtmp;
+            }
+        }
+    }
+
+}
+
+void Qha::compute_cmat(std::complex<double> ***cmat_convert,
+                       const std::complex<double> *const *const *const evec_new)
+{
+
+    using namespace Eigen;
+
+    const auto nk = kmesh_dense->nk;
+    const auto ns = dynamical->neval;
+
+    int ik, is, js;
+    MatrixXcd evec_mat_original(ns, ns), evec_mat_QHA(ns, ns), Cmat;
+
+    for (ik = 0; ik < nk; ++ik) {
+
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                evec_mat_original(is, js) = evec_harmonic[ik][js][is];
+                evec_mat_QHA(is, js) = evec_new[ik][js][is];
+            }
+        }
+
+        Cmat = evec_mat_original.adjoint() * evec_mat_QHA;
+
+        for (is = 0; is < ns; ++is) {
+            for (js = 0; js < ns; ++js) {
+                cmat_convert[ik][is][js] = Cmat(is, js);
+            }
+        }
+    }
+}
+
+double Qha::distance(double *x1,
+                     double *x2)
+{
+    auto dist = std::pow(x1[0] - x2[0], 2)
+                + std::pow(x1[1] - x2[1], 2)
+                + std::pow(x1[2] - x2[2], 2);
+    dist = std::sqrt(dist);
+
+    return dist;
+}
+
+void Qha::setup_pp_interaction()
+{
+    // Prepare information for calculating ph-ph interaction coefficients.
+
+    const auto relax_str = relaxation->relax_str;
+
+    if (mympi->my_rank == 0) {
+        if (relax_str > 0) {
+            std::cout << " Preparing for calculating V3 & V4  ...";
+        } else {
+            std::cout << " Preparing for calculating V4  ...";
+        }
+    }
+
+    if (anharmonic_core->quartic_mode != 1) {
+        exit("setup_pp_interaction",
+             "quartic_mode should be 1 for SCPH");
+    }
+
+    // Setup for V3 if relax_str = True.
+    if (relax_str > 0) {
+        allocate(phi3_reciprocal, anharmonic_core->get_ngroup_fcs(3));
+    }
+    allocate(phi4_reciprocal, anharmonic_core->get_ngroup_fcs(4));
+
+    phase_factor_qha = new PhaseFactorStorage(kmesh_dense->nk_i);
+    phase_factor_qha->create(true);
+
+    if (mympi->my_rank == 0) {
+        std::cout << " done!" << std::endl;
+    }
+}
+
+

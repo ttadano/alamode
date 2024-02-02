@@ -1452,3 +1452,26 @@ void KpointMeshUniform::get_unique_quartet_k(const int ik,
 
     deallocate(flag_found);
 }
+
+int Kpoint::get_kmap_coarse_to_dense(const KpointMeshUniform *kmesh_coarse,
+                                     const KpointMeshUniform *kmesh_dense,
+                                     std::vector<int> &kmap) const
+{
+    int info_mapping = 0;
+
+    kmap.resize(kmesh_coarse->nk);
+    double xtmp[3];
+
+    for (auto ik = 0; ik < kmesh_coarse->nk; ++ik) {
+        for (auto i = 0; i < 3; ++i) xtmp[i] = kmesh_coarse->xk[ik][i];
+
+        const auto loc = kmesh_dense->get_knum(xtmp);
+
+        if (loc == -1) {
+            info_mapping = 1;
+        }
+
+        kmap[ik] = loc;
+    }
+    return info_mapping;
+}

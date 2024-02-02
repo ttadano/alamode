@@ -18,6 +18,7 @@
 #include "memory.h"
 #include "phonon_dos.h"
 #include "pointers.h"
+#include "relaxation.h"
 #include "system.h"
 #include "scph.h"
 #include <iostream>
@@ -780,8 +781,8 @@ double Thermodynamics::compute_FE_total(unsigned int iT,
     if (thermodynamics->calc_FE_bubble) {
         fe_total += thermodynamics->FE_bubble[iT];
     }
-    if (scph->relax_str != 0) {
-        fe_total += scph->V0[iT];
+    if (relaxation->relax_str != 0) {
+        fe_total += relaxation->V0[iT];
     }
 
     return fe_total;

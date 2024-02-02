@@ -14,6 +14,7 @@
 #include "kpoint.h"
 #include "anharmonic_core.h"
 #include "gruneisen.h"
+#include "dynamical.h"
 #include <complex>
 #include <Eigen/Dense>
 
@@ -34,23 +35,6 @@ public:
     }
 };
 
-struct ShiftCell {
-public:
-    int sx, sy, sz;
-};
-
-struct MinimumDistList {
-public:
-    double dist;
-    std::vector<ShiftCell> shift;
-};
-
-struct KpointSymmetry {
-public:
-    int symmetry_op;
-    unsigned int knum_irred_orig;
-    unsigned int knum_orig;
-};
 
 class Scph : protected Pointers {
 public:
@@ -95,7 +79,7 @@ public:
 //    double stat_pressure;
 
     // optimization scheme used in QHA
-    int qha_scheme;
+    //int qha_scheme;
 
     // options of IFC renormalization
 //    int renorm_3to2nd;
@@ -126,13 +110,88 @@ public:
     void store_scph_dymat_to_file(const std::complex<double> *const *const *const *,
                                   std::string);
 
+    void compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
+                                            const int ngroup_v3_in,
+                                            std::vector<double> *fcs_group_v3_in,
+                                            std::vector<RelativeVector> *relvec_v3_in,
+                                            double *invmass_v3_in,
+                                            int **evec_index_v3_in,
+                                            const std::complex<double> *const *const *evec_in,
+                                            const bool self_offdiag);
+
+
+    void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
+                                             std::complex<double> ***evec_in,
+                                             const bool self_offdiag,
+                                             const bool relax,
+                                             const KpointMeshUniform *kmesh_coarse_in,
+                                             const KpointMeshUniform *kmesh_dense_in,
+                                             const std::vector<int> &kmap_coarse_to_dense,
+                                             const PhaseFactorStorage *phase_storage_in,
+                                             std::complex<double> *phi4_reciprocal_inout);
+
+    void compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
+                                           std::complex<double> ***evec_in,
+                                           const bool self_offdiag,
+                                           const KpointMeshUniform *kmesh_coarse_in,
+                                           const KpointMeshUniform *kmesh_dense_in,
+                                           const std::vector<int> &kmap_coarse_to_scph,
+                                           const PhaseFactorStorage *phase_storage_in,
+                                           std::complex<double> *phi4_reciprocal_inout);
+
+
+    void compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
+                                             const std::complex<double> *const *const *evec_in,
+                                             const bool self_offdiag,
+                                             const KpointMeshUniform *kmesh_coarse_in,
+                                             const KpointMeshUniform *kmesh_dense_in,
+                                             const std::vector<int> &kmap_coarse_to_scph,
+                                             const PhaseFactorStorage *phase_storage_in,
+                                             std::complex<double> *phi4_reciprocal_inout);
+
+    void compute_anharmonic_del_v0_del_umn(std::complex<double> *del_v0_del_umn_SCP,
+                                           std::complex<double> *del_v0_del_umn_renorm,
+                                           std::complex<double> ***del_v2_del_umn,
+                                           std::complex<double> ***del2_v2_del_umn2,
+                                           std::complex<double> ****del_v3_del_umn,
+                                           double **u_tensor,
+                                           double *q0,
+                                           std::complex<double> ***cmat_convert,
+                                           double **omega2_anharm_T,
+                                           const double T_in,
+                                           const KpointMeshUniform *kmesh_dense_in);
+
+    void compute_anharmonic_v1_array(std::complex<double> *v1_SCP,
+                                     std::complex<double> *v1_renorm,
+                                     std::complex<double> ***v3_renorm,
+                                     std::complex<double> ***cmat_convert,
+                                     double **omega2_anharm_T,
+                                     const double T_in,
+                                     const KpointMeshUniform *kmesh_dense_in);
+
+    void calculate_del_v0_del_umn_renorm(std::complex<double> *del_v0_del_umn_renorm,
+                                         double *C1_array,
+                                         double **C2_array,
+                                         double ***C3_array,
+                                         double **eta_tensor,
+                                         double **u_tensor,
+                                         std::complex<double> **del_v1_del_umn,
+                                         std::complex<double> **del2_v1_del_umn2,
+                                         std::complex<double> **del3_v1_del_umn3,
+                                         std::complex<double> ***del_v2_del_umn,
+                                         std::complex<double> ***del2_v2_del_umn2,
+                                         std::complex<double> ****del_v3_del_umn,
+                                         double *q0,
+                                         double pvcell,
+                                         const KpointMeshUniform *kmesh_dense_in);
+
 
 private:
 
     // Information of kmesh for SCPH calculation
     KpointMeshUniform *kmesh_coarse = nullptr;
     KpointMeshUniform *kmesh_dense = nullptr;
-    int *kmap_interpolate_to_scph = nullptr;
+    std::vector<int> kmap_interpolate_to_scph;
 
     // Information for calculating the ph-ph interaction coefficients
     std::complex<double> *phi3_reciprocal, *phi4_reciprocal;
@@ -180,95 +239,32 @@ private:
 //    void exec_perturbative_QHA(std::complex<double> ****,
 //                               std::complex<double> ****);
 
-
-    void precompute_dymat_harm(const unsigned int nk_in,
-                               double **xk_in,
-                               double **kvec_in);
-
-    void read_cell_opt_input(double &,
-                             double &,
-                             double &,
-                             double &);
-
-
-    void calculate_force_in_real_space(const std::complex<double> *const,
-                                       double *);
+//
+//    void precompute_dymat_harm(const unsigned int nk_in,
+//                               double **xk_in,
+//                               double **kvec_in);
+//
+//    void read_cell_opt_input(double &,
+//                             double &,
+//                             double &,
+//                             double &);
+//
+//
+//    void calculate_force_in_real_space(const std::complex<double> *const,
+//                                       double *);
 
 
     void postprocess(std::complex<double> ****,
                      std::complex<double> ****,
                      std::complex<double> ****);
 
-    void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***,
-                                             std::complex<double> ***,
-                                             bool,
-                                             bool);
-
-    void compute_V4_elements_mpi_over_band(std::complex<double> ***,
-                                           std::complex<double> ***,
-                                           bool);
-
-    void compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
-                                             const std::complex<double> *const *const *evec_in,
-                                             const bool self_offdiag);
-
-    void compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
-                                            const int ngroup_v3_in,
-                                            std::vector<double> *fcs_group_v3_in,
-                                            std::vector<RelativeVector> *relvec_v3_in,
-                                            double *invmass_v3_in,
-                                            int **evec_index_v3_in,
-                                            const std::complex<double> *const *const *evec_in,
-                                            const bool self_offdiag);
 
     void zerofill_elements_acoustic_at_gamma(double **,
                                              std::complex<double> ***,
                                              const int) const;
 
-    void calc_new_dymat_with_evec(std::complex<double> ***,
-                                  double **,
-                                  std::complex<double> ***);
-
 
     FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
-
-    void calculate_del_v0_del_umn_renorm(std::complex<double> *,
-                                         double *,
-                                         double **,
-                                         double ***,
-                                         double **,
-                                         double **,
-                                         std::complex<double> **,
-                                         std::complex<double> **,
-                                         std::complex<double> **,
-                                         std::complex<double> ***,
-                                         std::complex<double> ***,
-                                         std::complex<double> ****,
-                                         double *,
-                                         double);
-
-
-    void calculate_eta_tensor(double **,
-                              const double *const *const);
-
-
-    void compute_anharmonic_v1_array(std::complex<double> *,
-                                     std::complex<double> *,
-                                     std::complex<double> ***,
-                                     std::complex<double> ***,
-                                     double **,
-                                     const double);
-
-    void compute_anharmonic_del_v0_del_umn(std::complex<double> *,
-                                           std::complex<double> *,
-                                           std::complex<double> ***,
-                                           std::complex<double> ***,
-                                           std::complex<double> ****,
-                                           double **,
-                                           double *,
-                                           std::complex<double> ***,
-                                           double **,
-                                           const double);
 
 
     void compute_anharmonic_frequency(std::complex<double> ***,
@@ -281,10 +277,6 @@ private:
                                       std::complex<double> **,
                                       const unsigned int verbosity);
 
-    void compute_renormalized_harmonic_frequency(double **,
-                                                 std::complex<double> ***,
-                                                 std::complex<double> **,
-                                                 const unsigned int);
 
     void compute_anharmonic_frequency2(std::complex<double> ***,
                                        double **,
@@ -313,28 +305,17 @@ private:
                                 std::complex<double> **cmat_in,
                                 Eigen::MatrixXd &permutation_matrix) const;
 
-    void exec_interpolation(const unsigned int [3],
-                            std::complex<double> ***,
-                            unsigned int,
-                            double **,
-                            double **,
-                            double **,
-                            std::complex<double> ***,
-                            const bool use_precomputed_dymat = false,
-                            const bool return_sqrt = true);
 
-    void r2q(const double *,
-             unsigned int,
-             unsigned int,
-             unsigned int,
-             unsigned int,
-             std::complex<double> ***,
-             std::complex<double> **) const;
 
-    void diagonalize_interpolated_matrix(std::complex<double> **,
-                                         double *,
-                                         std::complex<double> **,
-                                         bool) const;
+//    void r2q(const double *,
+//             unsigned int,
+//             unsigned int,
+//             unsigned int,
+//             unsigned int,
+//             std::complex<double> ***,
+//             std::complex<double> **) const;
+
+
 
     void find_degeneracy(std::vector<int> *degeneracy_out,
                          unsigned int nk_in,
@@ -347,9 +328,6 @@ private:
                                      Eigen::MatrixXcd &) const;
 
     void replicate_dymat_for_all_kpoints(std::complex<double> ***) const;
-
-    static void duplicate_xk_boundary(double *,
-                                      std::vector<std::vector<double>> &);
 
 
     static void mpi_bcast_complex(std::complex<double> ****data,
@@ -377,42 +355,6 @@ private:
                                                             const unsigned int snum,
                                                             const double temp_in,
                                                             const std::vector<std::complex<double>> &omegalist);
-
-    int get_xyz_string(const int, std::string &);
-
-    // QHA
-    void compute_cmat(std::complex<double> ***,
-                      const std::complex<double> *const *const *const);
-
-    void calc_v1_vib(std::complex<double> *,
-                     std::complex<double> ***,
-                     const double);
-
-
-    void write_resfile_header(std::ofstream &fout_q0,
-                              std::ofstream &fout_u0,
-                              std::ofstream &fout_u_tensor);
-
-    void write_resfile_atT(const double *const q0,
-                           const double *const *const u_tensor,
-                           const double *const u0,
-                           const double temperature,
-                           std::ofstream &fout_q0,
-                           std::ofstream &fout_u0,
-                           std::ofstream &fout_u_tensor);
-
-    void write_stepresfile_header_atT(std::ofstream &fout_step_q0,
-                                      std::ofstream &fout_step_u0,
-                                      std::ofstream &fout_step_u_tensor,
-                                      const double temp);
-
-    void write_stepresfile(const double *const q0,
-                           const double *const *const u_tensor,
-                           const double *const u0,
-                           const int i_str_loop,
-                           std::ofstream &fout_step_q0,
-                           std::ofstream &fout_step_u0,
-                           std::ofstream &fout_step_u_tensor);
 
 
 };

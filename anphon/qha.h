@@ -9,6 +9,7 @@
 */
 
 #pragma once
+
 #include "pointers.h"
 #include "anharmonic_core.h"
 #include "scph.h"
@@ -23,6 +24,8 @@ public:
 
     ~Qha();
 
+    void setup_qha();
+
     unsigned int kmesh_qha[3];
     unsigned int kmesh_interpolate[3];
 
@@ -30,6 +33,9 @@ public:
     int qha_scheme;
 
     bool restart_qha;
+    bool warmstart_qha;
+    bool lower_temp;
+    double tolerance_qha;
 
     void exec_qha_optimization();
 
@@ -39,6 +45,16 @@ private:
     void set_default_variables();
 
     void deallocate_variables();
+
+    void setup_kmesh();
+
+    void setup_eigvecs();
+
+    void setup_transform_ifc();
+
+    void setup_pp_interaction();
+
+    void setup_transform_symmetry();
 
     void exec_QHA_relax_main(std::complex<double> ****,
                              std::complex<double> ****);
@@ -91,13 +107,39 @@ private:
                                std::complex<double> *,
                                double **);
 
+    static double distance(double *,
+                           double *);
+
+    // QHA
+    void compute_cmat(std::complex<double> ***,
+                      const std::complex<double> *const *const *const);
+
+    void calc_v1_vib(std::complex<double> *,
+                     std::complex<double> ***,
+                     const double);
+
     KpointMeshUniform *kmesh_coarse = nullptr;
     KpointMeshUniform *kmesh_dense = nullptr;
+    std::vector<int> kmap_coarse_to_dense;
 
     // Information of harmonic dynamical matrix
     double **omega2_harmonic;
     std::complex<double> ***evec_harmonic;
     MinimumDistList ***mindist_list_qha;
+
+    // Information for calculating the ph-ph interaction coefficients
+    std::complex<double> *phi3_reciprocal, *phi4_reciprocal;
+
+    // Local variables for handling symmetry of dynamical matrix
+    std::complex<double> ****mat_transform_sym;
+    std::vector<int> *symop_minus_at_k;
+    KpointSymmetry *kpoint_map_symmetry;
+
+    // Phase shift
+    PhaseFactorStorage *phase_factor_qha;
+
+    std::vector<Eigen::MatrixXcd> dymat_harm_short, dymat_harm_long;
+
 
 };
 }

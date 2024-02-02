@@ -9,16 +9,19 @@
 */
 
 #pragma once
+
 #include "pointers.h"
 #include <complex>
 #include "kpoint.h"
 #include "fcs_phonon.h"
+#include "scph.h"
 
 namespace PHON_NS {
 class Relaxation : protected Pointers {
 public:
 
     Relaxation(class PHON *phon);
+
     ~Relaxation();
 
     int relax_str;
@@ -52,17 +55,21 @@ public:
 
     void setup_relaxation();
 
-    void compute_del_v_strain(const unsigned int nk,
+    void compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
+                              const KpointMeshUniform *kmesh_dense,
                               std::complex<double> **,
                               std::complex<double> **,
                               std::complex<double> **,
                               std::complex<double> ***,
                               std::complex<double> ***,
                               std::complex<double> ****,
+                              double **omega2_harmonic,
                               std::complex<double> ***,
-                              int);
+                              int,
+                              MinimumDistList ***mindist_list);
 
     void load_V0_from_file();
+
     void store_V0_to_file();
 
     void set_init_structure_atT(double *q0,
@@ -95,35 +102,55 @@ public:
                                  const std::complex<double> *const *const,
                                  const double *const *const);
 
-    void renormalize_v2_from_umn(std::complex<double> **,
+    void renormalize_v2_from_umn(const KpointMeshUniform *kmesh_coarse,
+                                 const KpointMeshUniform *kmesh_dense,
+                                 const std::vector<int> &kmap_coarse_to_dense,
+                                 std::complex<double> **,
                                  std::complex<double> ***,
                                  std::complex<double> ***,
                                  double **);
 
-    void renormalize_v3_from_umn(std::complex<double> ***,
+    void renormalize_v3_from_umn(const KpointMeshUniform *kmesh_coarse,
+                                 const KpointMeshUniform *kmesh_dense,
+                                 std::complex<double> ***,
                                  std::complex<double> ***,
                                  std::complex<double> ****,
                                  double **);
 
-    void renormalize_v1_from_q0(std::complex<double> *,
+    void renormalize_v1_from_q0(double **omega2_harmonic,
+                                const KpointMeshUniform *kmesh_coarse,
+                                const KpointMeshUniform *kmesh_dense,
+                                const KpointSymmetry *kpoint_map_symmetry,
+                                std::complex<double> *,
                                 std::complex<double> *,
                                 std::complex<double> **,
                                 std::complex<double> ***,
                                 std::complex<double> ***,
                                 double *);
 
-    void renormalize_v2_from_q0(std::complex<double> **,
-                                std::complex<double> **,
+    void renormalize_v2_from_q0(std::complex<double> ***evec_harmonic,
+                                const KpointMeshUniform *kmesh_coarse,
+                                const KpointMeshUniform *kmesh_dense,
+                                const std::vector<int> &kmap_coarse_to_dense,
+                                std::vector<int> *symop_minus_at_k,
+                                std::complex<double> ****mat_transform_sym,
+                                KpointSymmetry *kpoint_map_symmetry,
+                                std::complex<double> **delta_v2_renorm,
+                                std::complex<double> **delta_v2_array_original,
+                                std::complex<double> ***v3_ref,
+                                std::complex<double> ***v4_ref,
+                                double *q0);
+
+    void renormalize_v3_from_q0(const KpointMeshUniform *kmesh_dense,
+                                const KpointSymmetry *kpoint_map_symmetry,
+                                std::complex<double> ***,
                                 std::complex<double> ***,
                                 std::complex<double> ***,
                                 double *);
 
-    void renormalize_v3_from_q0(std::complex<double> ***,
-                                std::complex<double> ***,
-                                std::complex<double> ***,
-                                double *);
-
-    void renormalize_v0_from_q0(double &,
+    void renormalize_v0_from_q0(double **omega2_harmonic,
+                                const KpointMeshUniform *kmesh_dense,
+                                double &,
                                 double,
                                 std::complex<double> *,
                                 std::complex<double> **,
@@ -158,10 +185,41 @@ public:
                               const double *const *const u_tensor);
 
 
+    void write_resfile_header(std::ofstream &fout_q0,
+                              std::ofstream &fout_u0,
+                              std::ofstream &fout_u_tensor);
+
+    void write_resfile_atT(const double *const q0,
+                           const double *const *const u_tensor,
+                           const double *const u0,
+                           const double temperature,
+                           std::ofstream &fout_q0,
+                           std::ofstream &fout_u0,
+                           std::ofstream &fout_u_tensor);
+
+    void write_stepresfile_header_atT(std::ofstream &fout_step_q0,
+                                      std::ofstream &fout_step_u0,
+                                      std::ofstream &fout_step_u_tensor,
+                                      const double temp);
+
+    void write_stepresfile(const double *const q0,
+                           const double *const *const u_tensor,
+                           const double *const u0,
+                           const int i_str_loop,
+                           std::ofstream &fout_step_q0,
+                           std::ofstream &fout_step_u0,
+                           std::ofstream &fout_step_u_tensor);
+
+    int get_xyz_string(const int, std::string &);
+
+    void calculate_eta_tensor(double **,
+                              const double *const *const);
+
 
 private:
 
     void set_default_variables();
+
     void deallocate_variables();
 
     void read_C1_array(double *const);
@@ -185,7 +243,6 @@ private:
                                   const std::complex<double> *const *const *const);
 
 
-
     void compute_del_v2_del_umn(std::complex<double> ***,
                                 const std::complex<double> *const *const *const,
                                 const unsigned int nk,
@@ -203,13 +260,15 @@ private:
                                 const unsigned int nk,
                                 const unsigned int nk_interpolate);
 
-    void calculate_delv2_delumn_finite_difference(const std::complex<double> *const *const *const,
+    void calculate_delv2_delumn_finite_difference(double **omega2_harmonic,
+                                                  const std::complex<double> *const *const *const,
                                                   std::complex<double> ***,
-                                                  const unsigned int nk,
-                                                  const unsigned int nk_interpolate,
-                                                  const int kmesh_interpolate[3]);
+                                                  const KpointMeshUniform *kmesh_coarse,
+                                                  const KpointMeshUniform *kmesh_dense,
+                                                  MinimumDistList ***mindist_list);
 
-    void read_del_v2_del_umn_in_kspace(const std::complex<double> *const *const *const,
+    void read_del_v2_del_umn_in_kspace(double **omega2_harmonic,
+                                       const std::complex<double> *const *const *const,
                                        std::complex<double> ***,
                                        const unsigned int nk,
                                        const unsigned int nk_interpolate);
@@ -235,15 +294,6 @@ private:
     void make_supercell_mapping_by_symmetry_operations(int **);
 
     void make_inverse_translation_mapping(int **);
-
-
-
-
-
-
-
-
-
 
 
 };
