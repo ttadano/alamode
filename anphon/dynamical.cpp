@@ -2173,13 +2173,16 @@ void Dynamical::exec_interpolation(const unsigned int kmesh_orig[3],
     if (use_precomputed_dymat) {
 
         for (int ik = 0; ik < nk_dense; ++ik) {
+
+            r2q(xk_dense[ik], nk1, nk2, nk3, ns, mindist_list_in, dymat_r, mat_tmp);
+
             for (i = 0; i < ns; ++i) {
                 for (j = 0; j < ns; ++j) {
                     mat_tmp[i][j] += dymat_short[ik](i, j);
                 }
             }
 
-            if (dynamical->nonanalytic) {
+            if (nonanalytic) {
                 for (i = 0; i < ns; ++i) {
                     for (j = 0; j < ns; ++j) {
                         mat_tmp[i][j] += dymat_long[ik](i, j);
@@ -2201,7 +2204,6 @@ void Dynamical::exec_interpolation(const unsigned int kmesh_orig[3],
             } else {
                 for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_real[is];
             }
-
         }
 
     } else {
@@ -2210,37 +2212,37 @@ void Dynamical::exec_interpolation(const unsigned int kmesh_orig[3],
         std::complex<double> **mat_harmonic_na = nullptr;
 
         allocate(mat_harmonic, ns, ns);
-        if (dynamical->nonanalytic) {
+        if (nonanalytic) {
             allocate(mat_harmonic_na, ns, ns);
         }
 
         for (int ik = 0; ik < nk_dense; ++ik) {
-            if (dynamical->nonanalytic == 3) {
-                dynamical->calc_analytic_k(xk_dense[ik],
+            if (nonanalytic == 3) {
+                calc_analytic_k(xk_dense[ik],
                                            ewald->fc2_without_dipole,
                                            mat_harmonic);
             } else {
-                dynamical->calc_analytic_k(xk_dense[ik],
+                calc_analytic_k(xk_dense[ik],
                                            fcs_phonon->fc2_ext,
                                            mat_harmonic);
             }
-            dynamical->r2q(xk_dense[ik], nk1, nk2, nk3, ns, mindist_list_in,
+            r2q(xk_dense[ik], nk1, nk2, nk3, ns, mindist_list_in,
                            dymat_r, mat_tmp);
             for (i = 0; i < ns; ++i) {
                 for (j = 0; j < ns; ++j) {
                     mat_tmp[i][j] += mat_harmonic[i][j];
                 }
             }
-            if (dynamical->nonanalytic) {
-                if (dynamical->nonanalytic == 1) {
-                    dynamical->calc_nonanalytic_k(xk_dense[ik],
+            if (nonanalytic) {
+                if (nonanalytic == 1) {
+                    calc_nonanalytic_k(xk_dense[ik],
                                                   kvec_dense[ik],
                                                   mat_harmonic_na);
-                } else if (dynamical->nonanalytic == 2) {
-                    dynamical->calc_nonanalytic_k2(xk_dense[ik],
+                } else if (nonanalytic == 2) {
+                    calc_nonanalytic_k2(xk_dense[ik],
                                                    kvec_dense[ik],
                                                    mat_harmonic_na);
-                } else if (dynamical->nonanalytic == 3) {
+                } else if (nonanalytic == 3) {
                     ewald->add_longrange_matrix(xk_dense[ik],
                                                 kvec_dense[ik],
                                                 mat_harmonic_na);

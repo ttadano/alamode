@@ -3539,6 +3539,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         }
     } // close loop ik
 
+
     dynamical->replicate_dymat_for_all_kpoints(kmesh_coarse, mat_transform_sym,
                                                kpoint_map_symmetry,
                                                dymat_q_HA);
@@ -3689,7 +3690,6 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             dynamical->symmetrize_dynamical_matrix(ik, kmesh_coarse,
                                                   symop_minus_at_k, mat_transform_sym,
                                                   Dymat);
-
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
                     dymat_q[is][js][knum_interpolate] = Dymat(is, js);
@@ -3766,7 +3766,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                                       dymat_harm_short,
                                       dymat_harm_long,
                                       mindist_list_scph,
-                                      true);
+                                      false, true);
 
         for (ik = 0; ik < nk; ++ik) {
             for (is = 0; is < ns; ++is) {
