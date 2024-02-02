@@ -3031,18 +3031,6 @@ void Scph::setup_kmesh()
         exit("setup_kmesh",
              "KMESH_INTERPOLATE should be a integral multiple of KMESH_SCPH");
     }
-
-
-    //allocate(kmap_interpolate_to_scph, kmesh_coarse->nk);
-
-//    for (ik = 0; ik < kmesh_coarse->nk; ++ik) {
-//        for (i = 0; i < 3; ++i) xtmp[i] = kmesh_coarse->xk[ik][i];
-//
-//        const auto loc = kmesh_dense->get_knum(xtmp);
-//
-//
-//        kmap_interpolate_to_scph[ik] = loc;
-//    }
 }
 
 void Scph::setup_transform_symmetry()
