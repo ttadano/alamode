@@ -144,14 +144,8 @@ void Scph::exec_scph()
 
     allocate(delta_dymat_scph, NT, ns, ns, kmesh_coarse->nk);
     allocate(delta_harmonic_dymat_renormalize, NT, ns, ns, kmesh_coarse->nk);
-//    allocate(V0, NT);
 
-    // if(!relax_str){
     zerofill_harmonic_dymat_renormalize(delta_harmonic_dymat_renormalize, NT);
-//    for (int iT = 0; iT < NT; iT++) {
-//        V0[iT] = 0.0;
-//    }
-    //}
 
     const auto relax_str = relaxation->relax_str;
 
@@ -167,7 +161,7 @@ void Scph::exec_scph()
     if (restart_scph) {
 
         if (mympi->my_rank == 0) {
-            std::cout << " RESTART_SCPH is true." << std::endl;
+            std::cout << " RESTART_SCPH is true.\n";
             std::cout << " Dynamical matrix is read from file ...";
         }
 
@@ -200,14 +194,6 @@ void Scph::exec_scph()
         else if (phon->mode == "SCPH" && relax_str != 0) {
             exec_scph_relax_cell_coordinate_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
         }
-        // QHA + structural optimization
-        //else if (phon->mode == "QHA" && (relax_str == 1 || relax_str == 2)) {
-        //    exec_QHA_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
-        //}
-        // lowest-order QHA
-        //else if (phon->mode == "QHA" && relax_str == 3) {
-        //    exec_perturbative_QHA(delta_dymat_scph, delta_harmonic_dymat_renormalize);
-        //}
 
         if (mympi->my_rank == 0) {
             // write dymat to file
@@ -267,8 +253,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
     if (mympi->my_rank == 0) {
 
         std::cout << '\n';
-        std::cout << " Running postprocess of SCPH (calculation of free energy, MSD, DOS)" << std::endl;
-        std::cout << " The number of temperature points: " << std::setw(4) << NT << std::endl;
+        std::cout << " Running postprocess of SCPH (calculation of free energy, MSD, DOS)\n";
+        std::cout << " The number of temperature points: " << std::setw(4) << NT << '\n';
         std::cout << "   ";
 
         std::complex<double> ***evec_tmp = nullptr;
@@ -3168,116 +3154,12 @@ void Scph::setup_transform_symmetry()
     deallocate(flag);
 }
 
-void Scph::symmetrize_dynamical_matrix(const unsigned int ik,
-                                       Eigen::MatrixXcd &dymat) const
-{
-    // Symmetrize the dynamical matrix of given index ik.
-    using namespace Eigen;
-    unsigned int i, isym;
-    unsigned int is, js;
-    const auto ns = dynamical->neval;
-    MatrixXcd dymat_sym = MatrixXcd::Zero(ns, ns);
-    MatrixXcd dymat_tmp(ns, ns), gamma(ns, ns);
-
-    const auto nsym_small = kmesh_coarse->small_group_of_k[ik].size();
-    const auto nsym_minus = symop_minus_at_k[ik].size();
-
-    for (i = 0; i < nsym_minus; ++i) {
-        isym = symop_minus_at_k[ik][i];
-
-        for (is = 0; is < ns; ++is) {
-            for (js = 0; js < ns; ++js) {
-                gamma(is, js) = mat_transform_sym[ik][isym][is][js];
-            }
-        }
-
-        // Eq. (3.35) of Maradudin & Vosko
-        dymat_tmp = gamma * dymat * gamma.transpose().conjugate();
-        dymat_sym += dymat_tmp.conjugate();
-    }
-
-    for (i = 0; i < nsym_small; ++i) {
-        isym = kmesh_coarse->small_group_of_k[ik][i];
-
-        for (is = 0; is < ns; ++is) {
-            for (js = 0; js < ns; ++js) {
-                gamma(is, js) = mat_transform_sym[ik][isym][is][js];
-            }
-        }
-
-        // Eq. (3.14) of Maradudin & Vosko
-        dymat_tmp = gamma * dymat * gamma.transpose().conjugate();
-        dymat_sym += dymat_tmp;
-    }
-
-    dymat = dymat_sym / static_cast<double>(nsym_small + nsym_minus);
-}
-
-void Scph::replicate_dymat_for_all_kpoints(std::complex<double> ***dymat_inout) const
-{
-    using namespace Eigen;
-    unsigned int i;
-    unsigned int is, js;
-    const auto ns = dynamical->neval;
-    MatrixXcd dymat_tmp(ns, ns), gamma(ns, ns), dymat(ns, ns);
-
-    std::complex<double> ***dymat_all;
-
-    allocate(dymat_all, ns, ns, kmesh_coarse->nk);
-
-    for (i = 0; i < kmesh_coarse->nk; ++i) {
-
-        const auto ik_irred = kpoint_map_symmetry[i].knum_irred_orig;
-        const auto ik_orig = kpoint_map_symmetry[i].knum_orig;
-        const auto isym = kpoint_map_symmetry[i].symmetry_op;
-
-        if (isym >= 0) {
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    gamma(is, js) = mat_transform_sym[ik_irred][isym][is][js];
-                    dymat(is, js) = dymat_inout[is][js][ik_orig];
-                }
-            }
-            dymat_tmp = gamma * dymat * gamma.transpose().conjugate();
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    dymat_all[is][js][i] = dymat_tmp(is, js);
-                }
-            }
-        }
-    }
-
-    // When the point group operation S_ which transforms k into -k, i.e., (S_)k = -k,
-    // does not exist for k, we simply set D(k)=D(-k)^{*}.
-    // (This should hold even when the time-reversal symmetry breaks.)
-    for (i = 0; i < kmesh_coarse->nk; ++i) {
-        const auto ik_orig = kpoint_map_symmetry[i].knum_orig;
-        const auto isym = kpoint_map_symmetry[i].symmetry_op;
-        if (isym == -1) {
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    dymat_all[is][js][i] = std::conj(dymat_all[is][js][ik_orig]);
-                }
-            }
-        }
-    }
-
-    for (is = 0; is < ns; ++is) {
-        for (js = 0; js < ns; ++js) {
-            for (i = 0; i < kmesh_coarse->nk; ++i) {
-                dymat_inout[is][js][i] = dymat_all[is][js][i];
-            }
-        }
-    }
-    deallocate(dymat_all);
-}
-
 void Scph::setup_eigvecs()
 {
     const auto ns = dynamical->neval;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl
+        std::cout << '\n'
                   << " Diagonalizing dynamical matrices for all k points ... ";
     }
 
@@ -3303,7 +3185,7 @@ void Scph::setup_eigvecs()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << "done !" << std::endl;
+        std::cout << "done !\n";
     }
 }
 
@@ -3336,7 +3218,7 @@ void Scph::setup_pp_interaction()
     phase_factor_scph->create(true);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl;
+        std::cout << " done!\n";
     }
 }
 
@@ -3464,74 +3346,6 @@ void Scph::setup_transform_ifc()
     deallocate(xf_p);
     deallocate(x_all);
 }
-
-
-
-//void Scph::precompute_dymat_harm(const unsigned int nk_in,
-//                                 double **xk_in,
-//                                 double **kvec_in)
-//{
-//    const auto ns = dynamical->neval;
-//    dymat_harm_short.clear();
-//    dymat_harm_long.clear();
-//
-//    dymat_harm_short.resize(nk_in);
-//    if (dynamical->nonanalytic) {
-//        dymat_harm_long.resize(nk_in);
-//    }
-//
-//    Eigen::MatrixXcd mat_tmp_eigen(ns, ns);
-//
-//    std::complex<double> **mat_tmp;
-//    allocate(mat_tmp, ns, ns);
-//
-//    for (auto ik = 0; ik < nk_in; ++ik) {
-//        if (dynamical->nonanalytic == 3) {
-//            dynamical->calc_analytic_k(xk_in[ik],
-//                                       ewald->fc2_without_dipole,
-//                                       mat_tmp);
-//        } else {
-//            dynamical->calc_analytic_k(xk_in[ik],
-//                                       fcs_phonon->fc2_ext,
-//                                       mat_tmp);
-//        }
-//
-//        for (auto is = 0; is < ns; ++is) {
-//            for (auto js = 0; js < ns; ++js) {
-//                mat_tmp_eigen(is, js) = mat_tmp[is][js];
-//            }
-//        }
-//        dymat_harm_short[ik] = mat_tmp_eigen;
-//    }
-//
-//    if (dynamical->nonanalytic) {
-//
-//        for (auto ik = 0; ik < nk_in; ++ik) {
-//            if (dynamical->nonanalytic == 1) {
-//                dynamical->calc_nonanalytic_k(xk_in[ik],
-//                                              kvec_in[ik],
-//                                              mat_tmp);
-//            } else if (dynamical->nonanalytic == 2) {
-//                dynamical->calc_nonanalytic_k2(xk_in[ik],
-//                                               kvec_in[ik],
-//                                               mat_tmp);
-//
-//            } else if (dynamical->nonanalytic == 3) {
-//                ewald->add_longrange_matrix(xk_in[ik],
-//                                            kvec_in[ik],
-//                                            mat_tmp);
-//            }
-//            for (auto is = 0; is < ns; ++is) {
-//                for (auto js = 0; js < ns; ++js) {
-//                    mat_tmp_eigen(is, js) = mat_tmp[is][js];
-//                }
-//            }
-//            dymat_harm_long[ik] = mat_tmp_eigen;
-//        }
-//    }
-//
-//    deallocate(mat_tmp);
-//}
 
 
 void Scph::find_degeneracy(std::vector<int> *degeneracy_out,
@@ -3706,7 +3520,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         // Harmonic dynamical matrix
         Dymat = evec_tmp * Dymat.eval() * evec_tmp.adjoint();
 
-        symmetrize_dynamical_matrix(ik, Dymat);
+        dynamical->symmetrize_dynamical_matrix(ik, kmesh_coarse, symop_minus_at_k,
+                                               mat_transform_sym,
+                                               Dymat);
 
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
@@ -3723,7 +3539,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         }
     } // close loop ik
 
-    replicate_dymat_for_all_kpoints(dymat_q_HA);
+    dynamical->replicate_dymat_for_all_kpoints(kmesh_coarse, mat_transform_sym,
+                                               kpoint_map_symmetry,
+                                               dymat_q_HA);
 
     int icount = 0;
 
@@ -3868,7 +3686,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             deallocate(dymat_exact);jjj
 
 #endif
-            symmetrize_dynamical_matrix(ik, Dymat);
+            dynamical->symmetrize_dynamical_matrix(ik, kmesh_coarse,
+                                                  symop_minus_at_k, mat_transform_sym,
+                                                  Dymat);
 
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
@@ -3877,7 +3697,10 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             }
         } // close loop ik
 
-        replicate_dymat_for_all_kpoints(dymat_q);
+        dynamical->replicate_dymat_for_all_kpoints(kmesh_coarse,
+                                                   mat_transform_sym,
+                                                   kpoint_map_symmetry,
+                                                   dymat_q);
 
 #ifdef _DEBUG2
                                                                                                                                 for (ik = 0; ik < nk_interpolate; ++ik) {
@@ -4209,7 +4032,10 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
 
         // Harmonic dynamical matrix
         Dymat = evec_initial[knum] * Dymat.eval() * evec_initial[knum].adjoint();
-        symmetrize_dynamical_matrix(ik, Dymat);
+        dynamical->symmetrize_dynamical_matrix(ik, kmesh_coarse,
+                                               symop_minus_at_k,
+                                               mat_transform_sym,
+                                               Dymat);
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns; ++js) {
                 dymat_q_HA[is][js][knum_interpolate] = Dymat(is, js);
@@ -4219,7 +4045,10 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
         // Harmonic Fmat
         Fmat0[ik] = omega2_HA.row(knum).asDiagonal();
     } // close loop ik
-    replicate_dymat_for_all_kpoints(dymat_q_HA);
+    dynamical->replicate_dymat_for_all_kpoints(kmesh_coarse,
+                                               mat_transform_sym,
+                                               kpoint_map_symmetry,
+                                               dymat_q_HA);
 
     // Main loop
     int iloop = 0;
@@ -4675,7 +4504,10 @@ void Scph::update_frequency(const double temperature_in,
         // New eigenvector matrix E_{new}= E_{old} * C
         mat_tmp = evec0[knum] * saes.eigenvectors();
         Dymat = mat_tmp * saes.eigenvalues().asDiagonal() * mat_tmp.adjoint();
-        symmetrize_dynamical_matrix(ik, Dymat);
+        dynamical->symmetrize_dynamical_matrix(ik, kmesh_coarse,
+                                               symop_minus_at_k,
+                                               mat_transform_sym,
+                                               Dymat);
 
         for (auto is = 0; is < ns; ++is) {
             for (auto js = 0; js < ns; ++js) {
@@ -4684,7 +4516,9 @@ void Scph::update_frequency(const double temperature_in,
         }
     } // close loop ik
 
-    replicate_dymat_for_all_kpoints(dymat_out);
+    dynamical->replicate_dymat_for_all_kpoints(kmesh_coarse, mat_transform_sym,
+                                               kpoint_map_symmetry,
+                                               dymat_out);
 
     // Subtract harmonic contribution to the dynamical matrix
     for (auto ik = 0; ik < nk_interpolate; ++ik) {

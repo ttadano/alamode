@@ -186,7 +186,7 @@ public:
 
 class KpointMeshUniform {
 public:
-    KpointMeshUniform() = default;;
+    KpointMeshUniform() = default;
 
     KpointMeshUniform(const unsigned int nk_in[3])
     {

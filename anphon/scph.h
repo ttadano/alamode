@@ -61,38 +61,7 @@ public:
     unsigned int maxiter;
     bool print_self_consistent_fc2;
     bool selfenergy_offdiagonal;
-    //int relax_str;
 
-    // variables related to structural optimization
-//    int relax_algo;
-//    int max_str_iter;
-//    double coord_conv_tol;
-//    double mixbeta_coord;
-//    double alpha_steepest_decent;
-//    double cell_conv_tol;
-//    double mixbeta_cell;
-
-//    int set_init_str;
-//    int cooling_u0_index; // used if set_init_str is 3
-//    double cooling_u0_thr; // used if set_init_str is 3
-//    double add_hess_diag;
-//    double stat_pressure;
-
-    // optimization scheme used in QHA
-    //int qha_scheme;
-
-    // options of IFC renormalization
-//    int renorm_3to2nd;
-//    int renorm_2to1st;
-//    int renorm_34to1st;
-//    std::string strain_IFC_dir;
-
-    // initial strain and displacement
-//    double **init_u_tensor = nullptr;
-//    std::vector<double> init_u0;
-
-    // zero-th order term of the potential energy surface
-//    double *V0 = nullptr;
 
     void zerofill_harmonic_dymat_renormalize(std::complex<double> ****,
                                              unsigned int);
@@ -233,27 +202,6 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                               std::complex<double> ****);
 
-//    void exec_QHA_relax_main(std::complex<double> ****,
-//                             std::complex<double> ****);
-//
-//    void exec_perturbative_QHA(std::complex<double> ****,
-//                               std::complex<double> ****);
-
-//
-//    void precompute_dymat_harm(const unsigned int nk_in,
-//                               double **xk_in,
-//                               double **kvec_in);
-//
-//    void read_cell_opt_input(double &,
-//                             double &,
-//                             double &,
-//                             double &);
-//
-//
-//    void calculate_force_in_real_space(const std::complex<double> *const,
-//                                       double *);
-
-
     void postprocess(std::complex<double> ****,
                      std::complex<double> ****,
                      std::complex<double> ****);
@@ -305,30 +253,12 @@ private:
                                 std::complex<double> **cmat_in,
                                 Eigen::MatrixXd &permutation_matrix) const;
 
-
-
-//    void r2q(const double *,
-//             unsigned int,
-//             unsigned int,
-//             unsigned int,
-//             unsigned int,
-//             std::complex<double> ***,
-//             std::complex<double> **) const;
-
-
-
     void find_degeneracy(std::vector<int> *degeneracy_out,
                          unsigned int nk_in,
                          double **eval_in) const;
 
     static double distance(double *,
                            double *);
-
-    void symmetrize_dynamical_matrix(unsigned int,
-                                     Eigen::MatrixXcd &) const;
-
-    void replicate_dymat_for_all_kpoints(std::complex<double> ***) const;
-
 
     static void mpi_bcast_complex(std::complex<double> ****data,
                                   const unsigned int NT,

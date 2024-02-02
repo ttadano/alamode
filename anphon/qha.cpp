@@ -52,8 +52,6 @@ void Qha::set_default_variables()
 
     mat_transform_sym = nullptr;
     symop_minus_at_k = nullptr;
-
-//    relax_str = 0;
 }
 
 void Qha::deallocate_variables()
