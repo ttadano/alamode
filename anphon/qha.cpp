@@ -151,7 +151,6 @@ void Qha::setup_eigvecs()
 
     // Calculate phonon eigenvalues and eigenvectors for all k-points for scph
 
-#pragma omp parallel for
     for (int ik = 0; ik < kmesh_dense->nk; ++ik) {
 
         dynamical->eval_k(kmesh_dense->xk[ik],

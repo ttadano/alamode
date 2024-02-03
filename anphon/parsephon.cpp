@@ -45,10 +45,8 @@
 
 using namespace PHON_NS;
 
-Input::Input(PHON *phon) : Pointers(phon)
+Input::Input(PHON *phon) : Pointers(phon), job_title(""), from_stdin(false)
 {
-    from_stdin = false;
-    job_title = "";
 }
 
 Input::~Input()
@@ -132,7 +130,7 @@ void Input::parse_general_vars()
 
     int i;
     int nkd;
-    struct stat st;
+    struct stat st{};
     std::string str_tmp;
     const std::vector<std::string> input_list{
             "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM", "FCSXML", "FC2XML",
@@ -303,12 +301,6 @@ void Input::parse_general_vars()
         exit("parse_general_vars",
              "BORNINFO must be specified when NONANALYTIC > 0.");
     }
-    // if (nonanalytic == 3) {
-    //     if (mode == "SCPH") {
-    //         exit("parse_general_vars",
-    //                     "Sorry. NONANALYTIC=3 is not supported for MODE = SCPH.");
-    //     }
-    // }
 
     // Copy the values to appropriate classes.
 
