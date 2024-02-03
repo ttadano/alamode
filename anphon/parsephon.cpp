@@ -105,13 +105,13 @@ void Input::parce_input(int narg,
         parse_qha_vars();
     }
     if ((phon->mode == "SCPH" || phon->mode == "QHA") && relaxation->relax_str != 0) {
-        if(!locate_tag("&relax"))
+        if (!locate_tag("&relax"))
             exit("parse_input",
                  "&relax entry not found in the input file");
         parse_relax_vars();
 
         check_relax_vars();
-        
+
         if (relaxation->relax_str != 1) {
             if (!locate_tag("&strain"))
                 exit("parse_input",
@@ -120,7 +120,7 @@ void Input::parce_input(int narg,
         }
         if (!locate_tag("&displace"))
             exit("parse_input",
-                    "&displace entry not found in the input file");
+                 "&displace entry not found in the input file");
 
         parse_initial_displace();
     }
@@ -751,7 +751,7 @@ void Input::check_relax_vars()
 
                 if (!fin_test) {
                     exit("check_relax_vars",
-                        "strain_harmonic.in is required in STRAIN_IFC_DIR when RENORM_3TO2ND >= 2.");
+                         "strain_harmonic.in is required in STRAIN_IFC_DIR when RENORM_3TO2ND >= 2.");
                 }
 
                 fin_test.close();
@@ -1002,7 +1002,7 @@ void Input::parse_initial_displace()
                 vec_tmp[ixyz] = 0.0;
                 for (itmp = 0; itmp < 3; itmp++) {
                     vec_tmp[ixyz] += a[itmp][ixyz] * u_fractional[iat][itmp];
-                } 
+                }
             }
             u_xyz.push_back(vec_tmp);
         }

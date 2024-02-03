@@ -206,9 +206,9 @@ void Writes::write_input_vars()
             std::cout << "  RENORM_34TO1ST = " << relaxation->renorm_34to1st << std::endl;
             std::cout << "  STRAIN_IFC_DIR = " << relaxation->strain_IFC_dir << std::endl;
         }
-        std::cout << std::endl;  
+        std::cout << std::endl;
     }
-    
+
 
     std::cout << " Kpoint:" << std::endl;
     std::cout << "  KPMODE (1st entry for &kpoint) = "

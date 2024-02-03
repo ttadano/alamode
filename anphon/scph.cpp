@@ -4804,8 +4804,6 @@ std::vector<std::complex<double>> Scph::get_bubble_selfenergy(const KpointMeshUn
 }
 
 
-
-
 void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                                            const unsigned int NT,
                                            const int type)

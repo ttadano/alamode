@@ -287,8 +287,7 @@ void PHON::execute_self_consistent_phonon() const
             std::cout << "      anharmonic phonon frequencies.                         " << std::endl;
             std::cout << "      Harmonic and quartic force constants will be used.     " << std::endl;
             std::cout << std::endl;
-        }
-        else if (mode == "SCPH" && relaxation->relax_str != 0) {
+        } else if (mode == "SCPH" && relaxation->relax_str != 0) {
             std::cout << "                        MODE = SCPH                          " << std::endl;
             std::cout << "                                                             " << std::endl;
             std::cout << "      Self-consistent phonon calculation to compute          " << std::endl;
@@ -296,8 +295,7 @@ void PHON::execute_self_consistent_phonon() const
             std::cout << "      at finite temperatures.                                " << std::endl;
             std::cout << "      Harmonic to quartic force constants will be used.      " << std::endl;
             std::cout << std::endl;
-        }
-        else if(mode == "QHA") {
+        } else if (mode == "QHA") {
             std::cout << "                        MODE = QHA                           " << std::endl;
             std::cout << "                                                             " << std::endl;
             std::cout << "      QHA calculation to compute crystal structure           " << std::endl;
@@ -316,8 +314,7 @@ void PHON::execute_self_consistent_phonon() const
         scph->setup_scph();
         relaxation->setup_relaxation();
         scph->exec_scph();
-    }
-    else if (mode == "QHA") {
+    } else if (mode == "QHA") {
         qha->setup_qha();
         relaxation->setup_relaxation();
         qha->exec_qha_optimization();
