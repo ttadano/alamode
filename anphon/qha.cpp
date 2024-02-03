@@ -89,10 +89,7 @@ void Qha::setup_qha()
 
 void Qha::setup_kmesh()
 {
-    unsigned int ik;
-    unsigned int i;
-    double xtmp[3];
-    // Setup k points for SCPH equation
+    // Setup k points for QHA equation
     MPI_Bcast(&kmesh_qha[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kmesh_interpolate[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
@@ -2010,17 +2007,6 @@ void Qha::compute_cmat(std::complex<double> ***cmat_convert,
             }
         }
     }
-}
-
-double Qha::distance(double *x1,
-                     double *x2)
-{
-    auto dist = std::pow(x1[0] - x2[0], 2)
-                + std::pow(x1[1] - x2[1], 2)
-                + std::pow(x1[2] - x2[2], 2);
-    dist = std::sqrt(dist);
-
-    return dist;
 }
 
 void Qha::setup_pp_interaction()

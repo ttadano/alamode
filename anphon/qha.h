@@ -107,9 +107,6 @@ private:
                                std::complex<double> *,
                                double **);
 
-    static double distance(double *,
-                           double *);
-
     // QHA
     void compute_cmat(std::complex<double> ***,
                       const std::complex<double> *const *const *const);

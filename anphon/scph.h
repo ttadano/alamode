@@ -255,9 +255,6 @@ private:
                          unsigned int nk_in,
                          double **eval_in) const;
 
-    static double distance(double *,
-                           double *);
-
     static void mpi_bcast_complex(std::complex<double> ****data,
                                   const unsigned int NT,
                                   const unsigned int nk,

@@ -2965,9 +2965,6 @@ void Scph::compute_anharmonic_del_v0_del_umn(std::complex<double> *del_v0_del_um
 
 void Scph::setup_kmesh()
 {
-    unsigned int ik;
-    unsigned int i;
-    double xtmp[3];
     // Setup k points for SCPH equation
     MPI_Bcast(&kmesh_scph[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&kmesh_interpolate[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -4932,16 +4929,7 @@ std::vector<std::complex<double>> Scph::get_bubble_selfenergy(const KpointMeshUn
     return se_bubble;
 }
 
-double Scph::distance(double *x1,
-                      double *x2)
-{
-    auto dist = std::pow(x1[0] - x2[0], 2)
-                + std::pow(x1[1] - x2[1], 2)
-                + std::pow(x1[2] - x2[2], 2);
-    dist = std::sqrt(dist);
 
-    return dist;
-}
 
 
 void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
