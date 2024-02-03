@@ -11,6 +11,7 @@
 #pragma once
 
 #include "pointers.h"
+#include "dynamical.h"
 #include <string>
 #include <vector>
 #include <boost/property_tree/ptree.hpp>
@@ -81,6 +82,9 @@ public:
     int noncollinear;
 
     int get_atomic_number_by_name(const std::string &);
+
+    void get_minimum_distances(KpointMeshUniform *kmesh_in,
+                               MinimumDistList ***&mindist_list_out);
 
 private:
     void set_default_variables();

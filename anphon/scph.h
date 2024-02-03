@@ -190,10 +190,7 @@ private:
 
     void setup_pp_interaction();
 
-    void setup_transform_ifc();
-
     void setup_transform_symmetry();
-
 
     void exec_scph_main(std::complex<double> ****);
 

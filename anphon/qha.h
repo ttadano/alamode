@@ -50,8 +50,6 @@ private:
 
     void setup_eigvecs();
 
-    void setup_transform_ifc();
-
     void setup_pp_interaction();
 
     void setup_transform_symmetry();
