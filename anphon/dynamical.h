@@ -78,6 +78,7 @@ public:
 
     std::complex<double> ***get_eigenvectors() const;
 
+
 private:
     unsigned int nk, ns;
     double **eval = nullptr;
@@ -236,6 +237,14 @@ public:
                                   std::complex<double> ***evec_in,
                                   const KpointMeshUniform *kmesh_coarse,
                                   const std::vector<int> &kmap_interpolate_to_scph);
+
+
+    void get_symmetry_gamma_dynamical(KpointMeshUniform *kmesh_in,
+                                      const unsigned int natmin_in,
+                                      double **xr_p_in,
+                                      unsigned int **map_p2s_in,
+                                      const std::vector<SymmetryOperationWithMapping> &symmlist,
+                                      std::complex<double> ****&mat_transform_sym) const;
 
 private:
     void set_default_variables();

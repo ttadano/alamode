@@ -190,8 +190,6 @@ private:
 
     void setup_pp_interaction();
 
-    void setup_transform_symmetry();
-
     void exec_scph_main(std::complex<double> ****);
 
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,

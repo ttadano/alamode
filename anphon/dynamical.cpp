@@ -2514,3 +2514,94 @@ void Dynamical::duplicate_xk_boundary(double *xk_in,
         }
     }
 }
+
+void Dynamical::get_symmetry_gamma_dynamical(KpointMeshUniform *kmesh_in,
+                                             const unsigned int natmin_in,
+                                             double **xr_p_in,
+                                             unsigned int **map_p2s_in,
+                                             const std::vector<SymmetryOperationWithMapping> &symmlist,
+                                             std::complex<double> ****&mat_transform_sym) const
+{
+    // Construct the transformation matrix for the dynamical matrix.
+
+    unsigned int ik;
+    unsigned int is, js;
+    unsigned int icrd, jcrd;
+    double x1[3], x2[3], k[3], xtmp[3];
+    double S_cart[3][3], S_frac[3][3], S_frac_inv[3][3];
+    std::complex<double> **gamma_tmp;
+
+    const auto natmin = natmin_in;
+    const auto ns = neval;
+    const auto nk_irred_interpolate = kmesh_in->nk_irred;
+
+    const auto nsym = symmlist.size();
+
+    allocate(gamma_tmp, ns, ns);
+
+    if (mat_transform_sym) deallocate(mat_transform_sym);
+    allocate(mat_transform_sym, nk_irred_interpolate,
+             nsym, ns, ns);
+
+    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
+
+        const auto knum = kmesh_in->kpoint_irred_all[ik][0].knum;
+        for (icrd = 0; icrd < 3; ++icrd) {
+            k[icrd] = kmesh_in->xk[knum][icrd];
+        }
+
+        unsigned int isym = 0;
+
+        for (const auto &it: symmlist) {
+
+            for (icrd = 0; icrd < 3; ++icrd) {
+                for (jcrd = 0; jcrd < 3; ++jcrd) {
+                    S_cart[icrd][jcrd] = it.rot[3 * icrd + jcrd];
+                    S_frac[icrd][jcrd] = it.rot_real[3 * icrd + jcrd];
+                }
+            }
+
+            invmat3(S_frac_inv, S_frac);
+
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    gamma_tmp[is][js] = std::complex<double>(0.0, 0.0);
+                }
+            }
+
+            for (unsigned int jat = 0; jat < natmin; ++jat) {
+                const auto iat = it.mapping[jat];
+
+                // Fractional coordinates of x1 and x2
+                for (icrd = 0; icrd < 3; ++icrd) {
+                    x1[icrd] = xr_p_in[map_p2s_in[iat][0]][icrd];
+                    x2[icrd] = xr_p_in[map_p2s_in[jat][0]][icrd];
+                }
+
+                rotvec(xtmp, x1, S_frac_inv);
+                for (icrd = 0; icrd < 3; ++icrd) {
+                    xtmp[icrd] = xtmp[icrd] - x2[icrd];
+                }
+
+                auto phase = 2.0 * pi * (k[0] * xtmp[0] + k[1] * xtmp[1] + k[2] * xtmp[2]);
+
+                for (icrd = 0; icrd < 3; ++icrd) {
+                    for (jcrd = 0; jcrd < 3; ++jcrd) {
+                        gamma_tmp[3 * iat + icrd][3 * jat + jcrd]
+                                = S_cart[icrd][jcrd] * std::exp(im * phase);
+                    }
+                }
+            }
+
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    mat_transform_sym[ik][isym][is][js] = gamma_tmp[is][js];
+                }
+            }
+
+            ++isym;
+        }
+    }
+
+    deallocate(gamma_tmp);
+}

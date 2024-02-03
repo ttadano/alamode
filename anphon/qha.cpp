@@ -84,7 +84,12 @@ void Qha::setup_qha()
     setup_eigvecs();
     system->get_minimum_distances(kmesh_coarse, mindist_list_qha);
     setup_pp_interaction();
-    setup_transform_symmetry();
+    dynamical->get_symmetry_gamma_dynamical(kmesh_coarse,
+                                            system->natmin,
+                                            system->xr_p,
+                                            system->map_p2s,
+                                            symmetry->SymmListWithMap,
+                                            mat_transform_sym);
 }
 
 void Qha::setup_kmesh()
@@ -165,100 +170,6 @@ void Qha::setup_eigvecs()
     if (mympi->my_rank == 0) {
         std::cout << "done !" << std::endl;
     }
-}
-
-void Qha::setup_transform_symmetry()
-{
-    // Construct small_group_at_k, symop_minus_at_k, and
-    // mat_transport_sym.
-
-    unsigned int ik;
-    unsigned int is, js;
-    unsigned int icrd, jcrd;
-    double x1[3], x2[3], k[3], k_minus[3], Sk[3], xtmp[3];
-    double S_cart[3][3], S_frac[3][3], S_frac_inv[3][3];
-    double S_recip[3][3];
-    std::complex<double> **gamma_tmp;
-
-    const auto natmin = system->natmin;
-    const auto ns = dynamical->neval;
-    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
-
-    allocate(gamma_tmp, ns, ns);
-    allocate(mat_transform_sym, nk_irred_interpolate,
-             symmetry->nsym, ns, ns);
-
-    for (ik = 0; ik < nk_irred_interpolate; ++ik) {
-
-        const auto knum = kmesh_coarse->kpoint_irred_all[ik][0].knum;
-        for (icrd = 0; icrd < 3; ++icrd) {
-            k[icrd] = kmesh_coarse->xk[knum][icrd];
-            k_minus[icrd] = -k[icrd];
-        }
-
-        unsigned int isym = 0;
-
-        for (const auto &it: symmetry->SymmListWithMap) {
-
-            for (icrd = 0; icrd < 3; ++icrd) {
-                for (jcrd = 0; jcrd < 3; ++jcrd) {
-                    S_cart[icrd][jcrd] = it.rot[3 * icrd + jcrd];
-                    S_frac[icrd][jcrd] = it.rot_real[3 * icrd + jcrd];
-                    S_recip[icrd][jcrd] = it.rot_reciprocal[3 * icrd + jcrd];
-                }
-            }
-
-            invmat3(S_frac_inv, S_frac);
-            rotvec(Sk, k, S_recip);
-
-            for (auto i = 0; i < 3; ++i) Sk[i] = Sk[i] - nint(Sk[i]);
-
-            const auto knum_sym = kmesh_coarse->get_knum(Sk);
-
-            if (knum_sym == -1)
-                exit("setup_transform_symmetry",
-                     "kpoint not found");
-
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    gamma_tmp[is][js] = std::complex<double>(0.0, 0.0);
-                }
-            }
-
-            for (unsigned int jat = 0; jat < natmin; ++jat) {
-                const auto iat = it.mapping[jat];
-
-                // Fractional coordinates of x1 and x2
-                for (icrd = 0; icrd < 3; ++icrd) {
-                    x1[icrd] = system->xr_p[system->map_p2s[iat][0]][icrd];
-                    x2[icrd] = system->xr_p[system->map_p2s[jat][0]][icrd];
-                }
-
-                rotvec(xtmp, x1, S_frac_inv);
-                for (icrd = 0; icrd < 3; ++icrd) {
-                    xtmp[icrd] = xtmp[icrd] - x2[icrd];
-                }
-
-                auto phase = 2.0 * pi * (k[0] * xtmp[0] + k[1] * xtmp[1] + k[2] * xtmp[2]);
-
-                for (icrd = 0; icrd < 3; ++icrd) {
-                    for (jcrd = 0; jcrd < 3; ++jcrd) {
-                        gamma_tmp[3 * iat + icrd][3 * jat + jcrd]
-                                = S_cart[icrd][jcrd] * std::exp(im * phase);
-                    }
-                }
-            }
-
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    mat_transform_sym[ik][isym][is][js] = gamma_tmp[is][js];
-                }
-            }
-
-            ++isym;
-        }
-    }
-    deallocate(gamma_tmp);
 }
 
 void Qha::exec_qha_optimization()

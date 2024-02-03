@@ -52,8 +52,6 @@ private:
 
     void setup_pp_interaction();
 
-    void setup_transform_symmetry();
-
     void exec_QHA_relax_main(std::complex<double> ****,
                              std::complex<double> ****);
 
