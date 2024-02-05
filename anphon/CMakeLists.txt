@@ -102,6 +102,8 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/phonon_dos.cpp
             ${PROJECT_SOURCE_DIR}/phonon_velocity.cpp
             ${PROJECT_SOURCE_DIR}/phonons.cpp
+            ${PROJECT_SOURCE_DIR}/qha.cpp
+            ${PROJECT_SOURCE_DIR}/relaxation.cpp
             ${PROJECT_SOURCE_DIR}/scph.cpp
             ${PROJECT_SOURCE_DIR}/selfenergy.cpp
             ${PROJECT_SOURCE_DIR}/symmetry_core.cpp
@@ -109,7 +111,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/thermodynamics.cpp
             ${PROJECT_SOURCE_DIR}/timer.cpp
             ${PROJECT_SOURCE_DIR}/write_phonons.cpp
-            ${PROJECT_SOURCE_DIR}/../external/niggli.c qha.cpp relaxation.cpp)
+            ${PROJECT_SOURCE_DIR}/../external/niggli.c)
 
 set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/conductivity.h
@@ -130,13 +132,15 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/phonon_velocity.h
             ${PROJECT_SOURCE_DIR}/phonons.h
             ${PROJECT_SOURCE_DIR}/pointers.h
+            ${PROJECT_SOURCE_DIR}/qha.h
+            ${PROJECT_SOURCE_DIR}/relaxation.h
             ${PROJECT_SOURCE_DIR}/scph.h
             ${PROJECT_SOURCE_DIR}/selfenergy.h
             ${PROJECT_SOURCE_DIR}/symmetry_core.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/thermodynamics.h
             ${PROJECT_SOURCE_DIR}/timer.h
-            ${PROJECT_SOURCE_DIR}/write_phonons.h qha.h relaxation.h)
+            ${PROJECT_SOURCE_DIR}/write_phonons.h)
 
 message("MPI_C_LIBRARIES = ${MPI_C_LIBRARIES}")
 message("MPI_CXX_LIBRARIES = ${MPI_CXX_LIBRARIES}")
