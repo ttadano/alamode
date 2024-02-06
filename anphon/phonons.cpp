@@ -36,6 +36,8 @@
 #include "scph.h"
 #include "ewald.h"
 #include "dielec.h"
+#include "qha.h"
+#include "relaxation.h"
 
 #ifdef _OPENMP
 
@@ -86,7 +88,7 @@ PHON::PHON(int narg,
 
         execute_RTA();
 
-    } else if (mode == "SCPH") {
+    } else if (mode == "SCPH" || mode == "QHA") {
 
         execute_self_consistent_phonon();
 
@@ -129,6 +131,8 @@ void PHON::create_pointers()
     scph = new Scph(this);
     ewald = new Ewald(this);
     dielec = new Dielec(this);
+    qha = new Qha(this);
+    relaxation = new Relaxation(this);
 }
 
 void PHON::destroy_pointers() const
@@ -153,6 +157,8 @@ void PHON::destroy_pointers() const
     delete scph;
     delete ewald;
     delete dielec;
+    delete qha;
+    delete relaxation;
 }
 
 void PHON::setup_base() const
@@ -274,18 +280,43 @@ void PHON::execute_RTA() const
 void PHON::execute_self_consistent_phonon() const
 {
     if (mympi->my_rank == 0) {
-        std::cout << "                        MODE = SCPH                           " << std::endl;
-        std::cout << "                                                             " << std::endl;
-        std::cout << "      Self-consistent phonon calculation to estimate         " << std::endl;
-        std::cout << "      anharmonic phonon frequencies.                         " << std::endl;
-        std::cout << "      Harmonic and quartic force constants will be used.  " << std::endl;
-        std::cout << std::endl;
+        if (mode == "SCPH" && relaxation->relax_str == 0) {
+            std::cout << "                        MODE = SCPH                          " << std::endl;
+            std::cout << "                                                             " << std::endl;
+            std::cout << "      Self-consistent phonon calculation to estimate         " << std::endl;
+            std::cout << "      anharmonic phonon frequencies.                         " << std::endl;
+            std::cout << "      Harmonic and quartic force constants will be used.     " << std::endl;
+            std::cout << std::endl;
+        } else if (mode == "SCPH" && relaxation->relax_str != 0) {
+            std::cout << "                        MODE = SCPH                          " << std::endl;
+            std::cout << "                                                             " << std::endl;
+            std::cout << "      Self-consistent phonon calculation to compute          " << std::endl;
+            std::cout << "      anharmonic phonon frequencies and crystal structure    " << std::endl;
+            std::cout << "      at finite temperatures.                                " << std::endl;
+            std::cout << "      Harmonic to quartic force constants will be used.      " << std::endl;
+            std::cout << std::endl;
+        } else if (mode == "QHA") {
+            std::cout << "                        MODE = QHA                           " << std::endl;
+            std::cout << "                                                             " << std::endl;
+            std::cout << "      QHA calculation to compute crystal structure           " << std::endl;
+            std::cout << "      at finite temperatures.                         " << std::endl;
+            std::cout << "      Harmonic to quartic force constants will be used.      " << std::endl;
+            std::cout << std::endl;
+
+        }
     }
 
     setup_base();
 
     dynamical->diagonalize_dynamical_all();
 
-    scph->setup_scph();
-    scph->exec_scph();
+    if (mode == "SCPH") {
+        scph->setup_scph();
+        relaxation->setup_relaxation();
+        scph->exec_scph();
+    } else if (mode == "QHA") {
+        qha->setup_qha();
+        relaxation->setup_relaxation();
+        qha->exec_qha_optimization();
+    }
 }

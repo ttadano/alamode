@@ -733,7 +733,7 @@ void KpointMeshUniform::reduce_kpoints(const unsigned int nsym,
 
             // Time-reversal symmetry
 
-            if (time_reversal_symmetry) {
+            if (0) {
 
                 for (i = 0; i < 3; ++i) xk_sym[i] *= -1.0;
 
@@ -1466,4 +1466,99 @@ void KpointMeshUniform::get_unique_quartet_k(const int ik,
     }
 
     deallocate(flag_found);
+}
+
+void KpointMeshUniform::setup_kpoint_symmetry(const std::vector<SymmetryOperationWithMapping> &symmlist)
+{
+    double k[3], k_minus[3], Sk[3];
+    double S_cart[3][3], S_frac[3][3], S_frac_inv[3][3], S_recip[3][3];
+
+    symop_minus_at_k.resize(nk_irred);
+    kpoint_map_symmetry.resize(nk);
+
+    std::vector<int> flag(nk, 0);
+
+    for (auto ik = 0; ik < nk_irred; ++ik) {
+        symop_minus_at_k[ik].clear();
+        const auto knum = kpoint_irred_all[ik][0].knum;
+        for (auto icrd = 0; icrd < 3; ++icrd) {
+            k[icrd] = xk[knum][icrd];
+            k_minus[icrd] = -k[icrd];
+        }
+
+        const auto knum_minus = kindex_minus_xk[knum];
+
+        unsigned int isym = 0;
+        for (const auto &it: symmlist) {
+            for (auto icrd = 0; icrd < 3; ++icrd) {
+                for (auto jcrd = 0; jcrd < 3; ++jcrd) {
+                    S_cart[icrd][jcrd] = it.rot[3 * icrd + jcrd];
+                    S_frac[icrd][jcrd] = it.rot_real[3 * icrd + jcrd];
+                    S_recip[icrd][jcrd] = it.rot_reciprocal[3 * icrd + jcrd];
+                }
+            }
+            invmat3(S_frac_inv, S_frac);
+            rotvec(Sk, k, S_recip);
+
+            for (double &x: Sk) x = x - nint(x);
+            const auto knum_sym = get_knum(Sk);
+
+            if (knum_sym == -1) {
+                exit("setup_kpoint_symmetry",
+                     "Cannot find the kpoint");
+            }
+
+            if (knum_sym == knum_minus) symop_minus_at_k[ik].emplace_back(isym);
+
+            if (!flag[knum_sym]) {
+                kpoint_map_symmetry[knum_sym].symmetry_op = isym;
+                kpoint_map_symmetry[knum_sym].knum_irred_orig = ik;
+                kpoint_map_symmetry[knum_sym].knum_orig = knum;
+                flag[knum_sym] = 1;
+            }
+            ++isym;
+        }
+    }
+
+    for (auto ik = 0; ik < nk_irred; ++ik) {
+
+        const auto knum = kpoint_irred_all[ik][0].knum;
+        for (auto icrd = 0; icrd < 3; ++icrd) {
+            k[icrd] = xk[knum][icrd];
+            k_minus[icrd] = -k[icrd];
+        }
+
+        const auto knum_minus = get_knum(k_minus);
+
+        if (!flag[knum_minus]) {
+            kpoint_map_symmetry[knum_minus].symmetry_op = -1;
+            kpoint_map_symmetry[knum_minus].knum_irred_orig = ik;
+            kpoint_map_symmetry[knum_minus].knum_orig = knum;
+            flag[knum_minus] = 1;
+        }
+    }
+
+}
+
+int Kpoint::get_kmap_coarse_to_dense(const KpointMeshUniform *kmesh_coarse,
+                                     const KpointMeshUniform *kmesh_dense,
+                                     std::vector<int> &kmap) const
+{
+    int info_mapping = 0;
+
+    kmap.resize(kmesh_coarse->nk);
+    double xtmp[3];
+
+    for (auto ik = 0; ik < kmesh_coarse->nk; ++ik) {
+        for (auto i = 0; i < 3; ++i) xtmp[i] = kmesh_coarse->xk[ik][i];
+
+        const auto loc = kmesh_dense->get_knum(xtmp);
+
+        if (loc == -1) {
+            info_mapping = 1;
+        }
+
+        kmap[ik] = loc;
+    }
+    return info_mapping;
 }

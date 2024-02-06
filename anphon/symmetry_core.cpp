@@ -14,7 +14,9 @@
 #include "error.h"
 #include "mathfunctions.h"
 #include "memory.h"
+#include "relaxation.h"
 #include "system.h"
+#include "scph.h"
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
@@ -33,6 +35,7 @@ void Symmetry::set_default_variables()
     file_sym = "SYMM_INFO_PRIM";
     time_reversal_sym = true;
     nsym = 0;
+    nsym_ref = 0;
     printsymmetry = false;
     tolerance = 1.0e-3;
 }
@@ -41,44 +44,103 @@ void Symmetry::setup_symmetry()
 {
     time_reversal_sym = system->get_spin_prim().time_reversal_symm;
     SymmList.clear();
+    SymmList_ref.clear();
 
-    if (mympi->my_rank == 0) {
-        std::cout << " ==========\n";
-        std::cout << "  Symmetry \n";
-        std::cout << " ==========\n\n";
+    if ((phon->mode == "SCPH" && relaxation->relax_str != 0) ||
+        (phon->mode == "QHA" && relaxation->relax_str != 0)) {
 
-        const auto cell_tmp = system->get_primcell();
-        setup_symmetry_operation(nsym,
-                                 cell_tmp.lattice_vector,
-                                 cell_tmp.reciprocal_lattice_vector,
-                                 cell_tmp.x_fractional,
-                                 cell_tmp.kind,
-                                 system->get_spin_prim());
+        if (mympi->my_rank == 0) {
+            std::cout << " ==========\n";
+            std::cout << "  Symmetry \n";
+            std::cout << " ==========\n\n";
+
+            const auto cell_tmp = system->get_primcell(true);
+            const auto cell_tmp_ref = system->get_primcell();
+
+            setup_symmetry_operation(nsym,
+                                     cell_tmp.lattice_vector,
+                                     cell_tmp.reciprocal_lattice_vector,
+                                     cell_tmp.x_fractional,
+                                     cell_tmp.kind,
+                                     system->get_spin_prim(),
+                                     SymmList);
+
+            setup_symmetry_operation(nsym_ref,
+                                     cell_tmp_ref.lattice_vector,
+                                     cell_tmp_ref.reciprocal_lattice_vector,
+                                     cell_tmp_ref.x_fractional,
+                                     cell_tmp_ref.kind,
+                                     system->get_spin_prim(),
+                                     SymmList_ref);
+        }
+    } else {
+        if (mympi->my_rank == 0) {
+            std::cout << " ==========\n";
+            std::cout << "  Symmetry \n";
+            std::cout << " ==========\n\n";
+
+            const auto cell_tmp = system->get_primcell();
+
+            setup_symmetry_operation(nsym,
+                                     cell_tmp.lattice_vector,
+                                     cell_tmp.reciprocal_lattice_vector,
+                                     cell_tmp.x_fractional,
+                                     cell_tmp.kind,
+                                     system->get_spin_prim(),
+                                     SymmList);
+        }
     }
 
     MPI_Bcast(&nsym, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nsym_ref, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
     broadcast_symmlist(SymmList);
+    broadcast_symmlist(SymmList_ref);
 
     if (mympi->my_rank == 0) {
+
+        bool use_distorted_structure = false;
+
+        std::cout << std::endl;
         std::cout << "  Number of symmetry operations : "
-                  << nsym << std::endl << std::endl;
-        gensym_withmap(system->get_primcell().lattice_vector,
-                       system->get_primcell().x_fractional,
-                       system->get_primcell().kind);
+                  << nsym << std::endl;
+        if ((phon->mode == "SCPH" && relaxation->relax_str != 0) ||
+            (phon->mode == "QHA" && relaxation->relax_str != 0)) {
+            std::cout << "  Number of symmetry operations in reference structure : "
+                      << nsym_ref << std::endl << std::endl;
+            use_distorted_structure = true;
+        }
+
+        const auto cell_tmp = system->get_primcell(use_distorted_structure);
+
+        gensym_withmap(cell_tmp.lattice_vector,
+                       cell_tmp.x_fractional,
+                       cell_tmp.kind,
+                       SymmList, SymmListWithMap);
+
+        if ((phon->mode == "SCPH" && relaxation->relax_str != 0) ||
+            (phon->mode == "QHA" && relaxation->relax_str != 0)) {
+            gensym_withmap(system->get_primcell().lattice_vector,
+                           system->get_primcell().x_fractional,
+                           system->get_primcell().kind,
+                           SymmList_ref, SymmListWithMap_ref);
+        }
     }
 }
+
 
 void Symmetry::setup_symmetry_operation(unsigned int &nsym,
                                         const Eigen::Matrix3d &aa,
                                         const Eigen::Matrix3d &bb,
                                         const Eigen::MatrixXd &x,
                                         const std::vector<int> &kd,
-                                        const Spin &spin_prim_in)
+                                        const Spin &spin_prim_in,
+                                        std::vector<SymmetryOperation> &symlist)
 {
     int i, j;
     std::ofstream ofs_sym;
     std::ifstream ifs_sym;
-    SymmList.clear();
+    symlist.clear();
 
     if (nsym == 0) {
 
@@ -86,10 +148,10 @@ void Symmetry::setup_symmetry_operation(unsigned int &nsym,
 
         std::cout << "  NSYM = 0: Automatic detection of symmetry operations." << std::endl;
 
-        findsym(aa, x, kd, spin_prim_in, SymmList);
+        findsym(aa, x, kd, spin_prim_in, symlist);
 
-        std::sort(SymmList.begin() + 1, SymmList.end());
-        nsym = SymmList.size();
+        std::sort(symlist.begin() + 1, symlist.end());
+        nsym = symlist.size();
 
         if (printsymmetry) {
             std::cout
@@ -98,7 +160,7 @@ void Symmetry::setup_symmetry_operation(unsigned int &nsym,
             ofs_sym.open(file_sym.c_str(), std::ios::out);
             ofs_sym << nsym << std::endl;
 
-            for (const auto &p: SymmList) {
+            for (const auto &p: symlist) {
                 for (i = 0; i < 3; ++i) {
                     for (j = 0; j < 3; ++j) {
                         ofs_sym << std::setw(4) << p.rot[i][j];
@@ -135,7 +197,7 @@ void Symmetry::setup_symmetry_operation(unsigned int &nsym,
             tran_tmp[i] = 0.0;
         }
 
-        SymmList.emplace_back(rot_tmp, tran_tmp);
+        symlist.emplace_back(rot_tmp, tran_tmp);
 
     } else {
 
@@ -161,7 +223,7 @@ void Symmetry::setup_symmetry_operation(unsigned int &nsym,
                     >> rot_tmp[2][0] >> rot_tmp[2][1] >> rot_tmp[2][2]
                     >> tran_tmp[0] >> tran_tmp[1] >> tran_tmp[2];
 
-            SymmList.emplace_back(rot_tmp, tran_tmp);
+            symlist.emplace_back(rot_tmp, tran_tmp);
         }
         ifs_sym.close();
     }
@@ -471,7 +533,9 @@ void Symmetry::find_crystal_symmetry(const Eigen::Matrix3d &aa,
 
 void Symmetry::gensym_withmap(const Eigen::Matrix3d &aa,
                               const Eigen::MatrixXd &x,
-                              const std::vector<int> &kd)
+                              const std::vector<int> &kd,
+                              const std::vector<SymmetryOperation> &symmlist_in,
+                              std::vector<SymmetryOperationWithMapping> &symmlist_withmap_out) const
 {
     // Generate symmetry operations in Cartesian coordinate with the atom-mapping information.
 
@@ -481,11 +545,11 @@ void Symmetry::gensym_withmap(const Eigen::Matrix3d &aa,
     int i, j;
     unsigned int natmin = x.rows();
 
-    SymmListWithMap.clear();
+    symmlist_withmap_out.clear();
 
     allocate(map_tmp, natmin);
 
-    for (const auto &isym: SymmList) {
+    for (const auto &isym: symmlist_in) {
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -539,12 +603,12 @@ void Symmetry::gensym_withmap(const Eigen::Matrix3d &aa,
 
         // Add to vector
 
-        SymmListWithMap.emplace_back(S,
-                                     T,
-                                     S_recip,
-                                     map_tmp,
-                                     natmin,
-                                     shift);
+        symmlist_withmap_out.emplace_back(S,
+                                          T,
+                                          S_recip,
+                                          map_tmp,
+                                          natmin,
+                                          shift);
     }
 }
 

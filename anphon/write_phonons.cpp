@@ -32,6 +32,8 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "isotope.h"
 #include "integration.h"
 #include "scph.h"
+#include "qha.h"
+#include "relaxation.h"
 
 #ifdef _HDF5
 
@@ -149,8 +151,64 @@ void Writes::write_input_vars()
         std::cout << "  TOL_SCPH = " << scph->tolerance_scph << std::endl;
         std::cout << "  MAXITER = " << scph->maxiter << std::endl;
         std::cout << "  MIXALPHA = " << scph->mixalpha << std::endl;
+
+        // variables related to structural optimization
+        std::cout << std::endl;
+        std::cout << "  RELAX_STR = " << relaxation->relax_str << std::endl;
+    } else if (phon->mode == "QHA") {
+        std::cout << " QHA:" << std::endl;
+        std::cout << "  KMESH_INTERPOLATE = ";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_interpolate[i];
+        std::cout << std::endl;
+        std::cout << "  KMESH_QHA         = ";
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_scph[i];
+        std::cout << std::endl;
+        std::cout << "  LOWER_TEMP = " << scph->lower_temp << std::endl;
+        // variables related to structural optimization
+        std::cout << "  RELAX_STR = " << relaxation->relax_str << std::endl;
+
     }
     std::cout << std::endl;
+
+    if ((phon->mode == "SCPH" || phon->mode == "QHA") && relaxation->relax_str != 0) {
+        std::cout << " Structure_opt:" << std::endl;
+
+        std::cout << "  RELAX_ALGO = " << relaxation->relax_algo << std::endl;
+        std::cout << "  MAX_STR_ITER = " << relaxation->max_str_iter << std::endl;
+        std::cout << "  COORD_CONV_TOL = " << relaxation->coord_conv_tol << std::endl;
+        if (relaxation->relax_str == 2) {
+            std::cout << "  CELL_CONV_TOL = " << relaxation->cell_conv_tol << std::endl;
+        }
+        if (relaxation->relax_algo == 1) {
+            std::cout << "  ALPHA_STEEPEST_DECENT = " << relaxation->alpha_steepest_decent << std::endl;
+        } else if (relaxation->relax_algo == 2) {
+            std::cout << "  MIXBETA_COORD = " << relaxation->mixbeta_coord << std::endl;
+            if (relaxation->relax_str == 2) {
+                std::cout << "  MIXBETA_CELL = " << relaxation->mixbeta_cell << std::endl;
+            }
+        }
+
+        std::cout << "  SET_INIT_STR = " << relaxation->set_init_str << std::endl;
+        if (relaxation->set_init_str == 3) {
+            std::cout << "  COOLING_U0_INDEX = " << relaxation->cooling_u0_index << std::endl;
+            std::cout << "  COOLING_U0_THR = " << relaxation->cooling_u0_thr << std::endl;
+        }
+
+        std::cout << "  ADD_HESS_DIAG = " << relaxation->add_hess_diag << std::endl;
+        std::cout << "  STAT_PRESSURE = " << relaxation->stat_pressure << std::endl;
+
+        if (phon->mode == "QHA" && relaxation->relax_str == 2) {
+            std::cout << "  QHA_SCHEME = " << qha->qha_scheme << std::endl;
+        }
+        if (relaxation->relax_str == 2 || relaxation->relax_str == 3) {
+            std::cout << "  RENORM_3TO2ND = " << relaxation->renorm_3to2nd << std::endl;
+            std::cout << "  RENORM_2TO1ST = " << relaxation->renorm_2to1st << std::endl;
+            std::cout << "  RENORM_34TO1ST = " << relaxation->renorm_34to1st << std::endl;
+            std::cout << "  STRAIN_IFC_DIR = " << relaxation->strain_IFC_dir << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
 
     std::cout << " Kpoint:" << std::endl;
     std::cout << "  KPMODE (1st entry for &kpoint) = "
@@ -214,6 +272,8 @@ void Writes::write_input_vars()
         //  std::cout << "  FSTATE_K = " << anharmonic_core->calc_fstate_k << std::endl;
 
     } else if (phon->mode == "SCPH") {
+        // Do nothing
+    } else if (phon->mode == "QHA") {
         // Do nothing
     } else {
         exit("write_input_vars", "This cannot happen");
@@ -2908,7 +2968,8 @@ void Writes::write_scph_dos(double **dos_scph, const int bubble) const
 void Writes::write_scph_thermodynamics(double *heat_capacity,
                                        double *heat_capacity_correction,
                                        double *FE_QHA,
-                                       double *dFE_scph) const
+                                       double *dFE_scph,
+                                       double *FE_total) const
 {
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
@@ -2928,15 +2989,42 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
         exit("write_scph_thermodynamics",
              "cannot open file_thermo");
 
+    // write header 
+    if (relaxation->relax_str != 0) {
+        ofs_thermo << "# The renormalized static potential Phi_0 is also shown." << std::endl;
+    }
     if (thermodynamics->calc_FE_bubble) {
         ofs_thermo << "# The bubble free-energy calculated on top of the SCPH wavefunction is also shown." << std::endl;
-        ofs_thermo <<
-                   "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry], F_{vib} (Bubble correction) [Ry]"
-                   << std::endl;
-    } else {
-        ofs_thermo << "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry]"
-                   << std::endl;
     }
+
+    ofs_thermo << "# Temperature [K], Cv [in kB unit]";
+    if (print_anharmonic_correction_Cv) {
+        ofs_thermo << ", Cv (anharm correction) [in kB unit]";
+    }
+    ofs_thermo << ", F_{vib} (QHA term) [Ry]";
+    // do not write scph correction in QHA + structural optimization
+    if (phon->mode == "SCPH") {
+        ofs_thermo << ", F_{vib} (SCPH correction) [Ry]";
+    }
+    if (thermodynamics->calc_FE_bubble) {
+        ofs_thermo << ", F_{vib} (Bubble correction) [Ry]";
+    }
+    // write renormalized zero-th order IFC
+    if (relaxation->relax_str != 0) {
+        ofs_thermo << ", Phi0 [Ry]";
+    }
+    ofs_thermo << ", F_{total} [Ry]";
+    ofs_thermo << std::endl;
+
+    // if (thermodynamics->calc_FE_bubble) {
+    //     ofs_thermo << "# The bubble free-energy calculated on top of the SCPH wavefunction is also shown." << std::endl;
+    //     ofs_thermo <<
+    //                "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry], F_{vib} (Bubble correction) [Ry]"
+    //                << std::endl;
+    // } else {
+    //     ofs_thermo << "# Temperature [K], Cv [in kB unit], F_{vib} (QHA term) [Ry], F_{vib} (SCPH correction) [Ry]"
+    //                << std::endl;
+    // }
 
     if (thermodynamics->classical) {
         ofs_thermo << "# CLASSICAL = 1: Use classical limit." << std::endl;
@@ -2952,11 +3040,18 @@ void Writes::write_scph_thermodynamics(double *heat_capacity,
             ofs_thermo << std::setw(18) << std::scientific << heat_capacity_correction[iT] / k_Boltzmann;
         }
         ofs_thermo << std::setw(18) << FE_QHA[iT];
-        ofs_thermo << std::setw(18) << dFE_scph[iT];
-
+        // skip scph correction for QHA + structural optimization
+        if (phon->mode == "SCPH") {
+            ofs_thermo << std::setw(18) << dFE_scph[iT];
+        }
         if (thermodynamics->calc_FE_bubble) {
             ofs_thermo << std::setw(18) << thermodynamics->FE_bubble[iT];
         }
+
+        if (relaxation->relax_str != 0) {
+            ofs_thermo << std::setw(18) << relaxation->V0[iT];
+        }
+        ofs_thermo << std::setw(18) << FE_total[iT];
         ofs_thermo << std::endl;
     }
 

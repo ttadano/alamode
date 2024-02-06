@@ -9,7 +9,6 @@
 */
 
 #pragma once
-
 #include <unordered_map>
 #include <boost/bimap.hpp>
 #include <utility>
@@ -23,6 +22,7 @@
 #include "cluster.h"
 #include "system.h"
 #include "timer.h"
+
 
 namespace ALM_NS {
 class ConstraintClass {

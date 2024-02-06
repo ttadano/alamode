@@ -1419,10 +1419,12 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
         // Generate atom pairs for each order
 
-        if (order == 0) {
-            // there is no new translational invariance
-            continue;
+        if (order == 0) continue;  // there is no new translational invariance
 
+        if (order > 2) {
+            // we assume that the cutoff radius is enough small
+            // for 5th or higher-order IFCs
+            continue;
         } else {
 
             // Anharmonic cases
@@ -1472,7 +1474,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                 std::vector<int> atom_tmp;
                 std::vector<int> sort_table, sort_table_tmp;
                 // std::vector<int> const_now_omp;
-                std::vector<std::vector<double> > consts_now_omp;
+                std::vector<std::vector<double>> consts_now_omp;
 
                 ConstEntry const_tmp_omp;
                 std::vector<ConstEntry> constraint_list_omp;

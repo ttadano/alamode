@@ -160,3 +160,39 @@ ANPHON: Output files
 
  This file contains :math:`\Delta D(\boldsymbol{q}) = D_{\mathrm{SCPH}}(\boldsymbol{q}) - D_{\mathrm{Harmonic}}(\boldsymbol{q})`.
  For the definition, see the :ref:`formalism of the SCPH calculation <formalism_SCPH>`.
+
+````
+
+* ``PREFIX``.atom_disp
+ 
+ Temperature-dependence of the atomic displacements :math:`u^{(0)}_{\alpha \mu}` in Cartesian representation. Created when ``MODE = SCPH`` and ``RELAX_STR != 0``.
+
+* ``PREFIX``.normal_disp
+
+ Temperature-dependence of the atomic displacement :math:`q^{(0)}_{\lambda}` in normal coordinate representation. Created when ``MODE = SCPH`` and ``RELAX_STR != 0``.
+
+* ``PREFIX``.umn_tensor
+
+ Temperature-dependence of the displacement gradient tensor :math:`u_{\mu \nu}`. Created when ``MODE = SCPH`` and ``RELAX_STR = 2, -1, -2``.
+
+* ``PREFIX``.V0
+
+ Temperature-dependent zero-th order IFC :math:`U_0`. Created when ``MODE = SCPH`` and ``RELAX_STR != 0``.
+ This file is used to restart the SCPH/QHA + structural optimization.
+
+* ``PREFIX``.renorm_harm_dymat
+
+ Renormalization of harmonic dynamical matrix by the structure change. Created when ``MODE = SCPH`` and ``RELAX_STR != 0``.
+ This file is used to restart the SCPH/QHA + structural optimization.
+
+* step_q0.txt
+
+ Record of atomic displacement :math:`q^{(0)}_{\lambda}` at all steps of structural optimization.
+
+* step_u0.txt
+
+ Record of atomic displacements :math:`u^{(0)}_{\alpha \mu}` at all steps of structural optimization.
+
+* step_u_tensor.txt
+
+ Record of displacement gradient tensor :math:`u_{\mu \nu}` at all steps of structural optimization.

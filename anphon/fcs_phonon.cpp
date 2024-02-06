@@ -103,7 +103,7 @@ void Fcs_phonon::setup(std::string mode)
             maxorder = 2;
             require_quartic = false;
         }
-    } else if (mode == "SCPH") {
+    } else if (mode == "SCPH" || mode == "QHA") {
         require_cubic = true;
         require_quartic = true;
         maxorder = 3;
@@ -294,6 +294,18 @@ void Fcs_phonon::load_fcs_from_file(const int maxorder_in) const
     }
 
     std::cout << "done.\n\n";
+}
+
+void Fcs_phonon::get_fcs_from_file(const std::string fname_fcs,
+                                   const int order,
+                                   std::vector<FcsArrayWithCell> &fcs_out) const
+{
+    const auto file_extension = fname_fcs.substr(fname_fcs.find_last_of('.') + 1);
+    if (file_extension == "xml" || file_extension == "XML") {
+        load_fcs_xml(fname_fcs, order, fcs_out);
+    } else if (file_extension == "h5" || file_extension == "hdf5") {
+        parse_fcs_from_h5(fname_fcs, order, fcs_out);
+    }
 }
 
 

@@ -52,6 +52,17 @@ public:
     std::vector<std::vector<unsigned int>> from_true_primitive;
 };
 
+struct ShiftCell {
+public:
+    int sx, sy, sz;
+};
+
+struct MinimumDistList {
+public:
+    double dist;
+    std::vector<ShiftCell> shift;
+};
+
 class System : protected Pointers {
 public:
     System(class PHON *);
@@ -62,7 +73,7 @@ public:
 
     const Cell &get_supercell(const int index) const;
 
-    const Cell &get_primcell() const;
+    const Cell &get_primcell(const bool distorted = false) const;
 
     const Spin &get_spin_super() const;
 
@@ -95,6 +106,9 @@ public:
 
     const std::vector<double> &get_mass_super() const;
 
+    void get_minimum_distances(const unsigned int nsize[3],
+                               MinimumDistList ***&mindist_list_out);
+
 private:
 
     enum LatticeType {
@@ -102,7 +116,7 @@ private:
     };
 
     std::vector<Cell> supercell;
-    Cell primcell;
+    Cell primcell, primcell_distort;
     Spin spin_super, spin_prim;
     std::vector<MappingTable> map_super_alm, map_prim_alm;
 
@@ -147,6 +161,8 @@ private:
     void update_primitive_lattice();
 
     void generate_mapping_tables();
+
+    void initialize_distorted_primitive_cell();
 
     void generate_mapping_primitive_super(const Cell &pcell,
                                           const Cell &scell,

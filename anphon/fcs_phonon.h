@@ -133,6 +133,49 @@ public:
 
 };
 
+struct sort_by_heading_indices {
+    unsigned int number_of_tails; // number of indices at the tail of the array
+    // It should be 1 when renormalizing 2nd-order force constants by 3rd-order force constants,
+    // and should be 2 when renormalizing 2nd-order force cnstants by 4th-order force constants.
+
+    sort_by_heading_indices(const unsigned int n) : number_of_tails(n) {}
+
+    inline bool operator()(const FcsArrayWithCell &a, const FcsArrayWithCell &b) const
+    {
+        std::vector<int> array_a, array_b;
+        array_a.clear();
+        array_b.clear();
+        const auto len = a.pairs.size();
+
+        for (auto i = 0; i < len - number_of_tails; ++i) {
+            array_a.push_back(a.pairs[i].index);
+            array_b.push_back(b.pairs[i].index);
+        }
+        // The components of relvec should be integers,
+        // so let's convert their types into int for sort.
+        for (auto i = 0; i < len - number_of_tails - 1; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                array_a.push_back(nint(a.relvecs[i][j]));
+                array_b.push_back(nint(b.relvecs[i][j]));
+            }
+        }
+        // Register the last index
+        for (auto i = len - number_of_tails; i < len; ++i) {
+            array_a.push_back(a.pairs[i].index);
+            array_b.push_back(b.pairs[i].index);
+        }
+        for (auto i = len - number_of_tails - 1; i < len - 1; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                array_a.push_back(nint(a.relvecs[i][j]));
+                array_b.push_back(nint(b.relvecs[i][j]));
+            }
+        }
+
+        return std::lexicographical_compare(array_a.begin(), array_a.end(),
+                                            array_b.begin(), array_b.end());
+    }
+};
+
 class Fcs_phonon : protected Pointers {
 public:
     Fcs_phonon(class PHON *);
@@ -147,6 +190,10 @@ public:
     std::vector<FcsArrayWithCell> *force_constant_with_cell;
 
     bool update_fc2;
+
+    void get_fcs_from_file(const std::string fname_fcs,
+                           const int order,
+                           std::vector<FcsArrayWithCell> &fcs_out) const;
 
 private:
     bool require_cubic;

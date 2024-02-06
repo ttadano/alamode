@@ -178,9 +178,16 @@ public:
     double **kvec_na = nullptr;
 };
 
+struct KpointSymmetry {
+public:
+    int symmetry_op;
+    unsigned int knum_irred_orig;
+    unsigned int knum_orig;
+};
+
 class KpointMeshUniform {
 public:
-    KpointMeshUniform() = default;;
+    KpointMeshUniform() = default;
 
     KpointMeshUniform(const unsigned int nk_in[3])
     {
@@ -216,6 +223,9 @@ public:
     std::vector<std::vector<KpointList>> kpoint_irred_all;
     std::vector<std::vector<int>> small_group_of_k;
     std::vector<unsigned int> kindex_minus_xk;
+    std::vector<std::vector<int>> symop_minus_at_k;
+    std::vector<KpointSymmetry> kpoint_map_symmetry;
+
     bool niggli_reduced = false;
 
     void setup(const std::vector<SymmetryOperation> &symmlist,
@@ -240,6 +250,9 @@ public:
                               const bool use_permutation_symmetry,
                               std::vector<KsListGroup> &quartet,
                               const int sign = -1) const;
+
+    void setup_kpoint_symmetry(const std::vector<SymmetryOperationWithMapping> &symmlist);
+
 
 private:
 
@@ -353,6 +366,10 @@ public:
     void get_commensurate_kpoints(const Eigen::Matrix3d &lavec_super,
                                   const Eigen::Matrix3d &lavec_prim,
                                   std::vector<std::vector<double>> &klist) const;
+
+    int get_kmap_coarse_to_dense(const KpointMeshUniform *kmesh_coarse,
+                                 const KpointMeshUniform *kmesh_dense,
+                                 std::vector<int> &kmap) const;
 
 private:
     void set_default_variables();

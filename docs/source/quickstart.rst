@@ -47,7 +47,7 @@ Program *alm* estimates harmonic and anharmonic interatomic force constants (IFC
   Then, please prepare necessary input files for a DFT engine (or a classical force field engine) 
   and calculate atomic forces for each displaced configuration.
   Once the atomic forces are calculated for all configurations, please collect the atomic displacements and atomic forces to separate files, say `disp_all.dat` and `force_all.dat`, in Rydberg atomic units. 
-  The detail of the file format is described on :ref:`this page <label_format_DFILE>`.
+  The detail of the file format is described on :ref:`this page <label_format_DFSET>`.
 
   .. Note::
     We provide some auxiliary Python scripts to expedite the above procedure for VASP, Quantum ESPRESSO, and xTAPP users.
@@ -147,6 +147,6 @@ Program anphon
     $ analyze_phonons.py --calc cumulative --temp 300 --direction 1 target.result
 
 
-  For details, see the :ref:`tutorial <label_tutorial>`.
+  For details, see the tutorial.
 
 

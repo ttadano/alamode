@@ -162,12 +162,15 @@ public:
 
     ~Symmetry();
 
-    unsigned int nsym;
+    unsigned int nsym, nsym_ref;
     bool time_reversal_sym;
     bool printsymmetry;
     double tolerance;
     std::vector<SymmetryOperation> SymmList;
     std::vector<SymmetryOperationWithMapping> SymmListWithMap;
+
+    std::vector<SymmetryOperation> SymmList_ref;
+    std::vector<SymmetryOperationWithMapping> SymmListWithMap_ref;
 
     void setup_symmetry();
 
@@ -182,7 +185,9 @@ private:
                                   const Eigen::Matrix3d &bb,
                                   const Eigen::MatrixXd &x,
                                   const std::vector<int> &kd,
-                                  const Spin &spin_prim_in);
+                                  const Spin &spin_prim_in,
+                                  std::vector<SymmetryOperation> &symlist);
+
 
     void findsym(const Eigen::Matrix3d &aa,
                  const Eigen::MatrixXd &x,
@@ -196,9 +201,12 @@ private:
                             const int noncollinear,
                             std::vector<std::vector<unsigned int>> &atomgroup_out) const;
 
+
     void gensym_withmap(const Eigen::Matrix3d &aa,
                         const Eigen::MatrixXd &x,
-                        const std::vector<int> &kd);
+                        const std::vector<int> &kd,
+                        const std::vector<SymmetryOperation> &symmlist_in,
+                        std::vector<SymmetryOperationWithMapping> &symmlist_withmap_out) const;
 
     bool is_proper(const Eigen::Matrix3d &rot) const;
 
