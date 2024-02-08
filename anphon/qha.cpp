@@ -20,6 +20,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "thermodynamics.h"
 #include "mathfunctions.h"
 #include "write_phonons.h"
+#include <iomanip>
 #include <Eigen/Core>
 
 using namespace PHON_NS;

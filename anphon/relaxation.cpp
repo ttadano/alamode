@@ -20,6 +20,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "timer.h"
 #include "mathfunctions.h"
 #include <fftw3.h>
+#include <iomanip>
 #include <Eigen/Core>
 
 using namespace PHON_NS;
