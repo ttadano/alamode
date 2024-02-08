@@ -1032,28 +1032,50 @@ void Cluster::set_interaction_cluster(const int order,
         } else if (order > 0) {
 
             // Anharmonic terms
-            std::vector<std::vector<int>> data_vec;
+            std::vector<std::vector<int>> data_vec, data_vec_sub;
 
             data_vec.clear();
+            data_vec_sub.clear();
+            std::vector<int> vv(intlist.size());
 
-            // First, we generate all possible combinations of clusters.
-            CombinationWithRepetition<int> g(intlist.begin(), intlist.end(), order + 1);
+            // First, we generate all possible combinations of atom indices from intlist.
+            // The number of different atoms in the list is nbody_include[order].
+            std::fill(vv.begin(), vv.begin() + nbody_include[order], 1);
+            std::vector<int> vec_tmp(nbody_include[order], 0);
             do {
-                auto data = g.now();
-
-                list_now[0] = iat;
-                for (auto m = 0; m < order + 1; ++m) list_now[m + 1] = data[m];
-
-                // Save as a candidate if the cluster satisfies the NBODY-rule.
-                if (satisfy_nbody_rule(order + 2, list_now, order)) {
-                    data_vec.emplace_back(data);
+                auto icount = 0;
+                for (auto ii = 0; ii < intlist.size(); ++ii) {
+                    if (vv[ii] == 1) {
+                        vec_tmp[icount] = intlist[ii];
+                        ++icount;
+                    }
                 }
 
-            } while (g.next());
+                // For each combination of atoms, we generate all possible combinations with repetition.
+                CombinationWithRepetition<int> g_sub2(vec_tmp.begin(), vec_tmp.end(), order + 1);
+                do {
+                    data_vec_sub.emplace_back(g_sub2.now());
+                } while (g_sub2.next());
+            } while (std::prev_permutation(vv.begin(), vv.end()));
+
+            // The generated combinations are not necessarily unique. So, let's make them unique.
+            std::sort(data_vec_sub.begin(), data_vec_sub.end());
+            data_vec_sub.erase(std::unique(data_vec_sub.begin(),
+                                           data_vec_sub.end()),
+                               data_vec_sub.end());
+
+            // Finally, we check if the generated combinations satisfy the NBODY-rule.
+            for (const auto &it: data_vec_sub) {
+                list_now[0] = iat;
+                for (auto m = 0; m < order + 1; ++m) list_now[m + 1] = it[m];
+                if (satisfy_nbody_rule(order + 2, list_now, order)) {
+                    data_vec.emplace_back(it);
+                }
+            }
 
             intlist.clear();
-
             const auto ndata = data_vec.size();
+
 
 #pragma omp parallel
             {
