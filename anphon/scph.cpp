@@ -2589,8 +2589,9 @@ void Scph::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
                             C2_array[itmp1 * 3 + itmp2][ixyz2 * 4] + C2_array[itmp2 * 3 + itmp1][ixyz2 * 4];
 
                     elastic_mat_tmp(ns + ixyz1, ns + ixyz2) = C2_array[itmp1 * 3 + itmp2][itmp3 * 3 + itmp4] +
-                                                              C2_array[itmp2 * 3 + itmp1][itmp3 * 3 + itmp4];
-                    +C2_array[itmp1 * 3 + itmp2][itmp4 * 3 + itmp3] + C2_array[itmp2 * 3 + itmp1][itmp4 * 3 + itmp3];
+                                                              C2_array[itmp2 * 3 + itmp1][itmp3 * 3 + itmp4] +
+                                                              C2_array[itmp1 * 3 + itmp2][itmp4 * 3 + itmp3] + 
+                                                              C2_array[itmp2 * 3 + itmp1][itmp4 * 3 + itmp3];
                 }
             }
 
