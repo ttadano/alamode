@@ -88,7 +88,6 @@ void Qha::setup_qha()
     dynamical->get_symmetry_gamma_dynamical(kmesh_coarse,
                                             system->get_primcell().number_of_atoms,
                                             system->get_primcell().x_fractional,
-                                            system->get_map_p2s(),
                                             symmetry->SymmListWithMap,
                                             mat_transform_sym);
 }

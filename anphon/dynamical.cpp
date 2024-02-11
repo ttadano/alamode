@@ -2576,7 +2576,6 @@ void Dynamical::duplicate_xk_boundary(double *xk_in,
 void Dynamical::get_symmetry_gamma_dynamical(KpointMeshUniform *kmesh_in,
                                              const unsigned int natmin_in,
                                              const Eigen::MatrixXd &x_fractional_in,
-                                             const std::vector<std::vector<unsigned int>> &map_p2s_in,
                                              const std::vector<SymmetryOperationWithMapping> &symmlist,
                                              std::complex<double> ****&mat_transform_sym) const
 {
@@ -2632,8 +2631,8 @@ void Dynamical::get_symmetry_gamma_dynamical(KpointMeshUniform *kmesh_in,
 
                 // Fractional coordinates of x1 and x2
                 for (icrd = 0; icrd < 3; ++icrd) {
-                    x1[icrd] = x_fractional_in(map_p2s_in[iat][0], icrd);
-                    x2[icrd] = x_fractional_in(map_p2s_in[jat][0], icrd);
+                    x1[icrd] = x_fractional_in(iat, icrd);
+                    x2[icrd] = x_fractional_in(jat, icrd);
                 }
 
                 rotvec(xtmp, x1, S_frac_inv);

@@ -238,7 +238,6 @@ public:
     void get_symmetry_gamma_dynamical(KpointMeshUniform *kmesh_in,
                                       const unsigned int natmin_in,
                                       const Eigen::MatrixXd &x_fractional_in,
-                                      const std::vector<std::vector<unsigned int>> &map_p2s_in,
                                       const std::vector<SymmetryOperationWithMapping> &symmlist,
                                       std::complex<double> ****&mat_transform_sym) const;
 
@@ -269,7 +268,6 @@ private:
                                const double *const *xk_in,
                                const double *const *kvec_na_in,
                                const std::vector<FcsArrayWithCell> &fc2,
-//                               const std::vector<FcsClassExtent> &fc2_without_dipole_in,
                                const std::vector<FcsArrayWithCell> &fc2_without_dipole_in,
                                const bool require_evec,
                                double **eval_ret,
