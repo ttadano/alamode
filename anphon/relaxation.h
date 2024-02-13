@@ -249,7 +249,6 @@ private:
     void compute_del2_v2_del_umn2(std::complex<double> ***,
                                   const std::complex<double> *const *const *const,
                                   const unsigned int nk,
-                                  const unsigned int nk_interpolate,
                                   double **xk_in);
 
     void compute_del_v3_del_umn(std::complex<double> ****,

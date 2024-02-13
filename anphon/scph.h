@@ -63,8 +63,6 @@ public:
     bool selfenergy_offdiagonal;
 
 
-    void zerofill_harmonic_dymat_renormalize(std::complex<double> ****,
-                                             unsigned int);
 
 
     void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
@@ -275,6 +273,10 @@ private:
                                                             const unsigned int snum,
                                                             const double temp_in,
                                                             const std::vector<std::complex<double>> &omegalist);
+
+
+    void zerofill_harmonic_dymat_renormalize(std::complex<double> ****,
+                                             unsigned int);
 
 
 };

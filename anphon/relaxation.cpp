@@ -233,7 +233,6 @@ void Relaxation::read_elastic_constants(double *const *const C2_array,
 {
     std::fstream fin_elastic_constants;
     std::string str_tmp;
-    int natmin = system->natmin;
     int i1, i2, i3;
 
     // read elastic_constants.in from strain_IFC_dir directory
@@ -632,7 +631,7 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
     int ns = dynamical->neval;
     const auto nk = kmesh_dense->nk;
     const auto nk_interpolate = kmesh_coarse->nk;
-    const auto complex_zero = std::complex<double>(0.0, 0.0);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     int i1, is1, is2, ik1;
 
@@ -769,17 +768,16 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
         timer->print_elapsed();
 
         // second order derivatives of harmonic IFCs
-        std::cout << "  second-order derivatives of harmonic IFCs (from quartic IFCs) ... ";
+        std::cout << "  second-order derivatives of harmonic IFCs (from quartic IFCs) ... " << std::flush;
         compute_del2_v2_del_umn2(del2_v2_del_umn2,
                                  evec_harmonic,
                                  nk,
-                                 nk_interpolate,
-                                 kmesh_coarse->xk);
+                                 kmesh_dense->xk);
         std::cout << "  done!" << std::endl;
         timer->print_elapsed();
 
         // first order derivatives of cubic IFCs
-        std::cout << "  first-order derivatives of cubic IFCs (from quartic IFCs) ... ";
+        std::cout << "  first-order derivatives of cubic IFCs (from quartic IFCs) ... " << std::flush;
         compute_del_v3_del_umn(del_v3_del_umn, evec_harmonic,
                                nk,
                                nk_interpolate);
@@ -1204,21 +1202,18 @@ void Relaxation::compute_del_v2_del_umn(std::complex<double> ***del_v2_del_umn,
 void Relaxation::compute_del2_v2_del_umn2(std::complex<double> ***del2_v2_del_umn2,
                                           const std::complex<double> *const *const *const evec_harmonic,
                                           const unsigned int nk,
-                                          const unsigned int nk_interpolate,
                                           double **xk_in)
 {
     using namespace Eigen;
 
     const auto ns = dynamical->neval;
-    //const auto nk = kmesh_dense->nk;
-    //const auto nk_interpolate = kmesh_coarse->nk;
     int ixyz11, ixyz12, ixyz21, ixyz22, ixyz, itmp;
     int is1, is2, ik, knum;
+
 
 #pragma omp parallel private(ixyz, itmp, ixyz11, ixyz12, ixyz21, ixyz22, is1, is2, ik, knum)
     {
         std::vector<FcsArrayWithCell> delta_fcs;
-        FcsClassExtent fc_extent_tmp;
 
         std::complex<double> **mat_tmp;
         allocate(mat_tmp, ns, ns);

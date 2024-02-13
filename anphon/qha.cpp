@@ -149,7 +149,7 @@ void Qha::setup_eigvecs()
     allocate(evec_harmonic, kmesh_dense->nk, ns, ns);
     allocate(omega2_harmonic, kmesh_dense->nk, ns);
 
-    // Calculate phonon eigenvalues and eigenvectors for all k-points for scph
+    // Calculate phonon eigenvalues and eigenvectors for all k-points for qha
 
     for (int ik = 0; ik < kmesh_dense->nk; ++ik) {
 
@@ -183,15 +183,10 @@ void Qha::exec_qha_optimization()
     std::complex<double> ****delta_harmonic_dymat_renormalize = nullptr;
     allocate(delta_dymat_scph, NT, ns, ns, kmesh_coarse->nk);
     allocate(delta_harmonic_dymat_renormalize, NT, ns, ns, kmesh_coarse->nk);
-    //allocate(V0, NT);
 
     const auto relax_str = relaxation->relax_str;
 
-    scph->zerofill_harmonic_dymat_renormalize(delta_harmonic_dymat_renormalize, NT);
-
-//    for (int iT = 0; iT < NT; iT++) {
-//        V0[iT] = 0.0;
-//    }
+    zerofill_harmonic_dymat_renormalize(delta_harmonic_dymat_renormalize, NT);
 
     if (restart_qha) {
 
@@ -1824,6 +1819,24 @@ void Qha::setup_pp_interaction()
 
     if (mympi->my_rank == 0) {
         std::cout << " done!" << std::endl;
+    }
+}
+
+void Qha::zerofill_harmonic_dymat_renormalize(std::complex<double> ****delta_harmonic_dymat_renormalize,
+                                               unsigned int NT)
+{
+    const auto ns = dynamical->neval;
+    static auto complex_zero = std::complex<double>(0.0, 0.0);
+    int iT, is1, is2, ik;
+
+    for (iT = 0; iT < NT; iT++) {
+        for (is1 = 0; is1 < ns; is1++) {
+            for (is2 = 0; is2 < ns; is2++) {
+                for (ik = 0; ik < kmesh_coarse->nk; ik++) {
+                    delta_harmonic_dymat_renormalize[iT][is1][is2][ik] = complex_zero;
+                }
+            }
+        }
     }
 }
 

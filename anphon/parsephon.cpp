@@ -576,16 +576,15 @@ void Input::parse_qha_vars()
     // Copy the values to appropriate classes.
 
     for (auto i = 0; i < 3; ++i) {
-        scph->kmesh_scph[i] = kmesh_v[i];
-        scph->kmesh_interpolate[i] = kmesh_interpolate_v[i];
+        qha->kmesh_qha[i] = kmesh_v[i];
+        qha->kmesh_interpolate[i] = kmesh_interpolate_v[i];
     }
-    scph->lower_temp = lower_temp;
+    qha->lower_temp = lower_temp;
     relaxation->relax_str = relax_str;
     qha->qha_scheme = qha_scheme;
 
     // Set other values
-    scph->selfenergy_offdiagonal = true;
-    scph->restart_scph = false;
+    qha->restart_qha = false;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();
