@@ -3551,13 +3551,6 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
     const long int nks2 = kmesh_dense->nk * ns2;
 
-    // debug
-    std::complex<double> **v4_old_method;
-    allocate(v4_old_method, ns2, ns2);
-    double norm1 = 0.0;
-    double norm2 = 0.0;
-    double norm_diff = 0.0;
-
 #pragma omp parallel for private(is, js)
     for (long int iks = 0; iks < nks2; ++iks) {
         size_t ik = iks / ns2;
@@ -3601,9 +3594,6 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                 v4_tmp2[is][js] = complex_zero;
                 v4_tmp3[is][js] = complex_zero;
                 v4_tmp4[is][js] = complex_zero;
-
-                // debug
-                v4_old_method[is][js] = complex_zero;
             }
         }
 
@@ -3690,27 +3680,6 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
         } else {
 
-            // old method
-#pragma omp parallel for private(is, js, ret, i)
-            for (ii = 0; ii < ns2; ++ii) {
-                is = ii / ns;
-                js = ii % ns;
-
-                ret = complex_zero;
-
-                for (i = 0; i < ngroup_v4; ++i) {
-                    ret += v4_array_at_kpair[i]
-                            * evec_conj[knum][is][ind[i][0]]
-                            * evec_in[knum][is][ind[i][1]]
-                            * evec_in[jk][js][ind[i][2]]
-                            * evec_conj[jk][js][ind[i][3]];
-                }
-
-                v4_old_method[(ns + 1) * is][(ns + 1) * js] = factor * ret;
-            }
-
-            // new method
-
             // copy v4 in (alpha,mu) representation to the temporary matrix
 #pragma omp parallel for private(is, js)
             for (ii = 0; ii < ngroup_v4; ++ii) {
@@ -3759,34 +3728,9 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
                 v4_mpi[ik_prod][(ns + 1) * is][(ns + 1) * js] = factor*v4_tmp2[(ns + 1) * is][(ns + 1) * js];
             }
-
-            // debug
-            double norm_tmp1 = 0.0;
-            double norm_tmp2 = 0.0;
-            double diff_tmp = 0.0;
-            for(is2_1 = 0; is2_1 < ns2; is2_1++){
-                for(is2_2 = 0; is2_2 < ns2; is2_2++){
-                    norm_tmp1 += std::norm(v4_old_method[is2_1][is2_2]);
-                    norm_tmp2 += std::norm(v4_mpi[ik_prod][is2_1][is2_2]);
-                    diff_tmp += std::norm(v4_old_method[is2_1][is2_2]-v4_mpi[ik_prod][is2_1][is2_2]);
-                }
-            }
-            std::cout << "iks = " << ik_prod << std::endl;
-            std::cout << "norm (original) : " << norm_tmp1 << ", norm (new) : " << norm_tmp2 << ", diff : " << diff_tmp << std::endl;
-
-            norm1 += norm_tmp1;
-            norm2 += norm_tmp2;
-            norm_diff += diff_tmp;
-            // debug to here
-
         }
     }
 
-    // debug
-    std::cout << "total : " << std::endl;
-    std::cout << "norm (original) : " << norm1 << std::endl;
-    std::cout << "norm (new)      : " << norm2 << std::endl;
-    std::cout << "diff            : " << norm_diff << std::endl;
 
     deallocate(evec_conj);
     deallocate(v4_array_at_kpair);
