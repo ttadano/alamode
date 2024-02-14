@@ -21,6 +21,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mathfunctions.h"
 #include "write_phonons.h"
 #include <Eigen/Core>
+#include <iomanip>
 
 using namespace PHON_NS;
 
