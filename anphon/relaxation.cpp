@@ -19,6 +19,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "timer.h"
 #include "mathfunctions.h"
 #include <fftw3.h>
+#include <iomanip>
 #include <Eigen/Core>
 
 using namespace PHON_NS;
@@ -626,7 +627,8 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
                                       double **omega2_harmonic,
                                       std::complex<double> ***evec_harmonic,
                                       int relax_str,
-                                      MinimumDistList ***mindist_list)
+                                      MinimumDistList ***mindist_list,
+                                      const PhaseFactorStorage *phase_storage_in)
 {
     int ns = dynamical->neval;
     const auto nk = kmesh_dense->nk;
@@ -779,8 +781,9 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
         // first order derivatives of cubic IFCs
         std::cout << "  first-order derivatives of cubic IFCs (from quartic IFCs) ... " << std::flush;
         compute_del_v3_del_umn(del_v3_del_umn, evec_harmonic,
-                               nk,
-                               nk_interpolate);
+                                kmesh_coarse,
+                                kmesh_dense,
+                               phase_storage_in);
         std::cout << "  done!" << std::endl;
         timer->print_elapsed();
     }
@@ -1266,8 +1269,9 @@ void Relaxation::compute_del2_v2_del_umn2(std::complex<double> ***del2_v2_del_um
 
 void Relaxation::compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
                                         const std::complex<double> *const *const *const evec_harmonic,
-                                        const unsigned int nk,
-                                        const unsigned int nk_interpolate)
+                                        const KpointMeshUniform *kmesh_coarse_in,
+                                        const KpointMeshUniform *kmesh_dense_in,
+                                        const PhaseFactorStorage *phase_storage_in)
 {
     using namespace Eigen;
 
@@ -1338,7 +1342,10 @@ void Relaxation::compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
                                                      invmass_v3_tmp,
                                                      evec_index_v3_tmp,
                                                      evec_harmonic,
-                                                     true); // selfenergy_offdiagonal = true
+                                                     true, // selfenergy_offdiagonal = true
+                                                     kmesh_coarse_in,
+                                                     kmesh_dense_in,
+                                                     phase_storage_in);
 
             deallocate(fcs_group_tmp);
             deallocate(invmass_v3_tmp);

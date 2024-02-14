@@ -165,17 +165,23 @@ void Scph::exec_scph()
         // Read anharmonic correction to the dynamical matrix from the existing file
         // SCPH calculation, no structural optimization
         if (relax_str == 0) {
-            load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
+            load_scph_dymat_from_file(delta_dymat_scph,
+                                      input->job_title + ".scph_dymat",
+                                      kmesh_dense, kmesh_coarse,
+                                      dynamical->nonanalytic,
+                                      selfenergy_offdiagonal);
         }
             // SCPH + structural optimization
         else if (phon->mode == "SCPH" && relax_str != 0) {
-            load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat");
-            load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
-        }
-            // QHA + structural optimization
-        else if (phon->mode == "QHA") {
-            load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".renorm_harm_dymat");
-            load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+            load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".scph_dymat",
+                                      kmesh_dense, kmesh_coarse,
+                                      dynamical->nonanalytic,
+                                      selfenergy_offdiagonal);
+
+            load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat",
+                                      kmesh_dense, kmesh_coarse,
+                                      dynamical->nonanalytic,
+                                      selfenergy_offdiagonal);
         }
 
         // structural optimization
@@ -196,14 +202,18 @@ void Scph::exec_scph()
             // write dymat to file
             // write scph dynamical matrix when scph calculation is performed
             if (phon->mode == "SCPH") {
-                store_scph_dymat_to_file(delta_dymat_scph, input->job_title + ".scph_dymat");
+                store_scph_dymat_to_file(delta_dymat_scph, input->job_title + ".scph_dymat",
+                                         kmesh_dense, kmesh_coarse, dynamical->nonanalytic,
+                                         selfenergy_offdiagonal);
             }
             // write renormalized harmonic dynamical matrix when the crystal structure is optimized
             if (relax_str != 0) {
-                store_scph_dymat_to_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+                store_scph_dymat_to_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat",
+                                         kmesh_dense, kmesh_coarse, dynamical->nonanalytic,
+                                         selfenergy_offdiagonal);
                 relaxation->store_V0_to_file();
             }
-            write_anharmonic_correction_fc2(delta_dymat_scph, NT);
+            write_anharmonic_correction_fc2(delta_dymat_scph, NT, kmesh_coarse, mindist_list_scph);
         }
     }
 
@@ -219,7 +229,7 @@ void Scph::exec_scph()
         bubble_correction(delta_dymat_scph,
                           delta_dymat_scph_plus_bubble);
         if (mympi->my_rank == 0) {
-            write_anharmonic_correction_fc2(delta_dymat_scph_plus_bubble, NT, bubble);
+            write_anharmonic_correction_fc2(delta_dymat_scph_plus_bubble, NT, kmesh_coarse, mindist_list_scph, bubble);
         }
     }
 
@@ -760,7 +770,11 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 }
 
 void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
-                                     std::string filename_dymat)
+                                     std::string filename_dymat,
+                                     const KpointMeshUniform *kmesh_dense_in,
+                                     const KpointMeshUniform *kmesh_coarse_in,
+                                     const unsigned int nonanalytic_in,
+                                     const bool selfenergy_offdiagonal_in)
 {
     const auto ns = dynamical->neval;
     const auto Tmin = system->Tmin;
@@ -774,8 +788,6 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
     }
 
     if (mympi->my_rank == 0) {
-
-        const auto consider_offdiagonal = selfenergy_offdiagonal;
         double temp;
         std::ifstream ifs_dymat;
         auto file_dymat = filename_dymat;
@@ -801,23 +813,23 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
         ifs_dymat >> Tmin_tmp >> Tmax_tmp >> dT_tmp;
         ifs_dymat >> nonanalytic_tmp >> consider_offdiag_tmp;
 
-        if (nk_interpolate_ref[0] != kmesh_interpolate[0] ||
-            nk_interpolate_ref[1] != kmesh_interpolate[1] ||
-            nk_interpolate_ref[2] != kmesh_interpolate[2]) {
+        if (nk_interpolate_ref[0] != kmesh_coarse->nk_i[0] ||
+            nk_interpolate_ref[1] != kmesh_coarse->nk_i[1] ||
+            nk_interpolate_ref[2] != kmesh_coarse->nk_i[2]) {
             exit("load_scph_dymat_from_file",
                  "The number of KMESH_INTERPOLATE is not consistent");
         }
-        if (nk_scph_tmp[0] != kmesh_scph[0] ||
-            nk_scph_tmp[1] != kmesh_scph[1] ||
-            nk_scph_tmp[2] != kmesh_scph[2]) {
+        if (nk_scph_tmp[0] != kmesh_dense->nk_i[0] ||
+            nk_scph_tmp[1] != kmesh_dense->nk_i[1] ||
+            nk_scph_tmp[2] != kmesh_dense->nk_i[2]) {
             exit("load_scph_dymat_from_file",
                  "The number of KMESH_SCPH is not consistent");
         }
-        if (nonanalytic_tmp != dynamical->nonanalytic) {
+        if (nonanalytic_tmp != nonanalytic_in) {
             warn("load_scph_dymat_from_file",
                  "The NONANALYTIC tag is not consistent");
         }
-        if (consider_offdiag_tmp != consider_offdiagonal) {
+        if (consider_offdiag_tmp != selfenergy_offdiagonal_in) {
             exit("load_scph_dymat_from_file",
                  "The SELF_OFFDIAG tag is not consistent");
         }
@@ -843,7 +855,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
             ifs_dymat >> str_dummy >> temp;
             for (int is = 0; is < ns; ++is) {
                 for (int js = 0; js < ns; ++js) {
-                    for (int ik = 0; ik < kmesh_coarse->nk; ++ik) {
+                    for (int ik = 0; ik < kmesh_coarse_in->nk; ++ik) {
                         ifs_dymat >> dymat_real >> dymat_imag;
                         if (flag_load[iT]) {
                             dymat_out[icount][is][js][ik]
@@ -864,11 +876,15 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
         std::cout << " done." << std::endl;
     }
     // Broadcast to all MPI threads
-    mpi_bcast_complex(dymat_out, NT, kmesh_coarse->nk, ns);
+    mpi_bcast_complex(dymat_out, NT, kmesh_coarse_in->nk, ns);
 }
 
 void Scph::store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in,
-                                    std::string filename_dymat)
+                                    std::string filename_dymat,
+                                    const KpointMeshUniform *kmesh_dense_in,
+                                    const KpointMeshUniform *kmesh_coarse_in,
+                                    const unsigned int nonanalytic_in,
+                                    const bool selfenergy_offdiagonal_in)
 {
     int i;
     const auto ns = dynamical->neval;
@@ -888,25 +904,25 @@ void Scph::store_scph_dymat_to_file(const std::complex<double> *const *const *co
              "Cannot open scph_dymat file");
     }
     for (i = 0; i < 3; ++i) {
-        ofs_dymat << std::setw(5) << kmesh_interpolate[i];
+        ofs_dymat << std::setw(5) << kmesh_coarse_in->nk_i[i];
     }
     ofs_dymat << std::endl;
     for (i = 0; i < 3; ++i) {
-        ofs_dymat << std::setw(5) << kmesh_scph[i];
+        ofs_dymat << std::setw(5) << kmesh_dense_in->nk_i[i];
     }
     ofs_dymat << std::endl;
     ofs_dymat << std::setw(10) << Tmin;
     ofs_dymat << std::setw(10) << Tmax;
     ofs_dymat << std::setw(10) << dT << std::endl;
-    ofs_dymat << std::setw(5) << dynamical->nonanalytic;
-    ofs_dymat << std::setw(5) << selfenergy_offdiagonal << std::endl;
+    ofs_dymat << std::setw(5) << nonanalytic_in;
+    ofs_dymat << std::setw(5) << selfenergy_offdiagonal_in << std::endl;
 
     for (auto iT = 0; iT < NT; ++iT) {
         const auto temp = Tmin + static_cast<double>(iT) * dT;
         ofs_dymat << "# " << temp << std::endl;
         for (auto is = 0; is < ns; ++is) {
             for (auto js = 0; js < ns; ++js) {
-                for (auto ik = 0; ik < kmesh_coarse->nk; ++ik) {
+                for (auto ik = 0; ik < kmesh_coarse_in->nk; ++ik) {
                     ofs_dymat << std::setprecision(15)
                               << std::setw(25) << dymat_in[iT][is][js][ik].real();
                     ofs_dymat << std::setprecision(15)
@@ -981,8 +997,8 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
     // Calculate v4 array.
     // This operation is the most expensive part of the calculation.
     if (selfenergy_offdiagonal & (ialgo == 1)) {
-
         compute_V4_elements_mpi_over_band(v4_array_all,
+                                          omega2_harmonic,
                                           evec_harmonic,
                                           selfenergy_offdiagonal,
                                           kmesh_coarse,
@@ -992,6 +1008,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
                                           phi4_reciprocal);
     } else {
         compute_V4_elements_mpi_over_kpoint(v4_array_all,
+                                            omega2_harmonic,
                                             evec_harmonic,
                                             selfenergy_offdiagonal,
                                             relax_str,
@@ -1006,11 +1023,11 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
         allocate(v3_array_all, nk, ns, ns * ns);
 
         compute_V3_elements_mpi_over_kpoint(v3_array_all,
+                                            omega2_harmonic,
                                             evec_harmonic,
                                             selfenergy_offdiagonal,
                                             kmesh_coarse,
                                             kmesh_dense,
-                                            kmap_interpolate_to_scph,
                                             phase_factor_scph,
                                             phi3_reciprocal);
     }
@@ -1227,6 +1244,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     if (selfenergy_offdiagonal & (ialgo == 1)) {
 
         compute_V4_elements_mpi_over_band(v4_ref,
+                                          omega2_harmonic,
                                           evec_harmonic,
                                           selfenergy_offdiagonal,
                                           kmesh_coarse,
@@ -1236,6 +1254,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                           phi4_reciprocal);
     } else {
         compute_V4_elements_mpi_over_kpoint(v4_ref,
+                                            omega2_harmonic,
                                             evec_harmonic,
                                             selfenergy_offdiagonal,
                                             relax_str,
@@ -1251,11 +1270,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     allocate(v3_with_umn, nk, ns, ns * ns);
 
     compute_V3_elements_mpi_over_kpoint(v3_ref,
+                                        omega2_harmonic,
                                         evec_harmonic,
                                         selfenergy_offdiagonal,
                                         kmesh_coarse,
                                         kmesh_dense,
-                                        kmap_interpolate_to_scph,
                                         phase_factor_scph,
                                         phi3_reciprocal);
 
@@ -1284,7 +1303,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                      del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
                                      omega2_harmonic,
                                      evec_harmonic, relax_str,
-                                     mindist_list_scph);
+                                     mindist_list_scph,
+                                     phase_factor_scph);
 
 
     // get indices of optical modes at Gamma point
@@ -1733,11 +1753,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 //}
 
 void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
+                                               double **omega2_harmonic_in,
                                                const std::complex<double> *const *const *evec_in,
                                                const bool self_offdiag,
                                                const KpointMeshUniform *kmesh_coarse_in,
                                                const KpointMeshUniform *kmesh_dense_in,
-                                               const std::vector<int> &kmap_coarse_to_scph,
                                                const PhaseFactorStorage *phase_storage_in,
                                                std::complex<double> *phi3_reciprocal_inout)
 {
@@ -1881,7 +1901,8 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 
     deallocate(v3_mpi);
 
-    zerofill_elements_acoustic_at_gamma(omega2_harmonic, v3_out, 3);
+    zerofill_elements_acoustic_at_gamma(omega2_harmonic_in, v3_out, 3,
+                                        kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
 
     if (mympi->my_rank == 0) {
         std::cout << " done !" << std::endl;
@@ -1898,9 +1919,11 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
                                               double *invmass_v3_in,
                                               int **evec_index_v3_in,
                                               const std::complex<double> *const *const *evec_in,
-                                              const bool self_offdiag)
+                                              const bool self_offdiag,
+                                              const KpointMeshUniform *kmesh_coarse_in,
+                                              const KpointMeshUniform *kmesh_dense_in,
+                                              const PhaseFactorStorage *phase_storage_in)
 {
-
     auto ns = dynamical->neval;
     auto ns2 = ns * ns;
     auto ns3 = ns * ns * ns;
@@ -1910,7 +1933,7 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
     std::complex<double> ret;
     long int ii;
 
-    const auto nk_scph = kmesh_dense->nk;
+    const auto nk_scph = kmesh_dense_in->nk;
     const auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
     static auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v3_array_at_kpair;
@@ -1924,12 +1947,12 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
 
     for (unsigned int ik = mympi->my_rank; ik < nk_scph; ik += mympi->nprocs) {
 
-        anharmonic_core->calc_phi3_reciprocal(kmesh_dense->xk[ik],
-                                              kmesh_dense->xk[kmesh_dense->kindex_minus_xk[ik]],
+        anharmonic_core->calc_phi3_reciprocal(kmesh_dense_in->xk[ik],
+                                              kmesh_dense_in->xk[kmesh_dense_in->kindex_minus_xk[ik]],
                                               ngroup_v3_in,
                                               fcs_group_v3_in,
                                               relvec_v3_in,
-                                              phase_factor_scph,
+                                              phase_storage_in,
                                               phi3_reciprocal_tmp);
 
 #ifdef _OPENMP
@@ -2031,11 +2054,13 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
 
     deallocate(v3_mpi);
 
-    zerofill_elements_acoustic_at_gamma(omega2_harmonic, v3_out, 3);
+    zerofill_elements_acoustic_at_gamma(omega2_harmonic, v3_out, 3,
+                                        kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
 }
 
 
 void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
+                                               double **omega2_harmonic_in,
                                                std::complex<double> ***evec_in,
                                                const bool self_offdiag,
                                                const bool relax,
@@ -2272,7 +2297,8 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
     deallocate(v4_mpi);
 
-    zerofill_elements_acoustic_at_gamma(omega2_harmonic, v4_out, 4);
+    zerofill_elements_acoustic_at_gamma(omega2_harmonic_in, v4_out, 4,
+                                        kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
 
     if (mympi->my_rank == 0) {
         std::cout << " done !" << std::endl;
@@ -2281,6 +2307,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 }
 
 void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
+                                             double **omega2_harmonic_in,
                                              std::complex<double> ***evec_in,
                                              const bool self_offdiag,
                                              const KpointMeshUniform *kmesh_coarse_in,
@@ -2504,7 +2531,8 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
     deallocate(v4_mpi);
 
-    zerofill_elements_acoustic_at_gamma(omega2_harmonic, v4_out, 4);
+    zerofill_elements_acoustic_at_gamma(omega2_harmonic_in, v4_out, 4,
+                                        kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
 
     if (mympi->my_rank == 0) {
         std::cout << " done !" << std::endl;
@@ -2514,7 +2542,9 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
 void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
                                                std::complex<double> ***v_elems,
-                                               const int fc_order) const
+                                               const int fc_order,
+                                               const unsigned int nk_dense_in,
+                                               const unsigned int nk_irred_coarse_in) const
 {
     // Set V3 or V4 elements involving acoustic modes at Gamma point
     // exactly zero.
@@ -2526,8 +2556,7 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
     allocate(is_acoustic, ns);
     int nacoustic;
     auto threshould = 1.0e-24;
-    const auto nk_reduced_interpolate = kmesh_coarse->nk_irred;
-    static auto complex_zero = std::complex<double>(0.0, 0.0);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     if (!(fc_order == 3 || fc_order == 4)) {
         exit("zerofill_elements_acoustic_at_gamma",
@@ -2567,7 +2596,7 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
         }
 
         // ik = 0;
-        for (jk = 0; jk < kmesh_dense->nk; ++jk) {
+        for (jk = 0; jk < nk_dense_in; ++jk) {
             for (is = 0; is < ns; ++is) {
                 if (is_acoustic[is]) {
                     for (ks = 0; ks < ns; ++ks) {
@@ -2582,13 +2611,13 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
     } else if (fc_order == 4) {
         // Set V4 to zeros so as to avoid mixing with gamma acoustic modes
         // jk = 0;
-        for (int ik = 0; ik < nk_reduced_interpolate; ++ik) {
+        for (int ik = 0; ik < nk_irred_coarse_in; ++ik) {
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
                     for (ks = 0; ks < ns; ++ks) {
                         for (ls = 0; ls < ns; ++ls) {
                             if (is_acoustic[ks] || is_acoustic[ls]) {
-                                v_elems[kmesh_dense->nk * ik][ns * is + js][ns * ks + ls] = complex_zero;
+                                v_elems[nk_dense_in * ik][ns * is + js][ns * ks + ls] = complex_zero;
                             }
                         }
                     }
@@ -2596,7 +2625,7 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
             }
         }
         // ik = 0;
-        for (jk = 0; jk < kmesh_dense->nk; ++jk) {
+        for (jk = 0; jk < nk_dense_in; ++jk) {
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
                     if (is_acoustic[is] || is_acoustic[js]) {
@@ -4714,6 +4743,8 @@ std::vector<std::complex<double>> Scph::get_bubble_selfenergy(const KpointMeshUn
 
 void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                                            const unsigned int NT,
+                                           const KpointMeshUniform *kmesh_coarse_in,
+                                           MinimumDistList ***mindist_list_in,
                                            const int type)
 {
     unsigned int i, j;
@@ -4743,7 +4774,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
         exit("write_anharmonic_correction_fc2",
              "Cannot open file_fc2");
 
-    const auto ncell = kmesh_interpolate[0] * kmesh_interpolate[1] * kmesh_interpolate[2];
+    const auto ncell = kmesh_coarse_in->nk_i[0] * kmesh_coarse_in->nk_i[1] * kmesh_coarse_in->nk_i[2];
 
     allocate(delta_fc2, ns, ns, ncell);
 
@@ -4809,10 +4840,10 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                     jat = js / 3;
                     const auto jcrd = js % 3;
 
-                    const auto nmulti = mindist_list_scph[iat][jat][icell].shift.size();
+                    const auto nmulti = mindist_list_in[iat][jat][icell].shift.size();
 
-                    for (auto it = mindist_list_scph[iat][jat][icell].shift.cbegin();
-                         it != mindist_list_scph[iat][jat][icell].shift.cend(); ++it) {
+                    for (auto it = mindist_list_in[iat][jat][icell].shift.cbegin();
+                         it != mindist_list_in[iat][jat][icell].shift.cend(); ++it) {
 
                         ofs_fc2 << std::setw(4) << (*it).sx;
                         ofs_fc2 << std::setw(4) << (*it).sy;

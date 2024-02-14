@@ -20,6 +20,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "thermodynamics.h"
 #include "mathfunctions.h"
 #include "write_phonons.h"
+#include <iomanip>
 #include <Eigen/Core>
 
 using namespace PHON_NS;
@@ -131,7 +132,7 @@ void Qha::setup_kmesh()
                                                          kmap_coarse_to_dense);
     if (info_mapping == 1) {
         exit("setup_kmesh",
-             "KMESH_INTERPOLATE should be a integral multiple of KMESH_SCPH");
+             "KMESH_QHA should be a integral multiple of KMESH_INTERPOLATE.");
     }
 
     kmesh_coarse->setup_kpoint_symmetry(symmetry->SymmListWithMap);
@@ -195,8 +196,12 @@ void Qha::exec_qha_optimization()
             std::cout << " Dynamical matrix is read from file ...";
         }
 
-        scph->load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".renorm_harm_dymat");
-        scph->load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat");
+        scph->load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".renorm_harm_dymat",
+                                        kmesh_dense, kmesh_coarse, dynamical->nonanalytic,
+                                        true);
+        scph->load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat",
+                                        kmesh_dense, kmesh_coarse, dynamical->nonanalytic,
+                                        true);
 
         // structural optimization
         if (relax_str != 0) {
@@ -218,10 +223,13 @@ void Qha::exec_qha_optimization()
             // write renormalized harmonic dynamical matrix when the crystal structure is optimized
             if (relax_str != 0) {
                 scph->store_scph_dymat_to_file(delta_harmonic_dymat_renormalize,
-                                               input->job_title + ".renorm_harm_dymat");
+                                               input->job_title + ".renorm_harm_dymat",
+                                               kmesh_dense, kmesh_coarse,
+                                               dynamical->nonanalytic,
+                                               true);
                 relaxation->store_V0_to_file();
             }
-            scph->write_anharmonic_correction_fc2(delta_dymat_scph, NT);
+            scph->write_anharmonic_correction_fc2(delta_dymat_scph, NT, kmesh_coarse, mindist_list_qha);
         }
     }
 }
@@ -260,7 +268,6 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     double *C1_array;
     double **C2_array;
     double ***C3_array;
-
     double **C2_array_ZSISA;
 
     // strain-derivative of k-space IFCs
@@ -297,8 +304,8 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     std::vector<int> harm_optical_modes(ns - 3);
 
     // cell optimization
-    double pvcell = 0.0; // pressure * v_{cell,reference} [Ry]
-    pvcell = relaxation->stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
+//    double pvcell = 0.0; // pressure * v_{cell,reference} [Ry]
+    auto pvcell = relaxation->stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
     pvcell *= 1.0e9 / Ryd; // in Ry
 
     // temperature grid
@@ -344,8 +351,9 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
     // Calculate v4 array.
     // This operation is the most expensive part of the calculation.
-    if (scph->selfenergy_offdiagonal & (scph->ialgo == 1)) {
+    if (scph->ialgo == 1) {
         scph->compute_V4_elements_mpi_over_band(v4_ref,
+                                                omega2_harmonic,
                                                 evec_harmonic,
                                                 scph->selfenergy_offdiagonal,
                                                 kmesh_coarse,
@@ -355,8 +363,9 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                                                 phi4_reciprocal);
     } else {
         scph->compute_V4_elements_mpi_over_kpoint(v4_ref,
+                                                  omega2_harmonic,
                                                   evec_harmonic,
-                                                  scph->selfenergy_offdiagonal,
+                                                  true,
                                                   relaxation->relax_str,
                                                   kmesh_coarse,
                                                   kmesh_dense,
@@ -370,11 +379,11 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     allocate(v3_with_umn, nk, ns, ns * ns);
 
     scph->compute_V3_elements_mpi_over_kpoint(v3_ref,
+                                              omega2_harmonic,
                                               evec_harmonic,
                                               scph->selfenergy_offdiagonal,
                                               kmesh_coarse,
                                               kmesh_dense,
-                                              kmap_coarse_to_dense,
                                               phase_factor_qha,
                                               phi3_reciprocal);
 
@@ -410,7 +419,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                                      omega2_harmonic,
                                      evec_harmonic,
                                      relaxation->relax_str,
-                                     mindist_list_qha);
+                                     mindist_list_qha, phase_factor_qha);
 
     // get indices of optical modes at Gamma point
     js = 0;
@@ -956,11 +965,11 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
     allocate(v3_ref, nk, ns, ns * ns);
 
     scph->compute_V3_elements_mpi_over_kpoint(v3_ref,
+                                              omega2_harmonic,
                                               evec_harmonic,
                                               scph->selfenergy_offdiagonal,
                                               kmesh_coarse,
                                               kmesh_dense,
-                                              kmap_coarse_to_dense,
                                               phase_factor_qha,
                                               phi3_reciprocal);
 
@@ -983,7 +992,8 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
                                      del_v2_del_umn,
                                      nullptr, nullptr, omega2_harmonic,
                                      evec_harmonic, relaxation->relax_str,
-                                     mindist_list_qha);
+                                     mindist_list_qha,
+                                     phase_factor_qha);
 
     // set dummy variables as zero.
     // These are used for the preparation for the postprocess
