@@ -784,8 +784,8 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
         compute_del_v3_del_umn(del_v3_del_umn,
                                omega2_harmonic,
                                evec_harmonic,
-                                kmesh_coarse,
-                                kmesh_dense,
+                               kmesh_coarse,
+                               kmesh_dense,
                                phase_storage_in);
         std::cout << "  done!" << std::endl;
         timer->print_elapsed();
@@ -1278,10 +1278,6 @@ void Relaxation::compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
                                         const PhaseFactorStorage *phase_storage_in)
 {
     using namespace Eigen;
-
-    const auto ns = dynamical->neval;
-//    const auto nk = kmesh_dense->nk;
-//    const auto nk_interpolate = kmesh_coarse->nk;
 
     int ngroup_tmp;
     double *invmass_v3_tmp;

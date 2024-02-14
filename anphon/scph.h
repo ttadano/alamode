@@ -70,11 +70,11 @@ public:
                                          const int type = 0);
 
     void load_scph_dymat_from_file(std::complex<double> ****dymat_out,
-                                    std::string filename_dymat,
-                                    const KpointMeshUniform *kmesh_dense_in,
-                                    const KpointMeshUniform *kmesh_coarse_in,
-                                    const unsigned int nonanalytic_in,
-                                    const bool selfenergy_offdiagonal_in);
+                                   std::string filename_dymat,
+                                   const KpointMeshUniform *kmesh_dense_in,
+                                   const KpointMeshUniform *kmesh_coarse_in,
+                                   const unsigned int nonanalytic_in,
+                                   const bool selfenergy_offdiagonal_in);
 
     void store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in,
                                   std::string filename_dymat,
@@ -211,10 +211,10 @@ private:
 
 
     void zerofill_elements_acoustic_at_gamma(double **omega2,
-                                              std::complex<double> ***v_elems,
-                                              const int fc_order,
-                                              const unsigned int nk_dense_in,
-                                              const unsigned int nk_irred_coarse_in) const;
+                                             std::complex<double> ***v_elems,
+                                             const int fc_order,
+                                             const unsigned int nk_dense_in,
+                                             const unsigned int nk_irred_coarse_in) const;
 
 
     FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);

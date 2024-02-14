@@ -255,9 +255,9 @@ private:
     void compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
                                 double **omega2_harmonic,
                                 const std::complex<double> *const *const *const evec_harmonic,
-                                 const KpointMeshUniform *kmesh_coarse_in,
-                                 const KpointMeshUniform *kmesh_dense_in,
-                                 const PhaseFactorStorage *phase_storage_in);
+                                const KpointMeshUniform *kmesh_coarse_in,
+                                const KpointMeshUniform *kmesh_dense_in,
+                                const PhaseFactorStorage *phase_storage_in);
 
     void calculate_delv2_delumn_finite_difference(double **omega2_harmonic,
                                                   const std::complex<double> *const *const *const,

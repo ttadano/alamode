@@ -306,7 +306,8 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
     // cell optimization
 //    double pvcell = 0.0; // pressure * v_{cell,reference} [Ry]
-    auto pvcell = relaxation->stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
+    auto pvcell =
+            relaxation->stat_pressure * system->volume_p * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
     pvcell *= 1.0e9 / Ryd; // in Ry
 
     // temperature grid
@@ -1834,7 +1835,7 @@ void Qha::setup_pp_interaction()
 }
 
 void Qha::zerofill_harmonic_dymat_renormalize(std::complex<double> ****delta_harmonic_dymat_renormalize,
-                                               unsigned int NT)
+                                              unsigned int NT)
 {
     const auto ns = dynamical->neval;
     static auto complex_zero = std::complex<double>(0.0, 0.0);
