@@ -20,6 +20,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "thermodynamics.h"
 #include "mathfunctions.h"
 #include "write_phonons.h"
+#include "timer.h"
 #include <iomanip>
 #include <Eigen/Core>
 
@@ -108,16 +109,16 @@ void Qha::setup_kmesh()
 //        if (verbosity > 0) {
         std::cout << " Setting up the QHA calculations ...\n\n";
         std::cout << "  Gamma-centered uniform grid with the following mesh density:\n";
-        std::cout << "  nk1:" << std::setw(5) << kmesh_qha[0] << '\n';
-        std::cout << "  nk2:" << std::setw(5) << kmesh_qha[1] << '\n';
-        std::cout << "  nk3:" << std::setw(5) << kmesh_qha[2] << "\n\n";
+        std::cout << "  nk1:" << std::setw(5) << kmesh_dense->nk_i[0] << '\n';
+        std::cout << "  nk2:" << std::setw(5) << kmesh_dense->nk_i[1] << '\n';
+        std::cout << "  nk3:" << std::setw(5) << kmesh_dense->nk_i[2] << "\n\n";
         std::cout << "  Number of k points : " << kmesh_dense->nk << '\n';
         std::cout << "  Number of irreducible k points : " << kmesh_dense->nk_irred << "\n\n";
         std::cout << "  Fourier interpolation from reciprocal to real space\n";
         std::cout << "  will be performed with the following mesh density:\n";
-        std::cout << "  nk1:" << std::setw(5) << kmesh_interpolate[0] << '\n';
-        std::cout << "  nk2:" << std::setw(5) << kmesh_interpolate[1] << '\n';
-        std::cout << "  nk3:" << std::setw(5) << kmesh_interpolate[2] << "\n\n";
+        std::cout << "  nk1:" << std::setw(5) << kmesh_coarse->nk_i[0] << '\n';
+        std::cout << "  nk2:" << std::setw(5) << kmesh_coarse->nk_i[1] << '\n';
+        std::cout << "  nk3:" << std::setw(5) << kmesh_coarse->nk_i[2] << "\n\n";
         std::cout << "  Number of k points : " << kmesh_coarse->nk << '\n';
         std::cout << "  Number of irreducible k points : "
                   << kmesh_coarse->nk_irred << '\n';
@@ -599,7 +600,6 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                         }
                     }
                 }
-
 
                 if (relaxation->relax_str == 1) {
                     for (i1 = 0; i1 < 9; i1++) {

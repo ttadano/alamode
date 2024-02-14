@@ -158,12 +158,12 @@ void Writes::write_input_vars()
     } else if (phon->mode == "QHA") {
         std::cout << " QHA:" << std::endl;
         std::cout << "  KMESH_INTERPOLATE = ";
-        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_interpolate[i];
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << qha->kmesh_interpolate[i];
         std::cout << std::endl;
         std::cout << "  KMESH_QHA         = ";
-        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << scph->kmesh_scph[i];
+        for (i = 0; i < 3; ++i) std::cout << std::setw(5) << qha->kmesh_qha[i];
         std::cout << std::endl;
-        std::cout << "  LOWER_TEMP = " << scph->lower_temp << std::endl;
+        std::cout << "  LOWER_TEMP = " << qha->lower_temp << std::endl;
         // variables related to structural optimization
         std::cout << "  RELAX_STR = " << relaxation->relax_str << std::endl;
 

@@ -1915,8 +1915,8 @@ void Dynamical::compute_renormalized_harmonic_frequency(double **omega2_out,
     std::complex<double> ***dymat_new, ***dymat_harmonic_without_renormalize;
     std::complex<double> ***dymat_q;
 
-    const auto complex_one = std::complex<double>(1.0, 0.0);
-    const auto complex_zero = std::complex<double>(0.0, 0.0);
+    constexpr auto complex_one = std::complex<double>(1.0, 0.0);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     SelfAdjointEigenSolver<MatrixXcd> saes;
 
@@ -1928,7 +1928,6 @@ void Dynamical::compute_renormalized_harmonic_frequency(double **omega2_out,
     // Set initial harmonic dymat without IFC renormalization
 
     for (ik = 0; ik < nk_interpolate; ++ik) {
-
         calc_analytic_k(kmesh_coarse->xk[ik],
                         fcs_phonon->fc2_ext,
                         dymat_harmonic_without_renormalize[ik]);
