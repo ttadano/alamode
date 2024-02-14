@@ -3721,11 +3721,12 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
             }
 
             // transform the first and the second index
+#pragma omp parallel for private(is, js, ks, is2_1, is2_2)
             for(ii = 0; ii < ns3; ++ii){
                 is = ii/ns2;
                 is2_1 = ii%ns2;
                 for(is2_2 = 0; is2_2 < ns2; ++is2_2){
-                    // is2_s = js*ns+ks
+                    // is2_2 = js*ns+ks
                     js = is2_2/ns;
                     ks = is2_2%ns;
 
@@ -3735,6 +3736,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
                 }
             }
+#pragma omp parallel for private(is, js, ks, ls, is2_2)
             // transform the third and the fourth index
             for(is2_1 = 0; is2_1 < ns2; ++is2_1){
                 is = is2_1/ns;
@@ -3750,6 +3752,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                 }
             }
             // copy to the final matrix
+#pragma omp parallel for private(is, js)
             for(ii = 0; ii < ns2; ++ii){
                 is = ii/ns;
                 js = ii%ns;
