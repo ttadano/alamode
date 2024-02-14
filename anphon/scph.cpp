@@ -3551,6 +3551,13 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
     const long int nks2 = kmesh_dense->nk * ns2;
 
+    // debug
+    std::complex<double> **v4_old_method;
+    allocate(v4_old_method, ns2, ns2);
+    double norm1 = 0.0;
+    double norm2 = 0.0;
+    double norm_diff = 0.0;
+
 #pragma omp parallel for private(is, js)
     for (long int iks = 0; iks < nks2; ++iks) {
         size_t ik = iks / ns2;
@@ -3585,22 +3592,26 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
             v4_out[ik_prod][is][js] = complex_zero;
         }
 
+        // initialize temporary matrices
+#pragma omp parallel for private(js)
+        for(is = 0; is < ns2; ++is){
+            for(js = 0; js < ns2; ++js){
+                v4_tmp0[is][js] = complex_zero;
+                v4_tmp1[is][js] = complex_zero;
+                v4_tmp2[is][js] = complex_zero;
+                v4_tmp3[is][js] = complex_zero;
+                v4_tmp4[is][js] = complex_zero;
+
+                // debug
+                v4_old_method[is][js] = complex_zero;
+            }
+        }
+
         if (self_offdiag || relax_str) {
 
             // All matrix elements will be calculated when considering the off-diagonal
             // elements of the phonon self-energy (loop diagram).
 
-            // initialize temporary matrices
-#pragma omp parallel for private(js)
-            for(is = 0; is < ns2; ++is){
-                for(js = 0; js < ns2; ++js){
-                    v4_tmp0[is][js] = complex_zero;
-                    v4_tmp1[is][js] = complex_zero;
-                    v4_tmp2[is][js] = complex_zero;
-                    v4_tmp3[is][js] = complex_zero;
-                    v4_tmp4[is][js] = complex_zero;
-                }
-            }
 
             // copy v4 in (alpha,mu) representation to the temporary matrix
 #pragma omp parallel for private(is, js)
@@ -3677,9 +3688,9 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                 v4_mpi[ik_prod][is2_1][js2_1] = factor*v4_tmp4[is2_1][js2_1];
             }
 
-
         } else {
 
+            // old method
 #pragma omp parallel for private(is, js, ret, i)
             for (ii = 0; ii < ns2; ++ii) {
                 is = ii / ns;
@@ -3695,10 +3706,84 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                             * evec_conj[jk][js][ind[i][3]];
                 }
 
-                v4_mpi[ik_prod][(ns + 1) * is][(ns + 1) * js] = factor * ret;
+                v4_old_method[(ns + 1) * is][(ns + 1) * js] = factor * ret;
             }
+
+            // new method
+
+            // copy v4 in (alpha,mu) representation to the temporary matrix
+#pragma omp parallel for private(is, js)
+            for (ii = 0; ii < ngroup_v4; ++ii) {
+
+                is = ind[ii][0]*ns + ind[ii][1];
+                js = ind[ii][2]*ns + ind[ii][3];
+                v4_tmp0[is][js] = v4_array_at_kpair[ii];
+            }
+
+            // transform the first and the second index
+            for(ii = 0; ii < ns3; ++ii){
+                is = ii/ns2;
+                is2_1 = ii%ns2;
+                for(is2_2 = 0; is2_2 < ns2; ++is2_2){
+                    // is2_s = js*ns+ks
+                    js = is2_2/ns;
+                    ks = is2_2%ns;
+
+                    v4_tmp1[(ns + 1) * is][is2_1] += v4_tmp0[is2_2][is2_1]
+                                                    * evec_conj[knum][is][js]
+                                                    * evec_in[knum][is][ks];
+
+                }
+            }
+            // transform the third and the fourth index
+            for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+                is = is2_1/ns;
+                js = is2_1%ns;
+                for(is2_2 = 0; is2_2 < ns2; ++is2_2){
+                    ks = is2_2/ns;
+                    ls = is2_2%ns;
+
+                    v4_tmp2[(ns + 1) * is][(ns + 1) * js] += v4_tmp1[(ns + 1) * is][is2_2]
+                                                             * evec_in[jk][js][ks]
+                                                             * evec_conj[jk][js][ls];
+
+                }
+            }
+            // copy to the final matrix
+            for(ii = 0; ii < ns2; ++ii){
+                is = ii/ns;
+                js = ii%ns;
+
+                v4_mpi[ik_prod][(ns + 1) * is][(ns + 1) * js] = factor*v4_tmp2[(ns + 1) * is][(ns + 1) * js];
+            }
+
+            // debug
+            double norm_tmp1 = 0.0;
+            double norm_tmp2 = 0.0;
+            double diff_tmp = 0.0;
+            for(is2_1 = 0; is2_1 < ns2; is2_1++){
+                for(is2_2 = 0; is2_2 < ns2; is2_2++){
+                    norm_tmp1 += std::norm(v4_old_method[is2_1][is2_2]);
+                    norm_tmp2 += std::norm(v4_mpi[ik_prod][is2_1][is2_2]);
+                    diff_tmp += std::norm(v4_old_method[is2_1][is2_2]-v4_mpi[ik_prod][is2_1][is2_2]);
+                }
+            }
+            std::cout << "iks = " << ik_prod << std::endl;
+            std::cout << "norm (original) : " << norm_tmp1 << ", norm (new) : " << norm_tmp2 << ", diff : " << diff_tmp << std::endl;
+
+            norm1 += norm_tmp1;
+            norm2 += norm_tmp2;
+            norm_diff += diff_tmp;
+            // debug to here
+
         }
     }
+
+    // debug
+    std::cout << "total : " << std::endl;
+    std::cout << "norm (original) : " << norm1 << std::endl;
+    std::cout << "norm (new)      : " << norm2 << std::endl;
+    std::cout << "diff            : " << norm_diff << std::endl;
 
     deallocate(evec_conj);
     deallocate(v4_array_at_kpair);
