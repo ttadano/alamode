@@ -253,7 +253,8 @@ private:
                                   double **xk_in);
 
     void compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
-                                 const std::complex<double> *const *const *const evec_harmonic,
+                                double **omega2_harmonic,
+                                const std::complex<double> *const *const *const evec_harmonic,
                                  const KpointMeshUniform *kmesh_coarse_in,
                                  const KpointMeshUniform *kmesh_dense_in,
                                  const PhaseFactorStorage *phase_storage_in);

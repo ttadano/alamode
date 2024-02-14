@@ -84,6 +84,7 @@ public:
                                   const bool selfenergy_offdiagonal_in);
 
     void compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
+                                            double **omega2_harmonic_in,
                                             const int ngroup_v3_in,
                                             std::vector<double> *fcs_group_v3_in,
                                             std::vector<RelativeVector> *relvec_v3_in,

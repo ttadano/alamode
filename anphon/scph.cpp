@@ -1913,6 +1913,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 // This function should be merged with void Scph::compute_V3_elements_mpi_over_kpoint
 // after merged with dev2.0 because the implementation is redundant.
 void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
+                                              double **omega2_harmonic_in,
                                               const int ngroup_v3_in,
                                               std::vector<double> *fcs_group_v3_in,
                                               std::vector<RelativeVector> *relvec_v3_in,
@@ -2054,7 +2055,7 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
 
     deallocate(v3_mpi);
 
-    zerofill_elements_acoustic_at_gamma(omega2_harmonic, v3_out, 3,
+    zerofill_elements_acoustic_at_gamma(omega2_harmonic_in, v3_out, 3,
                                         kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
 }
 

@@ -781,7 +781,9 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
 
         // first order derivatives of cubic IFCs
         std::cout << "  first-order derivatives of cubic IFCs (from quartic IFCs) ... " << std::flush;
-        compute_del_v3_del_umn(del_v3_del_umn, evec_harmonic,
+        compute_del_v3_del_umn(del_v3_del_umn,
+                               omega2_harmonic,
+                               evec_harmonic,
                                 kmesh_coarse,
                                 kmesh_dense,
                                phase_storage_in);
@@ -1269,6 +1271,7 @@ void Relaxation::compute_del2_v2_del_umn2(std::complex<double> ***del2_v2_del_um
 }
 
 void Relaxation::compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
+                                        double **omega2_harmonic,
                                         const std::complex<double> *const *const *const evec_harmonic,
                                         const KpointMeshUniform *kmesh_coarse_in,
                                         const KpointMeshUniform *kmesh_dense_in,
@@ -1337,6 +1340,7 @@ void Relaxation::compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
             }
 
             scph->compute_V3_elements_for_given_IFCs(del_v3_del_umn[ixyz1 * 3 + ixyz2],
+                                                     omega2_harmonic,
                                                      ngroup_tmp,
                                                      fcs_group_tmp,
                                                      relvec_tmp,
