@@ -22,7 +22,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "write_phonons.h"
 #include <iomanip>
 #include <Eigen/Core>
-#include <iomanip>
 
 using namespace PHON_NS;
 
@@ -107,24 +106,21 @@ void Qha::setup_kmesh()
 
     if (mympi->my_rank == 0) {
 //        if (verbosity > 0) {
-        std::cout << " Setting up the QHA calculations ..." << std::endl << std::endl;
-        std::cout << "  Gamma-centered uniform grid with the following mesh density:" << std::endl;
-        std::cout << "  nk1:" << std::setw(5) << kmesh_qha[0] << std::endl;
-        std::cout << "  nk2:" << std::setw(5) << kmesh_qha[1] << std::endl;
-        std::cout << "  nk3:" << std::setw(5) << kmesh_qha[2] << std::endl;
-        std::cout << std::endl;
-        std::cout << "  Number of k points : " << kmesh_dense->nk << std::endl;
-        std::cout << "  Number of irreducible k points : " << kmesh_dense->nk_irred << std::endl;
-        std::cout << std::endl;
-        std::cout << "  Fourier interpolation from reciprocal to real space" << std::endl;
-        std::cout << "  will be performed with the following mesh density:" << std::endl;
-        std::cout << "  nk1:" << std::setw(5) << kmesh_interpolate[0] << std::endl;
-        std::cout << "  nk2:" << std::setw(5) << kmesh_interpolate[1] << std::endl;
-        std::cout << "  nk3:" << std::setw(5) << kmesh_interpolate[2] << std::endl;
-        std::cout << std::endl;
-        std::cout << "  Number of k points : " << kmesh_coarse->nk << std::endl;
+        std::cout << " Setting up the QHA calculations ...\n\n";
+        std::cout << "  Gamma-centered uniform grid with the following mesh density:\n";
+        std::cout << "  nk1:" << std::setw(5) << kmesh_qha[0] << '\n';
+        std::cout << "  nk2:" << std::setw(5) << kmesh_qha[1] << '\n';
+        std::cout << "  nk3:" << std::setw(5) << kmesh_qha[2] << "\n\n";
+        std::cout << "  Number of k points : " << kmesh_dense->nk << '\n';
+        std::cout << "  Number of irreducible k points : " << kmesh_dense->nk_irred << "\n\n";
+        std::cout << "  Fourier interpolation from reciprocal to real space\n";
+        std::cout << "  will be performed with the following mesh density:\n";
+        std::cout << "  nk1:" << std::setw(5) << kmesh_interpolate[0] << '\n';
+        std::cout << "  nk2:" << std::setw(5) << kmesh_interpolate[1] << '\n';
+        std::cout << "  nk3:" << std::setw(5) << kmesh_interpolate[2] << "\n\n";
+        std::cout << "  Number of k points : " << kmesh_coarse->nk << '\n';
         std::cout << "  Number of irreducible k points : "
-                  << kmesh_coarse->nk_irred << std::endl;
+                  << kmesh_coarse->nk_irred << '\n';
 //        }
     }
 
@@ -144,7 +140,7 @@ void Qha::setup_eigvecs()
     const auto ns = dynamical->neval;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl
+        std::cout << '\n'
                   << " Diagonalizing dynamical matrices for all k points ... ";
     }
 
@@ -169,7 +165,7 @@ void Qha::setup_eigvecs()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << "done !" << std::endl;
+        std::cout << "done !\n";
     }
 }
 
@@ -193,7 +189,7 @@ void Qha::exec_qha_optimization()
     if (restart_qha) {
 
         if (mympi->my_rank == 0) {
-            std::cout << " RESTART_QHA is true." << std::endl;
+            std::cout << " RESTART_QHA is true.\n";
             std::cout << " Dynamical matrix is read from file ...";
         }
 
@@ -230,7 +226,8 @@ void Qha::exec_qha_optimization()
                                                true);
                 relaxation->store_V0_to_file();
             }
-            scph->write_anharmonic_correction_fc2(delta_dymat_scph, NT, kmesh_coarse, mindist_list_qha);
+            scph->write_anharmonic_correction_fc2(delta_dymat_scph, NT,
+                                                  kmesh_coarse, mindist_list_qha);
         }
     }
 }
@@ -398,10 +395,10 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     if (mympi->my_rank == 0) {
         std::cout << " RELAX_STR = " << relaxation->relax_str << ": ";
         if (relaxation->relax_str == 1) {
-            std::cout << "Set zeros in derivatives of k-space IFCs by strain." << std::endl << std::endl;
+            std::cout << "Set zeros in derivatives of k-space IFCs by strain.\n\n";
         }
         if (relaxation->relax_str == 2) {
-            std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl << std::endl;
+            std::cout << "Calculating derivatives of k-space IFCs by strain.\n\n";
         }
     }
 
@@ -492,12 +489,12 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
         i_temp_loop = -1;
 
-        std::cout << " Start structural optimization." << std::endl;
+        std::cout << " Start structural optimization.\n";
         if (relaxation->relax_str == 1) {
-            std::cout << "  Internal coordinates are relaxed." << std::endl;
-            std::cout << "  Shape of the unit cell is fixed." << std::endl << std::endl;
+            std::cout << "  Internal coordinates are relaxed.\n";
+            std::cout << "  Shape of the unit cell is fixed.\n\n";
         } else if (relaxation->relax_str == 2) {
-            std::cout << "  Internal coordinates and shape of the unit cell are relaxed." << std::endl << std::endl;
+            std::cout << "  Internal coordinates and shape of the unit cell are relaxed.\n\n";
         }
 
 
@@ -505,17 +502,17 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             i_temp_loop++;
             auto iT = static_cast<unsigned int>((temp - Tmin) / dT);
 
-            std::cout << " ----------------------------------------------------------------" << std::endl;
-            std::cout << " Temperature = " << temp << " K" << std::endl;
+            std::cout << " ----------------------------------------------------------------\n";
+            std::cout << " Temperature = " << temp << " K\n";
             std::cout << " Temperature index : " << std::setw(4) << i_temp_loop << "/" << std::setw(4) << NT
-                      << std::endl << std::endl;
+                      << "\n\n";
 
             relaxation->set_init_structure_atT(q0, u_tensor, u0,
                                                converged_prev, str_diverged,
                                                i_temp_loop,
                                                omega2_harmonic, evec_harmonic);
 
-            std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
+            std::cout << " Initial atomic displacements [Bohr] : \n";
             for (iat1 = 0; iat1 < system->natmin; iat1++) {
                 std::cout << " ";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
@@ -526,20 +523,20 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u0[iat1 * 3 + ixyz1];
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
 
             if (relaxation->relax_str == 2) {
-                std::cout << " Initial strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
+                std::cout << " Initial strain (displacement gradient tensor u_{mu nu}) : \n";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << " ";
                     for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
                         std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
                     }
-                    std::cout << std::endl;
+                    std::cout << '\n';
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
 
             relaxation->write_stepresfile_header_atT(fout_step_q0, fout_step_u0, fout_step_u_tensor, temp);
@@ -547,14 +544,13 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
             relaxation->write_stepresfile(q0, u_tensor, u0, 0,
                                           fout_step_q0, fout_step_u0, fout_step_u_tensor);
 
-            std::cout << " ----------------------------------------------------------------" << std::endl;
+            std::cout << " ----------------------------------------------------------------\n";
 
-            std::cout << " Start structural optimization at " << temp << " K." << std::endl;
+            std::cout << " Start structural optimization at " << temp << " K.\n";
 
             for (i_str_loop = 0; i_str_loop < relaxation->max_str_iter; i_str_loop++) {
 
-                std::cout << std::endl << std::endl << " Structure loop :" << std::setw(5) << i_str_loop + 1
-                          << std::endl;
+                std::cout << " Structure loop :" << std::setw(5) << i_str_loop + 1;
 
                 // get eta tensor
                 relaxation->calculate_eta_tensor(eta_tensor, u_tensor);
@@ -733,33 +729,30 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 if (str_diverged) {
                     converged_prev = false;
                     std::cout << " The crystal structure diverged.";
-                    std::cout << " Break from the structure loop." << std::endl;
+                    std::cout << " Break from the structure loop.\n";
                     break;
                 }
 
                 // check convergence
-                std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]"
-                          << std::endl;
-                std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor;
+                std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]";
+                std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor << '\n';
 
                 if (du0 < relaxation->coord_conv_tol && du_tensor < relaxation->cell_conv_tol) {
-                    std::cout << std::endl << std::endl;
-                    std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15)
-                              << std::setprecision(6) << relaxation->coord_conv_tol << std::endl;
+                    std::cout << "\n\n du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15)
+                              << std::setprecision(6) << relaxation->coord_conv_tol << '\n';
                     if (relaxation->relax_str == 2) {
                         std::cout << " du_tensor is smaller than CELL_CONV_TOL = " << std::scientific << std::setw(15)
-                                  << std::setprecision(6) << relaxation->cell_conv_tol << std::endl;
+                                  << std::setprecision(6) << relaxation->cell_conv_tol << '\n';
                     }
-                    std::cout << " Structural optimization converged in " << i_str_loop + 1 << "-th loop." << std::endl
-                              << std::endl;
-                    std::cout << " break structural loop." << std::endl << std::endl;
+                    std::cout << " Structural optimization converged in " << i_str_loop + 1 << "-th loop.\n\n";
+                    std::cout << " break structural loop.\n\n";
                     break;
                 }
 
             }// close structure loop
 
-            std::cout << " ----------------------------------------------------------------" << std::endl;
-            std::cout << " Final atomic displacements [Bohr] at " << temp << " K" << std::endl;
+            std::cout << " ----------------------------------------------------------------\n";
+            std::cout << " Final atomic displacements [Bohr] at " << temp << " K\n";
             for (iat1 = 0; iat1 < system->natmin; iat1++) {
                 std::cout << " ";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
@@ -770,25 +763,24 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u0[iat1 * 3 + ixyz1];
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
 
             if (relaxation->relax_str == 2) {
-                std::cout << " Final strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
+                std::cout << " Final strain (displacement gradient tensor u_{mu nu}) : \n";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << " ";
                     for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
                         std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
                     }
-                    std::cout << std::endl;
+                    std::cout << '\n';
                 }
             }
             if (i_temp_loop == NT - 1) {
-                std::cout << " ----------------------------------------------------------------" << std::endl
-                          << std::endl;
+                std::cout << " ----------------------------------------------------------------\n\n";
             } else {
-                std::cout << std::endl;
+                std::cout << '\n';
             }
 
             // record zero-th order term of PES
@@ -1078,18 +1070,13 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
 
         i_temp_loop = -1;
 
-        std::cout << " Start QHA calculation." << std::endl;
+        std::cout << " Start QHA calculation.\n";
         std::cout
-                << " Internal coordinates and shape of the unit cell are calculated by lowest-order perturbation theory ..."
-                << std::endl << std::endl;
+                << " Internal coordinates and shape of the unit cell are calculated by lowest-order perturbation theory ...\n\n";
 
         for (double temp: vec_temp) {
             i_temp_loop++;
             auto iT = static_cast<unsigned int>((temp - Tmin) / dT);
-
-            // std::cout << " ----------------------------------------------------------------" << std::endl;
-            // std::cout << " Temperature = " << temp << " K" << std::endl;
-            // std::cout << " temperature index : " << std::setw(4) << i_temp_loop << "/" << std::setw(4) << NT << std::endl << std::endl;
 
             calc_v1_vib(v1_vib, v3_ref, temp);
             calc_del_v0_del_umn_vib(del_v0_del_umn_vib, del_v2_del_umn, temp);
@@ -1302,7 +1289,7 @@ void Qha::calc_del_v0_del_umn_vib(std::complex<double> *del_v0_del_umn_vib,
                     omega1_tmp = std::sqrt(std::fabs(omega2_harmonic[ik][is]));
 
                     if (omega2_harmonic[ik][is] < 0 && omega1_tmp > eps8) {
-                        std::cout << "Warning : Negative frequency is detected in perturbative QHA." << std::endl;
+                        std::cout << "Warning : Negative frequency is detected in perturbative QHA.\n";
                     }
 
                     if (std::abs(omega1_tmp) < eps8) {
@@ -1750,7 +1737,7 @@ void Qha::calc_v1_vib(std::complex<double> *v1_vib,
                 omega1_tmp = std::sqrt(std::fabs(omega2_harmonic[ik][is2]));
 
                 if (omega2_harmonic[ik][is2] < 0 && omega1_tmp > eps8) {
-                    std::cout << "Warning : Negative frequency is detected in perturbative QHA." << std::endl;
+                    std::cout << "Warning : Negative frequency is detected in perturbative QHA.\n";
                 }
 
                 if (std::abs(omega1_tmp) < eps8) {
@@ -1832,7 +1819,7 @@ void Qha::setup_pp_interaction()
     phase_factor_qha->create(true);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl;
+        std::cout << " done!\n";
     }
 }
 

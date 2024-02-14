@@ -470,7 +470,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
                 std::cout << '.' << std::flush;
                 if (iT % 25 == 24) {
-                    std::cout << std::endl;
+                    std::cout << '\n';
                     std::cout << std::setw(3);
                 }
             }
@@ -494,7 +494,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             // If delta_dymat_scph_plus_bubble != nullptr, run postprocess again with
             // delta_dymat_scph_plus_bubble.
             if (bubble > 0) {
-                std::cout << std::endl;
+                std::cout << '\n';
                 std::cout << "   ";
 
                 if (dos->compute_dos) {
@@ -595,7 +595,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
                     std::cout << '.' << std::flush;
                     if (iT % 25 == 24) {
-                        std::cout << std::endl;
+                        std::cout << '\n';
                         std::cout << std::setw(3);
                     }
                 }
@@ -873,7 +873,7 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
             exit("load_scph_dymat_from_file",
                  "The temperature information is not consistent");
         }
-        std::cout << " done." << std::endl;
+        std::cout << " done.\n";
     }
     // Broadcast to all MPI threads
     mpi_bcast_complex(dymat_out, NT, kmesh_coarse_in->nk, ns);
@@ -906,20 +906,20 @@ void Scph::store_scph_dymat_to_file(const std::complex<double> *const *const *co
     for (i = 0; i < 3; ++i) {
         ofs_dymat << std::setw(5) << kmesh_coarse_in->nk_i[i];
     }
-    ofs_dymat << std::endl;
+    ofs_dymat << '\n';
     for (i = 0; i < 3; ++i) {
         ofs_dymat << std::setw(5) << kmesh_dense_in->nk_i[i];
     }
-    ofs_dymat << std::endl;
+    ofs_dymat << '\n';
     ofs_dymat << std::setw(10) << Tmin;
     ofs_dymat << std::setw(10) << Tmax;
-    ofs_dymat << std::setw(10) << dT << std::endl;
+    ofs_dymat << std::setw(10) << dT << '\n';
     ofs_dymat << std::setw(5) << nonanalytic_in;
-    ofs_dymat << std::setw(5) << selfenergy_offdiagonal_in << std::endl;
+    ofs_dymat << std::setw(5) << selfenergy_offdiagonal_in << '\n';
 
     for (auto iT = 0; iT < NT; ++iT) {
         const auto temp = Tmin + static_cast<double>(iT) * dT;
-        ofs_dymat << "# " << temp << std::endl;
+        ofs_dymat << "# " << temp << '\n';
         for (auto is = 0; is < ns; ++is) {
             for (auto js = 0; js < ns; ++js) {
                 for (auto ik = 0; ik < kmesh_coarse_in->nk; ++ik) {
@@ -927,14 +927,14 @@ void Scph::store_scph_dymat_to_file(const std::complex<double> *const *const *co
                               << std::setw(25) << dymat_in[iT][is][js][ik].real();
                     ofs_dymat << std::setprecision(15)
                               << std::setw(25) << dymat_in[iT][is][js][ik].imag();
-                    ofs_dymat << std::endl;
+                    ofs_dymat << '\n';
                 }
             }
         }
     }
     ofs_dymat.close();
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_dymat;
-    std::cout << " : Anharmonic dynamical matrix (restart file)" << std::endl;
+    std::cout << " : Anharmonic dynamical matrix (restart file)\n";
 }
 
 
@@ -1285,10 +1285,10 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     // compute IFC renormalization by lattice relaxation
     std::cout << " RELAX_STR = " << relax_str << ": ";
     if (relax_str == 1) {
-        std::cout << "Set zeros in derivatives of k-space IFCs by strain." << std::endl << std::endl;
+        std::cout << "Set zeros in derivatives of k-space IFCs by strain.\n\n";
     }
     if (relax_str == 2) {
-        std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl << std::endl;
+        std::cout << "Calculating derivatives of k-space IFCs by strain.\n\n";
     }
 
     allocate(del_v1_del_umn, 9, ns);
@@ -1376,23 +1376,23 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
         i_temp_loop = -1;
 
-        std::cout << " Start structural optimization." << std::endl;
+        std::cout << " Start structural optimization.\n";
 
         if (relax_str == 1) {
-            std::cout << "  Internal coordinates are relaxed." << std::endl;
-            std::cout << "  Shape of the unit cell is fixed." << std::endl << std::endl;
+            std::cout << "  Internal coordinates are relaxed.\n";
+            std::cout << "  Shape of the unit cell is fixed.\n\n";
         } else if (relax_str == 2) {
-            std::cout << "  Internal coordinates and shape of the unit cell are relaxed." << std::endl << std::endl;
+            std::cout << "  Internal coordinates and shape of the unit cell are relaxed.\n\n";
         }
 
         for (double temp: vec_temp) {
             i_temp_loop++;
             auto iT = static_cast<unsigned int>((temp - Tmin) / dT);
 
-            std::cout << " ----------------------------------------------------------------" << std::endl;
-            std::cout << " Temperature = " << temp << " K" << std::endl;
+            std::cout << " ----------------------------------------------------------------\n";
+            std::cout << " Temperature = " << temp << " K\n";
             std::cout << " Temperature index : " << std::setw(4) << i_temp_loop << "/" << std::setw(4) << NT
-                      << std::endl << std::endl;
+                      << "\n\n";
 
             // Initialize phonon eigenvectors with harmonic values
 
@@ -1424,7 +1424,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                                i_temp_loop, omega2_harmonic, evec_harmonic);
 
 
-            std::cout << " Initial atomic displacements [Bohr] : " << std::endl;
+            std::cout << " Initial atomic displacements [Bohr] : \n";
             for (iat1 = 0; iat1 < system->natmin; iat1++) {
                 std::cout << " ";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
@@ -1435,20 +1435,20 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u0[iat1 * 3 + ixyz1];
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
 
             if (relax_str == 2) {
-                std::cout << " Initial strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
+                std::cout << " Initial strain (displacement gradient tensor u_{mu nu}) : \n";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << " ";
                     for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
                         std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
                     }
-                    std::cout << std::endl;
+                    std::cout << '\n';
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
 
             relaxation->write_stepresfile_header_atT(fout_step_q0, fout_step_u0, fout_step_u_tensor, temp);
@@ -1456,14 +1456,13 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
             relaxation->write_stepresfile(q0, u_tensor, u0, 0,
                                           fout_step_q0, fout_step_u0, fout_step_u_tensor);
 
-            std::cout << " ----------------------------------------------------------------" << std::endl;
+            std::cout << " ----------------------------------------------------------------\n";
 
             std::cout << " Start structural optimization at " << temp << " K.";
 
             for (i_str_loop = 0; i_str_loop < relaxation->max_str_iter; i_str_loop++) {
 
-                std::cout << std::endl << std::endl << " Structure loop :" << std::setw(5) << i_str_loop + 1
-                          << std::endl;
+                std::cout << "\n\n Structure loop :" << std::setw(5) << i_str_loop + 1;
 
                 // get eta tensor
                 relaxation->calculate_eta_tensor(eta_tensor, u_tensor);
@@ -1580,33 +1579,31 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 if (str_diverged) {
                     converged_prev = false;
                     std::cout << " The crystal structure diverged.";
-                    std::cout << " Break from the structure loop." << std::endl;
+                    std::cout << " Break from the structure loop.\n";
                     break;
                 }
 
                 // check convergence
-                std::cout << std::endl;
-                std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]"
-                          << std::endl;
-                std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor;
+                std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]";
+
+                std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor << '\n';
 
                 if (du0 < relaxation->coord_conv_tol && du_tensor < relaxation->cell_conv_tol) {
-                    std::cout << std::endl << std::endl;
-                    std::cout << " du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15)
-                              << std::setprecision(6) << relaxation->coord_conv_tol << std::endl;
+                    std::cout << "\n\n du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15)
+                              << std::setprecision(6) << relaxation->coord_conv_tol << '\n';
                     if (relax_str == 2) {
                         std::cout << " du_tensor is smaller than CELL_CONV_TOL = " << std::scientific << std::setw(15)
-                                  << std::setprecision(6) << relaxation->cell_conv_tol << std::endl;
+                                  << std::setprecision(6) << relaxation->cell_conv_tol << '\n';
                     }
-                    std::cout << " Structural optimization converged in " << i_str_loop + 1 << "-th loop." << std::endl;
-                    std::cout << " break structural loop." << std::endl << std::endl;
+                    std::cout << " Structural optimization converged in " << i_str_loop + 1 << "-th loop.\n";
+                    std::cout << " break structural loop.\n\n";
                     break;
                 }
 
             }// close structure loop
 
-            std::cout << " ----------------------------------------------------------------" << std::endl;
-            std::cout << " Final atomic displacements [Bohr] at " << temp << " K" << std::endl;
+            std::cout << " ----------------------------------------------------------------\n";
+            std::cout << " Final atomic displacements [Bohr] at " << temp << " K\n";
             for (iat1 = 0; iat1 < system->natmin; iat1++) {
                 std::cout << " ";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
@@ -1617,25 +1614,24 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u0[iat1 * 3 + ixyz1];
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
 
             if (relax_str == 2) {
-                std::cout << " Final strain (displacement gradient tensor u_{mu nu}) : " << std::endl;
+                std::cout << " Final strain (displacement gradient tensor u_{mu nu}) : \n";
                 for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
                     std::cout << " ";
                     for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
                         std::cout << std::scientific << std::setw(15) << std::setprecision(6) << u_tensor[ixyz1][ixyz2];
                     }
-                    std::cout << std::endl;
+                    std::cout << '\n';
                 }
             }
             if (i_temp_loop == NT - 1) {
-                std::cout << " ----------------------------------------------------------------" << std::endl
-                          << std::endl;
+                std::cout << " ----------------------------------------------------------------\n\n";
             } else {
-                std::cout << std::endl;
+                std::cout << '\n';
             }
 
             // record zero-th order term of PES
@@ -1903,7 +1899,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
                                         kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done !" << std::endl;
+        std::cout << " done !\n";
         timer->print_elapsed();
     }
 }
@@ -2300,7 +2296,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
                                         kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done !" << std::endl;
+        std::cout << " done !\n";
         timer->print_elapsed();
     }
 }
@@ -2412,7 +2408,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     int jk_old = -1;
 
     if (mympi->my_rank == 0) {
-        std::cout << " Total number of sets to compute : " << nset_each << std::endl;
+        std::cout << " Total number of sets to compute : " << nset_each << '\n';
     }
 
     for (long int ii = 0; ii < nset_each; ++ii) {
@@ -2469,7 +2465,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
         }
 
         if (mympi->my_rank == 0) {
-            std::cout << " SET " << ii + 1 << " done. " << std::endl;
+            std::cout << " SET " << ii + 1 << " done. \n";
         }
 
     } // loop over nk2_prod*ns2
@@ -2534,7 +2530,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
                                         kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done !" << std::endl;
+        std::cout << " done !\n";
         timer->print_elapsed();
     }
 }
@@ -2652,8 +2648,7 @@ FcsClassExtent Scph::from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithC
 
     if (fc_in.pairs.size() != 2) {
         std::cout
-                << "Warning in from_FcsArrayWithCell_to_FcsClassExtent:\n only harmonic IFC can be transformed to FcsClassExtent format."
-                << std::endl;
+                << "Warning in from_FcsArrayWithCell_to_FcsClassExtent:\n only harmonic IFC can be transformed to FcsClassExtent format.\n";
     }
 
     fc_out.atm1 = fc_in.pairs[0].index / 3;
@@ -2883,11 +2878,10 @@ void Scph::compute_anharmonic_v1_array(std::complex<double> *v1_SCP,
             }
             if (ik == 0 && count_zero != 3) {
                 std::cout << "Warning in compute_anharmonic_v1_array : ";
-                std::cout << count_zero << " acoustic modes are detected in Gamma point." << std::endl << std::endl;
+                std::cout << count_zero << " acoustic modes are detected in Gamma point.\n\n";
             } else if (ik != 0 && count_zero != 0) {
                 std::cout << "Warning in compute_anharmonic_v1_array : ";
-                std::cout << count_zero << " zero frequencies are detected in non-Gamma point (ik = " << ik << ")."
-                          << std::endl << std::endl;
+                std::cout << count_zero << " zero frequencies are detected in non-Gamma point (ik = " << ik << ").\n\n";
             }
         }
     }
@@ -2976,7 +2970,7 @@ void Scph::compute_anharmonic_del_v0_del_umn(std::complex<double> *del_v0_del_um
                     if (omega2_anharm_T[ik][js] < 0.0) {
                         std::cout
                                 << "Warning in compute_anharmonic_del_v0_del_umn: squared SCP frequency is negative. ik = "
-                                << ik << std::endl;
+                                << ik << '\n';
                     }
                     if (thermodynamics->classical) {
                         Qtmp = std::complex<double>(2.0 * T_in * thermodynamics->T_to_Ryd / (omega1_tmp * omega1_tmp),
@@ -3009,24 +3003,21 @@ void Scph::setup_kmesh()
 
     if (mympi->my_rank == 0) {
 //        if (verbosity > 0) {
-        std::cout << " Setting up the SCPH calculations ..." << std::endl << std::endl;
-        std::cout << "  Gamma-centered uniform grid with the following mesh density:" << std::endl;
-        std::cout << "  nk1:" << std::setw(5) << kmesh_scph[0] << std::endl;
-        std::cout << "  nk2:" << std::setw(5) << kmesh_scph[1] << std::endl;
-        std::cout << "  nk3:" << std::setw(5) << kmesh_scph[2] << std::endl;
-        std::cout << std::endl;
-        std::cout << "  Number of k points : " << kmesh_dense->nk << std::endl;
-        std::cout << "  Number of irreducible k points : " << kmesh_dense->nk_irred << std::endl;
-        std::cout << std::endl;
-        std::cout << "  Fourier interpolation from reciprocal to real space" << std::endl;
-        std::cout << "  will be performed with the following mesh density:" << std::endl;
-        std::cout << "  nk1:" << std::setw(5) << kmesh_interpolate[0] << std::endl;
-        std::cout << "  nk2:" << std::setw(5) << kmesh_interpolate[1] << std::endl;
-        std::cout << "  nk3:" << std::setw(5) << kmesh_interpolate[2] << std::endl;
-        std::cout << std::endl;
-        std::cout << "  Number of k points : " << kmesh_coarse->nk << std::endl;
+        std::cout << " Setting up the SCPH calculations ...\n\n";
+        std::cout << "  Gamma-centered uniform grid with the following mesh density:\n";
+        std::cout << "  nk1:" << std::setw(5) << kmesh_scph[0] << '\n';
+        std::cout << "  nk2:" << std::setw(5) << kmesh_scph[1] << '\n';
+        std::cout << "  nk3:" << std::setw(5) << kmesh_scph[2] << "\n\n";
+        std::cout << "  Number of k points : " << kmesh_dense->nk << '\n';
+        std::cout << "  Number of irreducible k points : " << kmesh_dense->nk_irred << "\n\n";
+        std::cout << "  Fourier interpolation from reciprocal to real space\n";
+        std::cout << "  will be performed with the following mesh density:\n";
+        std::cout << "  nk1:" << std::setw(5) << kmesh_interpolate[0] << '\n';
+        std::cout << "  nk2:" << std::setw(5) << kmesh_interpolate[1] << '\n';
+        std::cout << "  nk3:" << std::setw(5) << kmesh_interpolate[2] << "\n\n";
+        std::cout << "  Number of k points : " << kmesh_coarse->nk << '\n';
         std::cout << "  Number of irreducible k points : "
-                  << kmesh_coarse->nk_irred << std::endl;
+                  << kmesh_coarse->nk_irred << '\n';
 //        }
     }
 
@@ -3226,7 +3217,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
     const auto T_in = temp;
 
-    std::cout << " Temperature = " << T_in << " K" << std::endl;
+    std::cout << " Temperature = " << T_in << " K\n";
 
     // Set initial values
 
@@ -3235,7 +3226,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
             if (flag_converged) {
                 if (omega2_out[ik][is] < 0.0 && std::abs(omega2_out[ik][is]) > 1.0e-16 && verbosity > 0) {
-                    std::cout << "Warning : Large negative frequency detected" << std::endl;
+                    std::cout << "Warning : Large negative frequency detected\n";
                 }
 
                 if (omega2_out[ik][is] < 0.0) {
@@ -3545,7 +3536,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
         if (iloop == 0) {
             if (verbosity > 0) {
-                std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " :  DIFF = N/A" << std::endl;
+                std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " :  DIFF = N/A\n";
             }
 
             omega_old = omega_now;
@@ -3563,7 +3554,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             diff /= static_cast<double>(nk_interpolate * ns);
             if (verbosity > 0) {
                 std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " : ";
-                std::cout << " DIFF = " << std::setw(15) << std::sqrt(diff) << std::endl;
+                std::cout << " DIFF = " << std::setw(15) << std::sqrt(diff) << '\n';
             }
 
             omega_old = omega_now;
@@ -3597,13 +3588,13 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         if (verbosity > 0) {
             std::cout << " Temp = " << T_in;
             std::cout << " : convergence achieved in " << std::setw(5)
-                      << iloop + 1 << " iterations." << std::endl;
+                      << iloop + 1 << " iterations.\n";
         }
         flag_converged = true;
     } else {
         if (verbosity > 0) {
             std::cout << "Temp = " << T_in;
-            std::cout << " : not converged." << std::endl;
+            std::cout << " : not converged.\n";
         }
         flag_converged = false;
     }
@@ -3626,15 +3617,15 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     }
 
     if (verbosity > 1) {
-        std::cout << "New eigenvalues" << std::endl;
+        std::cout << "New eigenvalues\n";
         for (ik = 0; ik < nk_interpolate; ++ik) {
             knum = kmap_interpolate_to_scph[ik];
             for (is = 0; is < ns; ++is) {
                 std::cout << " ik_interpolate = " << std::setw(5) << ik + 1;
                 std::cout << " is = " << std::setw(5) << is + 1;
-                std::cout << " omega2 = " << std::setw(15) << omega2_out[knum][is] << std::endl;
+                std::cout << " omega2 = " << std::setw(15) << omega2_out[knum][is] << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
         }
     }
 
@@ -3710,7 +3701,7 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
 
     std::vector<unsigned int> is_acoustic(ns);
 
-    std::cout << " Temperature = " << T_in << " K" << std::endl;
+    std::cout << " Temperature = " << T_in << " K\n";
 
 
     const int imix_algo = 1;
@@ -3722,7 +3713,7 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
 
             if (flag_converged) {
                 if (omega2_anharm[ik][is] < 0.0 && std::abs(omega2_anharm[ik][is]) > 1.0e-16 && verbosity > 0) {
-                    std::cout << "Warning : Large negative frequency detected" << std::endl;
+                    std::cout << "Warning : Large negative frequency detected\n";
                 }
 
                 if (omega2_anharm[ik][is] < 0.0) {
@@ -3840,7 +3831,7 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
 
 
     if (verbosity > 0) {
-        std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " :  DIFF = N/A" << std::endl;
+        std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " :  DIFF = N/A\n";
     }
 
     double diff;
@@ -3894,7 +3885,7 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
             diff2 = std::sqrt(diff2);
             if (verbosity > 0) {
                 std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " : ";
-                std::cout << " DIFF = " << std::setw(15) << diff << std::endl;
+                std::cout << " DIFF = " << std::setw(15) << diff << '\n';
             }
 
             if (diff < conv_tol) {
@@ -4034,7 +4025,7 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
             diff2 = std::sqrt(diff2);
             if (verbosity > 0) {
                 std::cout << "  SCPH ITER " << std::setw(5) << iloop + 1 << " : ";
-                std::cout << " DIFF = " << std::setw(15) << diff << std::endl;
+                std::cout << " DIFF = " << std::setw(15) << diff << '\n';
             }
 
             if (diff < conv_tol) {
@@ -4070,13 +4061,13 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
         if (verbosity > 0) {
             std::cout << " Temp = " << T_in;
             std::cout << " : convergence achieved in " << std::setw(5)
-                      << iloop + 1 << " iterations." << std::endl;
+                      << iloop + 1 << " iterations.\n";
         }
         flag_converged = true;
     } else {
         if (verbosity > 0) {
             std::cout << "Temp = " << T_in;
-            std::cout << " : not converged." << std::endl;
+            std::cout << " : not converged.\n";
         }
         flag_converged = false;
     }
@@ -4099,15 +4090,15 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
     }
 
     if (verbosity > 1) {
-        std::cout << "New eigenvalues" << std::endl;
+        std::cout << "New eigenvalues\n";
         for (ik = 0; ik < nk_interpolate; ++ik) {
             knum = kmap_interpolate_to_scph[ik];
             for (is = 0; is < ns; ++is) {
                 std::cout << " ik_interpolate = " << std::setw(5) << ik + 1;
                 std::cout << " is = " << std::setw(5) << is + 1;
-                std::cout << " omega2 = " << std::setw(15) << omega2_anharm[knum][is] << std::endl;
+                std::cout << " omega2 = " << std::setw(15) << omega2_anharm[knum][is] << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
         }
     }
 
@@ -4181,7 +4172,7 @@ void Scph::update_frequency(const double temperature_in,
 //            if (omega_tmp < eps15) {
                 Kmat(is) = complex_zero;
                 std::cout << "Kmat is zero for " << std::setw(4) << ik << std::setw(5) << is << " omega = " << omega_tmp
-                          << std::endl;
+                          << '\n';
             } else {
                 // Note that the missing factor 2 in the denominator of Qmat is
                 // already considered in the v4_array_all.
@@ -4352,21 +4343,18 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
     std::complex<double> ****evec;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
-        std::cout << " -----------------------------------------------------------------"
-                  << std::endl;
-        std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
-        std::cout << " on top of the SCPH calculation." << std::endl;
         std::cout << '\n';
-        std::cout << " This calculation requires allocation of additional memory:" << std::endl;
+        std::cout << " -----------------------------------------------------------------\n";
+        std::cout << " Calculating the vibrational free energy from the Bubble diagram \n";
+        std::cout << " on top of the SCPH calculation.\n\n";
+        std::cout << " This calculation requires allocation of additional memory:\n";
 
         size_t nsize = nk_ref * ns * ns * NT * sizeof(std::complex<double>)
                        + nk_ref * ns * NT * sizeof(double);
 
         const auto nsize_dble = static_cast<double>(nsize) / 1000000000.0;
         std::cout << "  Estimated memory usage per MPI process: " << std::setw(10)
-                  << std::fixed << std::setprecision(4) << nsize_dble << " GByte." << std::endl;
-
+                  << std::fixed << std::setprecision(4) << nsize_dble << " GByte.\n";
         std::cout << "  To avoid possible faults associated with insufficient memory,\n"
                      "  please reduce the number of MPI processes per node and/or\n"
                      "  the number of temperagure grids.\n\n";
@@ -4395,7 +4383,7 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
     deallocate(evec);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl << std::endl;
+        std::cout << " done!\n\n";
     }
 }
 
@@ -4416,12 +4404,10 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
     std::vector<std::complex<double>> omegalist;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
-        std::cout << " -----------------------------------------------------------------"
-                  << std::endl;
-        std::cout << " Calculating the bubble self-energy " << std::endl;
-        std::cout << " on top of the SCPH calculation." << std::endl;
         std::cout << '\n';
+        std::cout << " -----------------------------------------------------------------\n";
+        std::cout << " Calculating the bubble self-energy \n";
+        std::cout << " on top of the SCPH calculation.\n\n";
     }
 
     allocate(eval, nk_scph, ns);
@@ -4645,7 +4631,7 @@ void Scph::bubble_correction(std::complex<double> ****delta_dymat_scph,
     if (eval_bubble) deallocate(eval_bubble);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl << std::endl;
+        std::cout << " done!\n\n";
     }
 }
 
@@ -4791,19 +4777,19 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
         for (j = 0; j < 3; ++j) {
             ofs_fc2 << std::setw(20) << system->lavec_p[j][i];
         }
-        ofs_fc2 << std::endl;
+        ofs_fc2 << '\n';
     }
-    ofs_fc2 << std::setw(5) << system->natmin << std::setw(5) << system->nkd << std::endl;
+    ofs_fc2 << std::setw(5) << system->natmin << std::setw(5) << system->nkd << '\n';
     for (i = 0; i < system->nkd; ++i) {
         ofs_fc2 << std::setw(5) << system->symbol_kd[i];
     }
-    ofs_fc2 << std::endl;
+    ofs_fc2 << '\n';
 
     for (i = 0; i < system->natmin; ++i) {
         for (j = 0; j < 3; ++j) {
             ofs_fc2 << std::setw(20) << xtmp[i][j];
         }
-        ofs_fc2 << std::setw(5) << system->kd[system->map_p2s[i][0]] + 1 << std::endl;
+        ofs_fc2 << std::setw(5) << system->kd[system->map_p2s[i][0]] + 1 << '\n';
     }
 
     deallocate(xtmp);
@@ -4811,7 +4797,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     for (unsigned int iT = 0; iT < NT; ++iT) {
         const auto temp = Tmin + dT * static_cast<double>(iT);
 
-        ofs_fc2 << "# Temp = " << temp << std::endl;
+        ofs_fc2 << "# Temp = " << temp << '\n';
 
         for (is = 0; is < ns; ++is) {
             iat = is / 3;
@@ -4850,7 +4836,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                         ofs_fc2 << std::setw(5) << iat << std::setw(3) << icrd;
                         ofs_fc2 << std::setw(4) << jat << std::setw(3) << jcrd;
                         ofs_fc2 << std::setprecision(15) << std::setw(25)
-                                << delta_fc2[is][js][icell] / static_cast<double>(nmulti) << std::endl;
+                                << delta_fc2[is][js][icell] / static_cast<double>(nmulti) << '\n';
 
                     }
 
@@ -4858,7 +4844,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
             }
         }
 
-        ofs_fc2 << std::endl;
+        ofs_fc2 << '\n';
     }
 
     deallocate(delta_fc2);
@@ -4867,13 +4853,13 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_fc2;
 
     if (type == 0) {
-        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH)" << std::endl;
+        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH)\n";
     } else if (type == 1) {
-        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(0))" << std::endl;
+        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(0))\n";
     } else if (type == 2) {
-        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(w))" << std::endl;
+        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(w))\n";
     } else if (type == 3) {
-        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(wQP))" << std::endl;
+        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(wQP))\n";
     }
 }
 

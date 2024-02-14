@@ -275,13 +275,13 @@ private:
     void calculate_delv1_delumn_finite_difference(std::complex<double> **,
                                                   const std::complex<double> *const *const *const);
 
-    void compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &,
-                                             std::vector<FcsArrayWithCell> &,
-                                             const int,
-                                             const int,
-                                             const int);
+    void compute_del_v_strain_in_real_space1(const std::vector<FcsAlignedForGruneisen> &fcs_in,
+                                             std::vector<FcsArrayWithCell> &delta_fcs,
+                                             const int ixyz1,
+                                             const int ixyz2,
+                                             const int mirror_image_mode);
 
-    void compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCell> &,
+    void compute_del_v_strain_in_real_space2(const std::vector<FcsAlignedForGruneisen> &,
                                              std::vector<FcsArrayWithCell> &,
                                              const int,
                                              const int,
