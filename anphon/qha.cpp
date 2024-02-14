@@ -395,12 +395,14 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     }
 
     // compute IFC renormalization by lattice relaxation
-    std::cout << " RELAX_STR = " << relaxation->relax_str << ": ";
-    if (relaxation->relax_str == 1) {
-        std::cout << "Set zeros in derivatives of k-space IFCs by strain." << std::endl << std::endl;
-    }
-    if (relaxation->relax_str == 2) {
-        std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl << std::endl;
+    if (mympi->my_rank == 0) {
+        std::cout << " RELAX_STR = " << relaxation->relax_str << ": ";
+        if (relaxation->relax_str == 1) {
+            std::cout << "Set zeros in derivatives of k-space IFCs by strain." << std::endl << std::endl;
+        }
+        if (relaxation->relax_str == 2) {
+            std::cout << "Calculating derivatives of k-space IFCs by strain." << std::endl << std::endl;
+        }
     }
 
     allocate(del_v1_del_umn, 9, ns);

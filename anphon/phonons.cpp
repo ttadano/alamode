@@ -309,14 +309,13 @@ void PHON::execute_self_consistent_phonon() const
     setup_base();
 
     dynamical->diagonalize_dynamical_all();
+    relaxation->setup_relaxation();
 
     if (mode == "SCPH") {
         scph->setup_scph();
-        relaxation->setup_relaxation();
         scph->exec_scph();
     } else if (mode == "QHA") {
         qha->setup_qha();
-        relaxation->setup_relaxation();
         qha->exec_qha_optimization();
     }
 }

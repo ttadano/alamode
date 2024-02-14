@@ -1776,7 +1776,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
     const auto nk_scph = kmesh_dense_in->nk;
     const auto ngroup_v3 = anharmonic_core->get_ngroup_fcs(3);
     const auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
-    static auto complex_zero = std::complex<double>(0.0, 0.0);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
     std::complex<double> *v3_array_at_kpair;
     std::complex<double> ***v3_mpi;
 
@@ -1802,9 +1802,7 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
                                               phase_storage_in,
                                               phi3_reciprocal_inout);
 
-#ifdef _OPENMP
 #pragma omp parallel for private(j)
-#endif
         for (ii = 0; ii < ngroup_v3; ++ii) {
             v3_array_at_kpair[ii] = phi3_reciprocal_inout[ii] * anharmonic_core->get_invmass_factor(3)[ii];
             for (j = 0; j < 3; ++j) ind[ii][j] = anharmonic_core->get_evec_index(3)[ii][j];
