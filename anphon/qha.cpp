@@ -22,6 +22,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "write_phonons.h"
 #include <iomanip>
 #include <Eigen/Core>
+#include <iomanip>
 
 using namespace PHON_NS;
 

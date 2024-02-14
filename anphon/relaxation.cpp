@@ -21,6 +21,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <fftw3.h>
 #include <iomanip>
 #include <Eigen/Core>
+#include <iomanip>
 
 using namespace PHON_NS;
 
