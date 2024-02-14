@@ -228,6 +228,10 @@ private:
                                            std::complex<double> ***,
                                            bool);
 
+    void compute_V4_elements_mpi_over_one_band(std::complex<double> ***,
+                                           std::complex<double> ***,
+                                           bool);
+
     void compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
                                              const std::complex<double> *const *const *evec_in,
                                              const bool self_offdiag);

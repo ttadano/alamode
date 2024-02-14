@@ -1311,6 +1311,44 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             relax_str);
     }
 
+    // debug compute_V4_elements_mpi_over_one_band
+    std::complex<double> ***v4_ref2;
+    allocate(v4_ref2, nk_irred_interpolate * kmesh_dense->nk,
+             ns * ns, ns * ns);
+    compute_V4_elements_mpi_over_one_band(v4_ref2,
+                                          evec_harmonic,
+                                          selfenergy_offdiagonal);
+
+    double sum_norm1, sum_norm2, sum_norm3;
+    double sum_norm_tot1, sum_norm_tot2, sum_norm_tot3;
+
+    sum_norm_tot1 = 0.0;
+    sum_norm_tot2 = 0.0;
+    sum_norm_tot3 = 0.0;
+    for(int ik_tmp = 0; ik_tmp < nk_irred_interpolate * kmesh_dense->nk; ik_tmp++){
+
+        sum_norm1 = 0.0;
+        sum_norm2 = 0.0;
+        sum_norm3 = 0.0;
+        for(is1 = 0; is1 < ns*ns; is1++){
+            for(is2 = 0; is2 < ns*ns; is2++){
+                sum_norm1 += std::norm(v4_ref[ik_tmp][is1][is2]);
+                sum_norm2 += std::norm(v4_ref2[ik_tmp][is1][is2]);
+                sum_norm3 += std::norm(v4_ref[ik_tmp][is1][is2] - v4_ref2[ik_tmp][is1][is2]);
+            }
+        }
+
+        sum_norm_tot1 += sum_norm1;
+        sum_norm_tot2 += sum_norm2;
+        sum_norm_tot3 += sum_norm3;
+
+        std::cout << "index of (k, k') : " << ik_tmp << std::endl; 
+        std::cout << "norm (original) : " << sum_norm1 << ", norm (over_one_band) : " << sum_norm2 << ", norm (diff) : " << sum_norm3 << std::endl; 
+    }
+    std::cout << "sum of norm (original)      : " << sum_norm_tot1 << std::endl;
+    std::cout << "sum of norm (over_one_band) : " << sum_norm_tot2 << std::endl;
+    std::cout << "sum of norm (diff) : " << sum_norm_tot3 << std::endl;
+
     allocate(v3_ref, nk, ns, ns * ns);
     allocate(v3_renorm, nk, ns, ns * ns);
     allocate(v3_with_umn, nk, ns, ns * ns);
@@ -3988,6 +4026,327 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
         }
 
     } // loop over nk2_prod*ns2
+
+    deallocate(v4_array_at_kpair);
+    deallocate(ind);
+
+// Now, communicate the calculated data.
+// When the data count is larger than 2^31-1, split it.
+
+    long maxsize = 1;
+    maxsize = (maxsize << 31) - 1;
+
+    const size_t count = nk2_prod * ns4;
+    const size_t count_sub = ns4;
+
+    if (mympi->my_rank == 0) {
+        std::cout << "Communicating v4_array over MPI ...";
+    }
+    if (count <= maxsize) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+        MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
+                      MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+                                                                                                                                MPI_Allreduce(&v4_mpi[0][0][0], &v4_out[0][0][0], count,
+                      MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    } else if (count_sub <= maxsize) {
+        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+            MPI_Allreduce(&v4_mpi[ik_prod][0][0], &v4_out[ik_prod][0][0],
+                          count_sub,
+                          MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+                                                                                                                                    MPI_Allreduce(&v4_mpi[ik_prod][0][0], &v4_out[ik_prod][0][0],
+                          count_sub,
+                          MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+        }
+    } else {
+        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
+            for (is = 0; is < ns2; ++is) {
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+                MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
+                              ns2,
+                              MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
+#else
+                                                                                                                                        MPI_Allreduce(&v4_mpi[ik_prod][is][0], &v4_out[ik_prod][is][0],
+                              ns2,
+                              MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
+#endif
+            }
+        }
+    }
+    if (mympi->my_rank == 0) {
+        std::cout << "done.\n";
+    }
+
+    deallocate(v4_mpi);
+    deallocate(v4_mpi_old_method);
+    deallocate(v4_tmp0);
+    deallocate(v4_tmp1);
+    deallocate(v4_tmp2);
+    deallocate(v4_tmp3);
+    deallocate(v4_tmp4);
+
+    zerofill_elements_acoustic_at_gamma(omega2_harmonic, v4_out, 4);
+
+    if (mympi->my_rank == 0) {
+        std::cout << " done !" << std::endl;
+        timer->print_elapsed();
+    }
+}
+
+
+void Scph::compute_V4_elements_mpi_over_one_band(std::complex<double> ***v4_out,
+                                             std::complex<double> ***evec_in,
+                                             const bool self_offdiag)
+{
+    // Calculate the matrix elements of quartic terms in reciprocal space.
+    // This is the most expensive part of the SCPH calculation.
+
+    size_t ik_prod;
+    const size_t nk_reduced_interpolate = kmesh_coarse->nk_irred;
+    const size_t ns = dynamical->neval;
+    const size_t ns2 = ns * ns;
+    const size_t ns3 = ns * ns * ns;
+    const size_t ns4 = ns * ns * ns * ns;
+    int is, js, ks, ls;
+    size_t is2_1, js2_1, is2_2, js2_2;
+    size_t is2, js2, ks2, ls2;
+    int is4_1;
+    int is3_1;
+    unsigned int knum;
+    unsigned int **ind;
+    unsigned int i, j;
+    long int *nset_mpi;
+
+    const auto nk_scph = kmesh_dense->nk;
+    const auto ngroup_v4 = anharmonic_core->get_ngroup_fcs(4);
+    auto factor = std::pow(0.5, 2) / static_cast<double>(nk_scph);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
+    std::complex<double> *v4_array_at_kpair;
+    std::complex<double> ***v4_mpi;
+
+    std::complex<double> **v4_mpi_old_method;
+    std::complex<double> **v4_tmp0, **v4_tmp1, **v4_tmp2, **v4_tmp3, **v4_tmp4;
+
+    std::vector<int> ik_vec, jk_vec, is_vec;
+
+    auto nk2_prod = nk_reduced_interpolate * nk_scph;
+
+    if (mympi->my_rank == 0) {
+        if (self_offdiag) {
+            std::cout << " IALGO = 1 : Use different algorithm efficient when nbands >> nk\n";
+            std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... \n";
+        } else {
+            exit("compute_V4_elements_mpi_over_kpoint",
+                 "This function can be used only when SELF_OFFDIAG = 1");
+        }
+    }
+
+    allocate(nset_mpi, mympi->nprocs);
+
+    //const long int nset_tot = nk2_prod * ((ns2 - ns) / 2 + ns);
+    const long int nset_tot = nk2_prod * ns;
+    long int nset_each = nset_tot / mympi->nprocs;
+    const long int nres = nset_tot - nset_each * mympi->nprocs;
+
+    for (i = 0; i < mympi->nprocs; ++i) {
+        nset_mpi[i] = nset_each;
+        if (nres > i) {
+            nset_mpi[i] += 1;
+        }
+    }
+
+    MPI_Bcast(&nset_mpi[0], mympi->nprocs, MPI_LONG, 0, MPI_COMM_WORLD);
+    long int nstart = 0;
+    for (i = 0; i < mympi->my_rank; ++i) {
+        nstart += nset_mpi[i];
+    }
+    long int nend = nstart + nset_mpi[mympi->my_rank];
+    nset_each = nset_mpi[mympi->my_rank];
+    deallocate(nset_mpi);
+
+    ik_vec.clear();
+    jk_vec.clear();
+    is_vec.clear();
+
+    long int icount = 0;
+    for (ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
+        for (is = 0; is < ns; ++is) {
+            // if (is < js && relax_str == 0) continue;
+
+            if (icount >= nstart && icount < nend) {
+                ik_vec.push_back(ik_prod / nk_scph);
+                jk_vec.push_back(ik_prod % nk_scph);
+                is_vec.push_back(is);
+            }
+            ++icount;
+        }
+    }
+
+    allocate(v4_array_at_kpair, ngroup_v4);
+    allocate(ind, ngroup_v4, 4);
+    allocate(v4_mpi, nk2_prod, ns2, ns2);
+
+    allocate(v4_mpi_old_method, ns, ns);
+    allocate(v4_tmp0, ns2, ns2);
+    allocate(v4_tmp1, ns, ns2);
+    allocate(v4_tmp2, ns, ns2);
+    allocate(v4_tmp3, ns, ns2);
+    allocate(v4_tmp4, ns, ns2);
+
+    for (ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
+#pragma omp parallel for private (js)
+        for (is = 0; is < ns2; ++is) {
+            for (js = 0; js < ns2; ++js) {
+                v4_mpi[ik_prod][is][js] = complex_zero;
+                v4_out[ik_prod][is][js] = complex_zero;
+            }
+        }
+    }
+
+    int ik_old = -1;
+    int jk_old = -1;
+
+    if (mympi->my_rank == 0) {
+        std::cout << " Total number of sets to compute : " << nset_each << std::endl;
+    }
+
+    for (long int ii = 0; ii < nset_each; ++ii) {
+
+        auto ik_now = ik_vec[ii];
+        auto jk_now = jk_vec[ii];
+        auto is_now = is_vec[ii];
+
+        if (!(ik_now == ik_old && jk_now == jk_old)) {
+
+            // Update v4_array_at_kpair and ind
+
+            knum = kmap_interpolate_to_scph[kmesh_coarse->kpoint_irred_all[ik_now][0].knum];
+
+            anharmonic_core->calc_phi4_reciprocal(kmesh_dense->xk[knum],
+                                                  kmesh_dense->xk[jk_now],
+                                                  kmesh_dense->xk[kmesh_dense->kindex_minus_xk[jk_now]],
+                                                  phase_factor_scph,
+                                                  phi4_reciprocal);
+
+#ifdef _OPENMP
+#pragma omp parallel for private(j)
+#endif
+            for (i = 0; i < ngroup_v4; ++i) {
+                v4_array_at_kpair[i] = phi4_reciprocal[i] * anharmonic_core->get_invmass_factor(4)[i];
+                for (j = 0; j < 4; ++j) ind[i][j] = anharmonic_core->get_evec_index(4)[i][j];
+            }
+            ik_old = ik_now;
+            jk_old = jk_now;
+
+            for(is4_1 = 0; is4_1 < ns4; is4_1++){
+                is2_1 = is4_1/ns2;
+                js2_1 = is4_1%ns2;
+                v4_tmp0[is2_1][js2_1] = complex_zero;
+            }
+
+            for (i = 0; i < ngroup_v4; ++i) {
+
+                is = ind[i][0]*ns + ind[i][1];
+                js = ind[i][2]*ns + ind[i][3];
+                v4_tmp0[is][js] = v4_array_at_kpair[i];
+            }
+
+        }
+
+        ik_prod = ik_now * nk_scph + jk_now;
+        // int is_prod = ns * is_now + js_now;
+
+
+        // initialize temporary matrices
+#pragma omp parallel for private(js)
+        for(is = 0; is < ns; ++is){
+            for(js = 0; js < ns2; ++js){
+                v4_tmp1[is][js] = complex_zero;
+                v4_tmp2[is][js] = complex_zero;
+                v4_tmp3[is][js] = complex_zero;
+                v4_tmp4[is][js] = complex_zero;
+            }
+        }
+
+        // transform the first index
+#pragma omp parallel for private(is2_1, is, js, ks, ls)
+        for(is2_2 = 0; is2_2 < ns2; ++is2_2){
+            ks = is2_2/ns;
+            ls = is2_2%ns;
+
+            for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+                is = is2_1/ns;
+                js = is2_1%ns;
+
+                v4_tmp1[js][is2_2] += v4_tmp0[is2_1][is2_2]
+                                    * std::conj(evec_in[knum][is_now][is]);
+            }
+        }
+
+        // transform the second index
+#pragma omp parallel for private(is2_1, is, js, ks, ls)
+        for(is2_2 = 0; is2_2 < ns2; ++is2_2){
+            ks = is2_2/ns;
+            ls = is2_2%ns;
+
+            for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+                is = is2_1/ns;
+                js = is2_1%ns;
+
+                v4_tmp2[is][is2_2] += v4_tmp1[js][is2_2] * evec_in[knum][is][js];
+
+            }
+        }
+
+
+        // transform the third index
+#pragma omp parallel for private(is2_2, is, js, ks, ls)
+        for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+            is = is2_1/ns;
+            js = is2_1%ns;
+
+            for(is2_2 = 0; is2_2 < ns2; ++is2_2){
+                ks = is2_2/ns;
+                ls = is2_2%ns;
+
+                v4_tmp3[is][ks*ns+js] += v4_tmp2[is][ls*ns+js] * evec_in[jk_now][ks][ls];
+            }
+        }
+
+        // transform the fourth index
+#pragma omp parallel for private(is2_2, is, js, ks, ls)
+        for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+            is = is2_1/ns;
+            js = is2_1%ns;
+
+            for(is2_2 = 0; is2_2 < ns2; ++is2_2){
+                ks = is2_2/ns;
+                ls = is2_2%ns;
+
+                v4_tmp4[is][js*ns+ks] += v4_tmp3[is][js*ns+ls] * std::conj(evec_in[jk_now][ks][ls]);
+            }
+        }
+
+        // copy to the final matrix
+#pragma omp parallel for private(is, js)
+        for(is2_1 = 0; is2_1 < ns2; ++is2_1){
+            is = is2_1/ns;
+            js = is2_1%ns;
+
+            for(is2 = 0; is2 < ns; is2++){
+                v4_mpi[ik_prod][is_now*ns+is2][is2_1] = factor * v4_tmp4[is2][is2_1];
+            }
+        }
+
+        if (mympi->my_rank == 0) {
+            std::cout << " SET " << ii + 1 << " done. " << std::endl;
+        }
+
+    } // loop over nk2_prod*ns
 
     deallocate(v4_array_at_kpair);
     deallocate(ind);
