@@ -241,6 +241,7 @@ void Scph::exec_scph()
     postprocess(delta_dymat_scph,
                 delta_harmonic_dymat_renormalize,
                 delta_dymat_scph_plus_bubble,
+                kmesh_coarse,
                 mindist_list_scph,
                 false, bubble);
 
@@ -253,6 +254,7 @@ void Scph::exec_scph()
 void Scph::postprocess(std::complex<double> ****delta_dymat,
                        std::complex<double> ****delta_harmonic_dymat_renormalize,
                        std::complex<double> ****delta_dymat_scph_plus_bubble,
+                       const KpointMeshUniform *kmesh_coarse_in,
                        MinimumDistList ***mindist_list_in,
                        const bool is_qha,
                        const int bubble_in)
@@ -341,7 +343,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                 double eval_tmp;
                 for (auto iT = 0; iT < NT; ++iT) {
                     if (iT == 0 || (iT == NT - 1)) {
-                        dynamical->exec_interpolation(kmesh_interpolate,
+                        dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                                       delta_dymat[iT],
                                                       dos->kmesh_dos->nk,
                                                       dos->kmesh_dos->xk,
@@ -370,7 +372,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
             for (auto iT = 0; iT < NT; ++iT) {
                 auto temperature = Tmin + dT * static_cast<double>(iT);
 
-                dynamical->exec_interpolation(kmesh_interpolate,
+                dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                               delta_dymat[iT],
                                               dos->kmesh_dos->nk,
                                               dos->kmesh_dos->xk,
@@ -383,7 +385,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                               true);
 
                 // when is_qha = true, eval_harm_renorm is same as eval_update.
-                dynamical->exec_interpolation(kmesh_interpolate,
+                dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                               delta_harmonic_dymat_renormalize[iT],
                                               dos->kmesh_dos->nk,
                                               dos->kmesh_dos->xk,
@@ -516,7 +518,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                     double eval_tmp;
                     for (auto iT = 0; iT < NT; ++iT) {
                         if (iT == 0 || (iT == NT - 1)) {
-                            dynamical->exec_interpolation(kmesh_interpolate,
+                            dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                                           delta_dymat_scph_plus_bubble[iT],
                                                           dos->kmesh_dos->nk,
                                                           dos->kmesh_dos->xk,
@@ -545,7 +547,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                 for (auto iT = 0; iT < NT; ++iT) {
                     auto temperature = Tmin + dT * static_cast<double>(iT);
 
-                    dynamical->exec_interpolation(kmesh_interpolate,
+                    dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                                   delta_dymat_scph_plus_bubble[iT],
                                                   dos->kmesh_dos->nk,
                                                   dos->kmesh_dos->xk,
@@ -636,7 +638,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
             allocate(evec_tmp, kpoint->kpoint_general->nk, ns, ns);
 
             for (auto iT = 0; iT < NT; ++iT) {
-                dynamical->exec_interpolation(kmesh_interpolate,
+                dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                               delta_dymat[iT],
                                               kpoint->kpoint_general->nk,
                                               kpoint->kpoint_general->xk,
@@ -654,7 +656,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
 
             if (bubble_in > 0) {
                 for (auto iT = 0; iT < NT; ++iT) {
-                    dynamical->exec_interpolation(kmesh_interpolate,
+                    dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                                   delta_dymat_scph_plus_bubble[iT],
                                                   kpoint->kpoint_general->nk,
                                                   kpoint->kpoint_general->xk,
@@ -686,7 +688,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                              dymat_harm_long);
 
             for (auto iT = 0; iT < NT; ++iT) {
-                dynamical->exec_interpolation(kmesh_interpolate,
+                dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                               delta_dymat[iT],
                                               kpoint->kpoint_bs->nk,
                                               kpoint->kpoint_bs->xk,
@@ -705,7 +707,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
 
             if (bubble_in > 0) {
                 for (auto iT = 0; iT < NT; ++iT) {
-                    dynamical->exec_interpolation(kmesh_interpolate,
+                    dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                                   delta_dymat_scph_plus_bubble[iT],
                                                   kpoint->kpoint_bs->nk,
                                                   kpoint->kpoint_bs->xk,
@@ -737,7 +739,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
             for (auto i = 0; i < 3; ++i) xk_gam[0][i] = 0.0;
 
             for (auto iT = 0; iT < NT; ++iT) {
-                dynamical->exec_interpolation(kmesh_interpolate,
+                dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
                                               delta_dymat[iT],
                                               1,
                                               xk_gam,

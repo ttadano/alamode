@@ -242,6 +242,7 @@ void Qha::exec_qha_optimization()
     scph->postprocess(delta_dymat_qha,
                       delta_harmonic_dymat_renormalize,
                       delta_dymat_qha,
+                      kmesh_coarse,
                       mindist_list_qha,
                       true, 0);
 
