@@ -131,6 +131,9 @@ private:
 
     std::vector<Eigen::MatrixXcd> dymat_harm_short, dymat_harm_long;
 
+    void zerofill_harmonic_dymat_renormalize(std::complex<double> ****,
+                                             unsigned int);
+
 
 };
 }

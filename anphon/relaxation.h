@@ -58,16 +58,17 @@ public:
 
     void compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
                               const KpointMeshUniform *kmesh_dense,
-                              std::complex<double> **,
-                              std::complex<double> **,
-                              std::complex<double> **,
-                              std::complex<double> ***,
-                              std::complex<double> ***,
-                              std::complex<double> ****,
+                              std::complex<double> **del_v1_del_umn,
+                              std::complex<double> **del2_v1_del_umn2,
+                              std::complex<double> **del3_v1_del_umn3,
+                              std::complex<double> ***del_v2_del_umn,
+                              std::complex<double> ***del2_v2_del_umn2,
+                              std::complex<double> ****del_v3_del_umn,
                               double **omega2_harmonic,
-                              std::complex<double> ***,
-                              int,
-                              MinimumDistList ***mindist_list);
+                              std::complex<double> ***evec_harmonic,
+                              int relax_str,
+                              MinimumDistList ***mindist_list,
+                              const PhaseFactorStorage *phase_storage_in);
 
     void load_V0_from_file();
 
@@ -250,13 +251,14 @@ private:
     void compute_del2_v2_del_umn2(std::complex<double> ***,
                                   const std::complex<double> *const *const *const,
                                   const unsigned int nk,
-                                  const unsigned int nk_interpolate,
                                   double **xk_in);
 
-    void compute_del_v3_del_umn(std::complex<double> ****,
-                                const std::complex<double> *const *const *const,
-                                const unsigned int nk,
-                                const unsigned int nk_interpolate);
+    void compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
+                                double **omega2_harmonic,
+                                const std::complex<double> *const *const *const evec_harmonic,
+                                const KpointMeshUniform *kmesh_coarse_in,
+                                const KpointMeshUniform *kmesh_dense_in,
+                                const PhaseFactorStorage *phase_storage_in);
 
     void calculate_delv2_delumn_finite_difference(double **omega2_harmonic,
                                                   const std::complex<double> *const *const *const,
@@ -274,11 +276,11 @@ private:
     void calculate_delv1_delumn_finite_difference(std::complex<double> **,
                                                   const std::complex<double> *const *const *const);
 
-    void compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &,
-                                             std::vector<FcsArrayWithCell> &,
-                                             const int,
-                                             const int,
-                                             const int);
+    void compute_del_v_strain_in_real_space1(const std::vector<FcsArrayWithCell> &fcs_in,
+                                             std::vector<FcsArrayWithCell> &delta_fcs,
+                                             const int ixyz1,
+                                             const int ixyz2,
+                                             const int mirror_image_mode);
 
     void compute_del_v_strain_in_real_space2(const std::vector<FcsArrayWithCell> &,
                                              std::vector<FcsArrayWithCell> &,

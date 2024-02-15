@@ -67,11 +67,11 @@ class LammpsParser(object):
         ncols = len(atoms[0, :])
 
         if ncols == 5:
-            kd = np.array(atoms[:, 1], dtype=np.int)
+            kd = np.array(atoms[:, 1], dtype=int)
             x = np.array(atoms[:, 2:5], dtype=np.float64)
             charges = None
         elif ncols == 6:
-            kd = np.array(atoms[:, 1], dtype=np.int)
+            kd = np.array(atoms[:, 1], dtype=int)
             x = np.array(atoms[:, 3:6], dtype=np.float64)
             charges = np.array(atoms[:, 2], dtype=np.float64)
 

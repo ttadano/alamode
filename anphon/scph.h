@@ -63,33 +63,43 @@ public:
     bool selfenergy_offdiagonal;
 
 
-    void zerofill_harmonic_dymat_renormalize(std::complex<double> ****,
-                                             unsigned int);
-
-
     void write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                                          const unsigned int NT,
+                                         const KpointMeshUniform *kmesh_coarse_in,
+                                         MinimumDistList ***mindist_list_in,
+                                         const bool is_qha = false,
                                          const int type = 0);
 
-    void load_scph_dymat_from_file(std::complex<double> ****);
+    void load_scph_dymat_from_file(std::complex<double> ****dymat_out,
+                                   std::string filename_dymat,
+                                   const KpointMeshUniform *kmesh_dense_in,
+                                   const KpointMeshUniform *kmesh_coarse_in,
+                                   const unsigned int nonanalytic_in,
+                                   const bool selfenergy_offdiagonal_in);
 
-    void load_scph_dymat_from_file(std::complex<double> ****,
-                                   std::string);
-
-    void store_scph_dymat_to_file(const std::complex<double> *const *const *const *,
-                                  std::string);
+    void store_scph_dymat_to_file(const std::complex<double> *const *const *const *dymat_in,
+                                  std::string filename_dymat,
+                                  const KpointMeshUniform *kmesh_dense_in,
+                                  const KpointMeshUniform *kmesh_coarse_in,
+                                  const unsigned int nonanalytic_in,
+                                  const bool selfenergy_offdiagonal_in);
 
     void compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
+                                            double **omega2_harmonic_in,
                                             const int ngroup_v3_in,
                                             std::vector<double> *fcs_group_v3_in,
                                             std::vector<RelativeVector> *relvec_v3_in,
                                             double *invmass_v3_in,
                                             int **evec_index_v3_in,
                                             const std::complex<double> *const *const *evec_in,
-                                            const bool self_offdiag);
+                                            const bool self_offdiag,
+                                            const KpointMeshUniform *kmesh_coarse_in,
+                                            const KpointMeshUniform *kmesh_dense_in,
+                                            const PhaseFactorStorage *phase_storage_in);
 
 
     void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
+                                             double **omega2_harmonic_in,
                                              std::complex<double> ***evec_in,
                                              const bool self_offdiag,
                                              const bool relax,
@@ -100,6 +110,7 @@ public:
                                              std::complex<double> *phi4_reciprocal_inout);
 
     void compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
+                                           double **omega2_harmonic_in,
                                            std::complex<double> ***evec_in,
                                            const bool self_offdiag,
                                            const KpointMeshUniform *kmesh_coarse_in,
@@ -110,13 +121,13 @@ public:
 
 
     void compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
+                                             double **omega2_harmonic_in,
                                              const std::complex<double> *const *const *evec_in,
                                              const bool self_offdiag,
                                              const KpointMeshUniform *kmesh_coarse_in,
                                              const KpointMeshUniform *kmesh_dense_in,
-                                             const std::vector<int> &kmap_coarse_to_scph,
                                              const PhaseFactorStorage *phase_storage_in,
-                                             std::complex<double> *phi4_reciprocal_inout);
+                                             std::complex<double> *phi3_reciprocal_inout);
 
     void compute_anharmonic_del_v0_del_umn(std::complex<double> *del_v0_del_umn_SCP,
                                            std::complex<double> *del_v0_del_umn_renorm,
@@ -154,6 +165,14 @@ public:
                                          double pvcell,
                                          const KpointMeshUniform *kmesh_dense_in);
 
+
+    void postprocess(std::complex<double> ****,
+                     std::complex<double> ****,
+                     std::complex<double> ****,
+                     const KpointMeshUniform *kmesh_coarse_in,
+                     MinimumDistList ***mindist_list_in,
+                     const bool is_qha = false,
+                     const int bubble_in = 0);
 
 private:
 
@@ -195,14 +214,12 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                               std::complex<double> ****);
 
-    void postprocess(std::complex<double> ****,
-                     std::complex<double> ****,
-                     std::complex<double> ****);
 
-
-    void zerofill_elements_acoustic_at_gamma(double **,
-                                             std::complex<double> ***,
-                                             const int) const;
+    void zerofill_elements_acoustic_at_gamma(double **omega2,
+                                             std::complex<double> ***v_elems,
+                                             const int fc_order,
+                                             const unsigned int nk_dense_in,
+                                             const unsigned int nk_irred_coarse_in) const;
 
 
     FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
@@ -275,6 +292,10 @@ private:
                                                             const unsigned int snum,
                                                             const double temp_in,
                                                             const std::vector<std::complex<double>> &omegalist);
+
+
+    void zerofill_harmonic_dymat_renormalize(std::complex<double> ****,
+                                             unsigned int);
 
 
 };
