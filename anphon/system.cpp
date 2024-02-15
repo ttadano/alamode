@@ -16,6 +16,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "constants.h"
 #include "symmetry_core.h"
 #include "scph.h"
+#include "relaxation.h"
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -413,7 +414,7 @@ void System::load_system_info_from_XML()
 
         natmin = nat / ntran;
 
-        if (scph->relax_str != 0 && scph->init_u0.size() != natmin*3)
+        if (relaxation->relax_str != 0 && relaxation->init_u0.size() != natmin * 3)
             exit("load_system_info_from_XML",
                  "The number of atoms in the primitive cell (NATMIN) in the FCSXML file"
                  " \n is not consistent with the &displace field in the input file.");
@@ -954,3 +955,132 @@ void System::set_mass_elem_from_database(const int nkd,
         mass_kd_out[i] = mass_tmp;
     }
 }
+
+
+void System::get_minimum_distances(KpointMeshUniform *kmesh_in,
+                                   MinimumDistList ***&mindist_list_out)
+{
+    // Compute mindist_list necessary to calculate dynamical matrix
+    // from the real-space force constants
+
+    int i, j;
+    int ix, iy, iz;
+    const auto nk = kmesh_in->nk;
+    const auto nat = natmin;
+    unsigned int iat;
+
+    int **shift_cell, **shift_cell_super;
+    double **xf_p;
+    double ****x_all;
+
+    const int nkx = static_cast<int>(kmesh_in->nk_i[0]); // This should be int (must not be unsigned int).
+    const int nky = static_cast<int>(kmesh_in->nk_i[1]); // same as above
+    const int nkz = static_cast<int>(kmesh_in->nk_i[2]); // same as above
+
+    const auto ncell = nk;
+    const auto ncell_s = 27;
+
+    allocate(shift_cell, ncell, 3);
+    allocate(shift_cell_super, ncell_s, 3);
+    allocate(xf_p, nat, 3);
+    allocate(x_all, ncell_s, ncell, nat, 3);
+
+    if (mindist_list_out) deallocate(mindist_list_out);
+    allocate(mindist_list_out, nat, nat, ncell);
+
+    unsigned int icell = 0;
+    for (ix = 0; ix < nkx; ++ix) {
+        for (iy = 0; iy < nky; ++iy) {
+            for (iz = 0; iz < nkz; ++iz) {
+
+                shift_cell[icell][0] = ix;
+                shift_cell[icell][1] = iy;
+                shift_cell[icell][2] = iz;
+
+                ++icell;
+            }
+        }
+    }
+
+    for (i = 0; i < 3; ++i) shift_cell_super[0][i] = 0;
+    icell = 1;
+    for (ix = -1; ix <= 1; ++ix) {
+        for (iy = -1; iy <= 1; ++iy) {
+            for (iz = -1; iz <= 1; ++iz) {
+                if (ix == 0 && iy == 0 && iz == 0) continue;
+
+                shift_cell_super[icell][0] = ix;
+                shift_cell_super[icell][1] = iy;
+                shift_cell_super[icell][2] = iz;
+
+                ++icell;
+            }
+        }
+    }
+
+    for (i = 0; i < nat; ++i) {
+        rotvec(xf_p[i], xr_s[map_p2s[i][0]], lavec_s);
+        rotvec(xf_p[i], xf_p[i], rlavec_p);
+        for (j = 0; j < 3; ++j) xf_p[i][j] /= 2.0 * pi;
+    }
+
+    for (i = 0; i < ncell_s; ++i) {
+        for (j = 0; j < ncell; ++j) {
+            for (iat = 0; iat < nat; ++iat) {
+                x_all[i][j][iat][0] = xf_p[iat][0] + static_cast<double>(shift_cell[j][0])
+                                      + static_cast<double>(nkx * shift_cell_super[i][0]);
+                x_all[i][j][iat][1] = xf_p[iat][1] + static_cast<double>(shift_cell[j][1])
+                                      + static_cast<double>(nky * shift_cell_super[i][1]);
+                x_all[i][j][iat][2] = xf_p[iat][2] + static_cast<double>(shift_cell[j][2])
+                                      + static_cast<double>(nkz * shift_cell_super[i][2]);
+
+                rotvec(x_all[i][j][iat], x_all[i][j][iat], lavec_p);
+            }
+        }
+    }
+
+    double dist;
+    std::vector<DistList> dist_tmp;
+    ShiftCell shift_tmp{};
+    std::vector<int> vec_tmp;
+
+
+    for (iat = 0; iat < nat; ++iat) {
+        for (unsigned int jat = 0; jat < nat; ++jat) {
+            for (icell = 0; icell < ncell; ++icell) {
+
+                dist_tmp.clear();
+                for (i = 0; i < ncell_s; ++i) {
+                    dist = distance(x_all[0][0][iat], x_all[i][icell][jat]);
+                    dist_tmp.emplace_back(i, dist);
+                }
+                std::sort(dist_tmp.begin(), dist_tmp.end());
+
+                const auto dist_min = dist_tmp[0].dist;
+                mindist_list_out[iat][jat][icell].dist = dist_min;
+
+                for (i = 0; i < ncell_s; ++i) {
+                    dist = dist_tmp[i].dist;
+
+                    if (std::abs(dist_min - dist) < eps8) {
+
+                        shift_tmp.sx = shift_cell[icell][0]
+                                       + nkx * shift_cell_super[dist_tmp[i].cell_s][0];
+                        shift_tmp.sy = shift_cell[icell][1]
+                                       + nky * shift_cell_super[dist_tmp[i].cell_s][1];
+                        shift_tmp.sz = shift_cell[icell][2]
+                                       + nkz * shift_cell_super[dist_tmp[i].cell_s][2];
+
+                        mindist_list_out[iat][jat][icell].shift.push_back(shift_tmp);
+                    }
+                }
+            }
+        }
+    }
+
+    deallocate(shift_cell);
+    deallocate(shift_cell_super);
+    deallocate(xf_p);
+    deallocate(x_all);
+}
+

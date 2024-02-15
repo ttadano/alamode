@@ -14,6 +14,7 @@
 #include "error.h"
 #include "mathfunctions.h"
 #include "memory.h"
+#include "relaxation.h"
 #include "system.h"
 #include "scph.h"
 #include <iomanip>
@@ -63,8 +64,8 @@ void Symmetry::setup_symmetry()
     SymmList.clear();
 
 
-    if ( (phon->mode == "SCPH" && scph->relax_str != 0) ||
-         (phon->mode == "QHA"  && scph->relax_str != 0)) {
+    if ((phon->mode == "SCPH" && relaxation->relax_str != 0) ||
+        (phon->mode == "QHA" && relaxation->relax_str != 0)) {
         double **xtmp_disp;
         double lavec_p_strain[3][3], rlavec_p_strain[3][3];
         double mat_strain[3][3];
@@ -72,10 +73,10 @@ void Symmetry::setup_symmetry()
         int i, j;
         int iat;
 
-        if (scph->init_u_tensor) {
+        if (relaxation->init_u_tensor) {
             for (i = 0; i < 3; i++) {
                 for (j = 0; j < 3; j++) {
-                    mat_strain[i][j] = scph->init_u_tensor[i][j];
+                    mat_strain[i][j] = relaxation->init_u_tensor[i][j];
                 }
                 mat_strain[i][i] += 1.0;
             }
@@ -100,7 +101,7 @@ void Symmetry::setup_symmetry()
 
             // set displacement
             for (i = 0; i < 3; i++) {
-                xtmp_disp[iat][i] = scph->init_u0[iat * 3 + i];
+                xtmp_disp[iat][i] = relaxation->init_u0[iat * 3 + i];
             }
             rotvec(xtmp_disp[iat], xtmp_disp[iat], rlavec_p_strain);
             for (i = 0; i < 3; i++) {
@@ -159,15 +160,15 @@ void Symmetry::setup_symmetry()
         std::cout << std::endl;
         std::cout << "  Number of symmetry operations : "
                   << nsym << std::endl;
-        if((phon->mode == "SCPH" && scph->relax_str != 0) ||
-           (phon->mode == "QHA"  && scph->relax_str != 0)) {
+        if ((phon->mode == "SCPH" && relaxation->relax_str != 0) ||
+            (phon->mode == "QHA" && relaxation->relax_str != 0)) {
             std::cout << "  Number of symmetry operations in reference structure : "
-                    << nsym_ref << std::endl << std::endl;
+                      << nsym_ref << std::endl << std::endl;
         }
 
         gensym_withmap(xtmp, kdtmp, SymmList, SymmListWithMap);
-        if((phon->mode == "SCPH" && scph->relax_str != 0) ||
-           (phon->mode == "QHA"  && scph->relax_str != 0)) {
+        if ((phon->mode == "SCPH" && relaxation->relax_str != 0) ||
+            (phon->mode == "QHA" && relaxation->relax_str != 0)) {
             gensym_withmap(xtmp, kdtmp, SymmList_ref, SymmListWithMap_ref);
         }
     }

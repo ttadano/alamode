@@ -1537,7 +1537,6 @@ void AnharmonicCore::calc_analytic_k_from_FcsArrayWithCell(const double *xk_in,
     int i;
     const auto nmode = 3 * system->natmin;
     double vec[3];
-    const std::complex<double> im(0.0, 1.0);
 
     // prepare supercell shift
     double **xshift_s;
