@@ -1311,71 +1311,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                                             relax_str);
     }
 
-    // debug compute_V4_elements_mpi_over_one_band
-    std::complex<double> ***v4_ref2;
-    allocate(v4_ref2, nk_irred_interpolate * kmesh_dense->nk,
-             ns * ns, ns * ns);
-    compute_V4_elements_mpi_over_band(v4_ref2,
-                                          evec_harmonic,
-                                          selfenergy_offdiagonal);
-
-    std::complex<double> ***v4_ref3;
-    allocate(v4_ref3, nk_irred_interpolate * kmesh_dense->nk,
-             ns * ns, ns * ns);
-    compute_V4_elements_mpi_over_one_band(v4_ref3,
-                                          evec_harmonic,
-                                          selfenergy_offdiagonal);
-
-    double sum_norm1, sum_norm2, sum_norm3;
-    double sum_diff1, sum_diff2;
-    double sum_norm_tot1, sum_norm_tot2, sum_norm_tot3;
-    double sum_diff_tot1, sum_diff_tot2;
-
-    sum_norm_tot1 = 0.0;
-    sum_norm_tot2 = 0.0;
-    sum_norm_tot3 = 0.0;
-    sum_diff_tot1 = 0.0;
-    sum_diff_tot2 = 0.0;
-    for(int ik_tmp = 0; ik_tmp < nk_irred_interpolate * kmesh_dense->nk; ik_tmp++){
-
-        sum_norm1 = 0.0;
-        sum_norm2 = 0.0;
-        sum_norm3 = 0.0;
-        sum_diff1 = 0.0;
-        sum_diff2 = 0.0;
-        for(is1 = 0; is1 < ns*ns; is1++){
-            for(is2 = 0; is2 < ns*ns; is2++){
-                sum_norm1 += std::norm(v4_ref[ik_tmp][is1][is2]);
-                sum_norm2 += std::norm(v4_ref2[ik_tmp][is1][is2]);
-                sum_norm3 += std::norm(v4_ref3[ik_tmp][is1][is2]);
-
-                sum_diff1 += std::norm(v4_ref[ik_tmp][is1][is2]-v4_ref2[ik_tmp][is1][is2]);
-                sum_diff2 += std::norm(v4_ref[ik_tmp][is1][is2]-v4_ref3[ik_tmp][is1][is2]);
-            }
-        }
-
-        sum_norm_tot1 += sum_norm1;
-        sum_norm_tot2 += sum_norm2;
-        sum_norm_tot3 += sum_norm3;
-
-        sum_diff_tot1 += sum_diff1;
-        sum_diff_tot2 += sum_diff2;
-
-        std::cout << "index of (k, k') : " << ik_tmp << std::endl; 
-        std::cout << "norm (over_kpoint) : " << sum_norm1 << ", norm (over_band) : " << sum_norm2 << ", norm (over_one_band) : " << sum_norm3 << std::endl; 
-        std::cout << "diff (over_kpoint-over_band) : " << sum_diff1 << ", diff (over_kpoint-over_one_band) : " << sum_diff2 << std::endl; 
-
-    }
-    std::cout << "sum of norm (original)      : " << sum_norm_tot1 << std::endl;
-    std::cout << "sum of norm (over_band)     : " << sum_norm_tot2 << std::endl;
-    std::cout << "sum of norm (over_one_band) : " << sum_norm_tot3 << std::endl;
-    std::cout << "sum of diff (over_kpoint-over_band)     : " << sum_diff_tot1 << std::endl;
-    std::cout << "sum of diff (over_kpoint-over_one_band) : " << sum_diff_tot2 << std::endl;
-
-    deallocate(v4_ref2);
-    deallocate(v4_ref3);
-    // debug to here
-
     allocate(v3_ref, nk, ns, ns * ns);
     allocate(v3_renorm, nk, ns, ns * ns);
     allocate(v3_with_umn, nk, ns, ns * ns);
@@ -3086,7 +3021,6 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
     std::complex<double> *v3_array_at_kpair;
     std::complex<double> ***v3_mpi;
 
-    std::complex<double> **v3_mpi_old_method;
     std::complex<double> **v3_tmp0, **v3_tmp1, **v3_tmp2, **v3_tmp3;
 
     if (mympi->my_rank == 0) {
@@ -3101,7 +3035,6 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
     allocate(ind, ngroup_v3, 3);
     allocate(v3_mpi, nk_scph, ns, ns2);
 
-    allocate(v3_mpi_old_method, ns, ns2);
     allocate(v3_tmp0, ns, ns2);
     allocate(v3_tmp1, ns, ns2);
     allocate(v3_tmp2, ns, ns2);
@@ -3267,7 +3200,6 @@ void Scph::compute_V3_elements_mpi_over_kpoint(std::complex<double> ***v3_out,
 #endif
 
     deallocate(v3_mpi);
-    deallocate(v3_mpi_old_method);
     deallocate(v3_tmp0);
     deallocate(v3_tmp1);
     deallocate(v3_tmp2);
@@ -3313,7 +3245,6 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
     std::complex<double> ***v3_mpi;
     std::complex<double> *phi3_reciprocal_tmp;
 
-    std::complex<double> **v3_mpi_old_method;
     std::complex<double> **v3_tmp0, **v3_tmp1, **v3_tmp2, **v3_tmp3;
 
     allocate(phi3_reciprocal_tmp, ngroup_v3_in);
@@ -3321,7 +3252,6 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
     allocate(ind, ngroup_v3_in, 3);
     allocate(v3_mpi, nk_scph, ns, ns2);
 
-    allocate(v3_mpi_old_method, ns, ns2);
     allocate(v3_tmp0, ns, ns2);
     allocate(v3_tmp1, ns, ns2);
     allocate(v3_tmp2, ns, ns2);
@@ -3487,7 +3417,6 @@ void Scph::compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out,
 #endif
 
     deallocate(v3_mpi);
-    deallocate(v3_mpi_old_method);
     deallocate(v3_tmp0);
     deallocate(v3_tmp1);
     deallocate(v3_tmp2);
@@ -3845,7 +3774,6 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
     allocate(nset_mpi, mympi->nprocs);
 
-    //const long int nset_tot = nk2_prod * ((ns2 - ns) / 2 + ns);
     const long int nset_tot = nk2_prod * ns;
     long int nset_each = nset_tot / mympi->nprocs;
     const long int nres = nset_tot - nset_each * mympi->nprocs;
