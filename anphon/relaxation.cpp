@@ -689,7 +689,7 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
         // first-order derivative of first-order IFCs
         if (renorm_2to1st == 0) {
             if (mympi->my_rank == 0)
-                std::cout << "  first-order derivatives of first-order IFCs (set as zero) ... ";
+                std::cout << "  - first-order derivatives of first-order IFCs (set as zero) ... ";
             for (i1 = 0; i1 < 9; i1++) {
                 for (is1 = 0; is1 < ns; is1++) {
                     del_v1_del_umn[i1][is1] = complex_zero;
@@ -697,23 +697,22 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
             }
         } else if (renorm_2to1st == 1) {
             if (mympi->my_rank == 0)
-                std::cout << "  first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
+                std::cout << "  - first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
             compute_del_v1_del_umn(del_v1_del_umn, evec_harmonic);
 
         } else if (renorm_2to1st == 2) {
             if (mympi->my_rank == 0)
-                std::cout << "  first-order derivatives of first-order IFCs (finite difference method) ... ";
+                std::cout << "  - first-order derivatives of first-order IFCs (finite difference method) ... ";
             calculate_delv1_delumn_finite_difference(del_v1_del_umn, evec_harmonic);
         }
         if (mympi->my_rank == 0) {
             std::cout << "  done!\n";
-            timer->print_elapsed();
         }
 
         // second and third-order derivatives of first-order IFCs
         if (renorm_34to1st == 0) {
             if (mympi->my_rank == 0)
-                std::cout << "  second-order derivatives of first-order IFCs (set zero) ... ";
+                std::cout << "  - second-order derivatives of first-order IFCs (set zero) ... ";
             for (i1 = 0; i1 < 81; i1++) {
                 for (is1 = 0; is1 < ns; is1++) {
                     del2_v1_del_umn2[i1][is1] = complex_zero;
@@ -721,8 +720,7 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
             }
             if (mympi->my_rank == 0) {
                 std::cout << "  done!\n";
-                timer->print_elapsed();
-                std::cout << "  third-order derivatives of first-order IFCs (set zero) ... ";
+                std::cout << "  - third-order derivatives of first-order IFCs (set zero) ... ";
             }
             for (i1 = 0; i1 < 729; i1++) {
                 for (is1 = 0; is1 < ns; is1++) {
@@ -731,31 +729,28 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
             }
             if (mympi->my_rank == 0) {
                 std::cout << "  done!\n";
-                timer->print_elapsed();
             }
         } else if (renorm_34to1st == 1) {
             if (mympi->my_rank == 0)
-                std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
+                std::cout << "  - second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
 
             compute_del2_v1_del_umn2(del2_v1_del_umn2, evec_harmonic);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  done!\n";
-                timer->print_elapsed();
-                std::cout << "  third-order derivatives of first-order IFCs (from quartic IFCs) ... ";
+                std::cout << "  - third-order derivatives of first-order IFCs (from quartic IFCs) ... ";
             }
             compute_del3_v1_del_umn3(del3_v1_del_umn3, evec_harmonic);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  done!\n";
-                timer->print_elapsed();
             }
         }
 
         // first-order derivatives of harmonic IFCs
         if (renorm_3to2nd == 1) {
             if (mympi->my_rank == 0)
-                std::cout << "  first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
+                std::cout << "  - first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
 
             compute_del_v2_del_umn(del_v2_del_umn, evec_harmonic,
                                    nk,
@@ -763,11 +758,11 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
                                    kmesh_coarse->xk);
         } else if (renorm_3to2nd == 2 || renorm_3to2nd == 3) {
             if (mympi->my_rank == 0) {
-                std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method)\n";
+                std::cout << "  - first-order derivatives of harmonic IFCs (finite displacement method)\n";
                 if (renorm_3to2nd == 2) {
-                    std::cout << "  use inputs with all strain patterns ... ";
+                    std::cout << "    use inputs with all strain patterns ... ";
                 } else if (renorm_3to2nd == 3) {
-                    std::cout << "  use inputs with specified strain patterns ... ";
+                    std::cout << "    use inputs with specified strain patterns ... ";
                 }
             }
 
@@ -779,8 +774,8 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
                                                      mindist_list);
         } else if (renorm_3to2nd == 4) {
             if (mympi->my_rank == 0) {
-                std::cout << "  first-order derivatives of harmonic IFCs\n";
-                std::cout << "  (read from file in k-space representation) ... ";
+                std::cout << "  - first-order derivatives of harmonic IFCs\n";
+                std::cout << "    (read from file in k-space representation) ... ";
             }
 
             read_del_v2_del_umn_in_kspace(omega2_harmonic,
@@ -791,12 +786,11 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
         }
         if (mympi->my_rank == 0) {
             std::cout << "  done!\n";
-            timer->print_elapsed();
         }
 
         // second order derivatives of harmonic IFCs
         if (mympi->my_rank == 0)
-            std::cout << "  second-order derivatives of harmonic IFCs (from quartic IFCs) ... ";
+            std::cout << "  - second-order derivatives of harmonic IFCs (from quartic IFCs) ... ";
 
         compute_del2_v2_del_umn2(del2_v2_del_umn2,
                                  evec_harmonic,
@@ -805,9 +799,7 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
 
         if (mympi->my_rank == 0) {
             std::cout << "  done!\n";
-            timer->print_elapsed();
-
-            std::cout << "  first-order derivatives of cubic IFCs (from quartic IFCs) ... ";
+            std::cout << "  - first-order derivatives of cubic IFCs (from quartic IFCs) ... ";
         }
 
         // first order derivatives of cubic IFCs
@@ -820,7 +812,6 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
 
         if (mympi->my_rank == 0) {
             std::cout << "  done!\n";
-            timer->print_elapsed();
         }
 
     }
@@ -830,7 +821,7 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
         // first-order derivative of first-order IFCs
         if (renorm_2to1st == 0) {
             if (mympi->my_rank == 0)
-                std::cout << "  first-order derivatives of first-order IFCs (set as zero) ... ";
+                std::cout << "  - first-order derivatives of first-order IFCs (set as zero) ... ";
             for (i1 = 0; i1 < 9; i1++) {
                 for (is1 = 0; is1 < ns; is1++) {
                     del_v1_del_umn[i1][is1] = complex_zero;
@@ -838,23 +829,22 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
             }
         } else if (renorm_2to1st == 1) {
             if (mympi->my_rank == 0)
-                std::cout << "  first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
+                std::cout << "  - first-order derivatives of first-order IFCs (from harmonic IFCs) ... ";
             compute_del_v1_del_umn(del_v1_del_umn, evec_harmonic);
 
         } else if (renorm_2to1st == 2) {
             if (mympi->my_rank == 0)
-                std::cout << "  first-order derivatives of first-order IFCs (finite difference method) ... ";
+                std::cout << "  - first-order derivatives of first-order IFCs (finite difference method) ... ";
             calculate_delv1_delumn_finite_difference(del_v1_del_umn, evec_harmonic);
         }
         if (mympi->my_rank == 0) {
             std::cout << "  done!\n";
-            timer->print_elapsed();
         }
 
         // second-order derivatives of 1st order IFCs
         if (renorm_34to1st == 0) {
             if (mympi->my_rank == 0)
-                std::cout << "  second-order derivatives of first-order IFCs (set zero) ... ";
+                std::cout << "  - second-order derivatives of first-order IFCs (set zero) ... ";
             for (i1 = 0; i1 < 81; i1++) {
                 for (is1 = 0; is1 < ns; is1++) {
                     del2_v1_del_umn2[i1][is1] = complex_zero;
@@ -863,19 +853,18 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
 
         } else if (renorm_34to1st == 1) {
             if (mympi->my_rank == 0)
-                std::cout << "  second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
+                std::cout << "  - second-order derivatives of first-order IFCs (from cubic IFCs) ... ";
             compute_del2_v1_del_umn2(del2_v1_del_umn2, evec_harmonic);
 
         }
         if (mympi->my_rank == 0) {
             std::cout << "  done!\n";
-            timer->print_elapsed();
         }
 
         // first-order derivatives of harmonic IFCs
         if (renorm_3to2nd == 1) {
             if (mympi->my_rank == 0)
-                std::cout << "  first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
+                std::cout << "  - first-order derivatives of harmonic IFCs (from cubic IFCs) ... ";
 
             compute_del_v2_del_umn(del_v2_del_umn, evec_harmonic,
                                    nk,
@@ -883,11 +872,11 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
                                    kmesh_coarse->xk);
         } else if (renorm_3to2nd == 2 || renorm_3to2nd == 3) {
             if (mympi->my_rank == 0) {
-                std::cout << "  first-order derivatives of harmonic IFCs (finite displacement method)\n";
+                std::cout << "  - first-order derivatives of harmonic IFCs (finite displacement method)\n";
                 if (renorm_3to2nd == 2) {
-                    std::cout << "  use inputs with all strain patterns ...\n";
+                    std::cout << "   use inputs with all strain patterns ...\n";
                 } else if (renorm_3to2nd == 3) {
-                    std::cout << "  use inputs with specified strain patterns ...\n";
+                    std::cout << "   use inputs with specified strain patterns ...\n";
                 }
             }
 
@@ -899,17 +888,17 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse,
                                                      mindist_list);
         } else if (renorm_3to2nd == 4) {
             if (mympi->my_rank == 0) {
-                std::cout << "  first-order derivatives of harmonic IFCs\n";
-                std::cout << "  (read from file in k-space representation) ... ";
+                std::cout << "  - first-order derivatives of harmonic IFCs\n";
+                std::cout << "    (read from file in k-space representation) ... ";
             }
             read_del_v2_del_umn_in_kspace(omega2_harmonic,
                                           evec_harmonic, del_v2_del_umn, nk, nk_interpolate);
         }
         if (mympi->my_rank == 0) {
             std::cout << "  done!\n";
-            timer->print_elapsed();
         }
     }
+    if (mympi->my_rank == 0) timer->print_elapsed();
 
 }
 
