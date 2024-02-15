@@ -166,6 +166,11 @@ public:
                                          const KpointMeshUniform *kmesh_dense_in);
 
 
+    void postprocess(std::complex<double> ****,
+                     std::complex<double> ****,
+                     std::complex<double> ****,
+                     const bool bubble_in = 0);
+
 private:
 
     // Information of kmesh for SCPH calculation
@@ -206,9 +211,6 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                               std::complex<double> ****);
 
-    void postprocess(std::complex<double> ****,
-                     std::complex<double> ****,
-                     std::complex<double> ****);
 
 
     void zerofill_elements_acoustic_at_gamma(double **omega2,

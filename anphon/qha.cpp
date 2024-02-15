@@ -232,6 +232,14 @@ void Qha::exec_qha_optimization()
                                                   true);
         }
     }
+
+    scph->postprocess(delta_dymat_scph,
+                      delta_harmonic_dymat_renormalize,
+                      delta_dymat_scph, 0);
+
+    deallocate(delta_dymat_scph);
+    deallocate(delta_harmonic_dymat_renormalize);
+
 }
 
 void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,

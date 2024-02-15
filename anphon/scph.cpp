@@ -248,11 +248,12 @@ void Scph::exec_scph()
 
 }
 
-void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
+void Scph::postprocess(std::complex<double> ****delta_dymat,
                        std::complex<double> ****delta_harmonic_dymat_renormalize,
-                       std::complex<double> ****delta_dymat_scph_plus_bubble)
+                       std::complex<double> ****delta_dymat_scph_plus_bubble,
+                       const bool bubble_in)
 {
-    double ***eval_anharm = nullptr;
+    double ***eval_update = nullptr;
     double ***eval_harm_renorm = nullptr;
     const auto ns = dynamical->neval;
     const auto Tmin = system->Tmin;
@@ -265,7 +266,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
     if (mympi->my_rank == 0) {
 
         std::cout << '\n';
-        std::cout << " Running postprocess of SCPH (calculation of free energy, MSD, DOS)\n";
+        std::cout << " Running postprocess of SCPH/QHA (calculation of free energy, MSD, DOS)\n";
         std::cout << " The number of temperature points: " << std::setw(4) << NT << '\n';
         std::cout << "   ";
 
@@ -275,30 +276,30 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
         std::complex<double> ***evec_gam = nullptr;
         double **xk_gam = nullptr;
 
-        double **dos_scph = nullptr;
-        double ***pdos_scph = nullptr;
+        double **dos_update = nullptr;
+        double ***pdos_update = nullptr;
         double *heat_capacity = nullptr;
         double *heat_capacity_correction = nullptr;
         double *FE_QHA = nullptr;
         double *dFE_scph = nullptr;
         double *FE_total = nullptr;
-        double **msd_scph = nullptr;
-        double ***ucorr_scph = nullptr;
-        double ****dielec_scph = nullptr;
+        double **msd_update = nullptr;
+        double ***ucorr_update = nullptr;
+        double ****dielec_update = nullptr;
         double *omega_grid = nullptr;
         double **domega_dt = nullptr;
 
         if (dos->kmesh_dos) {
-            allocate(eval_anharm, NT, dos->kmesh_dos->nk, ns);
+            allocate(eval_update, NT, dos->kmesh_dos->nk, ns);
             allocate(evec_tmp, dos->kmesh_dos->nk, ns, ns);
             allocate(eval_harm_renorm, NT, dos->kmesh_dos->nk, ns);
             allocate(evec_harm_renorm, dos->kmesh_dos->nk, ns, ns);
 
             if (dos->compute_dos) {
-                allocate(dos_scph, NT, dos->n_energy);
+                allocate(dos_update, NT, dos->n_energy);
 
                 if (dos->projected_dos) {
-                    allocate(pdos_scph, NT, ns, dos->n_energy);
+                    allocate(pdos_update, NT, ns, dos->n_energy);
                 }
             }
             allocate(heat_capacity, NT);
@@ -307,10 +308,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             allocate(FE_total, NT);
 
             if (writes->getPrintMSD()) {
-                allocate(msd_scph, NT, ns);
+                allocate(msd_update, NT, ns);
             }
             if (writes->getPrintUcorr()) {
-                allocate(ucorr_scph, NT, ns, ns);
+                allocate(ucorr_update, NT, ns, ns);
             }
             if (compute_Cv_anharmonic) {
                 allocate(heat_capacity_correction, NT);
@@ -337,11 +338,11 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                 for (auto iT = 0; iT < NT; ++iT) {
                     if (iT == 0 || (iT == NT - 1)) {
                         dynamical->exec_interpolation(kmesh_interpolate,
-                                                      delta_dymat_scph[iT],
+                                                      delta_dymat[iT],
                                                       dos->kmesh_dos->nk,
                                                       dos->kmesh_dos->xk,
                                                       dos->kmesh_dos->kvec_na,
-                                                      eval_anharm[iT],
+                                                      eval_update[iT],
                                                       evec_tmp,
                                                       dymat_harm_short,
                                                       dymat_harm_long,
@@ -351,7 +352,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                         for (unsigned int j = 0; j < dos->kmesh_dos->nk_irred; ++j) {
                             for (unsigned int k = 0; k < ns; ++k) {
                                 eval_tmp = writes->in_kayser(
-                                        eval_anharm[iT][dos->kmesh_dos->kpoint_irred_all[j][0].knum][k]);
+                                        eval_update[iT][dos->kmesh_dos->kpoint_irred_all[j][0].knum][k]);
                                 emin_now = std::min(emin_now, eval_tmp);
                                 emax_now = std::max(emax_now, eval_tmp);
                             }
@@ -366,17 +367,18 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                 auto temperature = Tmin + dT * static_cast<double>(iT);
 
                 dynamical->exec_interpolation(kmesh_interpolate,
-                                              delta_dymat_scph[iT],
+                                              delta_dymat[iT],
                                               dos->kmesh_dos->nk,
                                               dos->kmesh_dos->xk,
                                               dos->kmesh_dos->kvec_na,
-                                              eval_anharm[iT],
+                                              eval_update[iT],
                                               evec_tmp,
                                               dymat_harm_short,
                                               dymat_harm_long,
                                               mindist_list_scph,
                                               true);
 
+                // when is_qha = true, eval_harm_renorm is same as eval_update.
                 dynamical->exec_interpolation(kmesh_interpolate,
                                               delta_harmonic_dymat_renormalize[iT],
                                               dos->kmesh_dos->nk,
@@ -391,10 +393,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
                 if (dos->compute_dos) {
                     dos->calc_dos_from_given_frequency(dos->kmesh_dos,
-                                                       eval_anharm[iT],
+                                                       eval_update[iT],
                                                        dos->tetra_nodes_dos->get_ntetra(),
                                                        dos->tetra_nodes_dos->get_tetras(),
-                                                       dos_scph[iT]);
+                                                       dos_update[iT]);
                 }
 
                 heat_capacity[iT] = thermodynamics->Cv_tot(temperature,
@@ -402,17 +404,18 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                                            ns,
                                                            dos->kmesh_dos->kpoint_irred_all,
                                                            &dos->kmesh_dos->weight_k[0],
-                                                           eval_anharm[iT]);
+                                                           eval_update[iT]);
 
                 FE_QHA[iT] = thermodynamics->free_energy_QHA(temperature,
                                                              dos->kmesh_dos->nk_irred,
                                                              ns,
                                                              dos->kmesh_dos->kpoint_irred_all,
                                                              &dos->kmesh_dos->weight_k[0],
-                                                             eval_anharm[iT]);
+                                                             eval_update[iT]);
 
+                // when is_qha is true, this value is zero.
                 dFE_scph[iT] = thermodynamics->FE_scph_correction(iT,
-                                                                  eval_anharm[iT],
+                                                                  eval_update[iT],
                                                                   evec_tmp,
                                                                   eval_harm_renorm[iT],
                                                                   evec_harm_renorm);
@@ -425,14 +428,14 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                     double shift[3]{0.0, 0.0, 0.0};
 
                     for (auto is = 0; is < ns; ++is) {
-                        msd_scph[iT][is] = thermodynamics->disp_corrfunc(temperature,
-                                                                         is, is,
-                                                                         shift,
-                                                                         dos->kmesh_dos->nk,
-                                                                         ns,
-                                                                         dos->kmesh_dos->xk,
-                                                                         eval_anharm[iT],
-                                                                         evec_tmp);
+                        msd_update[iT][is] = thermodynamics->disp_corrfunc(temperature,
+                                                                           is, is,
+                                                                           shift,
+                                                                           dos->kmesh_dos->nk,
+                                                                           ns,
+                                                                           dos->kmesh_dos->xk,
+                                                                           eval_update[iT],
+                                                                           evec_tmp);
                     }
                 }
 
@@ -442,14 +445,14 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
                     for (auto is = 0; is < ns; ++is) {
                         for (auto js = 0; js < ns; ++js) {
-                            ucorr_scph[iT][is][js] = thermodynamics->disp_corrfunc(temperature,
-                                                                                   is, js,
-                                                                                   shift,
-                                                                                   dos->kmesh_dos->nk,
-                                                                                   ns,
-                                                                                   dos->kmesh_dos->xk,
-                                                                                   eval_anharm[iT],
-                                                                                   evec_tmp);
+                            ucorr_update[iT][is][js] = thermodynamics->disp_corrfunc(temperature,
+                                                                                     is, js,
+                                                                                     shift,
+                                                                                     dos->kmesh_dos->nk,
+                                                                                     ns,
+                                                                                     dos->kmesh_dos->xk,
+                                                                                     eval_update[iT],
+                                                                                     evec_tmp);
                         }
                     }
                 }
@@ -458,8 +461,8 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
                     if (iT >= 1 and iT <= NT - 2) {
                         get_derivative_central_diff(dT, dos->kmesh_dos->nk,
-                                                    eval_anharm[iT - 1],
-                                                    eval_anharm[iT + 1],
+                                                    eval_update[iT - 1],
+                                                    eval_update[iT + 1],
                                                     domega_dt);
 
                         heat_capacity_correction[iT] = thermodynamics->Cv_anharm_correction(temperature,
@@ -467,7 +470,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                                                                             ns,
                                                                                             dos->kmesh_dos->kpoint_irred_all,
                                                                                             &dos->kmesh_dos->weight_k[0],
-                                                                                            eval_anharm[iT],
+                                                                                            eval_update[iT],
                                                                                             domega_dt);
                     }
 
@@ -482,7 +485,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             std::cout << "\n\n";
 
             if (dos->compute_dos) {
-                writes->write_scph_dos(dos_scph);
+                writes->write_scph_dos(dos_update);
             }
             writes->write_scph_thermodynamics(heat_capacity,
                                               heat_capacity_correction,
@@ -490,15 +493,15 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                               dFE_scph,
                                               FE_total);
             if (writes->getPrintMSD()) {
-                writes->write_scph_msd(msd_scph);
+                writes->write_scph_msd(msd_update);
             }
             if (writes->getPrintUcorr()) {
-                writes->write_scph_ucorr(ucorr_scph);
+                writes->write_scph_ucorr(ucorr_update);
             }
 
             // If delta_dymat_scph_plus_bubble != nullptr, run postprocess again with
             // delta_dymat_scph_plus_bubble.
-            if (bubble > 0) {
+            if (bubble_in > 0) {
                 std::cout << '\n';
                 std::cout << "   ";
 
@@ -514,7 +517,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                                           dos->kmesh_dos->nk,
                                                           dos->kmesh_dos->xk,
                                                           dos->kmesh_dos->kvec_na,
-                                                          eval_anharm[iT],
+                                                          eval_update[iT],
                                                           evec_tmp,
                                                           dymat_harm_short,
                                                           dymat_harm_long,
@@ -524,7 +527,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                             for (unsigned int j = 0; j < dos->kmesh_dos->nk_irred; ++j) {
                                 for (unsigned int k = 0; k < ns; ++k) {
                                     eval_tmp = writes->in_kayser(
-                                            eval_anharm[iT][dos->kmesh_dos->kpoint_irred_all[j][0].knum][k]);
+                                            eval_update[iT][dos->kmesh_dos->kpoint_irred_all[j][0].knum][k]);
                                     emin_now = std::min(emin_now, eval_tmp);
                                     emax_now = std::max(emax_now, eval_tmp);
                                 }
@@ -543,7 +546,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                                   dos->kmesh_dos->nk,
                                                   dos->kmesh_dos->xk,
                                                   dos->kmesh_dos->kvec_na,
-                                                  eval_anharm[iT],
+                                                  eval_update[iT],
                                                   evec_tmp,
                                                   dymat_harm_short,
                                                   dymat_harm_long,
@@ -552,10 +555,10 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
                     if (dos->compute_dos) {
                         dos->calc_dos_from_given_frequency(dos->kmesh_dos,
-                                                           eval_anharm[iT],
+                                                           eval_update[iT],
                                                            dos->tetra_nodes_dos->get_ntetra(),
                                                            dos->tetra_nodes_dos->get_tetras(),
-                                                           dos_scph[iT]);
+                                                           dos_update[iT]);
                     }
 
                     heat_capacity[iT] = thermodynamics->Cv_tot(temperature,
@@ -563,20 +566,20 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                                                ns,
                                                                dos->kmesh_dos->kpoint_irred_all,
                                                                &dos->kmesh_dos->weight_k[0],
-                                                               eval_anharm[iT]);
+                                                               eval_update[iT]);
 
                     if (writes->getPrintMSD()) {
                         double shift[3]{0.0, 0.0, 0.0};
 
                         for (auto is = 0; is < ns; ++is) {
-                            msd_scph[iT][is] = thermodynamics->disp_corrfunc(temperature,
-                                                                             is, is,
-                                                                             shift,
-                                                                             dos->kmesh_dos->nk,
-                                                                             ns,
-                                                                             dos->kmesh_dos->xk,
-                                                                             eval_anharm[iT],
-                                                                             evec_tmp);
+                            msd_update[iT][is] = thermodynamics->disp_corrfunc(temperature,
+                                                                               is, is,
+                                                                               shift,
+                                                                               dos->kmesh_dos->nk,
+                                                                               ns,
+                                                                               dos->kmesh_dos->xk,
+                                                                               eval_update[iT],
+                                                                               evec_tmp);
                         }
                     }
 
@@ -586,14 +589,14 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
                         for (auto is = 0; is < ns; ++is) {
                             for (auto js = 0; js < ns; ++js) {
-                                ucorr_scph[iT][is][js] = thermodynamics->disp_corrfunc(temperature,
-                                                                                       is, js,
-                                                                                       shift,
-                                                                                       dos->kmesh_dos->nk,
-                                                                                       ns,
-                                                                                       dos->kmesh_dos->xk,
-                                                                                       eval_anharm[iT],
-                                                                                       evec_tmp);
+                                ucorr_update[iT][is][js] = thermodynamics->disp_corrfunc(temperature,
+                                                                                         is, js,
+                                                                                         shift,
+                                                                                         dos->kmesh_dos->nk,
+                                                                                         ns,
+                                                                                         dos->kmesh_dos->xk,
+                                                                                         eval_update[iT],
+                                                                                         evec_tmp);
                             }
                         }
                     }
@@ -608,33 +611,33 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                 std::cout << "\n\n";
 
                 if (dos->compute_dos) {
-                    writes->write_scph_dos(dos_scph, bubble);
+                    writes->write_scph_dos(dos_update, bubble_in);
                 }
                 if (writes->getPrintMSD()) {
-                    writes->write_scph_msd(msd_scph, bubble);
+                    writes->write_scph_msd(msd_update, bubble_in);
                 }
                 if (writes->getPrintUcorr()) {
-                    writes->write_scph_ucorr(ucorr_scph, bubble);
+                    writes->write_scph_ucorr(ucorr_update, bubble_in);
                 }
 
             }
-            deallocate(eval_anharm);
-            eval_anharm = nullptr;
+            deallocate(eval_update);
+            eval_update = nullptr;
             deallocate(evec_tmp);
             evec_tmp = nullptr;
         }
 
         if (kpoint->kpoint_general) {
-            allocate(eval_anharm, NT, kpoint->kpoint_general->nk, ns);
+            allocate(eval_update, NT, kpoint->kpoint_general->nk, ns);
             allocate(evec_tmp, kpoint->kpoint_general->nk, ns, ns);
 
             for (auto iT = 0; iT < NT; ++iT) {
                 dynamical->exec_interpolation(kmesh_interpolate,
-                                              delta_dymat_scph[iT],
+                                              delta_dymat[iT],
                                               kpoint->kpoint_general->nk,
                                               kpoint->kpoint_general->xk,
                                               kpoint->kpoint_general->kvec_na,
-                                              eval_anharm[iT],
+                                              eval_update[iT],
                                               evec_tmp,
                                               dymat_harm_short,
                                               dymat_harm_short,
@@ -642,33 +645,33 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
             }
 
             writes->write_scph_energy(kpoint->kpoint_general->nk,
-                                      eval_anharm);
+                                      eval_update);
 
-            if (bubble > 0) {
+            if (bubble_in > 0) {
                 for (auto iT = 0; iT < NT; ++iT) {
                     dynamical->exec_interpolation(kmesh_interpolate,
                                                   delta_dymat_scph_plus_bubble[iT],
                                                   kpoint->kpoint_general->nk,
                                                   kpoint->kpoint_general->xk,
                                                   kpoint->kpoint_general->kvec_na,
-                                                  eval_anharm[iT],
+                                                  eval_update[iT],
                                                   evec_tmp,
                                                   dymat_harm_short,
                                                   dymat_harm_long,
                                                   mindist_list_scph);
                 }
                 writes->write_scph_energy(kpoint->kpoint_general->nk,
-                                          eval_anharm,
-                                          bubble);
+                                          eval_update,
+                                          bubble_in);
             }
-            deallocate(eval_anharm);
+            deallocate(eval_update);
             deallocate(evec_tmp);
-            eval_anharm = nullptr;
+            eval_update = nullptr;
             evec_tmp = nullptr;
         }
 
         if (kpoint->kpoint_bs) {
-            allocate(eval_anharm, NT, kpoint->kpoint_bs->nk, ns);
+            allocate(eval_update, NT, kpoint->kpoint_bs->nk, ns);
             allocate(evec_tmp, kpoint->kpoint_bs->nk, ns, ns);
 
             dynamical->precompute_dymat_harm(kpoint->kpoint_bs->nk,
@@ -679,11 +682,11 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
             for (auto iT = 0; iT < NT; ++iT) {
                 dynamical->exec_interpolation(kmesh_interpolate,
-                                              delta_dymat_scph[iT],
+                                              delta_dymat[iT],
                                               kpoint->kpoint_bs->nk,
                                               kpoint->kpoint_bs->xk,
                                               kpoint->kpoint_bs->kvec_na,
-                                              eval_anharm[iT],
+                                              eval_update[iT],
                                               evec_tmp,
                                               dymat_harm_short,
                                               dymat_harm_long,
@@ -693,16 +696,16 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
             writes->write_scph_bands(kpoint->kpoint_bs->nk,
                                      kpoint->kpoint_bs->kaxis,
-                                     eval_anharm);
+                                     eval_update);
 
-            if (bubble > 0) {
+            if (bubble_in > 0) {
                 for (auto iT = 0; iT < NT; ++iT) {
                     dynamical->exec_interpolation(kmesh_interpolate,
                                                   delta_dymat_scph_plus_bubble[iT],
                                                   kpoint->kpoint_bs->nk,
                                                   kpoint->kpoint_bs->xk,
                                                   kpoint->kpoint_bs->kvec_na,
-                                                  eval_anharm[iT],
+                                                  eval_update[iT],
                                                   evec_tmp,
                                                   dymat_harm_short,
                                                   dymat_harm_long,
@@ -711,18 +714,18 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                 }
                 writes->write_scph_bands(kpoint->kpoint_bs->nk,
                                          kpoint->kpoint_bs->kaxis,
-                                         eval_anharm,
-                                         bubble);
+                                         eval_update,
+                                         bubble_in);
             }
-            deallocate(eval_anharm);
+            deallocate(eval_update);
             deallocate(evec_tmp);
-            eval_anharm = nullptr;
+            eval_update = nullptr;
             evec_tmp = nullptr;
         }
 
         if (dielec->calc_dielectric_constant) {
             omega_grid = dielec->get_omega_grid(nomega_dielec);
-            allocate(dielec_scph, NT, nomega_dielec, 3, 3);
+            allocate(dielec_update, NT, nomega_dielec, 3, 3);
             allocate(eval_gam, 1, ns);
             allocate(evec_gam, 1, ns, ns);
             allocate(xk_gam, 1, 3);
@@ -730,7 +733,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
 
             for (auto iT = 0; iT < NT; ++iT) {
                 dynamical->exec_interpolation(kmesh_interpolate,
-                                              delta_dymat_scph[iT],
+                                              delta_dymat[iT],
                                               1,
                                               xk_gam,
                                               xk_gam,
@@ -751,22 +754,22 @@ void Scph::postprocess(std::complex<double> ****delta_dymat_scph,
                                                     omega_grid,
                                                     eval_gam[0],
                                                     evec_gam[0],
-                                                    dielec_scph[iT]);
+                                                    dielec_update[iT]);
             }
-            writes->write_scph_dielec(dielec_scph);
+            writes->write_scph_dielec(dielec_update);
         }
 
-        if (eval_anharm) deallocate(eval_anharm);
+        if (eval_update) deallocate(eval_update);
         if (evec_tmp) deallocate(evec_tmp);
 
-        if (dos_scph) deallocate(dos_scph);
-        if (pdos_scph) deallocate(pdos_scph);
+        if (dos_update) deallocate(dos_update);
+        if (pdos_update) deallocate(pdos_update);
         if (heat_capacity) deallocate(heat_capacity);
         if (heat_capacity_correction) deallocate(heat_capacity_correction);
         if (FE_QHA) deallocate(FE_QHA);
         if (dFE_scph) deallocate(dFE_scph);
         if (FE_total) deallocate(FE_total);
-        if (dielec_scph) deallocate(dielec_scph);
+        if (dielec_update) deallocate(dielec_update);
 
         if (eval_gam) deallocate(eval_gam);
         if (evec_gam) deallocate(evec_gam);
@@ -818,15 +821,15 @@ void Scph::load_scph_dymat_from_file(std::complex<double> ****dymat_out,
         ifs_dymat >> Tmin_tmp >> Tmax_tmp >> dT_tmp;
         ifs_dymat >> nonanalytic_tmp >> consider_offdiag_tmp;
 
-        if (nk_interpolate_ref[0] != kmesh_coarse->nk_i[0] ||
-            nk_interpolate_ref[1] != kmesh_coarse->nk_i[1] ||
-            nk_interpolate_ref[2] != kmesh_coarse->nk_i[2]) {
+        if (nk_interpolate_ref[0] != kmesh_coarse_in->nk_i[0] ||
+            nk_interpolate_ref[1] != kmesh_coarse_in->nk_i[1] ||
+            nk_interpolate_ref[2] != kmesh_coarse_in->nk_i[2]) {
             exit("load_scph_dymat_from_file",
                  "The number of KMESH_INTERPOLATE is not consistent");
         }
-        if (nk_scph_tmp[0] != kmesh_dense->nk_i[0] ||
-            nk_scph_tmp[1] != kmesh_dense->nk_i[1] ||
-            nk_scph_tmp[2] != kmesh_dense->nk_i[2]) {
+        if (nk_scph_tmp[0] != kmesh_dense_in->nk_i[0] ||
+            nk_scph_tmp[1] != kmesh_dense_in->nk_i[1] ||
+            nk_scph_tmp[2] != kmesh_dense_in->nk_i[2]) {
             exit("load_scph_dymat_from_file",
                  "The number of KMESH_SCPH is not consistent");
         }

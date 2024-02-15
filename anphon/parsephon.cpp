@@ -404,7 +404,6 @@ void Input::parse_scph_vars()
 
     // Assign given values
 
-    assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
     assign_val(maxiter, "MAXITER", scph_var_dict);
     assign_val(mixalpha, "MIXALPHA", scph_var_dict);
     assign_val(selfenergy_offdiagonal, "SELF_OFFDIAG", scph_var_dict);
@@ -418,6 +417,14 @@ void Input::parse_scph_vars()
         exit("parse_scph_vars",
              "SELF_OFFDIAG = 0 cannot be used when RELAX_STR != 0.");
     }
+
+    if (relax_str) {
+        auto file_harm_dymat = this->job_title + ".renorm_harm_dymat";
+        auto file_v0 = this->job_title + ".V0";
+        restart_scph = restart_scph && (stat(file_harm_dymat.c_str(), &st) == 0) && (stat(file_v0.c_str(), &st) == 0);
+    }
+
+    assign_val(restart_scph, "RESTART_SCPH", scph_var_dict);
 
     auto str_tmp = scph_var_dict["KMESH_SCPH"];
 
@@ -496,7 +503,7 @@ void Input::parse_qha_vars()
     struct stat st{};
     const std::vector<std::string> input_list{
             "KMESH_QHA", "KMESH_INTERPOLATE",
-            "LOWER_TEMP", "RELAX_STR", "QHA_SCHEME"
+            "LOWER_TEMP", "RELAX_STR", "QHA_SCHEME", "RESTART_QHA"
     };
     std::vector<std::string> no_defaults{"KMESH_QHA", "KMESH_INTERPOLATE"};
     std::vector<int> kmesh_v, kmesh_interpolate_v;
@@ -584,7 +591,14 @@ void Input::parse_qha_vars()
     qha->qha_scheme = qha_scheme;
 
     // Set other values
-    qha->restart_qha = false;
+
+    auto file_renorm_harm_dymat = this->job_title + ".renorm_harm_dymat";
+    auto file_v0 = this->job_title + ".V0";
+    auto restart_qha = (stat(file_renorm_harm_dymat.c_str(), &st) == 0) && (stat(file_v0.c_str(), &st) == 0);
+
+    assign_val(restart_qha, "RESTART_QHA", qha_var_dict);
+
+    qha->restart_qha = restart_qha;
 
     kmesh_v.clear();
     kmesh_interpolate_v.clear();
@@ -676,8 +690,8 @@ void Input::parse_relax_vars()
         strain_IFC_dir = strain_IFC_dir + "/";
     }
 
-    bool restart_scph = (stat(file_dymat.c_str(), &st) == 0) && (stat(file_harm_dymat.c_str(), &st) == 0);
-    restart_scph = restart_scph & (stat(file_v0.c_str(), &st) == 0);
+//    bool restart_scph = (stat(file_dymat.c_str(), &st) == 0) && (stat(file_harm_dymat.c_str(), &st) == 0);
+//    restart_scph = restart_scph & (stat(file_v0.c_str(), &st) == 0);
 
     relaxation->relax_algo = relax_algo;
     relaxation->max_str_iter = max_str_iter;
