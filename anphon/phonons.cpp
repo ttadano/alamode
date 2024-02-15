@@ -74,7 +74,7 @@ PHON::PHON(int narg,
         std::cout << std::endl;
 
         input->parce_input(narg, arg);
-        writes->write_input_vars();
+        writes->writeInputVars();
     }
 
     mympi->MPI_Bcast_string(input->job_title, 0, MPI_COMM_WORLD);
@@ -223,8 +223,8 @@ void PHON::execute_phonons() const
     }
 
     if (mympi->my_rank == 0) {
-        writes->print_phonon_energy();
-        writes->write_phonon_info();
+        writes->printPhononEnergies();
+        writes->writePhononInfo();
         if (gruneisen->print_newfcs) {
             gruneisen->write_new_fcsxml_all();
         }
@@ -267,13 +267,13 @@ void PHON::execute_RTA() const
     if (mode_analysis->ks_analyze_mode) {
         mode_analysis->run_mode_analysis();
     } else {
-        writes->setup_result_io();
+        writes->setupResultIo();
         conductivity->setup_kappa();
         conductivity->prepare_restart();
         conductivity->calc_anharmonic_imagself();
         conductivity->compute_kappa();
-        writes->write_kappa();
-        writes->write_selfenergy_isotope();
+        writes->writeKappa();
+        writes->writeSelfenergyIsotope();
     }
 }
 

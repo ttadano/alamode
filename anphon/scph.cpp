@@ -240,7 +240,7 @@ void Scph::exec_scph()
 
     postprocess(delta_dymat_scph,
                 delta_harmonic_dymat_renormalize,
-                delta_dymat_scph_plus_bubble);
+                delta_dymat_scph_plus_bubble, false, bubble);
 
     deallocate(delta_dymat_scph);
     deallocate(delta_harmonic_dymat_renormalize);
@@ -251,7 +251,8 @@ void Scph::exec_scph()
 void Scph::postprocess(std::complex<double> ****delta_dymat,
                        std::complex<double> ****delta_harmonic_dymat_renormalize,
                        std::complex<double> ****delta_dymat_scph_plus_bubble,
-                       const bool bubble_in)
+                       const bool is_qha,
+                       const int bubble_in)
 {
     double ***eval_update = nullptr;
     double ***eval_harm_renorm = nullptr;
@@ -485,18 +486,18 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
             std::cout << "\n\n";
 
             if (dos->compute_dos) {
-                writes->write_scph_dos(dos_update);
+                writes->writePhononDos(dos_update, is_qha, 0);
             }
-            writes->write_scph_thermodynamics(heat_capacity,
-                                              heat_capacity_correction,
-                                              FE_QHA,
-                                              dFE_scph,
-                                              FE_total);
+            writes->writeThermodynamicFunc(heat_capacity,
+                                           heat_capacity_correction,
+                                           FE_QHA,
+                                           dFE_scph,
+                                           FE_total, is_qha);
             if (writes->getPrintMSD()) {
-                writes->write_scph_msd(msd_update);
+                writes->writeMSD(msd_update, is_qha, 0);
             }
             if (writes->getPrintUcorr()) {
-                writes->write_scph_ucorr(ucorr_update);
+                writes->writeDispCorrelation(ucorr_update, is_qha, 0);
             }
 
             // If delta_dymat_scph_plus_bubble != nullptr, run postprocess again with
@@ -611,13 +612,13 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                 std::cout << "\n\n";
 
                 if (dos->compute_dos) {
-                    writes->write_scph_dos(dos_update, bubble_in);
+                    writes->writePhononDos(dos_update, false, bubble_in);
                 }
                 if (writes->getPrintMSD()) {
-                    writes->write_scph_msd(msd_update, bubble_in);
+                    writes->writeMSD(msd_update, false, bubble_in);
                 }
                 if (writes->getPrintUcorr()) {
-                    writes->write_scph_ucorr(ucorr_update, bubble_in);
+                    writes->writeDispCorrelation(ucorr_update, false, bubble_in);
                 }
 
             }
@@ -644,8 +645,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                               mindist_list_scph);
             }
 
-            writes->write_scph_energy(kpoint->kpoint_general->nk,
-                                      eval_update);
+            writes->writePhononEnergies(kpoint->kpoint_general->nk,
+                                        eval_update,
+                                        is_qha, 0);
 
             if (bubble_in > 0) {
                 for (auto iT = 0; iT < NT; ++iT) {
@@ -660,9 +662,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                   dymat_harm_long,
                                                   mindist_list_scph);
                 }
-                writes->write_scph_energy(kpoint->kpoint_general->nk,
-                                          eval_update,
-                                          bubble_in);
+                writes->writePhononEnergies(kpoint->kpoint_general->nk,
+                                            eval_update, false,
+                                            bubble_in);
             }
             deallocate(eval_update);
             deallocate(evec_tmp);
@@ -694,9 +696,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                               true);
             }
 
-            writes->write_scph_bands(kpoint->kpoint_bs->nk,
+            writes->writePhononBands(kpoint->kpoint_bs->nk,
                                      kpoint->kpoint_bs->kaxis,
-                                     eval_update);
+                                     eval_update, is_qha, 0);
 
             if (bubble_in > 0) {
                 for (auto iT = 0; iT < NT; ++iT) {
@@ -712,9 +714,9 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                   mindist_list_scph,
                                                   true);
                 }
-                writes->write_scph_bands(kpoint->kpoint_bs->nk,
+                writes->writePhononBands(kpoint->kpoint_bs->nk,
                                          kpoint->kpoint_bs->kaxis,
-                                         eval_update,
+                                         eval_update, false,
                                          bubble_in);
             }
             deallocate(eval_update);
@@ -756,7 +758,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                     evec_gam[0],
                                                     dielec_update[iT]);
             }
-            writes->write_scph_dielec(dielec_update);
+            writes->writeDielecFunc(dielec_update, is_qha);
         }
 
         if (eval_update) deallocate(eval_update);
@@ -1594,7 +1596,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
                 // check convergence
                 std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]";
 
-                std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor << '\n';
+                std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor
+                          << '\n';
 
                 if (du0 < relaxation->coord_conv_tol && du_tensor < relaxation->cell_conv_tol) {
                     std::cout << "\n\n du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15)

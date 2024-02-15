@@ -169,7 +169,8 @@ public:
     void postprocess(std::complex<double> ****,
                      std::complex<double> ****,
                      std::complex<double> ****,
-                     const bool bubble_in = 0);
+                     const bool is_qha = false,
+                     const int bubble_in = 0);
 
 private:
 
@@ -210,7 +211,6 @@ private:
 
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                               std::complex<double> ****);
-
 
 
     void zerofill_elements_acoustic_at_gamma(double **omega2,

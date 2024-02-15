@@ -235,7 +235,7 @@ void Qha::exec_qha_optimization()
 
     scph->postprocess(delta_dymat_scph,
                       delta_harmonic_dymat_renormalize,
-                      delta_dymat_scph, 0);
+                      delta_dymat_scph, true, 0);
 
     deallocate(delta_dymat_scph);
     deallocate(delta_harmonic_dymat_renormalize);
@@ -744,7 +744,8 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
                 // check convergence
                 std::cout << " du0 =" << std::scientific << std::setw(15) << std::setprecision(6) << du0 << " [Bohr]";
-                std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor << '\n';
+                std::cout << " du_tensor =" << std::scientific << std::setw(15) << std::setprecision(6) << du_tensor
+                          << '\n';
 
                 if (du0 < relaxation->coord_conv_tol && du_tensor < relaxation->cell_conv_tol) {
                     std::cout << "\n\n du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15)
