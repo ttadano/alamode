@@ -213,7 +213,9 @@ void Scph::exec_scph()
                                          selfenergy_offdiagonal);
                 relaxation->store_V0_to_file();
             }
-            write_anharmonic_correction_fc2(delta_dymat_scph, NT, kmesh_coarse, mindist_list_scph);
+            write_anharmonic_correction_fc2(delta_dymat_scph, NT,
+                                            kmesh_coarse, mindist_list_scph,
+                                            false, 0);
         }
     }
 
@@ -229,7 +231,10 @@ void Scph::exec_scph()
         bubble_correction(delta_dymat_scph,
                           delta_dymat_scph_plus_bubble);
         if (mympi->my_rank == 0) {
-            write_anharmonic_correction_fc2(delta_dymat_scph_plus_bubble, NT, kmesh_coarse, mindist_list_scph, bubble);
+            write_anharmonic_correction_fc2(delta_dymat_scph_plus_bubble, NT,
+                                            kmesh_coarse, mindist_list_scph,
+                                            false,
+                                            bubble);
         }
     }
 
@@ -4730,6 +4735,7 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
                                            const unsigned int NT,
                                            const KpointMeshUniform *kmesh_coarse_in,
                                            MinimumDistList ***mindist_list_in,
+                                           const bool is_qha,
                                            const int type)
 {
     unsigned int i, j;
@@ -4744,14 +4750,18 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     std::string file_fc2;
     std::ofstream ofs_fc2;
 
-    if (type == 0) {
-        file_fc2 = input->job_title + ".scph_dfc2";
-    } else if (type == 1) {
-        file_fc2 = input->job_title + ".scph+bubble(0)_dfc2";
-    } else if (type == 2) {
-        file_fc2 = input->job_title + ".scph+bubble(w)_dfc2";
-    } else if (type == 3) {
-        file_fc2 = input->job_title + ".scph+bubble(wQP)_dfc2";
+    if (is_qha) {
+        file_fc2 = input->job_title + ".qha_dfc2";
+    } else {
+        if (type == 0) {
+            file_fc2 = input->job_title + ".scph_dfc2";
+        } else if (type == 1) {
+            file_fc2 = input->job_title + ".scph+bubble(0)_dfc2";
+        } else if (type == 2) {
+            file_fc2 = input->job_title + ".scph+bubble(w)_dfc2";
+        } else if (type == 3) {
+            file_fc2 = input->job_title + ".scph+bubble(wQP)_dfc2";
+        }
     }
 
     ofs_fc2.open(file_fc2.c_str(), std::ios::out);
@@ -4852,14 +4862,18 @@ void Scph::write_anharmonic_correction_fc2(std::complex<double> ****delta_dymat,
     ofs_fc2.close();
     std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_fc2;
 
-    if (type == 0) {
-        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH)\n";
-    } else if (type == 1) {
-        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(0))\n";
-    } else if (type == 2) {
-        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(w))\n";
-    } else if (type == 3) {
-        std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(wQP))\n";
+    if (is_qha) {
+        std::cout << " : Anharmonic corrections to the second-order IFCs (QHA)\n";
+    } else {
+        if (type == 0) {
+            std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH)\n";
+        } else if (type == 1) {
+            std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(0))\n";
+        } else if (type == 2) {
+            std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(w))\n";
+        } else if (type == 3) {
+            std::cout << " : Anharmonic corrections to the second-order IFCs (SCPH+Bubble(wQP))\n";
+        }
     }
 }
 

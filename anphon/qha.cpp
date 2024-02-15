@@ -228,7 +228,8 @@ void Qha::exec_qha_optimization()
                 relaxation->store_V0_to_file();
             }
             scph->write_anharmonic_correction_fc2(delta_dymat_scph, NT,
-                                                  kmesh_coarse, mindist_list_qha);
+                                                  kmesh_coarse, mindist_list_qha,
+                                                  true);
         }
     }
 }

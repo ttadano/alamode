@@ -67,6 +67,7 @@ public:
                                          const unsigned int NT,
                                          const KpointMeshUniform *kmesh_coarse_in,
                                          MinimumDistList ***mindist_list_in,
+                                         const bool is_qha = false,
                                          const int type = 0);
 
     void load_scph_dymat_from_file(std::complex<double> ****dymat_out,
