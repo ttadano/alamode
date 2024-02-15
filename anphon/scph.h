@@ -169,6 +169,7 @@ public:
     void postprocess(std::complex<double> ****,
                      std::complex<double> ****,
                      std::complex<double> ****,
+                     MinimumDistList ***mindist_list_in,
                      const bool is_qha = false,
                      const int bubble_in = 0);
 

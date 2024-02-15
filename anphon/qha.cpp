@@ -178,9 +178,9 @@ void Qha::exec_qha_optimization()
     const auto dT = system->dT;
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
-    std::complex<double> ****delta_dymat_scph = nullptr;
+    std::complex<double> ****delta_dymat_qha = nullptr;
     std::complex<double> ****delta_harmonic_dymat_renormalize = nullptr;
-    allocate(delta_dymat_scph, NT, ns, ns, kmesh_coarse->nk);
+    allocate(delta_dymat_qha, NT, ns, ns, kmesh_coarse->nk);
     allocate(delta_harmonic_dymat_renormalize, NT, ns, ns, kmesh_coarse->nk);
 
     const auto relax_str = relaxation->relax_str;
@@ -194,11 +194,17 @@ void Qha::exec_qha_optimization()
             std::cout << " Dynamical matrix is read from file ...";
         }
 
-        scph->load_scph_dymat_from_file(delta_dymat_scph, input->job_title + ".renorm_harm_dymat",
-                                        kmesh_dense, kmesh_coarse, dynamical->nonanalytic,
+        scph->load_scph_dymat_from_file(delta_dymat_qha,
+                                        input->job_title + ".renorm_harm_dymat",
+                                        kmesh_dense,
+                                        kmesh_coarse,
+                                        dynamical->nonanalytic,
                                         true);
-        scph->load_scph_dymat_from_file(delta_harmonic_dymat_renormalize, input->job_title + ".renorm_harm_dymat",
-                                        kmesh_dense, kmesh_coarse, dynamical->nonanalytic,
+        scph->load_scph_dymat_from_file(delta_harmonic_dymat_renormalize,
+                                        input->job_title + ".renorm_harm_dymat",
+                                        kmesh_dense,
+                                        kmesh_coarse,
+                                        dynamical->nonanalytic,
                                         true);
 
         // structural optimization
@@ -209,11 +215,11 @@ void Qha::exec_qha_optimization()
 
         // QHA + structural optimization
         if (phon->mode == "QHA" && (relax_str == 1 || relax_str == 2)) {
-            exec_QHA_relax_main(delta_dymat_scph, delta_harmonic_dymat_renormalize);
+            exec_QHA_relax_main(delta_dymat_qha, delta_harmonic_dymat_renormalize);
         }
             // lowest-order QHA
         else if (phon->mode == "QHA" && relax_str == 3) {
-            exec_perturbative_QHA(delta_dymat_scph, delta_harmonic_dymat_renormalize);
+            exec_perturbative_QHA(delta_dymat_qha, delta_harmonic_dymat_renormalize);
         }
 
         if (mympi->my_rank == 0) {
@@ -227,17 +233,19 @@ void Qha::exec_qha_optimization()
                                                true);
                 relaxation->store_V0_to_file();
             }
-            scph->write_anharmonic_correction_fc2(delta_dymat_scph, NT,
+            scph->write_anharmonic_correction_fc2(delta_dymat_qha, NT,
                                                   kmesh_coarse, mindist_list_qha,
                                                   true);
         }
     }
 
-    scph->postprocess(delta_dymat_scph,
+    scph->postprocess(delta_dymat_qha,
                       delta_harmonic_dymat_renormalize,
-                      delta_dymat_scph, true, 0);
+                      delta_dymat_qha,
+                      mindist_list_qha,
+                      true, 0);
 
-    deallocate(delta_dymat_scph);
+    deallocate(delta_dymat_qha);
     deallocate(delta_harmonic_dymat_renormalize);
 
 }

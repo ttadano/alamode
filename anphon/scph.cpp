@@ -240,7 +240,9 @@ void Scph::exec_scph()
 
     postprocess(delta_dymat_scph,
                 delta_harmonic_dymat_renormalize,
-                delta_dymat_scph_plus_bubble, false, bubble);
+                delta_dymat_scph_plus_bubble,
+                mindist_list_scph,
+                false, bubble);
 
     deallocate(delta_dymat_scph);
     deallocate(delta_harmonic_dymat_renormalize);
@@ -251,6 +253,7 @@ void Scph::exec_scph()
 void Scph::postprocess(std::complex<double> ****delta_dymat,
                        std::complex<double> ****delta_harmonic_dymat_renormalize,
                        std::complex<double> ****delta_dymat_scph_plus_bubble,
+                       MinimumDistList ***mindist_list_in,
                        const bool is_qha,
                        const int bubble_in)
 {
@@ -347,7 +350,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                       evec_tmp,
                                                       dymat_harm_short,
                                                       dymat_harm_long,
-                                                      mindist_list_scph,
+                                                      mindist_list_in,
                                                       true);
 
                         for (unsigned int j = 0; j < dos->kmesh_dos->nk_irred; ++j) {
@@ -376,7 +379,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                               evec_tmp,
                                               dymat_harm_short,
                                               dymat_harm_long,
-                                              mindist_list_scph,
+                                              mindist_list_in,
                                               true);
 
                 // when is_qha = true, eval_harm_renorm is same as eval_update.
@@ -389,7 +392,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                               evec_harm_renorm,
                                               dymat_harm_short,
                                               dymat_harm_long,
-                                              mindist_list_scph,
+                                              mindist_list_in,
                                               true);
 
                 if (dos->compute_dos) {
@@ -522,7 +525,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                           evec_tmp,
                                                           dymat_harm_short,
                                                           dymat_harm_long,
-                                                          mindist_list_scph,
+                                                          mindist_list_in,
                                                           true);
 
                             for (unsigned int j = 0; j < dos->kmesh_dos->nk_irred; ++j) {
@@ -551,7 +554,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                   evec_tmp,
                                                   dymat_harm_short,
                                                   dymat_harm_long,
-                                                  mindist_list_scph,
+                                                  mindist_list_in,
                                                   true);
 
                     if (dos->compute_dos) {
@@ -642,7 +645,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                               evec_tmp,
                                               dymat_harm_short,
                                               dymat_harm_short,
-                                              mindist_list_scph);
+                                              mindist_list_in);
             }
 
             writes->writePhononEnergies(kpoint->kpoint_general->nk,
@@ -660,7 +663,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                   evec_tmp,
                                                   dymat_harm_short,
                                                   dymat_harm_long,
-                                                  mindist_list_scph);
+                                                  mindist_list_in);
                 }
                 writes->writePhononEnergies(kpoint->kpoint_general->nk,
                                             eval_update, false,
@@ -692,7 +695,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                               evec_tmp,
                                               dymat_harm_short,
                                               dymat_harm_long,
-                                              mindist_list_scph,
+                                              mindist_list_in,
                                               true);
             }
 
@@ -711,7 +714,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                   evec_tmp,
                                                   dymat_harm_short,
                                                   dymat_harm_long,
-                                                  mindist_list_scph,
+                                                  mindist_list_in,
                                                   true);
                 }
                 writes->writePhononBands(kpoint->kpoint_bs->nk,
@@ -743,7 +746,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                               evec_gam,
                                               dymat_harm_short,
                                               dymat_harm_long,
-                                              mindist_list_scph);
+                                              mindist_list_in);
 
                 for (auto is = 0; is < ns; ++is) {
                     if (eval_gam[0][is] < 0.0) {
