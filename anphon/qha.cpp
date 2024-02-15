@@ -248,7 +248,6 @@ void Qha::exec_qha_optimization()
 
     deallocate(delta_dymat_qha);
     deallocate(delta_harmonic_dymat_renormalize);
-
 }
 
 void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
