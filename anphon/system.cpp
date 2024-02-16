@@ -398,7 +398,7 @@ void System::get_structure_and_mapping_table_xml(const std::string &filename,
         catch (std::exception &e) {
             std::string str_error = "Cannot open file FCSFILE ( "
                                     + filename + " )";
-            exit("load_system_info_from_XML",
+            exit("get_structure_and_mapping_table_xml",
                  str_error.c_str());
         }
 
@@ -414,10 +414,6 @@ void System::get_structure_and_mapping_table_xml(const std::string &filename,
                                    "Data.Symmetry.NumberOfTranslations"));
 
         natmin_tmp = nat_tmp / ntran_tmp;
-        if (relaxation->relax_str != 0 && relaxation->init_u0.size() != primcell.number_of_atoms * 3)
-            exit("load_system_info_from_XML",
-                 "The number of atoms in the primitive cell (NATMIN) in the FCSXML file"
-                 " \n is not consistent with the &displace field in the input file.");
 
         // Parse lattice vectors
         std::stringstream ss;
@@ -927,19 +923,8 @@ void System::generate_mapping_tables()
 void System::initialize_distorted_primitive_cell()
 {
     Eigen::Matrix3d lavec_p_strain, rlavec_p_strain, mat_strain;
-    double **u_tensor_tmp = nullptr;
-    int has_init_u_tensor = 0;
+    double u_tensor_tmp[3][3];
 
-    if (mympi->my_rank == 0) {
-        if (relaxation->init_u_tensor) {
-            has_init_u_tensor = 1;
-        }
-    }
-    MPI_Bcast(&has_init_u_tensor, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-    allocate(u_tensor_tmp, 3, 3);
-
-    if (has_init_u_tensor) {
         if (mympi->my_rank == 0) {
             for (auto i = 0; i < 3; ++i) {
                 for (auto j = 0; j < 3; ++j) {
@@ -947,15 +932,6 @@ void System::initialize_distorted_primitive_cell()
                 }
             }
         }
-    } else {
-        if (mympi->my_rank == 0) {
-            for (auto i = 0; i < 3; ++i) {
-                for (auto j = 0; j < 3; ++j) {
-                    u_tensor_tmp[i][j] = 0.0;
-                }
-            }
-        }
-    }
 
     MPI_Bcast(&u_tensor_tmp[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -975,20 +951,29 @@ void System::initialize_distorted_primitive_cell()
     primcell_distort.number_of_elems = primcell.number_of_elems;
     primcell_distort.x_fractional = primcell.x_fractional;
 
-    // TODO: broadcast relaxation->init_u0
-    if (!relaxation->init_u0.empty()) {
-        Eigen::MatrixXd xdisp(primcell_distort.number_of_atoms, 3);
-        for (auto i = 0; i < primcell_distort.number_of_atoms; ++i) {
-            // set displacement in Cartesian coordinates
-            for (auto j = 0; j < 3; ++j) {
-                xdisp(i, j) = relaxation->init_u0[i * 3 + j];
-            }
-            // Move the basis to the fractional coordinate
-            xdisp.col(i) = rlavec_p_strain * xdisp.col(i) * inv_tpi;
-        }
-        primcell_distort.x_fractional += xdisp;
-    }
+    Eigen::MatrixXd xdisp(primcell_distort.number_of_atoms, 3);
+    xdisp.setZero();
 
+    if (mympi->my_rank == 0) {
+        if (relaxation->relax_str != 0 && relaxation->init_u0.size() != primcell.number_of_atoms * 3)
+            exit("initialize_distorted_primitive_cell",
+                 "The number of atoms in the primitive cell"
+                 " \n is not consistent with the &displace field in the input file.");
+
+        if (!relaxation->init_u0.empty()) {
+            for (auto i = 0; i < primcell_distort.number_of_atoms; ++i) {
+                // set displacement in Cartesian coordinates
+                for (auto j = 0; j < 3; ++j) {
+                    xdisp(i, j) = relaxation->init_u0[i * 3 + j];
+                }
+            }
+        }
+    }
+    mympi->mpiBcastEigen(xdisp, 0, MPI_COMM_WORLD);
+
+    // Move the basis to the fractional coordinate
+    xdisp = inv_tpi * xdisp * primcell_distort.reciprocal_lattice_vector.transpose();
+    primcell_distort.x_fractional += xdisp;
     primcell_distort.x_cartesian = primcell_distort.x_fractional * lavec_p_strain.transpose();
     primcell_distort.kind = primcell.kind;
 }
@@ -1225,7 +1210,7 @@ int System::get_atomic_number_by_name(const std::string &kdname_in)
     return ret;
 }
 
-void System::set_mass_elem_from_database(const int nkd,
+void System::set_mass_elem_from_database(const unsigned int nkd,
                                          const std::vector<std::string> &symbol_in,
                                          double *mass_kd_out)
 {

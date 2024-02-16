@@ -132,7 +132,7 @@ private:
 
     void deallocate_variables();
 
-    void set_mass_elem_from_database(const int,
+    void set_mass_elem_from_database(const unsigned int,
                                      const std::vector<std::string> &,
                                      double *);
 

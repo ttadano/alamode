@@ -104,7 +104,7 @@ void MyMPI::MPI_Bcast_MappingTable(MappingTable &mapping,
 
     MPI_Bcast(&map_1d[0], natmin_tmp * ntran_tmp, MPI_UNSIGNED, root, comm);
 
-    if (mympi->my_rank != root) {
+    if (my_rank != root) {
         mapping.from_true_primitive.resize(natmin_tmp, std::vector<unsigned int>(ntran_tmp));
         mapping.to_true_primitive.resize(natmin_tmp * ntran_tmp);
         auto k = 0;
@@ -120,3 +120,46 @@ void MyMPI::MPI_Bcast_MappingTable(MappingTable &mapping,
     map_1d.clear();
 }
 
+void MyMPI::mpiBcastEigen(Eigen::MatrixXd &mat, int root, MPI_Comm comm) const
+{
+    int nrows, ncols;
+
+    if (my_rank == root) {
+        nrows = static_cast<int>(mat.rows());
+        ncols = static_cast<int>(mat.cols());
+    }
+    MPI_Bcast(&nrows, 1, MPI_INT, root, comm);
+    MPI_Bcast(&ncols, 1, MPI_INT, root, comm);
+
+    if (my_rank != root) {
+        mat.resize(nrows, ncols);
+    }
+    MPI_Bcast(mat.data(), nrows * ncols, MPI_DOUBLE, root, comm);
+}
+
+void MyMPI::mpiBcastEigen(Eigen::MatrixXcd &mat, int root, MPI_Comm comm) const
+{
+    int nrows, ncols;
+
+    if (my_rank == root) {
+        nrows = static_cast<int>(mat.rows());
+        ncols = static_cast<int>(mat.cols());
+    }
+
+    MPI_Bcast(&nrows, 1, MPI_INT, root, comm);
+    MPI_Bcast(&ncols, 1, MPI_INT, root, comm);
+
+    if (my_rank != root) {
+        mat.resize(nrows, ncols);
+    }
+
+#ifdef MPI_CXX_DOUBLE_COMPLEX
+    MPI_Bcast(mat.data(), nrows * ncols, MPI_CXX_DOUBLE_COMPLEX, root, comm);
+#else
+    MPI_Datatype MPI_COMPLEX_DOUBLE;
+    MPI_Type_contiguous(2, MPI_DOUBLE, &MPI_COMPLEX_DOUBLE);
+    MPI_Type_commit(&MPI_COMPLEX_DOUBLE);
+    MPI_Bcast(mat.data(), nrows * ncols, MPI_COMPLEX_DOUBLE, root, comm);
+    MPI_Type_free(&MPI_COMPLEX_DOUBLE);
+#endif
+}

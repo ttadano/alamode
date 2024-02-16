@@ -55,19 +55,10 @@ void Relaxation::set_default_variables()
     add_hess_diag = 100.0; // [cm^{-1}]
     stat_pressure = 0.0; // [GPa]
 
-    // structure optimization
-    init_u_tensor = nullptr;
-
 }
 
 void Relaxation::deallocate_variables()
 {
-    if (init_u_tensor) {
-        deallocate(init_u_tensor);
-    }
-    if (V0) {
-        deallocate(V0);
-    }
 }
 
 void Relaxation::setup_relaxation()
@@ -78,10 +69,8 @@ void Relaxation::setup_relaxation()
     const auto dT = system->dT;
     const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
 
-    allocate(V0, NT);
-    for (int iT = 0; iT < NT; iT++) {
-        V0[iT] = 0.0;
-    }
+    V0.resize(NT);
+    std::fill(V0.begin(), V0.end(), 0.0);
 }
 
 void Relaxation::load_V0_from_file()
@@ -121,7 +110,7 @@ void Relaxation::load_V0_from_file()
 
         ifs_v0.close();
     }
-    MPI_Bcast(V0, NT, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(V0.data(), NT, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 void Relaxation::store_V0_to_file()
@@ -3408,6 +3397,15 @@ void Relaxation::calculate_eta_tensor(double **eta_tensor,
             for (auto j = 0; j < 3; j++) {
                 eta_tensor[i1][i2] += u_tensor[i1][j] * u_tensor[i2][j];
             }
+        }
+    }
+}
+
+void Relaxation::setInitialDistortion(const double (*u_tensor_in)[3])
+{
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            init_u_tensor[i][j] = u_tensor_in[i][j];
         }
     }
 }

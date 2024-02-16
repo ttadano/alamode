@@ -852,14 +852,7 @@ void Input::parse_initial_strain()
                  "Unacceptable format for &strain field.");
         }
     }
-
-    allocate(relaxation->init_u_tensor, 3, 3);
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            relaxation->init_u_tensor[i][j] = u_tensor_tmp[i][j];
-        }
-    }
+    relaxation->setInitialDistortion(u_tensor_tmp);
 }
 
 void Input::parse_initial_displace()

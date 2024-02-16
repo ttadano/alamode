@@ -28,11 +28,11 @@ public:
     int relax_str;
 
     // initial strain and displacement
-    double **init_u_tensor = nullptr;
+    double init_u_tensor[3][3] {{0.0}};
     std::vector<double> init_u0;
 
     // zero-th order term of the potential energy surface
-    double *V0 = nullptr;
+    std::vector<double> V0;
 
     // variables related to structural optimization
     int relax_algo;
@@ -69,6 +69,8 @@ public:
                               int relax_str,
                               MinimumDistList ***mindist_list,
                               const PhaseFactorStorage *phase_storage_in);
+
+    void setInitialDistortion(const double (*u_tensor_in)[3]);
 
     void load_V0_from_file();
 
