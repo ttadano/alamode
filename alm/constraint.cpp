@@ -1357,7 +1357,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     const auto nat = supercell.number_of_atoms;
 
     // generate combinations of mirror images
-    long int i_mirror_images, i_tmp, j_tmp, i_tmp2;
     long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
 
     unsigned int isize;
@@ -1469,15 +1468,15 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                 std::vector<int> data_omp;
                 std::vector<int> atom_tmp;
                 std::vector<int> sort_table, sort_table_tmp;
-                // std::vector<int> const_now_omp;
                 std::vector<std::vector<double>> consts_now_omp;
 
                 ConstEntry const_tmp_omp;
                 std::vector<ConstEntry> constraint_list_omp;
+                long int i_mirror_images, i_tmp, j_tmp, i_tmp2;
 
                 consts_now_omp.resize(n_mirror_images, std::vector<double>(nparams));
 #ifdef _OPENMP
-#pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found, loc_nonzero, i_mirror_images), nowait
+#pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found, loc_nonzero), nowait
 #endif
                 for (idata = 0; idata < ndata; ++idata) {
 
@@ -1547,8 +1546,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
                                     if (iter_found != list_found.end()) {
                                         if (cluster_found == cluster->get_interaction_cluster(order, i).end()) {
-                                            std::cout << "Warning: cluster corresponding to the IFC is NOT found."
-                                                      << std::endl;
+                                            std::cout << "Warning: cluster corresponding to the IFC is NOT found.\n";
                                         } else {
                                             // std::cout << "cluster corresponding to the IFC is found." << std::endl;
 
@@ -1586,7 +1584,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                                         }
                                     }
                                     if (const_tmp_omp.empty()) {
-                                        std::cout << "This cannot happen" << std::endl;
+                                        std::cout << "This cannot happen\n";
                                     }
                                     constraint_list_omp.emplace_back(const_tmp_omp);
                                 }
