@@ -40,6 +40,23 @@ public:
     std::vector<std::vector<double>> magmom;
 };
 
+class AtomType {
+public:
+    int element;
+    double magmom;
+
+    bool operator<(const AtomType &a) const
+    {
+        if (this->element < a.element) {
+            return true;
+        }
+        if (this->element == a.element) {
+            return this->magmom < a.magmom;
+        }
+        return false;
+    }
+};
+
 class Maps {
 public:
     unsigned int atom_num;
@@ -106,6 +123,8 @@ public:
 
     const std::vector<double> &get_mass_super() const;
 
+    const std::vector<std::vector<unsigned int>> &get_atomtype_group(const bool distort = false) const;
+
     void get_minimum_distances(const unsigned int nsize[3],
                                MinimumDistList ***&mindist_list_out);
 
@@ -123,6 +142,9 @@ private:
     std::vector<std::vector<Maps>> map_s2p_new;
     std::vector<std::vector<std::vector<unsigned int>>> map_p2s_new;
 
+    // concatenate atomic kind and magmom (only for collinear case)
+    std::vector<std::vector<unsigned int>> atomtype_group_prim, atomtype_group_prim_distort;
+
     std::vector<double> mass_super, mass_prim;
     std::vector<double> invsqrt_mass_p;
 
@@ -135,6 +157,10 @@ private:
     void set_mass_elem_from_database(const unsigned int,
                                      const std::vector<std::string> &,
                                      double *);
+
+    void set_atomtype_group(const Cell &cell_in,
+                            const Spin &spin_in,
+                            std::vector<std::vector<unsigned int>> &atomtype_group_out);
 
     void print_structure_information_stdout() const;
 

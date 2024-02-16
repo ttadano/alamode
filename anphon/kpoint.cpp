@@ -677,7 +677,7 @@ void KpointMeshUniform::reduce_kpoints(const unsigned int nsym,
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                srot[i][j] = static_cast<double>(symmlist[isym].rot[i][j]);
+                srot[i][j] = static_cast<double>(symmlist[isym].rotation(i, j));
             }
         }
 
@@ -812,7 +812,7 @@ std::vector<int> KpointMeshUniform::get_small_group_of_k(const unsigned int ik,
         nsym = 1;
     }
     for (auto isym = 0; isym < nsym; ++isym) {
-        const auto ksym = knum_sym(ik, symmlist[isym].rot);
+        const auto ksym = knum_sym(ik, symmlist[isym].rotation);
         if (ksym == ik) {
             small_group.push_back(isym);
         }
@@ -821,7 +821,7 @@ std::vector<int> KpointMeshUniform::get_small_group_of_k(const unsigned int ik,
 }
 
 int KpointMeshUniform::knum_sym(const unsigned int ik,
-                                const int rot[3][3]) const
+                                const Eigen::Matrix3i &rot) const
 {
     // Returns kpoint index of S(symop_num)*xk[ik_in]
     // Works only for gamma-centered mesh calculations
@@ -833,7 +833,7 @@ int KpointMeshUniform::knum_sym(const unsigned int ik,
 
     for (i = 0; i < 3; ++i) {
         for (auto j = 0; j < 3; ++j) {
-            srot[i][j] = static_cast<double>(rot[i][j]);
+            srot[i][j] = static_cast<double>(rot(i, j));
         }
     }
 
@@ -1141,7 +1141,7 @@ void Kpoint::get_symmetrization_matrix_at_k(const double *xk_in,
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                srot[i][j] = static_cast<double>(symmetry->SymmList[isym].rot[i][j]);
+                srot[i][j] = static_cast<double>(symmetry->SymmList[isym].rotation(i, j));
             }
         }
 
@@ -1341,8 +1341,8 @@ void KpointMeshUniform::get_unique_triplet_k(const int ik,
         // Add symmety-connected triplets to kslist
         for (auto isym = 0; isym < num_group_k; ++isym) {
 
-            ks_in[0] = knum_sym(ik1, symmlist[small_group_of_k[ik][isym]].rot);
-            ks_in[1] = knum_sym(ik2, symmlist[small_group_of_k[ik][isym]].rot);
+            ks_in[0] = knum_sym(ik1, symmlist[small_group_of_k[ik][isym]].rotation);
+            ks_in[1] = knum_sym(ik2, symmlist[small_group_of_k[ik][isym]].rotation);
 
             if (ks_in[0] == -1 || ks_in[1] == -1) {
                 exit("get_unique_triplet_k",
@@ -1433,9 +1433,9 @@ void KpointMeshUniform::get_unique_quartet_k(const int ik,
 
             for (int isym = 0; isym < num_group_k; ++isym) {
 
-                ks_in[0] = knum_sym(ik1, symmlist[small_group_of_k[ik][isym]].rot);
-                ks_in[1] = knum_sym(ik2, symmlist[small_group_of_k[ik][isym]].rot);
-                ks_in[2] = knum_sym(ik3, symmlist[small_group_of_k[ik][isym]].rot);
+                ks_in[0] = knum_sym(ik1, symmlist[small_group_of_k[ik][isym]].rotation);
+                ks_in[1] = knum_sym(ik2, symmlist[small_group_of_k[ik][isym]].rotation);
+                ks_in[2] = knum_sym(ik3, symmlist[small_group_of_k[ik][isym]].rotation);
 
                 if (ks_in[0] == -1 || ks_in[1] == -1 || ks_in[2] == -1) {
                     exit("get_unique_quartet_k",

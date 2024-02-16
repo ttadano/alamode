@@ -13,6 +13,14 @@ string(REGEX MATCH "ALAMODE_VERSION = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"" alm_versio
 set(alm_version ${CMAKE_MATCH_1})
 MESSAGE("Setting up for ANPHON code (ALAMODE version: ${CMAKE_MATCH_1})")
 
+if (SPGLIB_ROOT)
+    include_directories("${SPGLIB_ROOT}/include")
+    set(spglib "-L${SPGLIB_ROOT}/lib -L${SPGLIB_ROOT}/lib64 -lsymspg")
+else()
+    message("SPGLIB_ROOT is not given by -DSPGLIB_ROOT option. Just add -lsymspg.")
+    set(spglib "-lsymspg")
+endif()
+
 if (FFTW3_ROOT)
     include_directories("${FFTW3_ROOT}/include")
     set(fftw3library "-L${FFTW3_ROOT}/lib -lfftw3")
@@ -148,7 +156,7 @@ message("MPI_C_LIBRARIES = ${MPI_C_LIBRARIES}")
 message("MPI_CXX_LIBRARIES = ${MPI_CXX_LIBRARIES}")
 # Executable
 add_executable(anphon ${SOURCES} ${HEADERS})
-target_link_libraries(anphon ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${MPI_CXX_LIBRARIES} ${openmplibrary})
+target_link_libraries(anphon ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${MPI_CXX_LIBRARIES} ${spglib} ${openmplibrary})
 if (WITH_HDF5_SUPPORT)
     target_link_libraries(anphon ${hdf5library})
 endif()

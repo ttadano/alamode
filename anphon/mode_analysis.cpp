@@ -1433,7 +1433,7 @@ void ModeAnalysis::print_momentum_resolved_final_state(const unsigned int NT,
         for (isym = 0; isym < symmetry->nsym; ++isym) {
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
-                    srot[j][k] = static_cast<double>(symmetry->SymmList[isym].rot[j][k]);
+                    srot[j][k] = static_cast<double>(symmetry->SymmList[isym].rotation(j, k));
                 }
             }
 

@@ -235,7 +235,8 @@ public:
 
     int get_knum(const double xk[3]) const;
 
-    int knum_sym(const unsigned int ik, const int rot[3][3]) const;
+    int knum_sym(const unsigned int ik,
+                 const Eigen::Matrix3i &rot) const;
 
     void get_unique_triplet_k(const int ik,
                               const std::vector<SymmetryOperation> &symmlist,

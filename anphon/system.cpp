@@ -104,6 +104,10 @@ void System::setup()
     generate_mapping_tables();
 
     initialize_distorted_primitive_cell();
+
+    // Set atomic types (kind + magmom)
+    set_atomtype_group(primcell, spin_prim, atomtype_group_prim);
+    set_atomtype_group(primcell_distort, spin_prim, atomtype_group_prim_distort);
 }
 
 
@@ -925,13 +929,13 @@ void System::initialize_distorted_primitive_cell()
     Eigen::Matrix3d lavec_p_strain, rlavec_p_strain, mat_strain;
     double u_tensor_tmp[3][3];
 
-        if (mympi->my_rank == 0) {
-            for (auto i = 0; i < 3; ++i) {
-                for (auto j = 0; j < 3; ++j) {
-                    u_tensor_tmp[i][j] = relaxation->init_u_tensor[i][j];
-                }
+    if (mympi->my_rank == 0) {
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                u_tensor_tmp[i][j] = relaxation->init_u_tensor[i][j];
             }
         }
+    }
 
     MPI_Bcast(&u_tensor_tmp[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -1229,6 +1233,55 @@ void System::set_mass_elem_from_database(const unsigned int nkd,
     }
 }
 
+void System::set_atomtype_group(const Cell &cell_in,
+                                const Spin &spin_in,
+                                std::vector<std::vector<unsigned int>> &atomtype_group_out)
+{
+    // In the case of collinear calculation, spin moments are considered as scalar
+    // variables. Therefore, the same elements with different magnetic moments are
+    // considered as different types. In noncollinear calculations,
+    // magnetic moments are not considered in this stage. They will be treated
+    // separately in symmetry.cpp where spin moments will be rotated and flipped
+    // using time-reversal symmetry.
+
+    unsigned int i;
+    AtomType type_tmp{};
+    std::set<AtomType> set_type;
+    set_type.clear();
+
+    for (i = 0; i < cell_in.number_of_atoms; ++i) {
+        type_tmp.element = cell_in.kind[i];
+
+        if (spin_in.lspin == 1 && spin_in.noncollinear == 0) {
+            type_tmp.magmom = spin_in.magmom[i][2];
+        } else {
+            type_tmp.magmom = 0.0;
+        }
+        set_type.insert(type_tmp);
+    }
+
+    const auto natomtypes = set_type.size();
+    atomtype_group_out.resize(natomtypes);
+
+    for (i = 0; i < cell_in.number_of_atoms; ++i) {
+        int count = 0;
+        for (auto it: set_type) {
+            if (spin_in.noncollinear || spin_in.lspin == 0) {
+                if (cell_in.kind[i] == it.element) {
+                    atomtype_group_out[count].push_back(i);
+                }
+            } else {
+                if ((cell_in.kind[i] == it.element)
+                    && (std::abs(spin_in.magmom[i][2] - it.magmom) < eps6)) {
+                    atomtype_group_out[count].push_back(i);
+                }
+            }
+            ++count;
+        }
+    }
+    set_type.clear();
+}
+
 
 double System::volume(const Eigen::Matrix3d &mat_in,
                       const LatticeType latttype_in) const
@@ -1275,6 +1328,13 @@ const MappingTable &System::get_mapping_prim_alm(const int index) const
 {
     return map_prim_alm[index];
 }
+
+const std::vector<std::vector<unsigned int>> &System::get_atomtype_group(const bool distort) const
+{
+    if (distort) return atomtype_group_prim_distort;
+    return atomtype_group_prim;
+}
+
 
 const std::vector<double> &System::get_mass_prim() const
 {
@@ -1382,11 +1442,11 @@ void System::get_minimum_distances(const unsigned int nsize[3],
     for (i = 0; i < ncell_s; ++i) {
         for (j = 0; j < ncell; ++j) {
             for (iat = 0; iat < nat; ++iat) {
-                x_all[i][j][iat][0] = xf_p(iat,0) + static_cast<double>(shift_cell[j][0])
+                x_all[i][j][iat][0] = xf_p(iat, 0) + static_cast<double>(shift_cell[j][0])
                                       + static_cast<double>(nkx * shift_cell_super[i][0]);
-                x_all[i][j][iat][1] = xf_p(iat,1) + static_cast<double>(shift_cell[j][1])
+                x_all[i][j][iat][1] = xf_p(iat, 1) + static_cast<double>(shift_cell[j][1])
                                       + static_cast<double>(nky * shift_cell_super[i][1]);
-                x_all[i][j][iat][2] = xf_p(iat,2) + static_cast<double>(shift_cell[j][2])
+                x_all[i][j][iat][2] = xf_p(iat, 2) + static_cast<double>(shift_cell[j][2])
                                       + static_cast<double>(nkz * shift_cell_super[i][2]);
 
                 rotvec(x_all[i][j][iat], x_all[i][j][iat], primcell.lattice_vector);
