@@ -1373,7 +1373,7 @@ void System::get_minimum_distances(const unsigned int nsize[3],
 
     int i, j;
     int ix, iy, iz;
-    const auto nat = primcell.number_of_atoms;
+    const auto natmin_tmp = primcell.number_of_atoms;
     unsigned int iat;
 
     int **shift_cell, **shift_cell_super;
@@ -1388,10 +1388,10 @@ void System::get_minimum_distances(const unsigned int nsize[3],
 
     allocate(shift_cell, ncell, 3);
     allocate(shift_cell_super, ncell_s, 3);
-    allocate(x_all, ncell_s, ncell, nat, 3);
+    allocate(x_all, ncell_s, ncell, natmin_tmp, 3);
 
     if (mindist_list_out) deallocate(mindist_list_out);
-    allocate(mindist_list_out, nat, nat, ncell);
+    allocate(mindist_list_out, natmin_tmp, natmin_tmp, ncell);
 
     unsigned int icell = 0;
     for (ix = 0; ix < nkx; ++ix) {
@@ -1423,19 +1423,11 @@ void System::get_minimum_distances(const unsigned int nsize[3],
         }
     }
 
-    Eigen::MatrixXd xf_p(primcell.number_of_atoms, 3);
-    double xtmp[3];
-
-    for (i = 0; i < nat; ++i) {
-
-        for (j = 0; j < 3; ++j) xtmp[j] = supercell[0].x_cartesian(map_p2s_new[0][i][0], j);
-        rotvec(xtmp, xtmp, primcell.reciprocal_lattice_vector);
-        for (j = 0; j < 3; ++j) xf_p(i, j) /= tpi;
-    }
+    const auto xf_p = primcell.x_fractional;
 
     for (i = 0; i < ncell_s; ++i) {
         for (j = 0; j < ncell; ++j) {
-            for (iat = 0; iat < nat; ++iat) {
+            for (iat = 0; iat < natmin_tmp; ++iat) {
                 x_all[i][j][iat][0] = xf_p(iat, 0) + static_cast<double>(shift_cell[j][0])
                                       + static_cast<double>(nkx * shift_cell_super[i][0]);
                 x_all[i][j][iat][1] = xf_p(iat, 1) + static_cast<double>(shift_cell[j][1])
@@ -1453,9 +1445,8 @@ void System::get_minimum_distances(const unsigned int nsize[3],
     ShiftCell shift_tmp{};
     std::vector<int> vec_tmp;
 
-
-    for (iat = 0; iat < nat; ++iat) {
-        for (unsigned int jat = 0; jat < nat; ++jat) {
+    for (iat = 0; iat < natmin_tmp; ++iat) {
+        for (unsigned int jat = 0; jat < natmin_tmp; ++jat) {
             for (icell = 0; icell < ncell; ++icell) {
 
                 dist_tmp.clear();
