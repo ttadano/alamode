@@ -100,9 +100,9 @@ void Scph::deallocate_variables()
         deallocate(phi4_reciprocal);
     }
 
-    if (kmesh_coarse) delete kmesh_coarse;
-    if (kmesh_dense) delete kmesh_dense;
-    if (phase_factor_scph) delete phase_factor_scph;
+    delete kmesh_coarse;
+    delete kmesh_dense;
+    delete phase_factor_scph;
 }
 
 void Scph::setup_scph()
@@ -408,14 +408,14 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                            dos->kmesh_dos->nk_irred,
                                                            ns,
                                                            dos->kmesh_dos->kpoint_irred_all,
-                                                           &dos->kmesh_dos->weight_k[0],
+                                                           dos->kmesh_dos->weight_k.data(),
                                                            eval_update[iT]);
 
                 FE_QHA[iT] = thermodynamics->free_energy_QHA(temperature,
                                                              dos->kmesh_dos->nk_irred,
                                                              ns,
                                                              dos->kmesh_dos->kpoint_irred_all,
-                                                             &dos->kmesh_dos->weight_k[0],
+                                                             dos->kmesh_dos->weight_k.data(),
                                                              eval_update[iT]);
 
                 // when is_qha is true, this value is zero.
@@ -474,7 +474,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                                                             dos->kmesh_dos->nk_irred,
                                                                                             ns,
                                                                                             dos->kmesh_dos->kpoint_irred_all,
-                                                                                            &dos->kmesh_dos->weight_k[0],
+                                                                                            dos->kmesh_dos->weight_k.data(),
                                                                                             eval_update[iT],
                                                                                             domega_dt);
                     }
@@ -570,7 +570,7 @@ void Scph::postprocess(std::complex<double> ****delta_dymat,
                                                                dos->kmesh_dos->nk_irred,
                                                                ns,
                                                                dos->kmesh_dos->kpoint_irred_all,
-                                                               &dos->kmesh_dos->weight_k[0],
+                                                               dos->kmesh_dos->weight_k.data(),
                                                                eval_update[iT]);
 
                     if (writes->getPrintMSD()) {

@@ -18,7 +18,6 @@
 
 namespace PHON_NS {
 
-
 class Cell {
 public:
     Eigen::Matrix3d lattice_vector;
@@ -72,13 +71,13 @@ public:
 struct ShiftCell {
 public:
     int sx, sy, sz;
-};
+} __attribute__((aligned(16)));
 
 struct MinimumDistList {
 public:
     double dist;
     std::vector<ShiftCell> shift;
-};
+} __attribute__((aligned(32)));
 
 class System : protected Pointers {
 public:
