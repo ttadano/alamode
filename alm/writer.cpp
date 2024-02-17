@@ -254,7 +254,7 @@ void Writer::writeall(const std::unique_ptr<System> &system,
 //    alm->timer->start_clock("writer");
 
     if (verbosity > 0) {
-        std::cout << " The following files are created:" << std::endl << std::endl;
+        std::cout << " The following files are created:" << '\n' << '\n';
     }
 
     const auto fname_save = files->get_prefix() + ".fcs";
@@ -300,19 +300,18 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
     ofs_fcs.open(fname_save.c_str(), std::ios::out);
     if (!ofs_fcs) exit("write_force_constants", "cannot open fcs file");
 
-    ofs_fcs << " *********************** Force Constants (FCs) ***********************" << std::endl;
-    ofs_fcs << " *        Force constants are printed in Rydberg atomic units.       *" << std::endl;
-    ofs_fcs << " *        FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc.      *" << std::endl;
-    ofs_fcs << " *        FC?: Ry/a0^?     a0 = Bohr radius                          *" << std::endl;
-    ofs_fcs << " *                                                                   *" << std::endl;
-    ofs_fcs << " *        The value shown in the last column is the distance         *" << std::endl;
-    ofs_fcs << " *        between the most distant atomic pairs.                     *" << std::endl;
-    ofs_fcs << " *********************************************************************" << std::endl;
-    ofs_fcs << std::endl;
-    ofs_fcs << " ----------------------------------------------------------------------" << std::endl;
-    ofs_fcs << "      Index              FCs         P        Pairs     Distance [Bohr]" << std::endl;
-    ofs_fcs << " (Global, Local)              (Multiplicity)                           " << std::endl;
-    ofs_fcs << " ----------------------------------------------------------------------" << std::endl;
+    ofs_fcs << " *********************** Force Constants (FCs) ***********************\n";
+    ofs_fcs << " *        Force constants are printed in Rydberg atomic units.       *\n";
+    ofs_fcs << " *        FC2: Ry/a0^2     FC3: Ry/a0^3     FC4: Ry/a0^4   etc.      *\n";
+    ofs_fcs << " *        FC?: Ry/a0^?     a0 = Bohr radius                          *\n";
+    ofs_fcs << " *                                                                   *\n";
+    ofs_fcs << " *        The value shown in the last column is the distance         *\n";
+    ofs_fcs << " *        between the most distant atomic pairs.                     *\n";
+    ofs_fcs << " *********************************************************************\n\n";
+    ofs_fcs << " ----------------------------------------------------------------------\n";
+    ofs_fcs << "      Index              FCs         P        Pairs     Distance [Bohr]\n";
+    ofs_fcs << " (Global, Local)              (Multiplicity)                           \n";
+    ofs_fcs << " ----------------------------------------------------------------------\n";
 
     allocate(str_fcs, maxorder);
 
@@ -328,7 +327,7 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
 
         if (!fcs->get_nequiv()[order].empty()) {
 
-            ofs_fcs << std::endl << std::setw(6) << str_fcs[order] << std::endl;
+            ofs_fcs << '\n' << std::setw(6) << str_fcs[order] << '\n';
 
             for (unsigned int ui = 0; ui < fcs->get_nequiv()[order].size(); ++ui) {
 
@@ -352,7 +351,7 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
                     for (l = 0; l < order + 1; ++l) {
                         std::cout << std::setw(5) << atom_tmp[l];
                     }
-                    std::cout << std::endl;
+                    std::cout << '\n';
                     exit("write_force_constants",
                          "This cannot happen.");
                 }
@@ -366,7 +365,7 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
                             << easyvizint(fcs->get_fc_table()[order][m].elems[l]);
                 }
                 ofs_fcs << std::setw(12) << std::setprecision(3)
-                        << std::fixed << distmax << std::endl;
+                        << std::fixed << distmax << '\n';
 
                 m += fcs->get_nequiv()[order][ui];
                 ++k;
@@ -374,7 +373,7 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
         }
     }
 
-    ofs_fcs << std::endl;
+    ofs_fcs << '\n';
 
     ofs_fcs.unsetf(std::ios::showpos);
 
@@ -382,8 +381,8 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
         str_fcs[order] = "**FC" + std::to_string(order + 2);
     }
 
-    ofs_fcs << std::endl << std::endl;
-    ofs_fcs << " ------------------------ All FCs below ------------------------" << std::endl;
+    ofs_fcs << "\n\n";
+    ofs_fcs << " ------------------------ All FCs below ------------------------\n";
 
     auto ip = 0;
 
@@ -392,7 +391,7 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
         auto id = 0;
 
         if (!fcs->get_nequiv()[order].empty()) {
-            ofs_fcs << std::endl << std::setw(6) << str_fcs[order] << std::endl;
+            ofs_fcs << '\n' << std::setw(6) << str_fcs[order] << '\n';
 
             for (unsigned int iuniq = 0; iuniq < fcs->get_nequiv()[order].size(); ++iuniq) {
 
@@ -401,7 +400,7 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
 
                 ofs_fcs << str_tmp << std::setw(5) << fcs->get_nequiv()[order][iuniq]
                         << std::setw(16) << std::scientific
-                        << std::setprecision(7) << fcs_vals[ip] << std::endl;
+                        << std::setprecision(7) << fcs_vals[ip] << '\n';
 
                 for (j = 0; j < fcs->get_nequiv()[order][iuniq]; ++j) {
                     ofs_fcs << std::setw(5) << j + 1 << std::setw(12)
@@ -410,10 +409,10 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
                         ofs_fcs << std::setw(6)
                                 << easyvizint(fcs->get_fc_table()[order][id].elems[k]);
                     }
-                    ofs_fcs << std::endl;
+                    ofs_fcs << '\n';
                     ++id;
                 }
-                ofs_fcs << std::endl;
+                ofs_fcs << '\n';
                 ++ip;
             }
         }
@@ -423,7 +422,7 @@ void Writer::write_force_constants(const std::unique_ptr<Cluster> &cluster,
 
     if (verbosity > 0) {
         std::cout << " Force constants in a human-readable format : "
-                  << fname_save << std::endl;
+                  << fname_save << '\n';
     }
 }
 
@@ -439,7 +438,7 @@ void Writer::write_displacement_pattern(const std::unique_ptr<System> &system,
     std::string file_disp_pattern;
 
     if (verbosity > 0) {
-        std::cout << " Suggested displacement patterns are printed in the following files: " << std::endl;
+        std::cout << " Suggested displacement patterns are printed in the following files: \n";
         if (format_pattern == "old")
             std::cout << " FORMAT_PATTERN = old is set in the input. The old format will be used.\n";
     }
@@ -514,7 +513,7 @@ void Writer::write_displacement_pattern(const std::unique_ptr<System> &system,
             }
 
             ofs_pattern << "displacements:\n";
-            ofs_pattern << "  basis: " << displace->get_disp_basis()[0] << std::endl;
+            ofs_pattern << "  basis: " << displace->get_disp_basis()[0] << '\n';
             ofs_pattern << "  patterns:\n";
             for (auto entry: displace->get_pattern_all(order)) {
                 ++counter;
@@ -549,7 +548,7 @@ void Writer::write_displacement_pattern(const std::unique_ptr<System> &system,
 
             if (verbosity > 0) {
                 std::cout << "  " << cluster->get_ordername(order)
-                          << " : " << file_disp_pattern << std::endl;
+                          << " : " << file_disp_pattern << '\n';
             }
 
         }
@@ -572,19 +571,19 @@ void Writer::write_displacement_pattern(const std::unique_ptr<System> &system,
 
             auto counter = 0;
 
-            ofs_pattern << "Basis : " << displace->get_disp_basis()[0] << std::endl;
+            ofs_pattern << "Basis : " << displace->get_disp_basis()[0] << '\n';
 
             for (auto entry: displace->get_pattern_all(order)) {
                 ++counter;
 
                 ofs_pattern << std::setw(5) << counter << ":"
-                            << std::setw(5) << entry.atoms.size() << std::endl;
+                            << std::setw(5) << entry.atoms.size() << '\n';
                 for (size_t i = 0; i < entry.atoms.size(); ++i) {
                     ofs_pattern << std::setw(7) << entry.atoms[i] + 1;
                     for (auto j = 0; j < 3; ++j) {
                         ofs_pattern << std::setw(15) << entry.directions[3 * i + j];
                     }
-                    ofs_pattern << std::endl;
+                    ofs_pattern << '\n';
                 }
             }
 
@@ -592,13 +591,13 @@ void Writer::write_displacement_pattern(const std::unique_ptr<System> &system,
 
             if (verbosity > 0) {
                 std::cout << "  " << cluster->get_ordername(order)
-                          << " : " << file_disp_pattern << std::endl;
+                          << " : " << file_disp_pattern << '\n';
             }
 
         }
     }
 
-    if (verbosity > 0) std::cout << std::endl;
+    if (verbosity > 0) std::cout << '\n';
 }
 
 
@@ -924,7 +923,7 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
     deallocate(pair_tmp);
 
     if (verbosity > 0) {
-        std::cout << " Input data for the phonon code ANPHON      : " << fname_fcs << std::endl;
+        std::cout << " Input data for the phonon code ANPHON      : " << fname_fcs << '\n';
     }
 }
 
@@ -995,7 +994,7 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
     dump(file, "/created date", time_str);
 
     if (verbosity > 0) {
-        std::cout << " Input data for the phonon code ANPHON      : " << fname_fcs << std::endl;
+        std::cout << " Input data for the phonon code ANPHON      : " << fname_fcs << '\n';
     }
 }
 
@@ -1179,7 +1178,7 @@ void Writer::write_hessian(const std::unique_ptr<System> &system,
     ofs_hes.open(fname_out.c_str(), std::ios::out);
     if (!ofs_hes) exit("write_hessian", "cannot create hessian file");
 
-    ofs_hes << "# atom1, xyz1, atom2, xyz2, FC2 (Ryd/Bohr^2)" << std::endl;
+    ofs_hes << "# atom1, xyz1, atom2, xyz2, FC2 (Ryd/Bohr^2)" << '\n';
     for (i = 0; i < nat3; ++i) {
         for (j = 0; j < nat3; ++j) {
             ofs_hes << std::setw(5) << i / 3 + 1;
@@ -1188,14 +1187,14 @@ void Writer::write_hessian(const std::unique_ptr<System> &system,
             ofs_hes << std::setw(5) << j % 3 + 1;
             ofs_hes << std::setw(25) << std::setprecision(15)
                     << std::scientific << hessian[i][j];
-            ofs_hes << std::endl;
+            ofs_hes << '\n';
         }
     }
     ofs_hes.close();
     deallocate(hessian);
 
     if (verbosity) {
-        std::cout << " Complete Hessian matrix                    : " << fname_out << std::endl;
+        std::cout << " Complete Hessian matrix                    : " << fname_out << '\n';
     }
 }
 
@@ -1246,7 +1245,7 @@ void Writer::save_fc2_QEfc_format(const std::unique_ptr<System> &system,
     ofs_hes.open(fname_out.c_str(), std::ios::out);
     if (!ofs_hes) exit("save_fc2_QEfc_format", "cannot create fc file");
 
-    ofs_hes << "  1  1  1" << std::endl;
+    ofs_hes << "  1  1  1" << '\n';
     for (auto icrd = 0; icrd < 3; ++icrd) {
         for (auto jcrd = 0; jcrd < 3; ++jcrd) {
             for (i = 0; i < system->get_supercell().number_of_atoms; ++i) {
@@ -1255,10 +1254,10 @@ void Writer::save_fc2_QEfc_format(const std::unique_ptr<System> &system,
                     ofs_hes << std::setw(6) << jcrd + 1;
                     ofs_hes << std::setw(6) << i + 1;
                     ofs_hes << std::setw(6) << j + 1;
-                    ofs_hes << std::endl;
+                    ofs_hes << '\n';
                     ofs_hes << "  1  1  1 " << std::setw(20) << std::setprecision(13)
                             << std::scientific << hessian[3 * j + jcrd][3 * i + icrd];
-                    ofs_hes << std::endl;
+                    ofs_hes << '\n';
                 }
             }
         }
@@ -1267,7 +1266,7 @@ void Writer::save_fc2_QEfc_format(const std::unique_ptr<System> &system,
     deallocate(hessian);
 
     if (verbosity) {
-        std::cout << " Harmonic force constants in QE fc format     : " << fname_out << std::endl;
+        std::cout << " Harmonic force constants in QE fc format     : " << fname_out << '\n';
     }
 }
 
@@ -1357,7 +1356,7 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
 
     ofs_fc3.open(fname_out.c_str(), std::ios::out);
     if (!ofs_fc3) exit("save_fc3_thirdorderpy_format", "cannot create the file");
-    ofs_fc3 << nelems << std::endl;
+    ofs_fc3 << nelems << '\n';
 
     bool swapped;
     double vec1[3], vec2[3];
@@ -1413,24 +1412,24 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
                             }
 
                             ++ielem;
-                            ofs_fc3 << std::endl;
-                            ofs_fc3 << ielem << std::endl;
+                            ofs_fc3 << '\n';
+                            ofs_fc3 << ielem << '\n';
                             ofs_fc3 << std::scientific;
                             ofs_fc3 << std::setprecision(10);
                             if (swapped) {
                                 ofs_fc3 << std::setw(20) << vec2[0] << std::setw(20) << vec2[1] << std::setw(20) << vec2
-                                [2] << std::endl;
+                                [2] << '\n';
                                 ofs_fc3 << std::setw(20) << vec1[0] << std::setw(20) << vec1[1] << std::setw(20) << vec1
-                                [2] << std::endl;
+                                [2] << '\n';
                             } else {
                                 ofs_fc3 << std::setw(20) << vec1[0] << std::setw(20) << vec1[1] << std::setw(20) << vec1
-                                [2] << std::endl;
+                                [2] << '\n';
                                 ofs_fc3 << std::setw(20) << vec2[0] << std::setw(20) << vec2[1] << std::setw(20) << vec2
-                                [2] << std::endl;
+                                [2] << '\n';
                             }
                             ofs_fc3 << std::setw(5) << i + 1;
                             ofs_fc3 << std::setw(5) << j + 1;
-                            ofs_fc3 << std::setw(5) << k + 1 << std::endl;
+                            ofs_fc3 << std::setw(5) << k + 1 << '\n';
 
                             for (auto ii = 0; ii < 3; ++ii) {
                                 for (auto jj = 0; jj < 3; ++jj) {
@@ -1440,7 +1439,7 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
                                         ofs_fc3 << std::setw(3) << kk + 1;
                                         ofs_fc3 << std::setw(20)
                                                 << fc3[3 * i + ii][3 * jat + jj][3 * kat + kk]
-                                                   * factor / static_cast<double>(multiplicity) << std::endl;
+                                                   * factor / static_cast<double>(multiplicity) << '\n';
                                     }
                                 }
                             }
@@ -1457,7 +1456,7 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
 
 
     if (verbosity) {
-        std::cout << " Third-order FCs in ShengBTE format         : " << fname_out << std::endl;
+        std::cout << " Third-order FCs in ShengBTE format         : " << fname_out << '\n';
     }
 }
 

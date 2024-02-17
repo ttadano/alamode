@@ -181,8 +181,7 @@ void Symmetry::init(const std::unique_ptr<System> &system,
     if (verbosity > 0) {
         print_symminfo_stdout();
         timer->print_elapsed();
-        std::cout << " -------------------------------------------------------------------" << std::endl;
-        std::cout << std::endl;
+        std::cout << " -------------------------------------------------------------------\n\n";
     }
 
 
@@ -235,7 +234,7 @@ void Symmetry::setup_symmetry_operation(const Cell &pcell,
 
         if (verbosity > 0) {
             std::cout << "  Space group: " << spgsymbol << " ("
-                      << std::setw(3) << spgnum << ")" << std::endl;
+                      << std::setw(3) << spgnum << ")\n";
         }
 
         const auto spgnum2 = findsym_spglib(scell,
@@ -736,15 +735,15 @@ void Symmetry::symop_in_cart(Eigen::Matrix3d &rot_cart,
 void Symmetry::print_symminfo_stdout() const
 {
     std::cout << "  Number of symmetry operations of the primitive cell = "
-              << symmetry_data_prim.size() << std::endl;
-    std::cout << std::endl;
+              << symmetry_data_prim.size() << '\n';
+    std::cout << '\n';
     if (ntran_prim > 1) {
-        std::cout << "  The user defined primitive cell is NOT a true primitive cell." << std::endl;
+        std::cout << "  The user defined primitive cell is NOT a true primitive cell.\n";
         std::cout << "  It is composed of " << std::setw(5)
-                  << ntran_prim << " true primitive cells." << std::endl;
+                  << ntran_prim << " true primitive cells.\n";
     }
 
-    std::cout << std::endl;
+    std::cout << '\n';
     std::cout << "  ---------------------------------------------------------\n";
     std::cout << "         List of primitive cell translation vectors        \n";
     std::cout << "  ---------------------------------------------------------\n\n";
@@ -1177,12 +1176,11 @@ void Symmetry::print_symmetry_infomation(const int verbosity) const
     std::string file_sym = "SYMM_INFO";
     std::ofstream ofs_sym;
     if (verbosity > 0) {
-        std::cout << "  PRINTSYM = 1: Symmetry information will be stored in SYMM_INFO file."
-                  << std::endl << std::endl;
+        std::cout << "  PRINTSYM = 1: Symmetry information will be stored in SYMM_INFO file.\n\n";
     }
 
     ofs_sym.open(file_sym.c_str(), std::ios::out);
-    ofs_sym << nsym_prim << std::endl;
+    ofs_sym << nsym_prim << '\n';
 
     for (auto &p: symmetry_data_prim) {
         for (auto i = 0; i < 3; ++i) {
@@ -1194,7 +1192,7 @@ void Symmetry::print_symmetry_infomation(const int verbosity) const
         for (auto i = 0; i < 3; ++i) {
             ofs_sym << std::setprecision(15) << std::setw(21) << p.tran[i];
         }
-        ofs_sym << std::endl;
+        ofs_sym << '\n';
     }
     ofs_sym.close();
 }

@@ -89,8 +89,7 @@ double Timer::elapsed_cputime() const
 
 void Timer::print_elapsed() const
 {
-    std::cout << "  Time Elapsed: " << elapsed_walltime() << " sec."
-              << std::endl << std::endl;
+    std::cout << "  Time Elapsed: " << elapsed_walltime() << " sec.\n\n" << std::flush;
 }
 
 
@@ -118,7 +117,7 @@ std::string Timer::DateAndTime()
 void Timer::start_clock(const std::string str_tag)
 {
     if (lock) {
-        std::cout << "Error: cannot start clock because it's occupied." << std::endl;
+        std::cout << "Error: cannot start clock because it's occupied." << '\n';
         exit(1);
     }
     // Initialize the counter if the key is new
@@ -138,14 +137,14 @@ void Timer::start_clock(const std::string str_tag)
 void Timer::stop_clock(const std::string str_tag)
 {
     if (!lock) {
-        std::cout << "Error: cannot stop clock because it's not initialized." << std::endl;
+        std::cout << "Error: cannot stop clock because it's not initialized." << '\n';
         exit(1);
     }
 
     auto it = walltime.find(str_tag);
 
     if (it == walltime.end()) {
-        std::cout << "Error: invalid tag for clock" << std::endl;
+        std::cout << "Error: invalid tag for clock" << '\n';
         exit(1);
     }
 
@@ -155,7 +154,7 @@ void Timer::stop_clock(const std::string str_tag)
 
     it = cputime.find(str_tag);
     if (it == cputime.end()) {
-        std::cout << "Error: invalid tag for clock" << std::endl;
+        std::cout << "Error: invalid tag for clock" << '\n';
         exit(1);
     }
 
@@ -171,7 +170,7 @@ double Timer::get_walltime(const std::string str_tag)
     const auto it = walltime.find(str_tag);
 
     if (it == walltime.end()) {
-        std::cout << "Error: invalid tag for clock" << std::endl;
+        std::cout << "Error: invalid tag for clock" << '\n';
         exit(1);
     }
     return (*it).second;
@@ -183,7 +182,7 @@ double Timer::get_cputime(const std::string str_tag)
     const auto it = cputime.find(str_tag);
 
     if (it == cputime.end()) {
-        std::cout << "Error: invalid tag for clock" << std::endl;
+        std::cout << "Error: invalid tag for clock" << '\n';
         exit(1);
     }
     return (*it).second;

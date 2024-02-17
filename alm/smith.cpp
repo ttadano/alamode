@@ -164,10 +164,10 @@ void smith_decomposition(const Eigen::MatrixXi &A,
     for (auto i = 0; i < nmin; ++i) {
 
 #ifdef _DEBUG
-        std::cout << "step " << i + 1 << std::endl;
-        std::cout << "Dmat:\n" << D << std::endl << std::flush;
-        std::cout << "L\n" << L << std::endl;
-        std::cout << "R\n" << R << std::endl;
+        std::cout << "step " << i + 1 << '\n';
+        std::cout << "Dmat:\n" << D << '\n' << std::flush;
+        std::cout << "L\n" << L << '\n';
+        std::cout << "R\n" << R << '\n';
 #endif
         while (!is_lone(D, i)) {
             // Find the location (irow, icol) where the abs(D(irow, icol)) has
@@ -175,8 +175,8 @@ void smith_decomposition(const Eigen::MatrixXi &A,
             auto minval = locate_minval_lower_right(D, i, irow, icol);
 
 #ifdef _DEBUG
-            std::cout << "irow = " << std::setw(4) << irow + 1 << " icol = " << std::setw(4) << icol + 1 << std::endl;
-            std::cout << "minval = " << std::setw(5) << minval << std::endl;
+            std::cout << "irow = " << std::setw(4) << irow + 1 << " icol = " << std::setw(4) << icol + 1 << '\n';
+            std::cout << "minval = " << std::setw(5) << minval << '\n';
 #endif
             // Move the smallest nonzero element to (i,i)
             swap_rows(D, i, irow);
@@ -185,8 +185,8 @@ void smith_decomposition(const Eigen::MatrixXi &A,
             swap_cols(R, i, icol);
 
 #ifdef _DEBUG
-            std::cout << "Dmat After swap\n" << D << std::endl;
-            std::cout << "L * A * R\n" << L * A * R << std::endl;
+            std::cout << "Dmat After swap\n" << D << '\n';
+            std::cout << "L * A * R\n" << L * A * R << '\n';
 #endif
             // Subtract D(i,:) from D(j,:) (j>i)
             for (auto j = i + 1; j < m; ++j) {
@@ -207,9 +207,9 @@ void smith_decomposition(const Eigen::MatrixXi &A,
             }
 
 #ifdef _DEBUG
-            std::cout << "Dmat after reduction\n" << D << std::endl;
-            std::cout << "L * A * R\n" << L * A * R << std::endl;
-            std::cout << "is_lone = " << is_lone(D, i) << std::endl;
+            std::cout << "Dmat after reduction\n" << D << '\n';
+            std::cout << "L * A * R\n" << L * A * R << '\n';
+            std::cout << "is_lone = " << is_lone(D, i) << '\n';
 #endif
 
             if (is_lone(D, i)) {
@@ -225,8 +225,8 @@ void smith_decomposition(const Eigen::MatrixXi &A,
                 }
             }
 #ifdef _DEBUG
-            std::cout << "Dmat after sign-change\n" << D << std::endl;
-            std::cout << "L * A * R\n" << L * A * R << std::endl;
+            std::cout << "Dmat after sign-change\n" << D << '\n';
+            std::cout << "L * A * R\n" << L * A * R << '\n';
 #endif
         } // close while loop
 
@@ -238,29 +238,29 @@ void smith_decomposition(const Eigen::MatrixXi &A,
         }
 
 #ifdef _DEBUG
-        std::cout << "After step " << i + 1 << std::endl;
-        std::cout << "Dmat:\n" << D << std::endl << std::flush;
-        std::cout << "L\n" << L << std::endl;
-        std::cout << "R\n" << R << std::endl;
-        std::cout << "L * A * R\n" << L * A * R << std::endl;
+        std::cout << "After step " << i + 1 << '\n';
+        std::cout << "Dmat:\n" << D << '\n' << std::flush;
+        std::cout << "L\n" << L << '\n';
+        std::cout << "R\n" << R << '\n';
+        std::cout << "L * A * R\n" << L * A * R << '\n';
 #endif
     }
 
 #ifdef _DEBUG
     std::cout << "D\n";
-    std::cout << D << std::endl << std::flush;
+    std::cout << D << '\n' << std::flush;
 
     std::cout << "A\n";
-    std::cout << A << std::endl;
+    std::cout << A << '\n';
 
     std::cout << "L\n";
-    std::cout << L << std::endl;
+    std::cout << L << '\n';
 
     std::cout << "R\n";
-    std::cout << R << std::endl;
+    std::cout << R << '\n';
 
     std::cout << "L * A * R\n";
-    std::cout << L * (A * R) << std::endl;
+    std::cout << L * (A * R) << '\n';
 #endif
 
     assert((L * A * R - D).isZero());

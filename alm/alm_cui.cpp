@@ -39,19 +39,18 @@ void ALMCUI::run(const int narg,
     auto run_mode = input_parser->get_run_mode();
 
     if (alm->get_verbosity() > 0) {
-        std::cout << " +-----------------------------------------------------------------+" << std::endl;
-        std::cout << " +                         Program ALM                             +" << std::endl;
+        std::cout << " +-----------------------------------------------------------------+\n";
+        std::cout << " +                         Program ALM                             +\n";
         std::cout << " +                             Ver.";
         std::cout << std::setw(7) << ALAMODE_VERSION;
-        std::cout << "                         +" << std::endl;
-        std::cout << " +-----------------------------------------------------------------+" << std::endl;
-        std::cout << std::endl;
+        std::cout << "                         +\n";
+        std::cout << " +-----------------------------------------------------------------+\n\n";
 #ifdef _OPENMP
         std::cout << " Number of OpenMP threads = "
-                  << omp_get_max_threads() << std::endl << std::endl;
+                  << omp_get_max_threads() << "\n\n";
 #endif
 
-        std::cout << " Job started at " << alm->timer->DateAndTime() << std::endl;
+        std::cout << " Job started at " << alm->timer->DateAndTime() << '\n';
     }
 
     if (alm->get_verbosity() > 0) {
@@ -92,8 +91,8 @@ void ALMCUI::run(const int narg,
     }
 
     if (alm->get_verbosity() > 0) {
-        std::cout << std::endl << " Job finished at "
-                  << alm->timer->DateAndTime() << std::endl;
+        std::cout << '\n' << " Job finished at "
+                  << alm->timer->DateAndTime() << '\n';
     }
 
     delete alm;

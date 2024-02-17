@@ -103,27 +103,27 @@ void Cluster::init(const std::unique_ptr<System> &system,
 
     // check permutation symmetry of anharmonic IFC
     if (mirror_image_conv > 0) {
-        std::cout << "check permutation symmetry of the clusters." << std::endl;
-        std::cout << "(if no message is printed out, the permutation symmetry is satisfied.)" << std::endl;
+        std::cout << "check permutation symmetry of the clusters.\n";
+        std::cout << "(if no message is printed out, the permutation symmetry is satisfied.)\n";
         for (auto order = 1; order < maxorder; ++order) {
             if (order == 1) {
-                std::cout << "  CUBIC ..." << std::endl;
+                std::cout << "  CUBIC ...\n";
             } else if (order == 2) {
-                std::cout << "  QUARTIC ..." << std::endl;
+                std::cout << "  QUARTIC ...\n";
             } else {
-                std::cout << "" << order + 2 << "-th ORDER ..." << std::endl;
+                std::cout << "" << order + 2 << "-th ORDER ...\n";
             }
             check_permutation_symmetry(system, symmetry, order);
         }
-        std::cout << "done." << std::endl << std::endl;
+        std::cout << "done.\n\n";
     }
 
 
     if (verbosity > 0) {
-        std::cout << "  +++ Cutoff Radii Matrix (NKD x NKD matrix) +++" << std::endl;
+        std::cout << "  +++ Cutoff Radii Matrix (NKD x NKD matrix) +++\n";
 
         for (i = 0; i < maxorder; ++i) {
-            std::cout << "  " << std::setw(9) << get_ordername(i) << std::endl;
+            std::cout << "  " << std::setw(9) << get_ordername(i) << '\n';
             for (j = 0; j < nkd; ++j) {
                 for (k = 0; k < nkd; ++k) {
                     if (cutoff_radii[i][j][k] < 0.0) {
@@ -132,9 +132,9 @@ void Cluster::init(const std::unique_ptr<System> &system,
                         std::cout << std::setw(9) << cutoff_radii[i][j][k];
                     }
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
         }
 
         print_neighborlist(system->get_supercell().number_of_atoms,
@@ -157,12 +157,11 @@ void Cluster::init(const std::unique_ptr<System> &system,
             if (i + 2 > nbody_include[i]) {
                 std::cout << "  For " << std::setw(8) << get_ordername(i) << ", ";
                 std::cout << "interactions related to more than" << std::setw(2) << nbody_include[i];
-                std::cout << " atoms will be neglected." << std::endl;
+                std::cout << " atoms will be neglected.\n";
             }
         }
         timer->print_elapsed();
-        std::cout << " -------------------------------------------------------------------" << std::endl;
-        std::cout << std::endl;
+        std::cout << " -------------------------------------------------------------------\n\n";
     }
 
     timer->stop_clock("cluster");
@@ -270,9 +269,9 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                 auto cluster_tmp2 = interaction_cluster[order][jat_prim].find(InteractionCluster(data_now, cell_dummy));
                 if (cluster_tmp2 == interaction_cluster[order][jat_prim].end()) {
                     std::cout << "permutation symmetry is NOT satisfied: ";
-                    std::cout << "corresponding cluster does not exist" << std::endl;
+                    std::cout << "corresponding cluster does not exist\n";
 
-                    std::cout << "information on current cluster: " << std::endl;
+                    std::cout << "information on current cluster: \n";
                     std::cout << "center atom(in primitive cell) = " << iat_prim;
                     std::cout << "other atoms = ";
                     for (itmp2 = 0; itmp2 < order + 1; itmp2++) {
@@ -281,14 +280,14 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                             std::cout << ", ";
                         }
                     }
-                    std::cout << "permutation of center atom and atom " << jat << " is considered." << std::endl;
+                    std::cout << "permutation of center atom and atom " << jat << " is considered.\n";
                     continue;
                 }
 
                 // prepare relative vector for comparison
                 relvecs1.clear();
                 for (i_mirror = 0; i_mirror < cluster_tmp.cell.size(); i_mirror++) {
-                    relvecs1.emplace_back(RelativeVectors(order));
+                    relvecs1.emplace_back(order);
                     // first relative vector
                     relvec_tmp.clear();
                     for (xyztmp = 0; xyztmp < 3; xyztmp++) {
@@ -319,7 +318,7 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
 
                 relvecs2.clear();
                 for (i_mirror = 0; i_mirror < (*cluster_tmp2).cell.size(); i_mirror++) {
-                    relvecs2.emplace_back(RelativeVectors(order));
+                    relvecs2.emplace_back(order);
 
                     for (j2 = 0; j2 < order + 1; j2++) {
                         relvec_tmp.clear();
@@ -339,10 +338,10 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
 
                 if (relvecs1.size() != relvecs2.size()) {
                     std::cout << "permutation symmetry is NOT satisfied: ";
-                    std::cout << "multiplicity of mirror image is different" << std::endl;
+                    std::cout << "multiplicity of mirror image is different\n";
 
 
-                    std::cout << "information on current cluster: " << std::endl;
+                    std::cout << "information on current cluster: \n";
                     std::cout << "center atom(in primitive cell) = " << iat_prim;
                     std::cout << "other atoms = ";
                     for (itmp2 = 0; itmp2 < order + 1; itmp2++) {
@@ -351,15 +350,15 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                             std::cout << ", ";
                         }
                     }
-                    std::cout << "permutation of center atom and atom " << jat << " is considered." << std::endl;
+                    std::cout << "permutation of center atom and atom " << jat << " is considered.\n";
 
-                    std::cout << "multiplicity in original cluster = " << cluster_tmp.cell.size() << std::endl;
-                    std::cout << "multiplicity in permuted cluster = " << (*cluster_tmp2).cell.size() << std::endl;
+                    std::cout << "multiplicity in original cluster = " << cluster_tmp.cell.size() << '\n';
+                    std::cout << "multiplicity in permuted cluster = " << (*cluster_tmp2).cell.size() << '\n';
 
                     // print relative vectors
-                    std::cout << "relative vectors in current cluster (fractional, cartesian): " << std::endl;
+                    std::cout << "relative vectors in current cluster (fractional, cartesian): \n";
                     for (i_mirror = 0; i_mirror < cluster_tmp.cell.size(); i_mirror++) {
-                        std::cout << "mirror image pattern: " << i_mirror << std::endl;
+                        std::cout << "mirror image pattern: " << i_mirror << '\n';
                         for (itmp = 0; itmp < order + 1; itmp++) {
                             for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                 std::cout << relvecs1[i_mirror].relvecs_fractional[itmp][xyztmp] << " ";
@@ -368,13 +367,13 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                             for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                 std::cout << relvecs1[i_mirror].relvecs_cartesian[itmp][xyztmp] << " ";
                             }
-                            std::cout << std::endl;
+                            std::cout << '\n';
                         }
                     }
 
-                    std::cout << "relative vectors in corresponding cluster (fractional, cartesian): " << std::endl;
+                    std::cout << "relative vectors in corresponding cluster (fractional, cartesian): \n";
                     for (i_mirror = 0; i_mirror < (*cluster_tmp2).cell.size(); i_mirror++) {
-                        std::cout << "mirror image pattern: " << i_mirror << std::endl;
+                        std::cout << "mirror image pattern: " << i_mirror << '\n';
                         for (itmp = 0; itmp < order + 1; itmp++) {
                             for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                 std::cout << relvecs2[i_mirror].relvecs_fractional[itmp][xyztmp] << " ";
@@ -383,7 +382,7 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                             for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                 std::cout << relvecs2[i_mirror].relvecs_cartesian[itmp][xyztmp] << " ";
                             }
-                            std::cout << std::endl;
+                            std::cout << '\n';
                         }
                     }
                     continue;
@@ -409,9 +408,9 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                     }
                     if (is_found == 0) {
                         std::cout << "permutation symmetry is not satisfied: ";
-                        std::cout << "mirror image is different." << std::endl;
+                        std::cout << "mirror image is different.\n";
 
-                        std::cout << "information on current cluster: " << std::endl;
+                        std::cout << "information on current cluster: \n";
                         std::cout << "center atom(in primitive cell) = " << iat_prim;
                         std::cout << "other atoms = ";
                         for (itmp2 = 0; itmp2 < order + 1; itmp2++) {
@@ -420,15 +419,15 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                                 std::cout << ", ";
                             }
                         }
-                        std::cout << "permutation of center atom and atom " << jat << " is considered." << std::endl;
+                        std::cout << "permutation of center atom and atom " << jat << " is considered.\n";
 
-                        std::cout << "multiplicity in original cluster = " << cluster_tmp.cell.size() << std::endl;
-                        std::cout << "multiplicity in permuted cluster = " << (*cluster_tmp2).cell.size() << std::endl;
+                        std::cout << "multiplicity in original cluster = " << cluster_tmp.cell.size() << '\n';
+                        std::cout << "multiplicity in permuted cluster = " << (*cluster_tmp2).cell.size() << '\n';
 
                         // print relative vectors
-                        std::cout << "relative vectors in current cluster (fractional, cartesian): " << std::endl;
+                        std::cout << "relative vectors in current cluster (fractional, cartesian): \n";
                         for (i_mirror = 0; i_mirror < cluster_tmp.cell.size(); i_mirror++) {
-                            std::cout << "mirror image pattern: " << i_mirror << std::endl;
+                            std::cout << "mirror image pattern: " << i_mirror << '\n';
                             for (itmp = 0; itmp < order + 1; itmp++) {
                                 for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                     std::cout << relvecs1[i_mirror].relvecs_fractional[itmp][xyztmp] << " ";
@@ -437,13 +436,13 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                                 for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                     std::cout << relvecs1[i_mirror].relvecs_cartesian[itmp][xyztmp] << " ";
                                 }
-                                std::cout << std::endl;
+                                std::cout << '\n';
                             }
                         }
 
-                        std::cout << "relative vectors in corresponding cluster (fractional, cartesian): " << std::endl;
+                        std::cout << "relative vectors in corresponding cluster (fractional, cartesian): \n";
                         for (i_mirror = 0; i_mirror < (*cluster_tmp2).cell.size(); i_mirror++) {
-                            std::cout << "mirror image pattern: " << i_mirror << std::endl;
+                            std::cout << "mirror image pattern: " << i_mirror << '\n';
                             for (itmp = 0; itmp < order + 1; itmp++) {
                                 for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                     std::cout << relvecs2[i_mirror].relvecs_fractional[itmp][xyztmp] << " ";
@@ -452,13 +451,13 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                                 for (xyztmp = 0; xyztmp < 3; xyztmp++) {
                                     std::cout << relvecs2[i_mirror].relvecs_cartesian[itmp][xyztmp] << " ";
                                 }
-                                std::cout << std::endl;
+                                std::cout << '\n';
                             }
                         }
                         std::cout << "corresponding mirror image does not exist for " << itmp
-                                  << "-th mirror image in current cluster" << std::endl;
+                                  << "-th mirror image in current cluster\n";
                     } else {
-                        // std::cout << "corresponding mirror image is found for " << itmp << "-th mirror image in current cluster" << std::endl;
+                        // std::cout << "corresponding mirror image is found for " << itmp << "-th mirror image in current cluster" << '\n';
                     }
                 }
 
@@ -626,10 +625,9 @@ void Cluster::print_neighborlist(const size_t nat,
         }
     }
 
-    std::cout << std::endl;
-    std::cout << "  List of neighboring atoms below." << std::endl;
-    std::cout << "  Format [N th-nearest shell, distance (Number of atoms on the shell)]"
-              << std::endl << std::endl;
+    std::cout << '\n';
+    std::cout << "  List of neighboring atoms below.\n";
+    std::cout << "  Format [N th-nearest shell, distance (Number of atoms on the shell)]\n\n";
 
     std::vector<int> atomlist;
 
@@ -662,7 +660,7 @@ void Cluster::print_neighborlist(const size_t nat,
                     for (k = 0; k < atomlist.size(); ++k) {
 
                         if (icount % 4 == 0 && icount > 0) {
-                            std::cout << std::endl;
+                            std::cout << '\n';
                             std::cout << std::setw(34) << " ";
                         }
                         ++icount;
@@ -672,7 +670,7 @@ void Cluster::print_neighborlist(const size_t nat,
                                   << kdname[kd[atomlist[k]] - 1] << ")";
 
                     }
-                    std::cout << std::endl;
+                    std::cout << '\n';
                 }
 
                 dist_tmp = distances[i][j];
@@ -694,7 +692,7 @@ void Cluster::print_neighborlist(const size_t nat,
             for (k = 0; k < atomlist.size(); ++k) {
 
                 if (icount % 4 == 0 && icount > 0) {
-                    std::cout << std::endl;
+                    std::cout << '\n';
                     std::cout << std::setw(34) << " ";
                 }
                 ++icount;
@@ -704,9 +702,9 @@ void Cluster::print_neighborlist(const size_t nat,
                           << kdname[kd[atomlist[k]] - 1] << ")";
 
             }
-            std::cout << std::endl;
+            std::cout << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
     atomlist.clear();
 }
@@ -849,17 +847,17 @@ void Cluster::print_interaction_information(const size_t natmin,
 {
     std::vector<int> intlist;
 
-    std::cout << std::endl;
-    std::cout << "  List of interacting atom pairs considered for each order:" << std::endl;
+    std::cout << '\n';
+    std::cout << "  List of interacting atom pairs considered for each order:\n";
 
     for (auto order = 0; order < maxorder; ++order) {
 
-        std::cout << std::endl << "   ***" << get_ordername(order) << "***" << std::endl;
+        std::cout << '\n' << "   ***" << get_ordername(order) << "***\n";
 
         for (size_t i = 0; i < natmin; ++i) {
 
             if (interaction_list[order][i].empty()) {
-                std::cout << "   No interacting atoms! Skipped." << std::endl;
+                std::cout << "   No interacting atoms! Skipped.\n";
                 continue; // no interaction
             }
 
@@ -874,14 +872,14 @@ void Cluster::print_interaction_information(const size_t natmin,
             // write atoms inside the cutoff radius
             std::cout << "    Atom " << std::setw(5) << iat + 1
                       << "(" << std::setw(3) << kdname[kd[iat] - 1]
-                      << ")" << " interacts with atoms ... " << std::endl;
+                      << ")" << " interacts with atoms ... \n";
 
             for (size_t id = 0; id < intlist.size(); ++id) {
                 if (id % 6 == 0) {
                     if (id == 0) {
                         std::cout << "   ";
                     } else {
-                        std::cout << std::endl;
+                        std::cout << '\n';
                         std::cout << "   ";
                     }
                 }
@@ -889,13 +887,13 @@ void Cluster::print_interaction_information(const size_t natmin,
                           << std::setw(3) << kdname[kd[intlist[id]] - 1] << ")";
             }
 
-            std::cout << std::endl << std::endl;
+            std::cout << "\n\n";
             std::cout << "    Number of total interaction pairs = "
-                      << interaction_list[order][i].size() << std::endl << std::endl;
+                      << interaction_list[order][i].size() << "\n\n";
         }
     }
 
-    std::cout << std::endl;
+    std::cout << '\n';
 }
 
 
@@ -924,7 +922,7 @@ bool Cluster::is_incutoff(const int n,
 }
 
 int Cluster::nbody(const int n,
-                   const int *arr) const
+                   const int *arr)
 {
     std::vector<int> v(n);
 
@@ -1243,7 +1241,7 @@ void Cluster::set_interaction_cluster(const int order,
                             for (auto j = 0; j < distance_list[0].dist.size(); ++j) {
                                 sum_dist_min += distance_list[0].dist[j];
                             }
-                            // std::cout << "sum_dist_min = " << sum_dist_min << std::endl;
+                            // std::cout << "sum_dist_min = " << sum_dist_min << '\n';
                             double sum_dist;
                             for (const auto &it_dist: distance_list) {
                                 sum_dist = 0.0;

@@ -49,7 +49,7 @@ void InputParser::run(ALM *alm,
         from_stdin = false;
         ifs_input.open(arg[1], std::ios::in);
         if (!ifs_input) {
-            std::cout << "No such file or directory: " << arg[1] << std::endl;
+            std::cout << "No such file or directory: " << arg[1] << '\n';
             std::exit(EXIT_FAILURE);
         }
     }
@@ -373,7 +373,7 @@ void InputParser::parse_general_vars(ALM *alm)
                 is_periodic[i] = boost::lexical_cast<int>(periodic_v[i]);
             }
             catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
+                std::cout << e.what() << '\n';
                 exit("parse_general_vars",
                      "The PERIODIC tag must be a set of integers.");
             }
@@ -765,7 +765,7 @@ void InputParser::parse_atomic_positions()
                 atomic_types_input[i] = boost::lexical_cast<int>(pos_line[0]);
             }
             catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
+                std::cout << e.what() << '\n';
                 exit("parse_atomic_positions",
                      "Invalid entry for the &position field at line ",
                      i + 1);
@@ -1042,7 +1042,7 @@ void InputParser::parse_interaction_vars()
                 nbody_include[i] = boost::lexical_cast<int>(nbody_v[i]);
             }
             catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
+                std::cout << e.what() << '\n';
                 exit("parse_interaction_vars",
                      "NBODY must be an integer.");
             }
@@ -1492,9 +1492,9 @@ void InputParser::parse_cutoff_radii()
             for (k = 0; k < nkd_in; ++k) {
                 if (undefined_cutoff[order][j][k]) {
                     std::cout << " Cutoff radius for " << std::setw(3)
-                              << order + 2 << "th-order terms" << std::endl;
+                              << order + 2 << "th-order terms\n";
                     std::cout << " are not defined between elements " << std::setw(3) << j + 1
-                              << " and " << std::setw(3) << k + 1 << std::endl;
+                              << " and " << std::setw(3) << k + 1 << '\n';
                     exit("parse_cutoff_radii", "Incomplete cutoff radii");
                 }
             }
@@ -1579,12 +1579,12 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
                     val = boost::trim_copy(str_varval[1]);
 
                     if (keyword_set.find(key) == keyword_set.end()) {
-                        std::cout << "Could not recognize the variable " << key << std::endl;
+                        std::cout << "Could not recognize the variable " << key << '\n';
                         exit("get_var_dict", "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
-                        std::cout << "Variable " << key << " appears twice in the input file." << std::endl;
+                        std::cout << "Variable " << key << " appears twice in the input file.\n";
                         exit("get_var_dict", "Redundant input parameter");
                     }
 
@@ -1641,13 +1641,13 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << " Could not recognize the variable "
-                                  << key << std::endl;
+                                  << key << '\n';
                         exit("get_var_dict", "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << " Variable " << key
-                                  << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file.\n";
                         exit("get_var_dict", "Redundant input parameter");
                     }
 
@@ -1757,7 +1757,7 @@ void InputParser::assign_val(T &val,
             val = boost::lexical_cast<T>(dict[key]);
         }
         catch (std::exception &e) {
-            std::cout << e.what() << std::endl;
+            std::cout << e.what() << '\n';
             auto str_tmp = "Invalid entry for the " + key + " tag.\n";
             str_tmp += " Please check the input value.";
             exit("assign_val", str_tmp.c_str());

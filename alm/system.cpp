@@ -65,8 +65,7 @@ void System::init(const int verbosity,
         print_structure_stdout(verbosity);
         if (spin_super.lspin) print_magmom_stdout();
         timer->print_elapsed();
-        std::cout << " -------------------------------------------------------------------" << std::endl;
-        std::cout << std::endl;
+        std::cout << " -------------------------------------------------------------------\n\n";
     }
 
     timer->stop_clock("system");
@@ -104,7 +103,7 @@ void System::set_basecell(const double lavec_in[3][3],
     for (i = 0; i < nkd; i++) {
         if (static_cast<size_t>(unique_nums[i]) > nkd) {
             std::cout << " WARNING : integers assigned to atoms are wrong. "
-                      << " The numbers will be resorted." << std::endl;
+                      << " The numbers will be resorted.\n";
             wrong_number = true;
             break;
         }
@@ -332,7 +331,7 @@ void System::build_supercell()
     Eigen::MatrixXd R_double = R.cast<double>();
     Eigen::MatrixXd L_double = L.cast<double>();
 
-//    std::cout << "transmat_to_super:" << transmat_to_super << std::endl;
+//    std::cout << "transmat_to_super:" << transmat_to_super << '\n';
 
     // (a_s, b_s, c_s) = (a_in, b_in, c_in) * Mat(inp->s)
     supercell.lattice_vector = inputcell.lattice_vector * transmat_to_super;
@@ -376,7 +375,7 @@ void System::build_supercell()
         }
     }
 //
-//    std::cout << supercell.x_fractional << std::endl;
+//    std::cout << supercell.x_fractional << '\n';
 
     supercell.x_cartesian = supercell.x_fractional * supercell.lattice_vector.transpose();
 

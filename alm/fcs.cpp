@@ -64,7 +64,7 @@ void Fcs::init(const std::unique_ptr<Cluster> &cluster,
         } else {
             std::cout << "Cartesian coordinates.";
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 
     if (fc_table) {
@@ -98,19 +98,18 @@ void Fcs::init(const std::unique_ptr<Cluster> &cluster,
     set_basis_conversion_matrix(supercell);
 
     if (verbosity > 0) {
-        std::cout << std::endl;
+        std::cout << '\n';
         for (i = 0; i < maxorder; ++i) {
             std::cout << "  Number of " << std::setw(9)
                       << cluster->get_ordername(i)
                       << " FCs : " << nequiv[i].size();
-            std::cout << std::endl;
+            std::cout << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
 
 
         timer->print_elapsed();
-        std::cout << " -------------------------------------------------------------------" << std::endl;
-        std::cout << std::endl;
+        std::cout << " -------------------------------------------------------------------\n\n";
     }
 
     timer->stop_clock("fcs");
@@ -351,7 +350,7 @@ void Fcs::generate_force_constant_table(const int order,
 
 //    size_t counter = 0;
 //    for (auto ii = 0; ii < ndup.size(); ++ii) {
-//        std::cout << std::setw(5) << fc_vec[counter].mother  << std::setw(4) << fc_vec[counter].sign << std::endl;
+//        std::cout << std::setw(5) << fc_vec[counter].mother  << std::setw(4) << fc_vec[counter].sign << '\n';
 //        counter += ndup[ii];
 //    }
 

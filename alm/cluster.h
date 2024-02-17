@@ -338,8 +338,8 @@ private:
     double distance(const Eigen::MatrixXd &x1,
                     const Eigen::MatrixXd &x2) const;
 
-    int nbody(const int,
-              const int *) const;
+    static int nbody(const int,
+              const int *) ;
 
     void calc_interaction_clusters(const size_t natmin,
                                    const std::vector<int> &kd,

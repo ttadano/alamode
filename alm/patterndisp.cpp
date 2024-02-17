@@ -60,8 +60,8 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
     const auto do_rref = true;
 
     if (verbosity > 0) {
-        std::cout << " DISPLACEMENT PATTERN" << std::endl;
-        std::cout << " ====================" << std::endl << std::endl;
+        std::cout << " DISPLACEMENT PATTERN\n";
+        std::cout << " ====================\n\n";
     }
 
     // Decide preferred basis (Cartesian or Lattice)
@@ -120,9 +120,9 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
         for (order = 0; order < maxorder; ++order) {
             std::cout << "  Number of free" << std::setw(9)
                       << cluster->get_ordername(order) << " FCs : "
-                      << index_bimap_tmp[order].size() << std::endl;
+                      << index_bimap_tmp[order].size() << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 
 
@@ -202,15 +202,14 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
     deallocate(dispset);
 
     if (verbosity > 0) {
-        std::cout << " done!" << std::endl;
-        std::cout << std::endl;
+        std::cout << " done!\n\n";
 
         for (order = 0; order < maxorder; ++order) {
             std::cout << "  Number of disp. patterns for " << std::setw(9)
                       << cluster->get_ordername(order) << " : "
-                      << pattern_all[order].size() << std::endl;
+                      << pattern_all[order].size() << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 }
 

@@ -436,18 +436,18 @@ size_t ALM::get_number_of_fc_origin(const int fc_order,
                                     const int permutation) const
 {
     if (fc_order <= 0) {
-        std::cout << "fc_order must be larger than 0." << std::endl;
+        std::cout << "fc_order must be larger than 0." << '\n';
         exit(EXIT_FAILURE);
     }
     const auto maxorder = cluster->get_maxorder();
     if (fc_order > maxorder) {
-        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        std::cout << "fc_order must not be larger than maxorder" << '\n';
         exit(EXIT_FAILURE);
     }
     auto nfc_cart = fcs->get_nfc_cart(1);
 
     if (nfc_cart.size() < fc_order) {
-        std::cout << "fc has not yet been computed or set." << std::endl;
+        std::cout << "fc has not yet been computed or set." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -468,11 +468,11 @@ void ALM::get_fc_origin(double *fc_values,
 
     const auto maxorder = cluster->get_maxorder();
     if (fc_order > maxorder) {
-        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        std::cout << "fc_order must not be larger than maxorder" << '\n';
         exit(EXIT_FAILURE);
     }
     if (!fcs->get_fc_cart()) {
-        std::cout << "fc has not yet been computed." << std::endl;
+        std::cout << "fc has not yet been computed." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -510,11 +510,11 @@ void ALM::get_fc_irreducible(double *fc_values,
 
     const auto maxorder = cluster->get_maxorder();
     if (fc_order > maxorder) {
-        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        std::cout << "fc_order must not be larger than maxorder" << '\n';
         exit(EXIT_FAILURE);
     }
     if (!optimize->get_params()) {
-        std::cout << "fc has not yet been computed." << std::endl;
+        std::cout << "fc has not yet been computed." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -573,11 +573,11 @@ void ALM::get_fc_all(double *fc_values,
     const auto maxorder = cluster->get_maxorder();
 
     if (fc_order > maxorder) {
-        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        std::cout << "fc_order must not be larger than maxorder" << '\n';
         exit(EXIT_FAILURE);
     }
     if (!fcs->get_fc_cart()) {
-        std::cout << "fc has not yet been computed." << std::endl;
+        std::cout << "fc has not yet been computed." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -691,7 +691,7 @@ void ALM::get_matrix_elements(double *amat,
 int ALM::run_optimize()
 {
     if (!structure_initialized) {
-        std::cout << "initialize_structure must be called beforehand." << std::endl;
+        std::cout << "initialize_structure must be called beforehand." << '\n';
         exit(EXIT_FAILURE);
     }
 
