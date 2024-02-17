@@ -58,7 +58,7 @@ PHON::PHON(int narg,
     if (mympi->my_rank == 0) {
         std::cout << " +-----------------------------------------------------------------+\n";
         std::cout << " +                         Program ANPHON                          +\n";
-        std::cout << " +                             Ver.\n";
+        std::cout << " +                             Ver.";
         std::cout << std::setw(7) << ALAMODE_VERSION;
         std::cout << "                         +\n";
         std::cout << " +-----------------------------------------------------------------+\n\n";

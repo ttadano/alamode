@@ -1395,7 +1395,7 @@ void Relaxation::compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
             // prepare for the Fourier-transformation
             std::sort(delta_fcs.begin(), delta_fcs.end());
 
-            anharmonic_core->prepare_group_of_force_constants(delta_fcs, 3,
+            anharmonic_core->prepare_group_of_force_constants(delta_fcs,
                                                               ngroup_tmp, fcs_group_tmp);
 
             allocate(invmass_v3_tmp, ngroup_tmp);
@@ -1404,7 +1404,6 @@ void Relaxation::compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
             allocate(phi3_reciprocal_tmp, ngroup_tmp);
 
             anharmonic_core->prepare_relative_vector(delta_fcs,
-                                                     3,
                                                      ngroup_tmp,
                                                      fcs_group_tmp,
                                                      relvec_tmp);

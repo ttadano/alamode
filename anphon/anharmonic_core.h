@@ -166,16 +166,14 @@ public:
                                  double **,
                                  std::complex<double> ***) const;
 
-    void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                 unsigned int,
-                                 int,
-                                 std::vector<double> *,
-                                 std::vector<RelativeVector> *&) const;
+    static void prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
+                                        const int number_of_groups,
+                                        std::vector<double> *fcs_group,
+                                        std::vector<RelativeVector> *&vec_out);
 
-    void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &,
-                                          unsigned int,
-                                          int &,
-                                          std::vector<double> *&) const;
+    static void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
+                                                 int &number_of_groups,
+                                                 std::vector<double> *&fcs_group_out);
 
     void calc_self3omega_tetrahedron(const double Temp,
                                      const KpointMeshUniform *kmesh_in,

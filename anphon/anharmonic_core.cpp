@@ -22,9 +22,11 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "phonon_dos.h"
 #include "system.h"
 #include "thermodynamics.h"
+#include "timer.h"
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <vector>
+#include <execution>
 
 #ifdef _OPENMP
 
@@ -114,27 +116,29 @@ void AnharmonicCore::setup()
 }
 
 void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
-                                             const unsigned int N,
                                              const int number_of_groups,
                                              std::vector<double> *fcs_group,
-                                             std::vector<RelativeVector> *&vec_out) const
+                                             std::vector<RelativeVector> *&vec_out)
 {
     double vecs[3][3];
     unsigned int icount = 0;
+
+    const auto nsize = fcs_in.begin()->pairs.size();
+
     for (auto igroup = 0; igroup < number_of_groups; ++igroup) {
 
         unsigned int nsize_group = fcs_group[igroup].size();
 
         for (auto j = 0; j < nsize_group; ++j) {
-            for (auto i = 0; i < N - 1; ++i) {
+            for (auto i = 0; i < nsize - 1; ++i) {
                 for (auto k = 0; k < 3; ++k) {
                     // include tpi phase factor here
                     vecs[i][k] = tpi * fcs_in[icount].relvecs[i][k];
                 }
             }
-            if (N == 3) {
+            if (nsize == 3) {
                 vec_out[igroup].emplace_back(vecs[0], vecs[1]);
-            } else if (N == 4) {
+            } else if (nsize == 4) {
                 vec_out[igroup].emplace_back(vecs[0], vecs[1], vecs[2]);
             }
             ++icount;
@@ -143,35 +147,27 @@ void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell>
 }
 
 void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
-                                                      const unsigned int N,
                                                       int &number_of_groups,
-                                                      std::vector<double> *&fcs_group_out) const
+                                                      std::vector<double> *&fcs_group_out)
 {
     // Find the number of groups which has different evecs.
 
     unsigned int i;
-    std::vector<int> arr_old, arr_tmp;
 
     number_of_groups = 0;
 
-    arr_old.clear();
-    for (i = 0; i < N; ++i) {
-        arr_old.push_back(-1);
-    }
+    const auto nsize_pair = fcs_in.begin()->pairs.size();
+    std::vector<int> arr_old(nsize_pair, -1);
+    std::vector<int> arr_tmp(nsize_pair);
 
     for (const auto &it: fcs_in) {
 
-        arr_tmp.clear();
-
-        for (i = 0; i < it.pairs.size(); ++i) {
-            arr_tmp.push_back(it.pairs[i].index);
+        for (i = 0; i < nsize_pair; ++i) {
+            arr_tmp[i] = it.pairs[i].index;
         }
-
         if (arr_tmp != arr_old) {
             ++number_of_groups;
-            arr_old.clear();
-            arr_old.reserve(arr_tmp.size());
-            std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
+            arr_old = arr_tmp;
         }
     }
 
@@ -179,26 +175,17 @@ void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArray
 
     int igroup = -1;
 
-    arr_old.clear();
-    for (i = 0; i < N; ++i) {
-        arr_old.push_back(-1);
-    }
+    arr_old.resize(nsize_pair, -1);
 
     for (const auto &it: fcs_in) {
 
-        arr_tmp.clear();
-
-        for (i = 0; i < it.pairs.size(); ++i) {
-            arr_tmp.push_back(it.pairs[i].index);
+        for (i = 0; i < nsize_pair; ++i) {
+            arr_tmp[i] = it.pairs[i].index;
         }
-
         if (arr_tmp != arr_old) {
             ++igroup;
-            arr_old.clear();
-            arr_old.reserve(arr_tmp.size());
-            std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
+            arr_old = arr_tmp;
         }
-
         fcs_group_out[igroup].push_back(it.fcs_val);
     }
 }
@@ -1028,8 +1015,9 @@ void AnharmonicCore::setup_cubic()
     // This sorting is necessary.
     std::sort(fcs_phonon->force_constant_with_cell[1].begin(),
               fcs_phonon->force_constant_with_cell[1].end());
+
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1],
-                                     3, ngroup_v3, fcs_group_v3);
+                                     ngroup_v3, fcs_group_v3);
 
     allocate(invmass_v3, ngroup_v3);
     allocate(evec_index_v3, ngroup_v3, 3);
@@ -1037,7 +1025,6 @@ void AnharmonicCore::setup_cubic()
     allocate(phi3_reciprocal, ngroup_v3);
 
     prepare_relative_vector(fcs_phonon->force_constant_with_cell[1],
-                            3,
                             ngroup_v3,
                             fcs_group_v3,
                             relvec_v3);
@@ -1062,7 +1049,7 @@ void AnharmonicCore::setup_quartic()
     std::sort(fcs_phonon->force_constant_with_cell[2].begin(),
               fcs_phonon->force_constant_with_cell[2].end());
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2],
-                                     4, ngroup_v4, fcs_group_v4);
+                                     ngroup_v4, fcs_group_v4);
 
     allocate(invmass_v4, ngroup_v4);
     allocate(evec_index_v4, ngroup_v4, 4);
@@ -1070,7 +1057,6 @@ void AnharmonicCore::setup_quartic()
     allocate(phi4_reciprocal, ngroup_v4);
 
     prepare_relative_vector(fcs_phonon->force_constant_with_cell[2],
-                            4,
                             ngroup_v4,
                             fcs_group_v4,
                             relvec_v4);

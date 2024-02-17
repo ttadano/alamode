@@ -266,8 +266,7 @@ void Dynamical::setup_dynamical()
 
     if (mympi->my_rank == 0) {
         std::cout << '\n';
-        std::cout << " -----------------------------------------------------------------"
-                  << '\n' << '\n';
+        std::cout << " -----------------------------------------------------------------\n\n";
     }
 }
 
@@ -350,7 +349,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 }
 
 double Dynamical::distance(double *x1,
-                           double *x2) const
+                           double *x2)
 {
     return std::sqrt(std::pow(x1[0] - x2[0], 2)
                      + std::pow(x1[1] - x2[1], 2)

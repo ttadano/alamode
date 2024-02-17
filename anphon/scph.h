@@ -214,16 +214,11 @@ private:
     void exec_scph_relax_cell_coordinate_main(std::complex<double> ****,
                                               std::complex<double> ****);
 
-
     void zerofill_elements_acoustic_at_gamma(double **omega2,
                                              std::complex<double> ***v_elems,
                                              const int fc_order,
                                              const unsigned int nk_dense_in,
                                              const unsigned int nk_irred_coarse_in) const;
-
-
-    FcsClassExtent from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &);
-
 
     void compute_anharmonic_frequency(std::complex<double> ***,
                                       double **,
@@ -234,7 +229,6 @@ private:
                                       bool,
                                       std::complex<double> **,
                                       const unsigned int verbosity);
-
 
     void compute_anharmonic_frequency2(std::complex<double> ***,
                                        double **,
@@ -292,7 +286,6 @@ private:
                                                             const unsigned int snum,
                                                             const double temp_in,
                                                             const std::vector<std::complex<double>> &omegalist);
-
 
     void zerofill_harmonic_dymat_renormalize(std::complex<double> ****,
                                              unsigned int);

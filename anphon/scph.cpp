@@ -2244,9 +2244,9 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
 
     if (mympi->my_rank == 0) {
         if (self_offdiag) {
-            std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... ";
+            std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... " << std::flush;
         } else {
-            std::cout << " SELF_OFFDIAG = 0: Calculating diagonal components of v4_array ... ";
+            std::cout << " SELF_OFFDIAG = 0: Calculating diagonal components of v4_array ... " << std::flush;
         }
     }
 
@@ -2775,7 +2775,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     const size_t count_sub = ns4;
 
     if (mympi->my_rank == 0) {
-        std::cout << "Communicating v4_array over MPI ...";
+        std::cout << "Communicating v4_array over MPI ..." << std::flush;
     }
     if (count <= maxsize) {
 #ifdef MPI_CXX_DOUBLE_COMPLEX
@@ -2933,30 +2933,6 @@ void Scph::zerofill_elements_acoustic_at_gamma(double **omega2,
     }
 
     deallocate(is_acoustic);
-}
-
-
-FcsClassExtent Scph::from_FcsArrayWithCell_to_FcsClassExtent(const FcsArrayWithCell &fc_in)
-{
-
-    FcsClassExtent fc_out;
-    unsigned int atm1, atm2, xyz1, xyz2, cell_s;
-    double fcs_val;
-
-    if (fc_in.pairs.size() != 2) {
-        std::cout
-                << "Warning in from_FcsArrayWithCell_to_FcsClassExtent:\n only harmonic IFC can be transformed to FcsClassExtent format.\n";
-    }
-
-    fc_out.atm1 = fc_in.pairs[0].index / 3;
-    // TODO: This is a temporary fix. Need to fix the index of atm2.
-    fc_out.atm2 = system->get_map_p2s(1)[fc_in.pairs[1].index / 3][fc_in.pairs[1].tran];
-    fc_out.xyz1 = fc_in.pairs[0].index % 3;
-    fc_out.xyz2 = fc_in.pairs[1].index % 3;
-    fc_out.cell_s = fc_in.pairs[1].cell_s;
-    fc_out.fcs_val = fc_in.fcs_val;
-
-    return fc_out;
 }
 
 void Scph::calculate_del_v0_del_umn_renorm(std::complex<double> *del_v0_del_umn_renorm,

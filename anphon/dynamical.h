@@ -254,8 +254,8 @@ private:
     void calc_atomic_participation_ratio(const std::complex<double> *evec_in,
                                          double *ret) const;
 
-    double distance(double *,
-                    double *) const;
+    static double distance(double *,
+                    double *) ;
 
     void connect_band_by_eigen_similarity(const unsigned int nk_in,
                                           std::complex<double> ***evec,

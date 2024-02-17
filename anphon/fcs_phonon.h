@@ -39,9 +39,9 @@ public:
 
     bool operator==(const FcsClassExtent &a) const
     {
-        return (this->atm1 == a.atm1) & (this->atm2 == a.atm2)
-               & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
-               & (this->cell_s == a.cell_s);
+        return (this->atm1 == a.atm1) && (this->atm2 == a.atm2)
+               && (this->xyz1 == a.xyz1) && (this->xyz2 == a.xyz2)
+               && (this->cell_s == a.cell_s);
     }
 };
 
@@ -49,7 +49,7 @@ struct AtomCellSuper {
     unsigned int index;// flattened array
     unsigned int tran;
     unsigned int cell_s;
-};
+} __attribute__((aligned(16)));
 
 inline bool operator<(const AtomCellSuper &a,
                       const AtomCellSuper &b)
@@ -113,25 +113,39 @@ public:
 
     bool operator<(const FcsArrayWithCell &obj) const
     {
-        std::vector<unsigned int> index_a, index_b;
-        index_a.clear();
-        index_b.clear();
-        for (int i = 0; i < pairs.size(); ++i) {
-            index_a.push_back(pairs[i].index);
-            index_b.push_back(obj.pairs[i].index);
+        const auto n = pairs.size();
+        for (int i = 0; i < n; ++i) {
+            if (pairs[i].index != obj.pairs[i].index) {
+                return pairs[i].index < obj.pairs[i].index;
+            }
         }
-        for (int i = 0; i < pairs.size(); ++i) {
-            index_a.push_back(pairs[i].tran);
-            index_a.push_back(pairs[i].cell_s);
-            index_b.push_back(obj.pairs[i].tran);
-            index_b.push_back(obj.pairs[i].cell_s);
+        for (int i = 0; i < n; ++i) {
+            if (pairs[i].tran != obj.pairs[i].tran) {
+                return pairs[i].tran < obj.pairs[i].tran;
+            }
         }
-        return lexicographical_compare(index_a.begin(), index_a.end(),
-                                       index_b.begin(), index_b.end());
+        for (int i = 0; i < n; ++i) {
+            if (pairs[i].cell_s != obj.pairs[i].cell_s) {
+                return pairs[i].cell_s < obj.pairs[i].cell_s;
+            }
+        }
+        return false;
     }
 
-
+    static bool sort_with_index(const FcsArrayWithCell &a, const FcsArrayWithCell &b)
+    {
+        const auto n = a.pairs.size();
+        std::vector<size_t> index_a(n), index_b(n);
+        for (auto i = 0; i < n; ++i) {
+            if (a.pairs[i].index != b.pairs[i].index) {
+                return a.pairs[i].index < b.pairs[i].index;
+            }
+        }
+        return false;
+    }
 };
+
+
 
 struct sort_by_heading_indices {
     unsigned int number_of_tails; // number of indices at the tail of the array
