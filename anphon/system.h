@@ -158,7 +158,7 @@ private:
                                      const std::vector<std::string> &,
                                      double *);
 
-    void set_atomtype_group(const Cell &cell_in,
+    static void set_atomtype_group(const Cell &cell_in,
                             const Spin &spin_in,
                             std::vector<std::vector<unsigned int>> &atomtype_group_out);
 
@@ -195,14 +195,14 @@ private:
                                           std::vector<std::vector<unsigned int>> &map_p2s_out,
                                           std::vector<Maps> &map_s2p_out) const;
 
-    void recips(const Eigen::Matrix3d &mat_in,
-                Eigen::Matrix3d &rmat_out) const;
+    static void recips(const Eigen::Matrix3d &mat_in,
+                Eigen::Matrix3d &rmat_out) ;
 
 //    void check_consistency_primitive_lattice() const;
 
 
-    double volume(const Eigen::Matrix3d &mat_in,
-                  const LatticeType latttype_in) const;
+    static double volume(const Eigen::Matrix3d &mat_in,
+                  const LatticeType latttype_in) ;
 
     std::vector<std::string> element_names{
             "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",

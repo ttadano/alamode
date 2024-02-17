@@ -83,10 +83,6 @@ void System::setup()
     }
     MPI_Bcast(&mass_kd[0], symbol_kd.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    if (mympi->my_rank == 0) {
-        print_structure_information_stdout();
-    }
-
     mass_super.resize(supercell[0].number_of_atoms);
     mass_prim.resize(primcell.number_of_atoms);
     invsqrt_mass_p.resize(primcell.number_of_atoms);
@@ -108,6 +104,10 @@ void System::setup()
     // Set atomic types (kind + magmom)
     set_atomtype_group(primcell, spin_prim, atomtype_group_prim);
     set_atomtype_group(primcell_distort, spin_prim, atomtype_group_prim_distort);
+
+    if (mympi->my_rank == 0) {
+        print_structure_information_stdout();
+    }
 }
 
 
@@ -115,14 +115,12 @@ void System::print_structure_information_stdout() const
 {
     using namespace std;
 
-    cout << " -----------------------------------------------------------------" << endl;
-    cout << endl;
+    cout << " -----------------------------------------------------------------\n\n";
     cout << " ===================\n";
     cout << "  Crystal Structure \n";
     cout << " ===================\n\n";
     cout << " Lattice Vectors:\n\n";
     cout.setf(ios::scientific);
-
 
     cout << " * Primitive cell ";
     if (load_primitive_from_file) {
@@ -151,52 +149,50 @@ void System::print_structure_information_stdout() const
     }
     cout << "\n\n";
 
-    cout << "  Volume of the primitive cell : "
-         << primcell.volume << " (a.u.)^3" << endl << endl;
+    cout << "  Volume of the primitive cell : "<< primcell.volume << " (a.u.)^3\n\n";
     cout << "  Number of atoms in the primitive cell: "
-         << primcell.number_of_atoms << endl << endl;
+         << primcell.number_of_atoms << "\n\n";
 
-    cout << "  Atomic positions in the primitive cell (fractional):" << endl;
+    cout << "  Atomic positions in the primitive cell (fractional):\n";
     for (auto i = 0; i < primcell.number_of_atoms; ++i) {
         cout << setw(4) << i + 1 << ":";
         for (auto j = 0; j < 3; ++j) {
             cout << setw(15) << primcell.x_fractional(i, j);
         }
-        cout << setw(4) << symbol_kd[primcell.kind[i]] << endl;
+        cout << setw(4) << symbol_kd[primcell.kind[i]] << '\n';
     }
-    cout << endl;
+    cout << '\n';
 
     if (spin_prim.lspin) {
-        cout << "  MagneticMoments entry found in the XML file. " << endl;
-        cout << "  Magnetic moment in Cartesian coordinates: " << endl;
+        cout << "  MagneticMoments entry found in the XML file. \n";
+        cout << "  Magnetic moment in Cartesian coordinates: \n";
         for (auto i = 0; i < primcell.number_of_atoms; ++i) {
             cout << setw(4) << i + 1 << ":";
             for (auto j = 0; j < 3; ++j) {
                 cout << setw(15) << spin_prim.magmom[i][j];
             }
-            cout << endl;
+            cout << '\n';
         }
-        cout << endl;
+        cout << '\n';
         if (spin_prim.noncollinear == 0) {
-            cout << "  Collinear calculation: magnetic moments are considered as scalar variables." << endl;
+            cout << "  Collinear calculation: magnetic moments are considered as scalar variables.\n";
         } else if (spin_prim.noncollinear == 1) {
-            cout << "  Noncollinear calculation: magnetic moments are considered as vector variables." << endl;
+            cout << "  Noncollinear calculation: magnetic moments are considered as vector variables.\n";
             if (spin_prim.time_reversal_symm) {
-                cout << "  Time-reversal symmetry will be considered for generating magnetic space group" << endl;
+                cout << "  Time-reversal symmetry will be considered for generating magnetic space group\n";
             } else {
-                cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group" <<
-                     endl;
+                cout << "  Time-reversal symmetry will NOT be considered for generating magnetic space group\n";
             }
         }
-        cout << endl;
+        cout << '\n';
     }
 
-    cout << "  Mass of atomic species (u):" << endl;
+    cout << "  Mass of atomic species (u):\n";
     for (auto i = 0; i < primcell.number_of_elems; ++i) {
         cout << setw(4) << symbol_kd[i] << ":";
-        cout << fixed << setw(12) << mass_kd[i] << endl;
+        cout << fixed << setw(12) << mass_kd[i] << '\n';
     }
-    cout << endl << endl;
+    cout << "\n\n";
 
     Eigen::Matrix3d transformation_matrix;
 
@@ -223,9 +219,7 @@ void System::print_structure_information_stdout() const
              "The transformation matrix should be composed of integers. Something is wrong.");
     }
     cout << '\n' << "  Number of atoms in the supercell     : "
-         << supercell[0].number_of_atoms << endl;
-
-    cout << "\n\n";
+         << supercell[0].number_of_atoms << "\n\n\n";
 }
 
 void System::load_system_info_from_file()
@@ -1102,7 +1096,7 @@ void System::generate_mapping_primitive_super(const Cell &pcell,
 }
 
 void System::recips(const Eigen::Matrix3d &mat_in,
-                    Eigen::Matrix3d &rmat_out) const
+                    Eigen::Matrix3d &rmat_out)
 {
     const auto det = mat_in.determinant();
 
@@ -1284,7 +1278,7 @@ void System::set_atomtype_group(const Cell &cell_in,
 
 
 double System::volume(const Eigen::Matrix3d &mat_in,
-                      const LatticeType latttype_in) const
+                      const LatticeType latttype_in)
 {
     Eigen::Matrix3d mat;
     Eigen::Vector3d v1, v2, v3;

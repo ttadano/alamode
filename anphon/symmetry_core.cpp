@@ -103,7 +103,7 @@ void Symmetry::setup_symmetry()
 
         bool use_distorted_structure = false;
 
-        std::cout << std::endl;
+        std::cout << '\n';
         std::cout << "  Number of symmetry operations : " << nsym << '\n';
         if ((phon->mode == "SCPH" && relaxation->relax_str != 0) ||
             (phon->mode == "QHA" && relaxation->relax_str != 0)) {
@@ -451,7 +451,8 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
                                 + std::pow(mag[1] + mag_rot[1], 2.0)
                                 + std::pow(mag[2] + mag_rot[2], 2.0)) < eps6;
 
-                    if (!mag_sym1 && !mag_sym2) {
+                    if (!mag_sym1 && !mag_sym2)
+                    {
                         isok = false;
                     } else if (!mag_sym1 && mag_sym2 && !spin.time_reversal_symm) {
                         isok = false;
@@ -719,12 +720,8 @@ void Symmetry::broadcast_symmlist(std::vector<SymmetryOperation> &sym) const
 
 bool Symmetry::is_proper(const Eigen::Matrix3d &rot) const
 {
-    auto ret = false;
-
     const auto det = rot.determinant();
-    ret = std::abs(det - 1.0) < eps12;
-
-    return ret;
+    return std::abs(det - 1.0) < eps12;
 }
 
 bool Symmetry::is_translation(const Eigen::Matrix3i &rot) const
@@ -733,57 +730,3 @@ bool Symmetry::is_translation(const Eigen::Matrix3i &rot) const
     return (rot == identity);
 }
 
-
-void Symmetry::setup_atomic_class(const std::vector<int> &kd,
-                                  const int lspin,
-                                  const std::vector<std::vector<double>> &magmom_in,
-                                  const int noncollinear,
-                                  std::vector<std::vector<unsigned int>> &atomgroup_out) const
-{
-    // In the case of collinear calculation, spin moments are considered as scalar
-    // variables. Therefore, the same elements with different magnetic moments are
-    // considered as different types.
-
-    unsigned int i;
-    AtomType type_tmp;
-    std::set<AtomType> set_type;
-    set_type.clear();
-
-    const auto natmin_prim = kd.size();
-
-    for (i = 0; i < natmin_prim; ++i) {
-        type_tmp.element = kd[i];
-        if ((lspin == 0) || (noncollinear == 1)) {
-            type_tmp.magmom = 0.0;
-        } else {
-            type_tmp.magmom = magmom_in[i][2];
-        }
-        set_type.insert(type_tmp);
-    }
-
-    const auto natomgroup = set_type.size();
-
-    atomgroup_out.resize(natomgroup);
-
-    for (i = 0; i < natomgroup; ++i) {
-        atomgroup_out[i].clear();
-    }
-
-    for (i = 0; i < natmin_prim; ++i) {
-        int count = 0;
-        for (const auto &it: set_type) {
-            if ((lspin == 0) || (noncollinear == 1)) {
-                if (kd[i] == it.element) {
-                    atomgroup_out[count].push_back(i);
-                }
-            } else {
-                if (kd[i] == it.element &&
-                    std::abs(magmom_in[i][2] - it.magmom) < eps6) {
-                    atomgroup_out[count].push_back(i);
-                }
-            }
-            ++count;
-        }
-    }
-    set_type.clear();
-}

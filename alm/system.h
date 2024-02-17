@@ -154,7 +154,7 @@ private:
     double volume(const Eigen::Matrix3d &mat_in,
                   const LatticeType latttype_in) const;
 
-    void set_atomtype_group(const Cell &cell_in,
+    static void set_atomtype_group(const Cell &cell_in,
                             const Spin &spin_in,
                             std::vector<std::vector<unsigned int>> &atomtype_group_out);
 

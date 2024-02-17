@@ -19,8 +19,8 @@
 #include <iomanip>
 #include <set>
 #include <Eigen/Core>
-#include <Eigen/LU>
 #include <Eigen/Geometry>
+#include <utility>
 
 extern "C" {
 #include "spglib.h"
@@ -548,7 +548,7 @@ const Spin &System::get_spin(const std::string cell) const
 
 void System::set_str_magmom(std::string str_magmom_in)
 {
-    str_magmom = str_magmom_in;
+    str_magmom = std::move(str_magmom_in);
 }
 
 const std::string &System::get_str_magmom() const
@@ -781,64 +781,55 @@ void System::print_structure_stdout(const int verbosity)
     cout << "   Input Cell \n";
     cout << "  ++++++++++++\n\n";
 
-    cout << "   Lattice Vector (bohr)" << endl;
+    cout << "   Lattice Vector (bohr)\n";
     cout << setw(16) << cell.lattice_vector(0, 0);
     cout << setw(15) << cell.lattice_vector(1, 0);
     cout << setw(15) << cell.lattice_vector(2, 0);
-    cout << " : a1" << endl;
-
+    cout << " : a1\n";
     cout << setw(16) << cell.lattice_vector(0, 1);
     cout << setw(15) << cell.lattice_vector(1, 1);
     cout << setw(15) << cell.lattice_vector(2, 1);
-    cout << " : a2" << endl;
-
+    cout << " : a2\n";
     cout << setw(16) << cell.lattice_vector(0, 2);
     cout << setw(15) << cell.lattice_vector(1, 2);
     cout << setw(15) << cell.lattice_vector(2, 2);
-    cout << " : a3" << endl;
-    cout << endl;
-
+    cout << " : a3\n\n";
     cout << "   Number of atoms : " << cell.number_of_atoms << "\n\n";
 
     if (verbosity > 1) {
-        cout << "   Cell volume = " << cell.volume << " (bohr^3)" << endl << endl;
-
-        cout << "   Reciprocal Lattice Vector (1/bohr)" << std::endl;
+        cout << "   Cell volume = " << cell.volume << " (bohr^3)\n\n";
+        cout << "   Reciprocal Lattice Vector (1/bohr)\n";
         cout << setw(16) << cell.reciprocal_lattice_vector(0, 0);
         cout << setw(15) << cell.reciprocal_lattice_vector(0, 1);
         cout << setw(15) << cell.reciprocal_lattice_vector(0, 2);
-        cout << " : b1" << endl;
-
+        cout << " : b1\n";
         cout << setw(16) << cell.reciprocal_lattice_vector(1, 0);
         cout << setw(15) << cell.reciprocal_lattice_vector(1, 1);
         cout << setw(15) << cell.reciprocal_lattice_vector(1, 2);
-        cout << " : b2" << endl;
-
+        cout << " : b2\n";
         cout << setw(16) << cell.reciprocal_lattice_vector(2, 0);
         cout << setw(15) << cell.reciprocal_lattice_vector(2, 1);
         cout << setw(15) << cell.reciprocal_lattice_vector(2, 2);
-        cout << " : b3" << endl;
-        cout << endl;
+        cout << " : b3\n\n";
     }
 
-    cout << "   Atomic species:" << endl;
+    cout << "   Atomic species:\n";
     for (i = 0; i < cell.number_of_elems; ++i) {
-        cout << setw(6) << i + 1 << setw(5) << kdname[i] << endl;
+        cout << setw(6) << i + 1 << setw(5) << kdname[i] << '\n';
     }
 
     if (verbosity > 1) {
         cout << '\n';
-        cout << "   Atomic positions in fractional basis and atomic species" << endl;
+        cout << "   Atomic positions in fractional basis and atomic species\n";
         for (i = 0; i < cell.number_of_atoms; ++i) {
             cout << setw(6) << i + 1;
             cout << setw(15) << cell.x_fractional(i, 0);
             cout << setw(15) << cell.x_fractional(i, 1);
             cout << setw(15) << cell.x_fractional(i, 2);
-            cout << setw(5) << kdname[cell.kind[i] - 1] << endl;
+            cout << setw(5) << kdname[cell.kind[i] - 1] << '\n';
         }
     }
-
-    cout << endl << endl;
+    cout << "\n\n";
 
     cell = get_primcell();
 
@@ -846,114 +837,100 @@ void System::print_structure_stdout(const int verbosity)
     cout << "   Primitive Cell \n";
     cout << "  ++++++++++++++++\n\n";
 
-    cout << "   Lattice Vector (bohr)" << endl;
+    cout << "   Lattice Vector (bohr)\n";
     cout << setw(16) << cell.lattice_vector(0, 0);
     cout << setw(15) << cell.lattice_vector(1, 0);
     cout << setw(15) << cell.lattice_vector(2, 0);
-    cout << " : a1" << endl;
-
+    cout << " : a1\n";
     cout << setw(16) << cell.lattice_vector(0, 1);
     cout << setw(15) << cell.lattice_vector(1, 1);
     cout << setw(15) << cell.lattice_vector(2, 1);
-    cout << " : a2" << endl;
-
+    cout << " : a2\n";
     cout << setw(16) << cell.lattice_vector(0, 2);
     cout << setw(15) << cell.lattice_vector(1, 2);
     cout << setw(15) << cell.lattice_vector(2, 2);
-    cout << " : a3" << endl;
-    cout << endl;
+    cout << " : a3\n\n";
 
     const auto nat_prim = cell.number_of_atoms;
 
     cout << "   Number of atoms : " << cell.number_of_atoms << "\n\n";
 
     if (verbosity > 1) {
-        cout << "   Cell volume = " << cell.volume << " (bohr^3)" << endl << endl;
-
-        cout << "   Reciprocal Lattice Vector (1/bohr)" << std::endl;
+        cout << "   Cell volume = " << cell.volume << " (bohr^3)\n\n";
+        cout << "   Reciprocal Lattice Vector (1/bohr)\n";
         cout << setw(16) << cell.reciprocal_lattice_vector(0, 0);
         cout << setw(15) << cell.reciprocal_lattice_vector(0, 1);
         cout << setw(15) << cell.reciprocal_lattice_vector(0, 2);
-        cout << " : b1" << endl;
-
+        cout << " : b1\n";
         cout << setw(16) << cell.reciprocal_lattice_vector(1, 0);
         cout << setw(15) << cell.reciprocal_lattice_vector(1, 1);
         cout << setw(15) << cell.reciprocal_lattice_vector(1, 2);
-        cout << " : b2" << endl;
-
+        cout << " : b2\n";
         cout << setw(16) << cell.reciprocal_lattice_vector(2, 0);
         cout << setw(15) << cell.reciprocal_lattice_vector(2, 1);
         cout << setw(15) << cell.reciprocal_lattice_vector(2, 2);
-        cout << " : b3" << endl;
-        cout << endl;
+        cout << " : b3\n\n";
     }
 
-    cout << "   Atomic positions in fractional basis and atomic species" << endl;
+    cout << "   Atomic positions in fractional basis and atomic species\n";
     for (i = 0; i < cell.number_of_atoms; ++i) {
         cout << setw(6) << i + 1;
         cout << setw(15) << cell.x_fractional(i, 0);
         cout << setw(15) << cell.x_fractional(i, 1);
         cout << setw(15) << cell.x_fractional(i, 2);
-        cout << setw(5) << kdname[cell.kind[i] - 1] << endl;
+        cout << setw(5) << kdname[cell.kind[i] - 1] << '\n';
     }
-    cout << endl << endl;
+    cout << "\n\n";
 
     cell = get_supercell();
     cout << "  ++++++++++++\n";
     cout << "   Super Cell \n";
     cout << "  ++++++++++++\n\n";
 
-    cout << "   Lattice Vector (bohr)" << endl;
+    cout << "   Lattice Vector (bohr)\n";
     cout << setw(16) << cell.lattice_vector(0, 0);
     cout << setw(15) << cell.lattice_vector(1, 0);
     cout << setw(15) << cell.lattice_vector(2, 0);
-    cout << " : a1" << endl;
-
+    cout << " : a1\n";
     cout << setw(16) << cell.lattice_vector(0, 1);
     cout << setw(15) << cell.lattice_vector(1, 1);
     cout << setw(15) << cell.lattice_vector(2, 1);
-    cout << " : a2" << endl;
-
+    cout << " : a2\n";
     cout << setw(16) << cell.lattice_vector(0, 2);
     cout << setw(15) << cell.lattice_vector(1, 2);
     cout << setw(15) << cell.lattice_vector(2, 2);
-    cout << " : a3" << endl;
-    cout << endl;
+    cout << " : a3\n\n";
 
     cout << "   Number of atoms : " << cell.number_of_atoms << "\n\n";
     cout << "   Supercell contains " << std::setw(5) << cell.number_of_atoms / nat_prim
          << " primitive cells\n\n";
 
     if (verbosity > 1) {
-        cout << "   Cell volume = " << cell.volume << " (bohr^3)" << endl << endl;
-
-        cout << "   Reciprocal Lattice Vector (1/bohr)" << std::endl;
+        cout << "   Cell volume = " << cell.volume << " (bohr^3)\n\n";
+        cout << "   Reciprocal Lattice Vector (1/bohr)\n";
         cout << setw(16) << cell.reciprocal_lattice_vector(0, 0);
         cout << setw(15) << cell.reciprocal_lattice_vector(0, 1);
         cout << setw(15) << cell.reciprocal_lattice_vector(0, 2);
-        cout << " : b1" << endl;
-
+        cout << " : b1\n";
         cout << setw(16) << cell.reciprocal_lattice_vector(1, 0);
         cout << setw(15) << cell.reciprocal_lattice_vector(1, 1);
         cout << setw(15) << cell.reciprocal_lattice_vector(1, 2);
-        cout << " : b2" << endl;
-
+        cout << " : b2\n";
         cout << setw(16) << cell.reciprocal_lattice_vector(2, 0);
         cout << setw(15) << cell.reciprocal_lattice_vector(2, 1);
         cout << setw(15) << cell.reciprocal_lattice_vector(2, 2);
-        cout << " : b3" << endl;
-        cout << endl;
+        cout << " : b3\n\n";
 
-        cout << "   Atomic positions in fractional basis and atomic species" << endl;
+        cout << "   Atomic positions in fractional basis and atomic species\n";
         for (i = 0; i < cell.number_of_atoms; ++i) {
             cout << setw(6) << i + 1;
             cout << setw(15) << cell.x_fractional(i, 0);
             cout << setw(15) << cell.x_fractional(i, 1);
             cout << setw(15) << cell.x_fractional(i, 2);
-            cout << setw(5) << kdname[cell.kind[i] - 1] << endl;
+            cout << setw(5) << kdname[cell.kind[i] - 1] << '\n';
         }
     }
-    cout << endl << endl;
+    cout << "\n\n";
 
     cout.unsetf(ios::scientific);
 }
@@ -968,27 +945,25 @@ void System::print_magmom_stdout() const
     cout << " ====================\n\n";
 
     cout << "  MAGMOM is given.\n"
-            "  The magnetic moments of each atom in the primitive cell are as follows:" << endl;
+            "  The magnetic moments of each atom in the primitive cell are as follows:\n";
     for (size_t i = 0; i < primcell.number_of_atoms; ++i) {
         cout << setw(6) << i + 1;
         cout << setw(5) << spin_prim.magmom[i][0];
         cout << setw(5) << spin_prim.magmom[i][1];
         cout << setw(5) << spin_prim.magmom[i][2];
-        cout << endl;
+        cout << '\n';
     }
-    cout << endl;
+    cout << '\n';
     if (spin_prim.noncollinear == 0) {
-        cout << "  NONCOLLINEAR = 0: magnetic moments are considered as scalar variables." << endl;
+        cout << "  NONCOLLINEAR = 0: magnetic moments are considered as scalar variables.\n";
     } else if (spin_prim.noncollinear == 1) {
-        cout << "  NONCOLLINEAR = 1: magnetic moments are considered as vector variables." << endl;
+        cout << "  NONCOLLINEAR = 1: magnetic moments are considered as vector variables.\n";
         if (spin_prim.time_reversal_symm) {
-            cout << "  TREVSYM = 1: Time-reversal symmetry will be considered for generating magnetic space group"
-                 << endl;
+            cout << "  TREVSYM = 1: Time-reversal symmetry will be considered for generating magnetic space group\n";
         } else {
             cout <<
-                 "  TREVSYM = 0: Time-reversal symmetry will NOT be considered for generating magnetic space group"
-                 << endl;
+                 "  TREVSYM = 0: Time-reversal symmetry will NOT be considered for generating magnetic space group\n";
         }
     }
-    cout << endl << endl;
+    cout << "\n\n";
 }

@@ -176,13 +176,6 @@ private:
                                   std::vector<SymmetryOperation> &symlist,
                                   const int verbosity = 1);
 
-    void setup_atomic_class(const std::vector<int> &kd,
-                            const int lspin,
-                            const std::vector<std::vector<double>> &magmom_in,
-                            const int noncollinear,
-                            std::vector<std::vector<unsigned int>> &atomgroup_out) const;
-
-
     void gensym_withmap(const Eigen::Matrix3d &aa,
                         const Eigen::MatrixXd &x,
                         const std::vector<int> &kd,
@@ -201,13 +194,6 @@ private:
                                const Spin &spin,
                                const std::vector<RotationMatrix> &LatticeSymmList,
                                std::vector<SymmetryOperation> &symm_out) const;
-
-    void gen_mapping_information(const Cell &scell,
-                                 const std::vector<std::vector<unsigned int>> &atomtype_group_super,
-                                 const std::vector<SymmetryOperation> &symm_super,
-                                 const Cell &pcell,
-                                 const std::vector<std::vector<unsigned int>> &atomtype_group_prim,
-                                 const std::vector<SymmetryOperation> &symm_prim);
 
     void findsym_alm(const Cell &,
                      const std::vector<std::vector<unsigned int>> &,
