@@ -169,9 +169,9 @@ void PHON::setup_base() const
     integration->setup_integration();
     dos->setup();
     thermodynamics->setup();
-    ewald->init();
     anharmonic_core->setup();
     dielec->init();
+    ewald->init();
 
     if (mympi->my_rank == 0) {
         std::cout << " Now, move on to phonon calculations.\n";

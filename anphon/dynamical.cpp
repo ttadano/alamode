@@ -10,6 +10,7 @@
 
 #include "mpi_common.h"
 #include "constants.h"
+#include "dielec.h"
 #include "dynamical.h"
 #include "error.h"
 #include "ewald.h"
@@ -52,19 +53,14 @@ void Dynamical::set_default_variables()
     neval = 0;
     eigenvectors = true;
     print_eigenvectors = false;
-    symmetrize_borncharge = 0;
     nonanalytic = 0;
     participation_ratio = false;
     band_connection = 0;
     na_sigma = 0.0;
-    file_born = "";
     UPLO = 'U';
 
     index_bconnect = nullptr;
-    borncharge = nullptr;
-
     is_imaginary = nullptr;
-
     xshift_s = nullptr;
     dymat = nullptr;
     mindist_list = nullptr;
@@ -76,9 +72,6 @@ void Dynamical::deallocate_variables()
 {
     if (index_bconnect) {
         deallocate(index_bconnect);
-    }
-    if (borncharge) {
-        deallocate(borncharge);
     }
     if (is_imaginary) {
         deallocate(is_imaginary);
@@ -93,8 +86,8 @@ void Dynamical::deallocate_variables()
         deallocate(mindist_list);
     }
 
-    if (dymat_band) delete dymat_band;
-    if (dymat_general) delete dymat_general;
+    delete dymat_band;
+    delete dymat_general;
 }
 
 void DymatEigenValue::set_eigenvalues(const unsigned int n,
@@ -254,8 +247,6 @@ void Dynamical::setup_dynamical()
     }
 
     if (nonanalytic) {
-        setup_dielectric();
-
         MPI_Bcast(&na_sigma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         allocate(mindist_list,
@@ -637,7 +628,7 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
     unsigned int iat, jat;
     const auto pcell = system->get_primcell();
     const auto nat_prim = pcell.number_of_atoms;
-    double kepsilon[3];
+    Eigen::Vector3d kepsilon, kvec_na_vec;
     double kz1[3], kz2[3];
     double born_tmp[3][3];
     Eigen::Vector3d xk_tmp, xdiff;
@@ -648,10 +639,18 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
         }
     }
 
-    rotvec(kepsilon, kvec_na_in, dielec);
-    const auto denom = kvec_na_in[0] * kepsilon[0]
-                       + kvec_na_in[1] * kepsilon[1]
-                       + kvec_na_in[2] * kepsilon[2];
+    auto dielec_tmp = dielec->get_dielec_tensor();
+    const auto borncharge = dielec->get_borncharge();
+
+    for (i = 0; i < 3; ++i) {
+        kvec_na_vec[i] = kvec_na_in[i];
+    }
+    const auto denom = kvec_na_vec.dot(dielec_tmp * kvec_na_vec);
+
+   // rotvec(kepsilon, kvec_na_in, dielec);
+    //const auto denom = kvec_na_in[0] * kepsilon[0]
+//                       + kvec_na_in[1] * kepsilon[1]
+//                       + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
@@ -745,6 +744,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
     unsigned int i, j;
     const auto natmin = system->get_primcell().number_of_atoms;
     double kepsilon[3];
+    Eigen::Vector3d kvec_na_vec;
     double kz1[3], kz2[3];
     double born_tmp[3][3];
     Eigen::Vector3d vec;
@@ -759,10 +759,17 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
         }
     }
 
-    rotvec(kepsilon, kvec_na_in, dielec);
-    double denom = kvec_na_in[0] * kepsilon[0]
-                   + kvec_na_in[1] * kepsilon[1]
-                   + kvec_na_in[2] * kepsilon[2];
+    auto dielec_tmp = dielec->get_dielec_tensor();
+    const auto borncharge = dielec->get_borncharge();
+
+    for (i = 0; i < 3; ++i) {
+        kvec_na_vec[i] = kvec_na_in[i];
+    }
+    const auto denom = kvec_na_vec.dot(dielec_tmp * kvec_na_vec);
+//    rotvec(kepsilon, kvec_na_in, dielec);
+//    double denom = kvec_na_in[0] * kepsilon[0]
+//                   + kvec_na_in[1] * kepsilon[1]
+//                   + kvec_na_in[2] * kepsilon[2];
 
     if (denom > eps) {
 
@@ -1392,209 +1399,6 @@ int Dynamical::transform_eigenvectors(double *xk_in,
     }
 
     return is_lifted;
-}
-
-void Dynamical::setup_dielectric(const unsigned int verbosity) // maybe, this should be moved to dielec class.
-{
-    if (borncharge) deallocate(borncharge);
-
-    allocate(borncharge, system->get_primcell().number_of_atoms, 3, 3);
-    if (mympi->my_rank == 0) load_born(symmetrize_borncharge, verbosity);
-
-    MPI_Bcast(&dielec[0][0], 9, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&borncharge[0][0][0], 9 * system->get_primcell().number_of_atoms,
-              MPI_DOUBLE, 0, MPI_COMM_WORLD);
-}
-
-void Dynamical::load_born(const unsigned int flag_symmborn,
-                          const unsigned int verbosity) // maybe, this should be moved to dielec class.
-{
-    // Read the dielectric tensor and born effective charges from file_born
-
-    unsigned int i, j, k;
-    double sum_born[3][3];
-    std::ifstream ifs_born;
-
-    const auto natmin_tmp = system->get_primcell().number_of_atoms;
-
-    ifs_born.open(file_born.c_str(), std::ios::in);
-    if (!ifs_born) exit("load_born", "cannot open file_born");
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            ifs_born >> dielec[i][j];
-        }
-    }
-
-    for (i = 0; i < natmin_tmp; ++i) {
-        for (j = 0; j < 3; ++j) {
-            for (k = 0; k < 3; ++k) {
-                ifs_born >> borncharge[i][j][k];
-            }
-        }
-    }
-    ifs_born.close();
-
-    if (verbosity > 0) {
-        std::cout << "  Dielectric constants and Born effective charges are read from "
-                  << file_born << ".\n\n";
-        std::cout << "  Dielectric constant tensor in Cartesian coordinate : \n";
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(15) << dielec[i][j];
-            }
-            std::cout << '\n';
-        }
-        std::cout << '\n';
-
-        std::cout << "  Born effective charge tensor in Cartesian coordinate\n";
-        for (i = 0; i < natmin_tmp; ++i) {
-            std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                      << std::setw(3) << system->symbol_kd[system->get_supercell(0).kind[system->get_map_p2s(0)[i][0]]]
-                      << ") :\n";
-
-            for (j = 0; j < 3; ++j) {
-                for (k = 0; k < 3; ++k) {
-                    std::cout << std::setw(15) << std::fixed
-                              << std::setprecision(6) << borncharge[i][j][k];
-                }
-                std::cout << '\n';
-            }
-        }
-    }
-
-
-    // Check if the ASR is satisfied. If not, enforce it.
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            sum_born[i][j] = 0.0;
-            for (k = 0; k < natmin_tmp; ++k) {
-                sum_born[i][j] += borncharge[k][i][j];
-            }
-        }
-    }
-
-    double res = 0.0;
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            res += std::pow(sum_born[i][j], 2);
-        }
-    }
-
-    if (res > eps10) {
-        if (verbosity > 0) {
-            std::cout << '\n';
-            std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule.\n";
-            std::cout << "           The born effective charges are modified to satisfy the ASR.\n";
-        }
-
-        for (i = 0; i < natmin_tmp; ++i) {
-            for (j = 0; j < 3; ++j) {
-                for (k = 0; k < 3; ++k) {
-                    borncharge[i][j][k] -=
-                            sum_born[j][k] / static_cast<double>(system->get_primcell().number_of_atoms);
-                }
-            }
-        }
-    }
-
-    if (flag_symmborn) {
-
-        // Symmetrize Born effective charges. Necessary to avoid the violation of ASR
-        // particularly for NONANALYTIC=3 (Ewald summation).
-
-        int iat;
-        double ***born_sym;
-        double rot[3][3];
-
-        allocate(born_sym, natmin_tmp, 3, 3);
-
-        for (iat = 0; iat < natmin_tmp; ++iat) {
-            for (i = 0; i < 3; ++i) {
-                for (j = 0; j < 3; ++j) {
-                    born_sym[iat][i][j] = 0.0;
-                }
-            }
-        }
-
-        for (auto isym = 0; isym < symmetry->SymmListWithMap.size(); ++isym) {
-            for (i = 0; i < 3; ++i) {
-                for (j = 0; j < 3; ++j) {
-                    rot[i][j] = symmetry->SymmListWithMap[isym].rot[3 * i + j];
-                }
-            }
-
-            for (iat = 0; iat < natmin_tmp; ++iat) {
-                int iat_sym = symmetry->SymmListWithMap[isym].mapping[iat];
-
-                for (i = 0; i < 3; ++i) {
-                    for (j = 0; j < 3; ++j) {
-                        for (k = 0; k < 3; ++k) {
-                            for (int m = 0; m < 3; ++m) {
-                                born_sym[iat_sym][i][j] += rot[i][k] * rot[j][m] * borncharge[iat][k][m];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        for (iat = 0; iat < natmin_tmp; ++iat) {
-            for (i = 0; i < 3; ++i) {
-                for (j = 0; j < 3; ++j) {
-                    born_sym[iat][i][j] /= static_cast<double>(symmetry->SymmListWithMap.size());
-                }
-            }
-        }
-
-        // Check if the Born effective charges given by the users satisfy the symmetry.
-
-        auto diff_sym = 0.0;
-        for (iat = 0; iat < natmin_tmp; ++iat) {
-            for (i = 0; i < 3; ++i) {
-                for (j = 0; j < 3; ++j) {
-                    diff_sym = std::max<double>(diff_sym, std::abs(borncharge[iat][i][j] - born_sym[iat][i][j]));
-                }
-            }
-        }
-
-        if (diff_sym > 0.5 && verbosity > 0) {
-            std::cout << '\n';
-            std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry.\n";
-        }
-
-        for (iat = 0; iat < natmin_tmp; ++iat) {
-            for (i = 0; i < 3; ++i) {
-                for (j = 0; j < 3; ++j) {
-                    borncharge[iat][i][j] = born_sym[iat][i][j];
-                }
-            }
-        }
-        deallocate(born_sym);
-
-        if (verbosity > 0) {
-            if (diff_sym > eps8 || res > eps10) {
-                std::cout << '\n';
-                std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << '\n';
-                for (i = 0; i < natmin_tmp; ++i) {
-                    std::cout << "  Atom" << std::setw(5) << i + 1 << "("
-                              << std::setw(3)
-                              << system->symbol_kd[system->get_primcell().kind[system->get_map_p2s(0)[i][0]]]
-                              << ") :"
-                              << '\n';
-
-                    for (j = 0; j < 3; ++j) {
-                        for (k = 0; k < 3; ++k) {
-                            std::cout << std::setw(15) << borncharge[i][j][k];
-                        }
-                        std::cout << '\n';
-                    }
-                }
-            }
-        }
-    }
-    std::cout << std::scientific;
 }
 
 double Dynamical::fold(const double x) const

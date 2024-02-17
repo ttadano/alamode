@@ -12,6 +12,7 @@
 #include "mpi_common.h"
 #include "ewald.h"
 #include "constants.h"
+#include "dielec.h"
 #include "dynamical.h"
 #include "error.h"
 #include "kpoint.h"
@@ -83,18 +84,18 @@ void Ewald::init()
         for (int i = 0; i < natmin_tmp; ++i) {
             for (int j = 0; j < 3; ++j) {
                 for (int k = 0; k < 3; ++k) {
-                    Born_charge[i][j][k] = dynamical->borncharge[i][j][k];
+                    Born_charge[i][j][k] = dielec->get_borncharge()[i][j][k];
                 }
             }
         }
 
-        prepare_Ewald(dynamical->dielec);
+        prepare_Ewald(dielec->get_dielec_tensor());
         prepare_G();
         compute_ewald_fcs();
     }
 }
 
-void Ewald::prepare_Ewald(const double dielectric[3][3])
+void Ewald::prepare_Ewald(const Eigen::Matrix3d& dielectric)
 {
     int icrd;
 
@@ -112,11 +113,11 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
 
     for (icrd = 0; icrd < 3; ++icrd) {
         for (int jcrd = 0; jcrd < 3; ++jcrd) {
-            epsilon[icrd][jcrd] = dielectric[icrd][jcrd];
-            epsilon_mat(icrd, jcrd) = epsilon[icrd][jcrd];
+            epsilon[icrd][jcrd] = dielectric(icrd, jcrd);
+//            epsilon_mat(icrd, jcrd) = epsilon[icrd][jcrd];
         }
-
     }
+    epsilon_mat = dielectric;
 
     // Calculating convergence parameters
     invmat3(epsilon_inv, epsilon);
@@ -208,13 +209,9 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
         std::cout << "    Lmax   : " << std::setw(15) << Lmax_sub << '\n';
         std::cout << "    Gmax   : " << std::setw(15) << Gmax_sub << '\n';
         std::cout << "    Maximum number of real-space cells : "
-                  << std::setw(3) << nl_sub[0] << "x" << std::setw(3) << nl_sub[1] << "x" << std::setw(3) << nl_sub[2]
-                  << std
-                  ::endl;
+                  << std::setw(3) << nl_sub[0] << "x" << std::setw(3) << nl_sub[1] << "x" << std::setw(3) << nl_sub[2] << '\n';
         std::cout << "    Maximum number of reciprocal cells : "
-                  << std::setw(3) << ng_sub[0] << "x" << std::setw(3) << ng_sub[1] << "x" << std::setw(3) << ng_sub[2]
-                  << std
-                  ::endl;
+                  << std::setw(3) << ng_sub[0] << "x" << std::setw(3) << ng_sub[1] << "x" << std::setw(3) << ng_sub[2] << '\n';
         std::cout << '\n';
         std::cout << "  - Dynamical matrix\n";
         std::cout << "    Lambda : " << std::setw(15) << lambda << '\n';

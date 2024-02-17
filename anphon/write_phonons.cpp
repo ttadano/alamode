@@ -107,7 +107,7 @@ void Writes::writeInputVars()
 
     std::cout << "  NONANALYTIC = " << dynamical->nonanalytic << '\n';
     if (dynamical->nonanalytic) {
-        std::cout << "  BORNINFO = " << dynamical->file_born
+        std::cout << "  BORNINFO = " << dielec->file_born
                   << "; NA_SIGMA = " << dynamical->na_sigma << '\n';
     }
     std::cout << '\n';

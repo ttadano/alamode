@@ -350,9 +350,9 @@ void Input::parse_general_vars()
 
     dynamical->nonanalytic = nonanalytic;
     dynamical->na_sigma = na_sigma;
-    dynamical->symmetrize_borncharge = bornsym;
+    dielec->symmetrize_borncharge = bornsym;
     writes->nbands = nbands;
-    dynamical->file_born = borninfo;
+    dielec->file_born = borninfo;
     dynamical->band_connection = band_connection;
     integration->epsilon = epsilon;
     fcs_phonon->file_fcs = fcsfile;

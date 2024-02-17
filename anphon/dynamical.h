@@ -97,18 +97,13 @@ public:
     unsigned int neval{};
     bool eigenvectors{};
     bool print_eigenvectors{};
-    unsigned int symmetrize_borncharge{};
     unsigned int nonanalytic{};
     bool participation_ratio{};
     unsigned int band_connection{};
 
-    std::string file_born;
     double na_sigma{};
 
     int **index_bconnect{};
-    double dielec[3][3]{};
-    double ***borncharge{};
-
     bool **is_imaginary{};
 
     DymatEigenValue *dymat_band, *dymat_general;
@@ -116,8 +111,6 @@ public:
     void diagonalize_dynamical_all();
 
     void setup_dynamical();
-
-    void setup_dielectric(const unsigned int verbosity = 1);
 
     void eval_k(const double *,
                 const double *,
@@ -246,8 +239,6 @@ private:
 
     void deallocate_variables();
 
-    void load_born(const unsigned int flag_symmborn,
-                   const unsigned int verbosity = 1);
 
     void prepare_mindist_list(std::vector<int> **) const;
 

@@ -93,7 +93,7 @@ private:
 
     void deallocate_variables();
 
-    void prepare_Ewald(const double [3][3]);
+    void prepare_Ewald(const Eigen::Matrix3d & dielectric);
 
     void prepare_G();
 
