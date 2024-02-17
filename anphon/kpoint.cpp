@@ -66,31 +66,31 @@ void Kpoint::kpoint_setups(const std::string mode)
     MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
-        std::cout << " k points" << std::endl;
-        std::cout << " ========" << std::endl << std::endl;
+        std::cout << " k points\n";
+        std::cout << " ========\n\n";
     }
 
     switch (kpoint_mode) {
         case 0:
 
             if (mympi->my_rank == 0) {
-                std::cout << "  KPMODE = 0 : Calculation on given k points" << std::endl;
+                std::cout << "  KPMODE = 0 : Calculation on given k points\n";
             }
 
             setup_kpoint_given(kpInp,
                                system->get_primcell().reciprocal_lattice_vector);
 
             if (mympi->my_rank == 0) {
-                std::cout << "  Number of k points : " << kpoint->kpoint_general->nk << std::endl << std::endl;
-                std::cout << "  List of k points : " << std::endl;
+                std::cout << "  Number of k points : " << kpoint->kpoint_general->nk << "\n\n";
+                std::cout << "  List of k points : " << '\n';
                 for (auto i = 0; i < kpoint->kpoint_general->nk; ++i) {
                     std::cout << std::setw(5) << i + 1 << ":";
                     for (auto j = 0; j < 3; ++j) {
                         std::cout << std::setw(15) << kpoint->kpoint_general->xk[i][j];
                     }
-                    std::cout << std::endl;
+                    std::cout << '\n';
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
 
             break;
@@ -98,14 +98,14 @@ void Kpoint::kpoint_setups(const std::string mode)
         case 1:
 
             if (mympi->my_rank == 0) {
-                std::cout << "  KPMODE = 1: Band structure calculation" << std::endl;
+                std::cout << "  KPMODE = 1: Band structure calculation\n";
             }
 
             setup_kpoint_band(kpInp,
                               system->get_primcell().reciprocal_lattice_vector);
             if (mympi->my_rank == 0) {
-                std::cout << "  Number of paths : " << kpInp.size() << std::endl << std::endl;
-                std::cout << "  List of k paths : " << std::endl;
+                std::cout << "  Number of paths : " << kpInp.size() << "\n\n";
+                std::cout << "  List of k paths : " << '\n';
 
                 for (auto i = 0; i < kpInp.size(); ++i) {
                     std::cout << std::setw(4) << i + 1 << ":";
@@ -123,10 +123,10 @@ void Kpoint::kpoint_setups(const std::string mode)
                                   << std::atof(kpInp[i].kpelem[k + 5].c_str());
                     }
                     std::cout << ")";
-                    std::cout << std::setw(4) << kpInp[i].kpelem[8] << std::endl;
+                    std::cout << std::setw(4) << kpInp[i].kpelem[8] << '\n';
                 }
-                std::cout << std::endl;
-                std::cout << "  Number of k points : " << kpoint_bs->nk << std::endl << std::endl;
+                std::cout << '\n';
+                std::cout << "  Number of k points : " << kpoint_bs->nk << "\n\n";
 
             }
 
@@ -135,7 +135,7 @@ void Kpoint::kpoint_setups(const std::string mode)
         case 2:
 
             if (mympi->my_rank == 0) {
-                std::cout << "  KPMODE = 2: Uniform grid" << std::endl;
+                std::cout << "  KPMODE = 2: Uniform grid\n";
             }
 
             unsigned int nk_tmp[3];
@@ -155,15 +155,13 @@ void Kpoint::kpoint_setups(const std::string mode)
                                   true);
 
             if (mympi->my_rank == 0) {
-                std::cout << "  Gamma-centered uniform grid with the following mesh density: " << std::endl;
-                std::cout << "  nk1:" << std::setw(4) << dos->kmesh_dos->nk_i[0] << std::endl;
-                std::cout << "  nk2:" << std::setw(4) << dos->kmesh_dos->nk_i[1] << std::endl;
-                std::cout << "  nk3:" << std::setw(4) << dos->kmesh_dos->nk_i[2] << std::endl;
-                std::cout << std::endl;
-                std::cout << "  Number of k points : " << dos->kmesh_dos->nk << std::endl;
-                std::cout << "  Number of irreducible k points : " << dos->kmesh_dos->nk_irred << std::endl <<
-                          std::endl;
-                std::cout << "  List of irreducible k points (reciprocal coordinate, weight) : " << std::endl;
+                std::cout << "  Gamma-centered uniform grid with the following mesh density: \n";
+                std::cout << "  nk1:" << std::setw(4) << dos->kmesh_dos->nk_i[0] << '\n';
+                std::cout << "  nk2:" << std::setw(4) << dos->kmesh_dos->nk_i[1] << '\n';
+                std::cout << "  nk3:" << std::setw(4) << dos->kmesh_dos->nk_i[2] << "\n\n";
+                std::cout << "  Number of k points : " << dos->kmesh_dos->nk << '\n';
+                std::cout << "  Number of irreducible k points : " << dos->kmesh_dos->nk_irred << "\n\n";
+                std::cout << "  List of irreducible k points (reciprocal coordinate, weight) : \n";
 
                 for (auto i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
                     std::cout << "  " << std::setw(5) << i + 1 << ":";
@@ -172,9 +170,9 @@ void Kpoint::kpoint_setups(const std::string mode)
                                   << std::scientific << dos->kmesh_dos->kpoint_irred_all[i][0].kval[j];
                     }
                     std::cout << std::setprecision(6) << std::setw(11)
-                              << std::fixed << dos->kmesh_dos->weight_k[i] << std::endl;
+                              << std::fixed << dos->kmesh_dos->weight_k[i] << '\n';
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
 
             break;

@@ -370,7 +370,7 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
 #pragma omp parallel for private(ret_in, nsize_group, j, phase)
         for (i = 0; i < ngroup_v3_in; ++i) {
 
-            // std::cout << "i = " << i << std::endl << std::flush;
+            // std::cout << "i = " << i << '\n' << std::flush;
 
             ret_in = std::complex<double>(0.0, 0.0);
             nsize_group = fcs_group_v3_in[i].size();

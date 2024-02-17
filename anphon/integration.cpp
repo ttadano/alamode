@@ -11,12 +11,10 @@
 #include "mpi_common.h"
 #include "integration.h"
 #include "error.h"
-#include "kpoint.h"
 #include "mathfunctions.h"
 #include "memory.h"
 #include "system.h"
 #include <iomanip>
-#include <vector>
 #include <algorithm>
 #include <cmath>
 
@@ -47,19 +45,19 @@ void Integration::setup_integration()
     MPI_Bcast(&ismear, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
+        std::cout << '\n';
         if (ismear == -1) {
-            std::cout << " ISMEAR = -1: Tetrahedron method will be used." << std::endl;
+            std::cout << " ISMEAR = -1: Tetrahedron method will be used.\n";
         } else if (ismear == 0) {
             std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = "
-                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
         } else if (ismear == 1) {
             std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
-                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
         } else {
             exit("setup_relaxation", "Invalid ksum_mode");
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 
     epsilon *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.

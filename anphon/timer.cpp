@@ -53,7 +53,7 @@ double Timer::elapsed() const
 
 void Timer::print_elapsed() const
 {
-    std::cout << std::endl << " Time Elapsed: " << elapsed() << " sec." << std::endl << std::endl;
+    std::cout << "\n Time Elapsed: " << elapsed() << " sec.\n\n";
 }
 
 std::string Timer::DateAndTime() const

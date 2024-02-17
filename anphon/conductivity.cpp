@@ -169,8 +169,8 @@ void Conductivity::prepare_restart()
 
         if (!phon->restart_flag) {
 
-            writes->fs_result << "##Phonon Frequency" << std::endl;
-            writes->fs_result << "#K-point (irreducible), Branch, Omega (cm^-1)" << std::endl;
+            writes->fs_result << "##Phonon Frequency" << '\n';
+            writes->fs_result << "#K-point (irreducible), Branch, Omega (cm^-1)" << '\n';
 
             for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
                 const auto ik = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
@@ -182,8 +182,8 @@ void Conductivity::prepare_restart()
                 }
             }
 
-            writes->fs_result << "##END Phonon Frequency" << std::endl << std::endl;
-            writes->fs_result << "##Phonon Relaxation Time" << std::endl;
+            writes->fs_result << "##END Phonon Frequency\n\n";
+            writes->fs_result << "##Phonon Relaxation Time\n";
 
         } else {
 
@@ -239,7 +239,7 @@ void Conductivity::prepare_restart()
 
             if (it_set == vks_job.end()) {
                 std::cout << " rank = " << mympi->my_rank
-                          << " arr_done = " << arr_done[i] << std::endl;
+                          << " arr_done = " << arr_done[i] << '\n';
                 exit("prepare_restart", "This cannot happen");
             } else {
                 vks_job.erase(it_set);
@@ -279,15 +279,15 @@ void Conductivity::calc_anharmonic_imagself()
                1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
-        std::cout << " Start calculating anharmonic phonon self-energies ... " << std::endl;
-        std::cout << " Total Number of phonon modes to be calculated : " << nks_g << std::endl;
-        std::cout << " All modes are distributed to MPI threads as the following :" << std::endl;
+        std::cout << '\n';
+        std::cout << " Start calculating anharmonic phonon self-energies ... \n";
+        std::cout << " Total Number of phonon modes to be calculated : " << nks_g << '\n';
+        std::cout << " All modes are distributed to MPI threads as the following :\n";
         for (i = 0; i < mympi->nprocs; ++i) {
             std::cout << " RANK: " << std::setw(5) << i + 1;
-            std::cout << std::setw(8) << "MODES: " << std::setw(5) << nks_thread[i] << std::endl;
+            std::cout << std::setw(8) << "MODES: " << std::setw(5) << nks_thread[i] << '\n';
         }
-        std::cout << std::endl << std::flush;
+        std::cout << '\n' << std::flush;
 
         deallocate(nks_thread);
     }
@@ -350,7 +350,7 @@ void Conductivity::calc_anharmonic_imagself()
 
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart, vel, damping3);
-            std::cout << " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
+            std::cout << " MODE " << std::setw(5) << i + 1 << " done.\n" << std::flush;
         }
     }
     deallocate(damping3_loc);
@@ -370,24 +370,24 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 
         if (iks_g >= dos->kmesh_dos->nk_irred * ns) break;
 
-        writes->fs_result << "#GAMMA_EACH" << std::endl;
-        writes->fs_result << iks_g / ns + 1 << " " << iks_g % ns + 1 << std::endl;
+        writes->fs_result << "#GAMMA_EACH\n";
+        writes->fs_result << iks_g / ns + 1 << " " << iks_g % ns + 1 << '\n';
 
         const auto nk_equiv = dos->kmesh_dos->kpoint_irred_all[iks_g / ns].size();
 
-        writes->fs_result << nk_equiv << std::endl;
+        writes->fs_result << nk_equiv << '\n';
         for (k = 0; k < nk_equiv; ++k) {
             const auto ktmp = dos->kmesh_dos->kpoint_irred_all[iks_g / ns][k].knum;
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
             writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
-            writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
+            writes->fs_result << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << '\n';
         }
 
         for (k = 0; k < ntemp; ++k) {
             writes->fs_result << std::setw(15)
-                              << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
+                              << damp_in[iks_g][k] * Hz_to_kayser / time_ry << '\n';
         }
-        writes->fs_result << "#END GAMMA_EACH" << std::endl;
+        writes->fs_result << "#END GAMMA_EACH\n";
     }
 }
 
@@ -656,7 +656,7 @@ void Conductivity::compute_kappa_coherent(const KpointMeshUniform *kmesh_in,
         ofs.open(file_coherent_elems.c_str(), std::ios::out);
         if (!ofs) exit("compute_kappa_coherent", "cannot open file_kc");
         ofs << "# Temperature [K], 1st and 2nd xyz components, ibranch, jbranch, ik_irred, "
-               "omega1 [cm^-1], omega2 [cm^-1], kappa_elems real, kappa_elems imag" << std::endl;
+               "omega1 [cm^-1], omega2 [cm^-1], kappa_elems real, kappa_elems imag\n";
         allocate(kappa_save, ns2, nk_irred);
     }
 
@@ -762,7 +762,7 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
     unsigned int *kmap_identity;
     double **eval;
 
-    std::cout << std::endl;
+    std::cout << '\n';
     std::cout << " KAPPA_SPEC = 1 : Calculating thermal conductivity spectra ... ";
 
     allocate(kmap_identity, nk);
@@ -825,5 +825,5 @@ void Conductivity::compute_frequency_resolved_kappa(const int ntemp,
     deallocate(kmap_identity);
     deallocate(eval);
 
-    std::cout << " done!" << std::endl;
+    std::cout << " done!\n";
 }

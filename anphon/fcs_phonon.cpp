@@ -118,11 +118,11 @@ void Fcs_phonon::setup(std::string mode)
 
         for (auto i = 0; i < maxorder; ++i) {
             std::cout << "  Number of non-zero IFCs for " << i + 2 << " order: ";
-            std::cout << force_constant_with_cell[i].size() << std::endl;
+            std::cout << force_constant_with_cell[i].size() << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
 
-        std::cout << "  Maximum deviation from the translational invariance: " << std::endl;
+        std::cout << "  Maximum deviation from the translational invariance: \n";
         for (auto i = 0; i < maxorder; ++i) {
             const auto maxdev = examine_translational_invariance(i,
                                                                  system->get_supercell(i).number_of_atoms,
@@ -130,9 +130,9 @@ void Fcs_phonon::setup(std::string mode)
                                                                  system->get_mapping_super_alm(i).from_true_primitive,
                                                                  force_constant_with_cell[i]);
             std::cout << "   Order " << i + 2 << " : " << std::setw(12)
-                      << std::scientific << maxdev << std::endl;
+                      << std::scientific << maxdev << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 
     MPI_Bcast_fcs_array(maxorder);

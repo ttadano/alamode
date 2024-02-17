@@ -162,7 +162,7 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure(const KpointBandStr
     deallocate(evec_tmp);
 
 //    if (mympi->my_rank == 0) {
-//        std::cout << "done!" << std::endl;
+//        std::cout << "done!" << '\n';
 //    }
 }
 
@@ -297,7 +297,7 @@ void PhononVelocity::get_phonon_group_velocity_mesh_mpi(const KpointMeshUniform 
     if (displs) deallocate(displs);
 
 //    if (mympi->my_rank == 0) {
-//        std::cout << "done!" << std::endl;
+//        std::cout << "done!" << '\n';
 //    }
 }
 
@@ -383,15 +383,15 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
             }
         }
 
-//        std::cout << "k = " << i << std::endl;
-//        std::cout << dos->kmesh_dos->xk[i][0] << "  " << dos->kmesh_dos->xk[i][1] << " " << dos->kmesh_dos->xk[i][2] << std::endl;
+//        std::cout << "k = " << i << '\n';
+//        std::cout << dos->kmesh_dos->xk[i][0] << "  " << dos->kmesh_dos->xk[i][1] << " " << dos->kmesh_dos->xk[i][2] << '\n';
 //        for (auto mu = 0; mu < 3; ++mu) {
-//            std::cout << "mu = " << mu << std::endl;
+//            std::cout << "mu = " << mu << '\n';
 //
 //            std::cout << "Diagonal:\n";
 //
 //            for (auto j = 0; j < ns; ++j) {
-//                std::cout << std::setw(20) << velmat_loc[i][j][j][mu] << std::endl;
+//                std::cout << std::setw(20) << velmat_loc[i][j][j][mu] << '\n';
 //            }
 //
 //            std::cout << "Full:\n";
@@ -400,11 +400,11 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
 //                    std::cout << std::setw(20) << velmat_loc[i][j][k][mu].real()
 //                                << std::setw(15) << velmat_loc[i][j][k][mu].imag();
 //                }
-//                std::cout << std::endl;
+//                std::cout << '\n';
 //            }
-//            std::cout << std::endl;
+//            std::cout << '\n';
 //        }
-//        std::cout << std::endl;
+//        std::cout << '\n';
     }
 
     MPI_Gatherv(&velmat_loc[0][0][0][0], sendcount[mympi->my_rank], MPI_COMPLEX16,
@@ -416,7 +416,7 @@ void PhononVelocity::calc_phonon_velmat_mesh(std::complex<double> ****velmat_out
     if (displs) deallocate(displs);
 
     if (mympi->my_rank == 0) {
-        std::cout << "done!" << std::endl;
+        std::cout << "done!\n";
     }
 }
 
@@ -679,14 +679,14 @@ void PhononVelocity::phonon_vel_k2(const double *xk_in,
 
     kpoint->get_symmetrization_matrix_at_k(xk_in, smallgroup_k, symmetrizer_k);
 
-    // std::cout << "symmetrizer_k" << std::endl;
+    // std::cout << "symmetrizer_k" << '\n';
     // for (i = 0; i < 3; ++i) {
     //     for (j = 0; j < 3; ++j) {
     //         std::cout << std::setw(15) << symmetrizer_k[i][j];
     //     }
-    //     std::cout << std::endl;
+    //     std::cout << '\n';
     // }
-    // std::cout << std::endl;
+    // std::cout << '\n';
 
     for (i = 0; i < nmode; ++i) {
         rotvec(vel_out[i], vel_out[i], symmetrizer_k, 'T');

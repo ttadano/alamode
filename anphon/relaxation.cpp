@@ -2215,7 +2215,7 @@ void Relaxation::calculate_delv2_delumn_finite_difference(double **omega2_harmon
     // fout_B_array_kspace.open("B_array_kspace.txt");
 
     // for(ik = 0; ik < nk; ik++){
-    //     std::cout << kmesh_dense->xk[ik][0] << " " << kmesh_dense->xk[ik][1] << " " << kmesh_dense->xk[ik][2] << std::endl;
+    //     std::cout << kmesh_dense->xk[ik][0] << " " << kmesh_dense->xk[ik][1] << " " << kmesh_dense->xk[ik][2] << '\n';
     // }
 
 
@@ -2224,7 +2224,7 @@ void Relaxation::calculate_delv2_delumn_finite_difference(double **omega2_harmon
     //         for(ik = 0; ik < nk; ik++){
     //             for(is = 0; is < ns*ns; is++){
     //                 fout_B_array_kspace << std::scientific << std::setprecision(15);
-    //                 fout_B_array_kspace << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].real() << " " << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].imag() << std::endl;
+    //                 fout_B_array_kspace << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].real() << " " << del_v2_strain_from_cubic_alphamu[ixyz1*3+ixyz2][ik][is].imag() << '\n';
     //             }
     //         }
     //     }

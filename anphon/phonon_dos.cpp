@@ -81,9 +81,9 @@ void Dos::deallocate_variables()
         deallocate(sps3_with_bose);
     }
 
-    if (tetra_nodes_dos) delete tetra_nodes_dos;
-    if (kmesh_dos) delete kmesh_dos;
-    if (dymat_dos) delete dymat_dos;
+    delete tetra_nodes_dos;
+    delete kmesh_dos;
+    delete dymat_dos;
 }
 
 void Dos::setup()
@@ -183,7 +183,7 @@ void Dos::calc_dos_all()
     if (compute_dos) {
         allocate(dos_phonon, n_energy);
         calc_dos(nk, kmesh_dos->nk_irred,
-                 &kmesh_dos->kmap_to_irreducible[0],
+                 kmesh_dos->kmap_to_irreducible.data(),
                  eval, n_energy, energy_dos,
                  neval, integration->ismear,
                  tetra_nodes_dos->get_ntetra(),
@@ -255,7 +255,6 @@ void Dos::calc_dos(const unsigned int nk,
 {
     double *weight;
 
-    //    if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
 #ifdef _OPENMP
 #pragma omp parallel private (weight)
 #endif
@@ -288,7 +287,7 @@ void Dos::calc_dos(const unsigned int nk,
         deallocate(weight);
     }
 
-    //    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
+    //    if (mympi->my_rank == 0) std::cout << " done." << '\n';
 }
 
 void Dos::calc_atom_projected_dos(const unsigned int nk,
@@ -365,7 +364,7 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
     deallocate(proj);
     deallocate(kmap_identity);
 
-    if (mympi->my_rank == 0) std::cout << " done!" << std::endl;
+    if (mympi->my_rank == 0) std::cout << " done!\n";
 }
 
 
@@ -478,7 +477,7 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
     deallocate(proj);
     deallocate(kmap_identity);
 
-    if (mympi->my_rank == 0) std::cout << " done!" << std::endl;
+    if (mympi->my_rank == 0) std::cout << " done!\n";
 }
 
 
@@ -509,7 +508,7 @@ void Dos::calc_two_phonon_dos(double *const *eval_in,
     int *k_pair;
 
     if (mympi->my_rank == 0) {
-        std::cout << " TDOS = 1 : Calculating two-phonon DOS for all irreducible k points." << std::endl;
+        std::cout << " TDOS = 1 : Calculating two-phonon DOS for all irreducible k points.\n";
         std::cout << "            This may take a while ... ";
     }
 
@@ -594,7 +593,7 @@ void Dos::calc_two_phonon_dos(double *const *eval_in,
     deallocate(k_pair);
 
     if (mympi->my_rank == 0) {
-        std::cout << "done!" << std::endl;
+        std::cout << "done!\n";
     }
 }
 
@@ -714,7 +713,7 @@ void Dos::calc_total_scattering_phase_space(double *const *eval_in,
           / (3.0 * static_cast<double>(std::pow(ns, 3.0)));
 
     if (mympi->my_rank == 0) {
-        std::cout << "done!" << std::endl;
+        std::cout << "done!\n";
     }
 }
 
@@ -737,7 +736,7 @@ void Dos::calc_dos_from_given_frequency(const KpointMeshUniform *kmesh_in,
 
 
     calc_dos(nk, kmesh_in->nk_irred,
-             &kmesh_in->kmap_to_irreducible[0],
+             kmesh_in->kmap_to_irreducible.data(),
              eval, n_energy, energy_dos,
              neval, integration->ismear,
              ntetra_in, tetras_in,
@@ -772,7 +771,7 @@ void Dos::calc_scattering_phase_space_with_Bose(const double *const *eval_in,
     std::vector<int> ks_g, ks_l;
 
     if (mympi->my_rank == 0) {
-        std::cout << " SPS = 2 : Calculating three-phonon scattering phase space" << std::endl;
+        std::cout << " SPS = 2 : Calculating three-phonon scattering phase space\n";
         std::cout << "           with the Bose distribution function ...";
     }
 
@@ -889,7 +888,7 @@ void Dos::calc_scattering_phase_space_with_Bose(const double *const *eval_in,
     deallocate(temperature);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl;
+        std::cout << " done!\n";
     }
 }
 

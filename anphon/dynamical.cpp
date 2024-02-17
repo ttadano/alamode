@@ -157,29 +157,25 @@ void Dynamical::setup_dynamical()
     neval = 3 * system->get_primcell().number_of_atoms;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
-        std::cout << " Dynamical matrix" << std::endl;
-        std::cout << " ================" << std::endl;
+        std::cout << '\n';
+        std::cout << " Dynamical matrix\n";
+        std::cout << " ================\n";
         if (nonanalytic == 0) {
-            std::cout << std::endl;
-            std::cout << "  NONANALYTIC = 0 : No non-analytic correction. " << std::endl;
-            std::cout << std::endl;
+            std::cout << '\n';
+            std::cout << "  NONANALYTIC = 0 : No non-analytic correction. \n\n";
         } else if (nonanalytic == 1) {
-            std::cout << std::endl;
-            std::cout << "  NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be included " << std::endl;
-            std::cout << "                    by the Parlinski's method." << std::endl;
-            std::cout << "                    The damping factor for the non-analytic term : " << na_sigma << std::endl;
-            std::cout << std::endl;
+            std::cout << '\n';
+            std::cout << "  NONANALYTIC = 1 : Non-analytic part of the dynamical matrix will be included \n";
+            std::cout << "                    by the Parlinski's method.\n";
+            std::cout << "                    The damping factor for the non-analytic term : " << na_sigma << "\n\n";
         } else if (nonanalytic == 2) {
-            std::cout << std::endl;
-            std::cout << "  NONANALYTIC = 2 : Non-analytic part of the dynamical matrix will be included " << std::endl;
-            std::cout << "                    by the mixed-space approach." << std::endl;
-            std::cout << std::endl;
+            std::cout << '\n';
+            std::cout << "  NONANALYTIC = 2 : Non-analytic part of the dynamical matrix will be included \n";
+            std::cout << "                    by the mixed-space approach.\n\n";
         } else if (nonanalytic == 3) {
-            std::cout << std::endl;
-            std::cout << "  NONANALYTIC = 3 : Non-analytic part of the dynamical matrix will be included " << std::endl;
-            std::cout << "                    by the Ewald method." << std::endl;
-            std::cout << std::endl;
+            std::cout << '\n';
+            std::cout << "  NONANALYTIC = 3 : Non-analytic part of the dynamical matrix will be included \n";
+            std::cout << "                    by the Ewald method.\n\n";
         }
 
         if (!projection_directions.empty()) {
@@ -269,9 +265,9 @@ void Dynamical::setup_dynamical()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
+        std::cout << '\n';
         std::cout << " -----------------------------------------------------------------"
-                  << std::endl << std::endl;
+                  << '\n' << '\n';
     }
 }
 
@@ -510,7 +506,7 @@ void Dynamical::eval_k_ewald(const double *xk_in,
                     }
 
                     if (std::abs(check) > eps8) {
-                        std::cout << "(" << 3 * i + icrd << "," << jcrd << "): " << check << std::endl;
+                        std::cout << "(" << 3 * i + icrd << "," << jcrd << "): " << check << '\n';
                         warn("ewald->eval_k_ewald", "Acoustic sum rule is broken.");
                     }
                 }
@@ -850,7 +846,7 @@ void Dynamical::diagonalize_dynamical_all()
     unsigned int nk;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl
+        std::cout << '\n'
                   << " Diagonalizing dynamical matrices for all k points ... ";
     }
     double **eval_tmp;
@@ -990,7 +986,7 @@ void Dynamical::diagonalize_dynamical_all()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << "done!" << std::endl;
+        std::cout << "done!\n";
     }
 
     if (dos->kmesh_dos && phon->mode == "RTA") {
@@ -1050,10 +1046,10 @@ void Dynamical::modify_eigenvectors() const
     const auto ns = neval;
 
     /*   if (mympi->my_rank == 0) {
-           std::cout << " **********      NOTICE      ********** " << std::endl;
-           std::cout << " For the brevity of the calculation, " << std::endl;
-           std::cout << " phonon eigenvectors will be modified" << std::endl;
-           std::cout << " so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << std::endl;
+           std::cout << " **********      NOTICE      ********** " << '\n';
+           std::cout << " For the brevity of the calculation, " << '\n';
+           std::cout << " phonon eigenvectors will be modified" << '\n';
+           std::cout << " so that e_{-ks}^{mu} = (e_{ks}^{mu})^{*}. " << '\n';
        }*/
 
     allocate(flag_done, nk);
@@ -1093,8 +1089,8 @@ void Dynamical::modify_eigenvectors() const
 
     MPI_Barrier(MPI_COMM_WORLD);
     //if (mympi->my_rank == 0) {
-    //    std::cout << " done !" << std::endl;
-    //    std::cout << " **************************************" << std::endl;
+    //    std::cout << " done !" << '\n';
+    //    std::cout << " **************************************" << '\n';
     //}
 }
 
@@ -1299,7 +1295,7 @@ void Dynamical::project_degenerate_eigenvectors(const Eigen::Matrix3d &lavec_p,
 
 #ifdef _DEBUG
     std::cout << "Check if the original dynamical matrix can be recovered\n";
-    std::cout << evec_new * eval_orig.asDiagonal() * evec_new.adjoint() - dymat << std::endl;
+    std::cout << evec_new * eval_orig.asDiagonal() * evec_new.adjoint() - dymat << '\n';
 #endif
 
     for (i = 0; i < ns; ++i) {
@@ -1442,28 +1438,28 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
 
     if (verbosity > 0) {
         std::cout << "  Dielectric constants and Born effective charges are read from "
-                  << file_born << "." << std::endl << std::endl;
-        std::cout << "  Dielectric constant tensor in Cartesian coordinate : " << std::endl;
+                  << file_born << ".\n\n";
+        std::cout << "  Dielectric constant tensor in Cartesian coordinate : \n";
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
                 std::cout << std::setw(15) << dielec[i][j];
             }
-            std::cout << std::endl;
+            std::cout << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
 
-        std::cout << "  Born effective charge tensor in Cartesian coordinate" << std::endl;
+        std::cout << "  Born effective charge tensor in Cartesian coordinate\n";
         for (i = 0; i < natmin_tmp; ++i) {
             std::cout << "  Atom" << std::setw(5) << i + 1 << "("
                       << std::setw(3) << system->symbol_kd[system->get_supercell(0).kind[system->get_map_p2s(0)[i][0]]]
-                      << ") :" << std::endl;
+                      << ") :\n";
 
             for (j = 0; j < 3; ++j) {
                 for (k = 0; k < 3; ++k) {
                     std::cout << std::setw(15) << std::fixed
                               << std::setprecision(6) << borncharge[i][j][k];
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             }
         }
     }
@@ -1489,9 +1485,9 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
 
     if (res > eps10) {
         if (verbosity > 0) {
-            std::cout << std::endl;
-            std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule." << std::endl;
-            std::cout << "           The born effective charges are modified to satisfy the ASR." << std::endl;
+            std::cout << '\n';
+            std::cout << "  WARNING: Born effective charges do not satisfy the acoustic sum rule.\n";
+            std::cout << "           The born effective charges are modified to satisfy the ASR.\n";
         }
 
         for (i = 0; i < natmin_tmp; ++i) {
@@ -1565,8 +1561,8 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
         }
 
         if (diff_sym > 0.5 && verbosity > 0) {
-            std::cout << std::endl;
-            std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry." << std::endl;
+            std::cout << '\n';
+            std::cout << "  WARNING: Born effective charges are inconsistent with the crystal symmetry.\n";
         }
 
         for (iat = 0; iat < natmin_tmp; ++iat) {
@@ -1580,20 +1576,20 @@ void Dynamical::load_born(const unsigned int flag_symmborn,
 
         if (verbosity > 0) {
             if (diff_sym > eps8 || res > eps10) {
-                std::cout << std::endl;
-                std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << std::endl;
+                std::cout << '\n';
+                std::cout << "  Symmetrized Born effective charge tensor in Cartesian coordinate." << '\n';
                 for (i = 0; i < natmin_tmp; ++i) {
                     std::cout << "  Atom" << std::setw(5) << i + 1 << "("
                               << std::setw(3)
                               << system->symbol_kd[system->get_primcell().kind[system->get_map_p2s(0)[i][0]]]
                               << ") :"
-                              << std::endl;
+                              << '\n';
 
                     for (j = 0; j < 3; ++j) {
                         for (k = 0; k < 3; ++k) {
                             std::cout << std::setw(15) << borncharge[i][j][k];
                         }
-                        std::cout << std::endl;
+                        std::cout << '\n';
                     }
                 }
             }
@@ -1787,8 +1783,8 @@ void Dynamical::detect_imaginary_branches(const KpointMeshUniform &kmesh_in,
 
         if (is_anyof_imaginary) {
             int count = 0;
-            std::cout << std::endl;
-            std::cout << " WARNING: Imaginary frequency detected at the following branches:" << std::endl;
+            std::cout << '\n';
+            std::cout << " WARNING: Imaginary frequency detected at the following branches:" << '\n';
             for (ik = 0; ik < nk_irred; ++ik) {
                 for (is = 0; is < ns; ++is) {
                     if (is_imaginary[ik][is]) {
@@ -1802,19 +1798,18 @@ void Dynamical::detect_imaginary_branches(const KpointMeshUniform &kmesh_in,
                             }
                             std::cout << std::setw(4) << is + 1 << " :"
                                       << std::setw(10) << std::fixed
-                                      << writes->in_kayser(omega) << " (cm^-1)" << std::endl;
+                                      << writes->in_kayser(omega) << " (cm^-1)" << '\n';
                             std::cout << std::scientific;
                         }
                     }
                 }
             }
             std::cout << std::setw(5) << count << " imaginary branches out of "
-                      << std::setw(5) << nks << " total branches." << std::endl;
-            std::cout << std::endl;
-            std::cout << " Phonon-phonon scattering rate and thermal conductivity involving these" << std::endl;
-            std::cout << " imaginary branches will be treated as zero in the following calculations." << std::endl;
-            std::cout << " If imaginary branches are acoustic phonons at Gamma point (0, 0, 0), " << std::endl;
-            std::cout << " you can safely ignore this message." << std::endl << std::endl << std::flush;
+                      << std::setw(5) << nks << " total branches.\n\n";
+            std::cout << " Phonon-phonon scattering rate and thermal conductivity involving these\n";
+            std::cout << " imaginary branches will be treated as zero in the following calculations.\n";
+            std::cout << " If imaginary branches are acoustic phonons at Gamma point (0, 0, 0), \n";
+            std::cout << " you can safely ignore this message.\n\n" << std::flush;
         }
     }
 }

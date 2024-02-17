@@ -3720,19 +3720,19 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             symmetrize_dynamical_matrix(ik, Dymat_sym);
             std::complex<double> **dymat_exact;
             allocate(dymat_exact, ns, ns);
-            std::cout << "ik = " << ik + 1 << std::endl;
-            std::cout << "Dymat" << std::endl;
-            std::cout << Dymat << std::endl;
-            std::cout << "Dymat_sym" << std::endl;
-            std::cout << Dymat_sym << std::endl;
+            std::cout << "ik = " << ik + 1 << '\n';
+            std::cout << "Dymat" << '\n';
+            std::cout << Dymat << '\n';
+            std::cout << "Dymat_sym" << '\n';
+            std::cout << Dymat_sym << '\n';
             dynamical->calc_analytic_k(xk_interpolate[knum_interpolate], fcs_phonon->fc2_ext, dymat_exact);
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns; ++js) {
                     Dymat_sym(is,js) = dymat_exact[is][js];
                 }
             }
-            std::cout << "Dymat_exact" << std::endl;
-            std::cout << Dymat_sym << std::endl;
+            std::cout << "Dymat_exact" << '\n';
+            std::cout << Dymat_sym << '\n';
             deallocate(dymat_exact);jjj
 
 #endif
@@ -3769,12 +3769,12 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
             std::cout << " ik = " << std::setw(4) << ik + 1 << " : ";
             for (i = 0; i < 3; ++i)  std::cout << std::setw(15) << xk_scph[knum][i];
-            std::cout << std::endl;
+            std::cout << '\n';
 
             for (is = 0; is < ns; ++is) {
                 std::cout << std::setw(15) << eval_tmp(is);
                 std::cout << std::setw(15) << eval_orig(is);
-                std::cout << std::setw(15) << eval_tmp(is) - eval_orig(is) << std::endl;
+                std::cout << std::setw(15) << eval_tmp(is) - eval_orig(is) << '\n';
             }
 
         }

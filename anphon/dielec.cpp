@@ -145,13 +145,13 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
 
 #ifdef _DEBUG
     for (auto i = 0; i < ns; ++i) {
-        std::cout << "eval = " << eval_in[i] << std::endl;
+        std::cout << "eval = " << eval_in[i] << '\n';
         for (auto j = 0; j < ns; ++j) {
             std::cout << std::setw(15) << evec_in[i][j].real();
             std::cout << std::setw(15) << evec_in[i][j].imag();
-            std::cout << std::endl;
+            std::cout << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 #endif
 
@@ -163,13 +163,13 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
 
 #ifdef _DEBUG
     for (auto i = 0; i < ns; ++i) {
-        std::cout << "U = " << eval_in[i] << std::endl;
+        std::cout << "U = " << eval_in[i] << '\n';
         for (auto j = 0; j < ns; ++j) {
             std::cout << std::setw(15) << real(evec_in[i][j]);
             std::cout << std::setw(15) << evec_in[i][j].imag();
-            std::cout << std::endl;
+            std::cout << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 #endif
 
@@ -197,7 +197,7 @@ void Dielec::compute_dielectric_function(const unsigned int nomega_in,
         }
         std::cout << '\n';
     }
-    std::cout << std::endl;
+    std::cout << '\n';
 
     std::cout << "S_born:\n";
     for (auto is = 0; is < ns; ++is) {

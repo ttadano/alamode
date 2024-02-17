@@ -420,10 +420,9 @@ void Thermodynamics::compute_free_energy_bubble()
     const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
-        std::cout << " -----------------------------------------------------------------"
-                  << std::endl;
-        std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
+        std::cout << '\n';
+        std::cout << " -----------------------------------------------------------------\n";
+        std::cout << " Calculating the vibrational free energy from the Bubble diagram \n" << std::flush;
     }
 
     allocate(FE_bubble, NT);
@@ -433,7 +432,7 @@ void Thermodynamics::compute_free_energy_bubble()
                       FE_bubble);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl << std::endl;
+        std::cout << " done!\n\n";
     }
 }
 
@@ -618,7 +617,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
     for (iT = 0; iT < NT; ++iT) FE_local[iT] = 0.0;
 
     if (mympi->my_rank == 0) {
-        std::cout << " Total number of modes per MPI process: " << nk_tmp << std::endl;
+        std::cout << " Total number of modes per MPI process: " << nk_tmp << '\n';
     }
 
     for (i0 = 0; i0 < nk_tmp; ++i0) {

@@ -61,9 +61,9 @@ T *allocate(T *&arr,
         arr = new T[n1];
     }
     catch (std::bad_alloc &ba) {
-        std::cout << " Caught an exception when trying to allocate 1-dimensional array" << std::endl;
-        std::cout << " " << ba.what() << " : Array shape = " << n1 << std::endl;
-        std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1) << std::endl;
+        std::cout << " Caught an exception when trying to allocate 1-dimensional array" << '\n';
+        std::cout << " " << ba.what() << " : Array shape = " << n1 << '\n';
+        std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1) << '\n';
         std::exit(EXIT_FAILURE);
     }
     return arr;
@@ -82,9 +82,9 @@ T **allocate(T **&arr,
         }
     }
     catch (std::bad_alloc &ba) {
-        std::cout << " Caught an exception when trying to allocate 2-dimensional array" << std::endl;
-        std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << std::endl;
-        std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2) << std::endl;
+        std::cout << " Caught an exception when trying to allocate 2-dimensional array\n";
+        std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << '\n';
+        std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2) << '\n';
         std::exit(EXIT_FAILURE);
     }
     return arr;
@@ -108,10 +108,9 @@ T ***allocate(T ***&arr,
         }
     }
     catch (std::bad_alloc &ba) {
-        std::cout << " Caught an exception when trying to allocate 3-dimensional array" << std::endl;
-        std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << "x" << n3 << std::endl;
-        std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2, n3) << std::
-        endl;
+        std::cout << " Caught an exception when trying to allocate 3-dimensional array\n";
+        std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << "x" << n3 << '\n';
+        std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2, n3) << '\n';
         std::exit(EXIT_FAILURE);
     }
     return arr;
@@ -141,12 +140,9 @@ T ****allocate(T ****&arr,
         }
     }
     catch (std::bad_alloc &ba) {
-        std::cout << " Caught an exception when trying to allocate 4-dimensional array" << std::endl;
-        std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << "x" << n3 << "x" << n4 << std::
-        endl;
-        std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2, n3, n4) << std
-        ::
-        endl;
+        std::cout << " Caught an exception when trying to allocate 4-dimensional array\n";
+        std::cout << " " << ba.what() << " : Array shape = " << n1 << "x" << n2 << "x" << n3 << "x" << n4 << '\n';
+        std::cout << " " << ba.what() << " : Array size (MB) = " << memsize_in_MB(sizeof(T), n1, n2, n3, n4) << '\n';
         std::exit(EXIT_FAILURE);
     }
     return arr;

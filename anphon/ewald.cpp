@@ -15,7 +15,6 @@
 #include "dynamical.h"
 #include "error.h"
 #include "kpoint.h"
-#include "mathfunctions.h"
 #include "memory.h"
 #include "parsephon.h"
 #include "system.h"
@@ -105,8 +104,8 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
     Eigen::Matrix3d epsilon_mat, invepsilon_mat;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
-        std::cout << "  Preparing for the Ewald summation ..." << std::endl << std::endl;
+        std::cout << '\n';
+        std::cout << "  Preparing for the Ewald summation ...\n\n";
     }
 
     const double p = -std::log(prec_ewald);
@@ -191,23 +190,23 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
 
     if (mympi->my_rank == 0) {
 
-        std::cout << "  Inverse dielectric tensor : " << std::endl;
+        std::cout << "  Inverse dielectric tensor : \n";
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
                 std::cout << std::setw(15) << epsilon_inv[i][j];
             }
-            std::cout << std::endl;
+            std::cout << '\n';
         }
-        std::cout << std::endl;
+        std::cout << '\n';
 
         std::cout << "  Determinant of epsilon: " << std::setw(15) << det_epsilon
-                  << std::endl << std::endl;
+                  << "\n\n";
 
-        std::cout << "  Parameters for the Ewald summation :" << std::endl;
-        std::cout << "  - Force constant" << std::endl;
-        std::cout << "    Lambda : " << std::setw(15) << lambda_sub << std::endl;
-        std::cout << "    Lmax   : " << std::setw(15) << Lmax_sub << std::endl;
-        std::cout << "    Gmax   : " << std::setw(15) << Gmax_sub << std::endl;
+        std::cout << "  Parameters for the Ewald summation :\n";
+        std::cout << "  - Force constant\n";
+        std::cout << "    Lambda : " << std::setw(15) << lambda_sub << '\n';
+        std::cout << "    Lmax   : " << std::setw(15) << Lmax_sub << '\n';
+        std::cout << "    Gmax   : " << std::setw(15) << Gmax_sub << '\n';
         std::cout << "    Maximum number of real-space cells : "
                   << std::setw(3) << nl_sub[0] << "x" << std::setw(3) << nl_sub[1] << "x" << std::setw(3) << nl_sub[2]
                   << std
@@ -216,16 +215,16 @@ void Ewald::prepare_Ewald(const double dielectric[3][3])
                   << std::setw(3) << ng_sub[0] << "x" << std::setw(3) << ng_sub[1] << "x" << std::setw(3) << ng_sub[2]
                   << std
                   ::endl;
-        std::cout << std::endl;
-        std::cout << "  - Dynamical matrix" << std::endl;
-        std::cout << "    Lambda : " << std::setw(15) << lambda << std::endl;
-        std::cout << "    Lmax   : " << std::setw(15) << Lmax << std::endl;
-        std::cout << "    Gmax   : " << std::setw(15) << Gmax << std::endl;
+        std::cout << '\n';
+        std::cout << "  - Dynamical matrix\n";
+        std::cout << "    Lambda : " << std::setw(15) << lambda << '\n';
+        std::cout << "    Lmax   : " << std::setw(15) << Lmax << '\n';
+        std::cout << "    Gmax   : " << std::setw(15) << Gmax << '\n';
         std::cout << "    Maximum number of real-space cells : "
-                  << std::setw(3) << nl[0] << "x" << std::setw(3) << nl[1] << "x" << std::setw(3) << nl[2] << std::endl;
+                  << std::setw(3) << nl[0] << "x" << std::setw(3) << nl[1] << "x" << std::setw(3) << nl[2] << '\n';
         std::cout << "    Maximum number of reciprocal cells : "
-                  << std::setw(3) << ng[0] << "x" << std::setw(3) << ng[1] << "x" << std::setw(3) << ng[2] << std::endl;
-        std::cout << std::endl;
+                  << std::setw(3) << ng[0] << "x" << std::setw(3) << ng[1] << "x" << std::setw(3) << ng[2] << '\n';
+        std::cout << '\n';
     }
 }
 
@@ -461,9 +460,8 @@ void Ewald::compute_ewald_fcs()
             ofs_fcs_ewald.open(file_fcs_ewald.c_str(), std::ios::out);
             if (!ofs_fcs_ewald) exit("compute_ewald_fcs", "cannot open file PREFIX.fcs_ewald");
 
-            ofs_fcs_ewald << "# Harmonic force constants" << std::endl;
-            ofs_fcs_ewald << "# atom1, xyz1, atom2, xyz2, fc2 original, fc2 dipole-dipole, fc2_orig - fc2_dipole" << std
-            ::endl;
+            ofs_fcs_ewald << "# Harmonic force constants\n";
+            ofs_fcs_ewald << "# atom1, xyz1, atom2, xyz2, fc2 original, fc2 dipole-dipole, fc2_orig - fc2_dipole\n";
 
             for (iat = 0; iat < natmin; ++iat) {
                 for (icrd = 0; icrd < 3; ++icrd) {
@@ -476,7 +474,7 @@ void Ewald::compute_ewald_fcs()
                             ofs_fcs_ewald << std::setw(15) << fcs_total(3 * iat + icrd, 3 * jat + jcrd);
                             ofs_fcs_ewald << std::setw(15) << fcs_ewald(3 * iat + icrd, 3 * jat + jcrd);
                             ofs_fcs_ewald << std::setw(15) << fcs_other(3 * iat + icrd, 3 * jat + jcrd);
-                            ofs_fcs_ewald << std::endl;
+                            ofs_fcs_ewald << '\n';
                         }
                     }
                 }
@@ -486,11 +484,11 @@ void Ewald::compute_ewald_fcs()
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << " done." << std::endl;
+        std::cout << " done.\n";
         if (print_fc2_ewald) {
-            std::cout << std::endl;
-            std::cout << " FC2_EWALD = 1: Dipole-dipole and short-ranged components of harmonic " << std::endl;
-            std::cout << "                force constants are printed in " << file_fcs_ewald << std::endl;
+            std::cout << '\n';
+            std::cout << " FC2_EWALD = 1: Dipole-dipole and short-ranged components of harmonic \n";
+            std::cout << "                force constants are printed in " << file_fcs_ewald << '\n';
         }
     }
 }
@@ -835,7 +833,6 @@ void Ewald::calc_short_term_dynamical_matrix(const int iat,
     int icell, jcell, kcell;
     double xnorm, phase;
     double x_tmp[3], trans[3];
-    std::complex<double> im(0.0, 1.0);
     std::vector<std::vector<double>> func_L(3, std::vector<double>(3, 0.0));
 
     // Substitute quantities into variables
@@ -1019,7 +1016,6 @@ void Ewald::calc_long_term_dynamical_matrix(const int iat,
     int i, j;
     int icrd, jcrd, acrd, bcrd;
     double vec[3], e_kvec[3];
-    std::complex<double> im(0.0, 1.0);
     double tmp;
 
     int atm_s1 = system->get_map_p2s(0)[iat][0];

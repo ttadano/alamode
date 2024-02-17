@@ -67,7 +67,7 @@ void Input::parce_input(int narg,
 
         ifs_input.open(arg[1], std::ios::in);
         if (!ifs_input) {
-            std::cout << "No such file or directory: " << arg[1] << std::endl;
+            std::cout << "No such file or directory: " << arg[1] << '\n';
             exit("parse_input", "could not open the file");
         }
     }
@@ -422,7 +422,7 @@ void Input::parse_scph_vars()
     assign_val(warm_start, "WARMSTART", scph_var_dict);
     assign_val(bubble, "BUBBLE", scph_var_dict);
     assign_val(relax_str, "RELAX_STR", scph_var_dict);
-    if (relax_str != 0 && selfenergy_offdiagonal == false) {
+    if (relax_str != 0 && !selfenergy_offdiagonal) {
         exit("parse_scph_vars",
              "SELF_OFFDIAG = 0 cannot be used when RELAX_STR != 0.");
     }
@@ -666,7 +666,7 @@ void Input::parse_relax_vars()
     int renorm_2to1st = 2;
     int renorm_34to1st = 0;
 
-    std::string strain_IFC_dir("");
+    std::string strain_IFC_dir;
 
     assign_val(relax_algo, "RELAX_ALGO", stropt_var_dict);
     assign_val(max_str_iter, "MAX_STR_ITER", stropt_var_dict);
@@ -695,7 +695,7 @@ void Input::parse_relax_vars()
     assign_val(renorm_34to1st, "RENORM_34TO1ST", stropt_var_dict);
 
     assign_val(strain_IFC_dir, "STRAIN_IFC_DIR", stropt_var_dict);
-    if (strain_IFC_dir != "" && strain_IFC_dir.at(strain_IFC_dir.length() - 1) != '/') {
+    if (!strain_IFC_dir.empty() && strain_IFC_dir.at(strain_IFC_dir.length() - 1) != '/') {
         strain_IFC_dir = strain_IFC_dir + "/";
     }
 
@@ -859,7 +859,7 @@ void Input::parse_initial_displace()
 {
 
     int i, j;
-    int itmp, jtmp;
+    int itmp;
     int ixyz;
     int iat;
     std::string line;
@@ -868,7 +868,6 @@ void Input::parse_initial_displace()
     std::string::size_type pos_first_comment_tag;
 
     int input_mode{-1};
-    int nline;
 
     double unit;
     double a[3][3];
@@ -917,7 +916,7 @@ void Input::parse_initial_displace()
         }
     }
 
-    if (line_vec.size() == 0) {
+    if (line_vec.empty()) {
         exit("parse_initial_displace",
              "Too few lines for the &displace field.");
     }
@@ -1221,7 +1220,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
                 cellsize[i] = boost::lexical_cast<unsigned int>(anime_cellsize[i]);
             }
             catch (std::exception &e) {
-                std::cout << e.what() << std::endl;
+                std::cout << e.what() << '\n';
                 exit("parse_analysis_vars",
                      "ANIME_CELLSIZE must be a set of positive integers.");
             }
@@ -1261,7 +1260,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
                     shift_ucorr[i] = boost::lexical_cast<int>(list_shift_ucorr[i]);
                 }
                 catch (std::exception &e) {
-                    std::cout << e.what() << std::endl;
+                    std::cout << e.what() << '\n';
                     exit("parse_analysis_vars",
                          "SHIFT_UCORR must be an array of integers.");
                 }
@@ -1294,7 +1293,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
                         direction[j] = boost::lexical_cast<double>(str_vec[j]);
                     }
                     catch (std::exception &e) {
-                        std::cout << e.what() << std::endl;
+                        std::cout << e.what() << '\n';
                         exit("parse_analysis_vars",
                              "subset of PROJECTION_AXES must be an array of doubles.");
                     }
@@ -1311,9 +1310,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
     dynamical->participation_ratio = participation_ratio;
-//    writes->print_xsf = print_xsf;
-//    writes->print_anime = print_anime;
-//    writes->print_ucorr = print_ucorr;
 
     writes->setWriteOptions(print_msd,
                             print_xsf,
@@ -1325,16 +1321,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
                             print_ucorr,
                             shift_ucorr,
                             print_zmode);
-
-//    if (print_anime) {
-//        for (i = 0; i < 3; ++i) {
-//            writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
-//            writes->anime_cellsize[i] = cellsize[i];
-//        }
-//        writes->anime_format = anime_format;
-//    }
-//
-//    writes->print_msd = print_msd;
 
     dos->compute_dos = compute_dos;
     dos->projected_dos = projected_dos;
@@ -1441,8 +1427,8 @@ void Input::parse_cell_parameter()
 
     if (line_vec.size() != 4) {
         exit("parse_cell_parameter",
-             "Too few or too much lines for the &cell field.\n \
-                                            The number of valid lines for the &cell field should be 4.");
+             "Too few or too much lines for the &cell field.\n "
+             "The number of valid lines for the &cell field should be 4.");
     }
 
     for (i = 0; i < 4; ++i) {
@@ -1545,7 +1531,7 @@ void Input::parse_kpoints()
                     kpmode = boost::lexical_cast<int>(kpelem[0]);
                 }
                 catch (std::exception &e) {
-                    std::cout << e.what() << std::endl;
+                    std::cout << e.what() << '\n';
                     exit("parse_kpoints",
                          "KPMODE must be an integer. [0, 1, or 2]");
                 }
@@ -1711,14 +1697,14 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
                     val = trim(str_varval[1]);
 #endif
                     if (keyword_set.find(key) == keyword_set.end()) {
-                        std::cout << "Could not recognize the variable " << key << std::endl;
+                        std::cout << "Could not recognize the variable " << key << '\n';
                         exit("get_var_dict",
                              "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                                  << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file.\n";
                         exit("get_var_dict",
                              "Redundant input parameter");
                     }
@@ -1794,14 +1780,14 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
 
                     if (keyword_set.find(key) == keyword_set.end()) {
                         std::cout << "Could not recognize the variable "
-                                  << key << std::endl;
+                                  << key << '\n';
                         exit("get_var_dict",
                              "Invalid variable found");
                     }
 
                     if (var_dict.find(key) != var_dict.end()) {
                         std::cout << "Variable " << key
-                                  << " appears twice in the input file." << std::endl;
+                                  << " appears twice in the input file.\n";
                         exit("get_var_dict",
                              "Redundant input parameter");
                     }
@@ -1818,20 +1804,20 @@ void Input::get_var_dict(const std::vector<std::string> &input_list,
     keyword_set.clear();
 }
 
-bool Input::is_endof_entry(const std::string &str) const
+bool Input::is_endof_entry(const std::string &str)
 {
     return str[0] == '/';
 }
 
 void Input::split_str_by_space(const std::string &str,
-                               std::vector<std::string> &str_vec) const
+                               std::vector<std::string> &str_vec)
 {
     std::string str_tmp;
     std::istringstream is(str);
 
     str_vec.clear();
 
-    while (1) {
+    while (true) {
         str_tmp.clear();
         is >> str_tmp;
         if (str_tmp.empty()) {
@@ -1854,7 +1840,7 @@ void Input::assign_val(T &val,
             val = boost::lexical_cast<T>(dict[key]);
         }
         catch (std::exception &e) {
-            std::cout << e.what() << std::endl;
+            std::cout << e.what() << '\n';
             std::string str_tmp = "Invalid entry for the " + key + " tag.\n";
             str_tmp += " Please check the input value.";
             exit("assign_val", str_tmp.c_str());

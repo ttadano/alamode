@@ -73,14 +73,14 @@ void Isotope::setup_isotope_scattering()
         MPI_Bcast(&isotope_factor[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         if (mympi->my_rank == 0) {
-            std::cout << " ISOTOPE >= 1: Isotope scattering effects will be considered" << std::endl;
-            std::cout << "               with the following scattering factors." << std::endl;
+            std::cout << " ISOTOPE >= 1: Isotope scattering effects will be considered\n";
+            std::cout << "               with the following scattering factors.\n";
 
             for (int i = 0; i < nkd; ++i) {
                 std::cout << std::setw(5) << system->symbol_kd[i] << ":";
-                std::cout << std::scientific << std::setw(17) << isotope_factor[i] << std::endl;
+                std::cout << std::scientific << std::setw(17) << isotope_factor[i] << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
 
             allocate(gamma_isotope, dos->kmesh_dos->nk_irred, dynamical->neval);
         }
@@ -254,7 +254,7 @@ void Isotope::calc_isotope_selfenergy_all() const
         deallocate(gamma_loc);
 
         if (mympi->my_rank == 0) {
-            std::cout << "done!" << std::endl;
+            std::cout << "done!\n";
         }
     }
 }

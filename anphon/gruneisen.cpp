@@ -145,14 +145,14 @@ void Gruneisen::setup()
 
     if (mympi->my_rank == 0) {
         if (print_newfcs) {
-            std::cout << std::endl;
+            std::cout << '\n';
             if (anharmonic_core->quartic_mode > 0) {
-                std::cout << " NEWFCS = 1 : Harmonic and cubic force constants of " << std::endl;
+                std::cout << " NEWFCS = 1 : Harmonic and cubic force constants of \n";
             } else {
-                std::cout << " NEWFCS = 1 : Harmonic force constants of " << std::endl;
+                std::cout << " NEWFCS = 1 : Harmonic force constants of \n";
             }
-            std::cout << "              expanded/compressed systems will be estimated" << std::endl;
-            std::cout << "              with DELTA_A = " << std::setw(5) << delta_a << std::endl;
+            std::cout << "              expanded/compressed systems will be estimated\n";
+            std::cout << "              with DELTA_A = " << std::setw(5) << delta_a << '\n';
         }
     }
     //   print_stress_energy();
@@ -166,7 +166,7 @@ void Gruneisen::calc_gruneisen()
     allocate(dfc2_reciprocal, ns, ns);
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
+        std::cout << '\n';
         std::cout << " GRUNEISEN = 1 : Calculating Gruneisen parameters ... ";
     }
 
@@ -245,7 +245,7 @@ void Gruneisen::calc_gruneisen()
     deallocate(dfc2_reciprocal);
 
     if (mympi->my_rank == 0) {
-        std::cout << "done!" << std::endl;
+        std::cout << "done!" << '\n';
     }
 }
 
@@ -421,27 +421,27 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
 
 void Gruneisen::write_new_fcsxml_all()
 {
-    std::cout << std::endl;
+    std::cout << '\n';
 
     if (fcs_phonon->update_fc2) {
         warn("write_new_fcsxml_all",
              "NEWFCS = 1 cannot be combined with the FC2XML.");
     } else {
-        std::cout << " NEWFCS = 1 : Following XML files are created. " << std::endl;
+        std::cout << " NEWFCS = 1 : Following XML files are created. \n";
 
         auto file_xml = input->job_title + "_+.xml";
         write_new_fcsxml(file_xml, delta_a);
 
         std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_xml;
         std::cout << " : Force constants of the system expanded by "
-                  << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
+                  << std::fixed << std::setprecision(3) << delta_a * 100 << " %\n";
 
         file_xml = input->job_title + "_-.xml";
         write_new_fcsxml(file_xml, -delta_a);
 
         std::cout << "  " << std::setw(input->job_title.length() + 12) << std::left << file_xml;
         std::cout << " : Force constants of the system compressed by "
-                  << std::fixed << std::setprecision(3) << delta_a * 100 << " %" << std::endl;
+                  << std::fixed << std::setprecision(3) << delta_a * 100 << " %\n";
     }
 }
 
@@ -731,7 +731,7 @@ std::string Gruneisen::double2string(const double d) const
 // 
 //     unsigned int i, j, k, l;
 // 
-//     std::cout << "# A [Ryd]" << std::endl;
+//     std::cout << "# A [Ryd]" << '\n';
 // 
 //     for (i = 0; i < 3; ++i) {
 //         for (j = 0; j < 3; ++j) {
@@ -742,14 +742,14 @@ std::string Gruneisen::double2string(const double d) const
 //                     std::cout << std::setw(3) << k + 1;
 //                     std::cout << std::setw(3) << l + 1;
 //                     std::cout << std::setw(15) << std::fixed << A[i][j][k][l];
-//                     std::cout << std::endl;
+//                     std::cout << '\n';
 //                 }
 //             }
 //         }
 //     }
 // 
-//     std::cout << std::endl;
-//     std::cout << "# C [GPa]" << std::endl;
+//     std::cout << '\n';
+//     std::cout << "# C [GPa]" << '\n';
 // 
 //     for (i = 0; i < 3; ++i) {
 //         for (j = 0; j < 3; ++j) {
@@ -762,14 +762,14 @@ std::string Gruneisen::double2string(const double d) const
 //                     std::cout << std::setw(3) << k + 1;
 //                     std::cout << std::setw(3) << l + 1;
 //                     std::cout << std::setw(15) << std::fixed << C[i][j][k][l];
-//                     std::cout << std::endl;
+//                     std::cout << '\n';
 // 
 //                 }
 //             }
 //         }
 //     }
 // 
-//     std::cout << "Bulk Modulus [GPa] = " << (C[0][0][0][0] + 2.0 * C[0][0][1][1]) / 3.0 << std::endl;
+//     std::cout << "Bulk Modulus [GPa] = " << (C[0][0][0][0] + 2.0 * C[0][0][1][1]) / 3.0 << '\n';
 // 
 //     deallocate(A);
 //     deallocate(C);
