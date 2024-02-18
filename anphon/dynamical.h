@@ -164,14 +164,14 @@ public:
 
     void set_projection_directions(const std::vector<std::vector<double>> projections_in);
 
-    void r2q(const double *xk_in,
+    static void r2q(const double *xk_in,
              const unsigned int nx,
              const unsigned int ny,
              const unsigned int nz,
              const unsigned int ns,
              MinimumDistList ***mindist_list_in,
              std::complex<double> ***dymat_r_in,
-             std::complex<double> **dymat_k_out) const;
+             std::complex<double> **dymat_k_out) ;
 
     void precompute_dymat_harm(const unsigned int nk_in,
                                double **xk_in,

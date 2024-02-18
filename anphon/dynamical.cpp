@@ -1634,10 +1634,12 @@ void Dynamical::r2q(const double *xk_in,
                     const unsigned int ns,
                     MinimumDistList ***mindist_list_in,
                     std::complex<double> ***dymat_r_in,
-                    std::complex<double> **dymat_k_out) const
+                    std::complex<double> **dymat_k_out)
 {
     const auto ncell = nx * ny * nz;
     const auto ns2 = ns * ns;
+
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
 #pragma omp parallel for
     for (int ij = 0; ij < ns2; ++ij) {
@@ -1646,10 +1648,10 @@ void Dynamical::r2q(const double *xk_in,
         const auto iat = i / 3;
         const auto jat = j / 3;
 
-        dymat_k_out[i][j] = std::complex<double>(0.0, 0.0);
+        dymat_k_out[i][j] = complex_zero;
 
         for (auto icell = 0; icell < ncell; ++icell) {
-            auto exp_phase = std::complex<double>(0.0, 0.0);
+            auto exp_phase = complex_zero;
             // This operation is necessary for the Hermiticity of the dynamical matrix.
             for (const auto &it: mindist_list_in[iat][jat][icell].shift) {
                 auto phase = 2.0 * pi

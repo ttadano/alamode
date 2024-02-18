@@ -1211,7 +1211,8 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     // cell optimization
     double pvcell = 0.0; // pressure * v_{cell,reference} [Ry]
-    pvcell = relaxation->stat_pressure * system->get_primcell().volume * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
+    pvcell = relaxation->stat_pressure * system->get_primcell().volume * std::pow(Bohr_in_Angstrom, 3) *
+             1.0e-30; // in 10^9 J = GJ
     pvcell *= 1.0e9 / Ryd; // in Ry
 
     const auto relax_str = relaxation->relax_str;
@@ -3429,6 +3430,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     unsigned int kk;
     const auto nk = kmesh_dense->nk;
     const auto ns = dynamical->neval;
+    const auto ns2 = ns * ns;
     unsigned int knum, knum_interpolate;
     const auto nk_interpolate = kmesh_coarse->nk;
     const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
@@ -3461,12 +3463,13 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     std::complex<double> ***dymat_q, ***dymat_q_HA;
 
     std::vector<MatrixXcd> dmat_convert, dmat_convert_old;
-    std::vector<MatrixXcd> evec_initial;
+    std::vector<MatrixXcd> evec_initial, evec_initial_adjoint;
     std::vector<MatrixXcd> Fmat0;
 
     dmat_convert.resize(nk);
     dmat_convert_old.resize(nk);
     evec_initial.resize(nk);
+    evec_initial_adjoint.resize(nk); // just for minior optimization (may not be very effective)
     Fmat0.resize(nk_irred_interpolate);
 
     for (ik = 0; ik < nk; ++ik) {
@@ -3478,8 +3481,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
         Fmat0[ik].resize(ns, ns);
     }
 
-    const auto complex_one = std::complex<double>(1.0, 0.0);
-    const auto complex_zero = std::complex<double>(0.0, 0.0);
+    constexpr auto complex_one = std::complex<double>(1.0, 0.0);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     SelfAdjointEigenSolver<MatrixXcd> saes;
 
@@ -3531,6 +3534,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                     }
                 }
             }
+            evec_initial_adjoint[ik] = evec_initial[ik].adjoint();
         }
     }
 
@@ -3569,11 +3573,17 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     dynamical->replicate_dymat_for_all_kpoints(kmesh_coarse, mat_transform_sym,
                                                dymat_q_HA);
 
+    // This can be done outside the function
+    dynamical->precompute_dymat_harm(kmesh_dense->nk,
+                                     kmesh_dense->xk,
+                                     kmesh_dense->kvec_na,
+                                     dymat_harm_short,
+                                     dymat_harm_long);
+
     int icount = 0;
 
     // Main loop
     for (iloop = 0; iloop < maxiter; ++iloop) {
-
         for (ik = 0; ik < nk; ++ik) {
             for (is = 0; is < ns; ++is) {
                 auto omega1 = omega_now(ik, is);
@@ -3609,6 +3619,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
             }
         }
 
+        // TODO: This loop may be parallelized by MPI in the future.
         for (ik = 0; ik < nk_irred_interpolate; ++ik) {
 
             knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
@@ -3619,29 +3630,25 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
 
             // Anharmonic correction to Fmat
             if (!offdiag) {
+#pragma omp parallel for private(jk, ks)
                 for (is = 0; is < ns; ++is) {
-                    i = (ns + 1) * is;
-                    // OpenMP parallelization for this part turned out to be inefficient (even slower than serial version)
                     for (jk = 0; jk < nk; ++jk) {
-                        kk = nk * ik + jk;
                         for (ks = 0; ks < ns; ++ks) {
-                            Fmat(is, is) += v4_array_all[kk][i][(ns + 1) * ks]
+                            Fmat(is, is) += v4_array_all[nk * ik + jk][(ns + 1) * is][(ns + 1) * ks]
                                             * dmat_convert[jk](ks, ks);
                         }
                     }
                 }
             } else {
-                for (is = 0; is < ns; ++is) {
-                    for (js = 0; js <= is; ++js) {
-                        i = ns * is + js;
-                        // OpenMP parallelization for this part turned out to be inefficient (even slower than serial version)
-                        for (jk = 0; jk < nk; ++jk) {
-                            kk = nk * ik + jk;
-                            for (ks = 0; ks < ns; ++ks) {
-                                for (unsigned int ls = 0; ls < ns; ++ls) {
-                                    Fmat(is, js) += v4_array_all[kk][i][ns * ks + ls]
-                                                    * dmat_convert[jk](ks, ls);
-                                }
+#pragma omp parallel for private(is, js, jk, ks)
+                for (int ijs = 0; ijs < ns2; ++ijs) {
+                    is = ijs / ns;
+                    js = ijs % ns;
+                    for (jk = 0; jk < nk; ++jk) {
+                        for (ks = 0; ks < ns; ++ks) {
+                            for (unsigned int ls = 0; ls < ns; ++ls) {
+                                Fmat(is, js) += v4_array_all[nk * ik + jk][ijs][ns * ks + ls]
+                                                * dmat_convert[jk](ks, ls);
                             }
                         }
                     }
@@ -3720,11 +3727,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                 }
             }
         } // close loop ik
-
         dynamical->replicate_dymat_for_all_kpoints(kmesh_coarse,
                                                    mat_transform_sym,
                                                    dymat_q);
-
 #ifdef _DEBUG2
                                                                                                                                 for (ik = 0; ik < nk_interpolate; ++ik) {
 
@@ -3789,7 +3794,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                                       dymat_harm_short,
                                       dymat_harm_long,
                                       mindist_list_scph,
-                                      false, true);
+                                      true, true);
 
         for (ik = 0; ik < nk; ++ik) {
             for (is = 0; is < ns; ++is) {
@@ -3798,7 +3803,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
                 }
             }
 
-            Cmat = evec_initial[ik].adjoint() * evec_tmp;
+
+//            Cmat = evec_initial[ik].adjoint() * evec_tmp;
+            Cmat = evec_initial_adjoint[ik] * evec_tmp;
 
             for (is = 0; is < ns; ++is) {
                 omega_now(ik, is) = eval_interpolate[ik][is];
