@@ -246,16 +246,16 @@ private:
                           std::complex<double> ***dymat0,
                           std::complex<double> ***v4_array_all,
                           std::complex<double> ***cmat_convert,
-                          std::vector<Eigen::MatrixXcd> &dmat,
+//                          std::vector<Eigen::MatrixXcd> &dmat,
                           std::complex<double> ***dymat_out,
                           std::complex<double> ***evec_out,
                           const double alpha,
                           const bool offdiag,
                           Eigen::MatrixXd &omega_out);
 
-    void get_permutation_matrix(const int ns,
+    static void get_permutation_matrix(const int ns,
                                 std::complex<double> **cmat_in,
-                                Eigen::MatrixXd &permutation_matrix) const;
+                                Eigen::MatrixXd &permutation_matrix) ;
 
     void find_degeneracy(std::vector<int> *degeneracy_out,
                          unsigned int nk_in,

@@ -1109,7 +1109,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
                                          selfenergy_offdiagonal,
                                          delta_v2_renorm,
                                          writes->getVerbosity());
-
+//
 //            compute_anharmonic_frequency2(v4_array_all,
 //                                          omega2_anharm[iT],
 //                                          evec_anharm_tmp,
@@ -3927,11 +3927,9 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
                                          const bool offdiag,
                                          const unsigned int verbosity)
 {
-    // This is the main function of the SCPH equation.
-    // The detailed algorithm can be found in PRB 92, 054301 (2015).
-    // Eigen3 library is used for the compact notation of matrix-matrix products.
-
     using namespace Eigen;
+    constexpr auto complex_one = std::complex<double>(1.0, 0.0);
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     int ik, jk;
     unsigned int i;
@@ -3956,23 +3954,22 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
     std::complex<double> ***evec_new;
     std::complex<double> ***dymat_q, ***dymat_q_HA;
 
-    std::vector<MatrixXcd> dmat_convert;
+//    std::vector<MatrixXcd> dmat_convert;
     std::vector<MatrixXcd> evec_initial;
     std::vector<MatrixXcd> Fmat0;
 
-    dmat_convert.resize(nk);
+//    dmat_convert.resize(nk);
     evec_initial.resize(nk);
     Fmat0.resize(nk_irred_interpolate);
 
     for (ik = 0; ik < nk; ++ik) {
-        dmat_convert[ik].resize(ns, ns);
+//        dmat_convert[ik].resize(ns, ns);
         evec_initial[ik].resize(ns, ns);
     }
     for (ik = 0; ik < nk_irred_interpolate; ++ik) {
         Fmat0[ik].resize(ns, ns);
     }
-    const auto complex_one = std::complex<double>(1.0, 0.0);
-    const auto complex_zero = std::complex<double>(0.0, 0.0);
+
 
     allocate(evec_new, nk, ns, ns);
     allocate(dymat_q, ns, ns, nk_interpolate);
@@ -4098,7 +4095,7 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
                      dymat_q_HA,
                      v4_array_all,
                      cmat_convert,
-                     dmat_convert,
+//                     dmat_convert,
                      dymat_q,
                      evec_new,
                      1.0,
@@ -4130,7 +4127,7 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
                              dymat_q_HA,
                              v4_array_all,
                              cmat_convert,
-                             dmat_convert,
+//                             dmat_convert,
                              dymat_q,
                              evec_new,
                              1.0,
@@ -4200,6 +4197,9 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
         VectorXd beta1_k(nk);
         MatrixXd beta1_ks(nk, ns);
 
+        std::cout << "omega2_in = " << omega2_in.row(0) << '\n';
+        std::cout << "omega2_out = " << omega2_out.row(0) << '\n';
+
         omega2_prev = omega2_in; // x_{i-1}
         omega2_in = omega2_out; // x_{i}
 
@@ -4214,7 +4214,7 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
                              dymat_q_HA,
                              v4_array_all,
                              cmat_convert,
-                             dmat_convert,
+//                             dmat_convert,
                              dymat_q,
                              evec_new,
                              1.0,
@@ -4389,8 +4389,9 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
 }
 
 
-void Scph::get_permutation_matrix(const int ns, std::complex<double> **cmat_in,
-                                  Eigen::MatrixXd &permutation_matrix) const
+void Scph::get_permutation_matrix(const int ns,
+                                  std::complex<double> **cmat_in,
+                                  Eigen::MatrixXd &permutation_matrix)
 {
     std::vector<int> has_visited(ns, 0);
     permutation_matrix = Eigen::MatrixXd::Zero(ns, ns);
@@ -4426,7 +4427,7 @@ void Scph::update_frequency(const double temperature_in,
                             std::complex<double> ***dymat0,
                             std::complex<double> ***v4_array_all,
                             std::complex<double> ***cmat_convert,
-                            std::vector<Eigen::MatrixXcd> &dmat,
+//                            std::vector<Eigen::MatrixXcd> &dmat,
                             std::complex<double> ***dymat_out,
                             std::complex<double> ***evec_out,
                             const double alpha,
@@ -4436,8 +4437,9 @@ void Scph::update_frequency(const double temperature_in,
     using namespace Eigen;
     const auto nk = kmesh_dense->nk;
     const auto ns = dynamical->neval;
+    const auto ns2 = ns * ns;
     const auto nk_interpolate = kmesh_coarse->nk;
-
+    std::vector<MatrixXcd> dmat(nk);
     VectorXcd Kmat(ns);
     MatrixXcd Cmat(ns, ns), Dmat(ns, ns);
     constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
@@ -4477,7 +4479,8 @@ void Scph::update_frequency(const double temperature_in,
 
         Dmat = Cmat * Kmat.asDiagonal() * Cmat.adjoint();
         // if iloop > 0
-        dmat[ik] = alpha * Dmat.eval() + (1.0 - alpha) * dmat[ik];
+        dmat[ik] = Dmat.eval();
+//        dmat[ik] = alpha * Dmat.eval() + (1.0 - alpha) * dmat[ik];
     }
 
     const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
@@ -4498,29 +4501,25 @@ void Scph::update_frequency(const double temperature_in,
 
         // Anharmonic correction to Fmat
         if (!offdiag) {
-            for (auto is = 0; is < ns; ++is) {
-                const auto i = (ns + 1) * is;
-                // OpenMP parallelization for this part turned out to be inefficient (even slower than serial version)
+#pragma omp parallel for
+            for (int is = 0; is < ns; ++is) {
                 for (auto jk = 0; jk < nk; ++jk) {
-                    const auto kk = nk * ik + jk;
                     for (auto ks = 0; ks < ns; ++ks) {
-                        Fmat(is, is) += v4_array_all[kk][i][(ns + 1) * ks]
+                        Fmat(is, is) += v4_array_all[nk * ik + jk][(ns + 1) * is][(ns + 1) * ks]
                                         * dmat[jk](ks, ks);
                     }
                 }
             }
         } else {
-            for (auto is = 0; is < ns; ++is) {
-                for (auto js = 0; js <= is; ++js) {
-                    const auto i = ns * is + js;
-                    // OpenMP parallelization for this part turned out to be inefficient (even slower than serial version)
-                    for (auto jk = 0; jk < nk; ++jk) {
-                        const auto kk = nk * ik + jk;
-                        for (auto ks = 0; ks < ns; ++ks) {
-                            for (unsigned int ls = 0; ls < ns; ++ls) {
-                                Fmat(is, js) += v4_array_all[kk][i][ns * ks + ls]
-                                                * dmat[jk](ks, ls);
-                            }
+#pragma omp parallel for
+            for (int ijs = 0; ijs < ns2; ++ijs) {
+                auto is = ijs / ns;
+                auto js = ijs % ns;
+                for (auto jk = 0; jk < nk; ++jk) {
+                    for (auto ks = 0; ks < ns; ++ks) {
+                        for (unsigned int ls = 0; ls < ns; ++ls) {
+                            Fmat(is, js) += v4_array_all[nk * ik + jk][ijs][ns * ks + ls]
+                                            * dmat[jk](ks, ls);
                         }
                     }
                 }
@@ -4587,7 +4586,7 @@ void Scph::update_frequency(const double temperature_in,
                                   dymat_harm_short,
                                   dymat_harm_long,
                                   mindist_list_scph,
-                                  true,
+                                  false,
                                   false);
 
     Eigen::MatrixXcd evec_tmp(ns, ns);
