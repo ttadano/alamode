@@ -1356,9 +1356,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     const auto natmin = symmetry->get_nat_prim();
     const auto nat = supercell.number_of_atoms;
 
-    // generate combinations of mirror images
-    // long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
-
     unsigned int isize;
 
     std::vector<int> data;
@@ -1380,7 +1377,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     allocate(ind, order + 2);
 
     // Create force constant table for search
-
     list_found.clear();
 
     for (const auto &p: fc_table) {
@@ -1475,7 +1471,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                 long long int i_tmp, j_tmp, i_tmp2;
                 long int i_mi_tmp;
 
-                // consts_now_omp.resize(n_mirror_images, std::vector<double>(nparams));
 #ifdef _OPENMP
 #pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found, loc_nonzero), nowait
 #endif
@@ -1494,12 +1489,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                         for (jcrd = 0; jcrd < 3; ++jcrd) {
 
                             // Reset the temporary array for another constraint
-                            //for (j = 0; j < nparams; ++j) const_now_omp[j] = 0;
-                            // for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
-                            //     for (j = 0; j < nparams; j++) {
-                            //         consts_now_omp[i_mirror_images][j] = 0.0;
-                            //     }
-                            // }
                             consts_now_omp.clear();
                             mirror_images_found.clear();
 
@@ -1551,7 +1540,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                                         if (cluster_found == cluster->get_interaction_cluster(order, i).end()) {
                                             std::cout << "Warning: cluster corresponding to the IFC is NOT found.\n";
                                         } else {
-                                            // std::cout << "cluster corresponding to the IFC is found." << std::endl;
 
                                             // get weight
                                             weight = 1.0 / static_cast<double>((cluster_found->cell).size());
@@ -1577,8 +1565,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                                                 }
 
                                                 // add to the constraint
-                                                // consts_now_omp[i_mirror_images][(*iter_found).mother] +=
-                                                //         weight * (*iter_found).sign;
                                                 consts_now_omp[i_mi_tmp][(*iter_found).mother] +=
                                                         weight * (*iter_found).sign;
                                             }
@@ -1589,7 +1575,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                             } // close loop jat
 
                             // Add the constraint to the private array
-                            // for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
                             for (i_mi_tmp = 0; i_mi_tmp < mirror_images_found.size(); i_mi_tmp++) {
                                 if (!is_allzero(consts_now_omp[i_mi_tmp], eps8, loc_nonzero, 0)) {
                                     if (consts_now_omp[i_mi_tmp][loc_nonzero] < 0) {
