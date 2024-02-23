@@ -1357,13 +1357,13 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     const auto nat = supercell.number_of_atoms;
 
     // generate combinations of mirror images
-    long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
+    // long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
 
     unsigned int isize;
 
     std::vector<int> data;
-    std::vector<std::set<FcProperty>> list_found(3*natmin, std::set<FcProperty>());
-    std::set<FcProperty>::iterator iter_found;
+    std::unordered_set<FcProperty> list_found;
+    std::unordered_set<FcProperty>::iterator iter_found;
     std::vector<std::vector<int>> data_vec;
     std::vector<FcProperty> list_vec;
     std::vector<double> const_now;
@@ -1381,23 +1381,17 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
     // Create force constant table for search
 
-    for(iat = 0; iat < natmin*3; ++iat){
-        list_found[iat].clear();
-    }
+    list_found.clear();
 
     for (const auto &p: fc_table) {
         for (i = 0; i < order + 2; ++i) {
             ind[i] = p.elems[i];
         }
-
-        // get (atom number in the primitive cell)x3 + ixyz for the center atom
-        int ind_tmp = symmetry->get_map_s2p()[ind[0]/3].atom_num * 3 + ind[0]%3;
-
-        if (list_found[ind_tmp].find(FcProperty(order + 2, p.sign,
-                                       ind, p.mother)) != list_found[ind_tmp].end()) {
+        if (list_found.find(FcProperty(order + 2, p.sign,
+                                       ind, p.mother)) != list_found.end()) {
             exit("get_constraint_translation", "Duplicate interaction list found");
         }
-        list_found[ind_tmp].insert(FcProperty(order + 2, p.sign,
+        list_found.insert(FcProperty(order + 2, p.sign,
                                      ind, p.mother));
     }
 
@@ -1476,11 +1470,15 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                 std::vector<int> sort_table, sort_table_tmp;
                 std::vector<std::vector<double>> consts_now_omp;
 
+                std::vector<long long int> mirror_images_found;
+
                 ConstEntry const_tmp_omp;
                 std::vector<ConstEntry> constraint_list_omp;
-                long int i_mirror_images, i_tmp, j_tmp, i_tmp2;
+                long long int i_mirror_images;
+                long long int i_tmp, j_tmp, i_tmp2;
+                long int i_mi_tmp;
 
-                consts_now_omp.resize(n_mirror_images, std::vector<double>(nparams));
+                // consts_now_omp.resize(n_mirror_images, std::vector<double>(nparams));
 #ifdef _OPENMP
 #pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found, loc_nonzero), nowait
 #endif
@@ -1500,11 +1498,13 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
                             // Reset the temporary array for another constraint
                             //for (j = 0; j < nparams; ++j) const_now_omp[j] = 0;
-                            for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
-                                for (j = 0; j < nparams; j++) {
-                                    consts_now_omp[i_mirror_images][j] = 0.0;
-                                }
-                            }
+                            // for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
+                            //     for (j = 0; j < nparams; j++) {
+                            //         consts_now_omp[i_mirror_images][j] = 0.0;
+                            //     }
+                            // }
+                            consts_now_omp.clear();
+                            mirror_images_found.clear();
 
                             // Loop for the last atom index
                             for (jat = 0; jat < 3 * nat; jat += 3) {
@@ -1544,15 +1544,13 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
                                     sort_tail(order + 2, intarr_copy_omp);
 
-                                    i_tmp = i*3+xyzcomponent[ixyz][0];
-
-                                    iter_found = list_found[i_tmp].find(FcProperty(order + 2, 1.0,
+                                    iter_found = list_found.find(FcProperty(order + 2, 1.0,
                                                                             intarr_copy_omp, 1));
 
                                     auto cluster_found = cluster->get_interaction_cluster(order, i).find(
                                             InteractionCluster(atom_tmp, cell_dummy));
 
-                                    if (iter_found != list_found[i_tmp].end()) {
+                                    if (iter_found != list_found.end()) {
                                         if (cluster_found == cluster->get_interaction_cluster(order, i).end()) {
                                             std::cout << "Warning: cluster corresponding to the IFC is NOT found.\n";
                                         } else {
@@ -1568,8 +1566,23 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                                                     i_mirror_images *= 27;
                                                     i_mirror_images += cellvec[sort_table[i_tmp]];
                                                 }
+
+                                                // check if the same mirror image has already been found.
+                                                for (i_mi_tmp = 0; i_mi_tmp < mirror_images_found.size(); i_mi_tmp++){
+                                                    if(mirror_images_found[i_mi_tmp] == i_mirror_images){
+                                                        break;
+                                                    }
+                                                }
+                                                // if not found
+                                                if(i_mi_tmp == mirror_images_found.size()){
+                                                    mirror_images_found.push_back(i_mirror_images);
+                                                    consts_now_omp.push_back(std::vector<double>(nparams, 0.0));
+                                                }
+
                                                 // add to the constraint
-                                                consts_now_omp[i_mirror_images][(*iter_found).mother] +=
+                                                // consts_now_omp[i_mirror_images][(*iter_found).mother] +=
+                                                //         weight * (*iter_found).sign;
+                                                consts_now_omp[i_mi_tmp][(*iter_found).mother] +=
                                                         weight * (*iter_found).sign;
                                             }
                                         }
@@ -1579,16 +1592,17 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                             } // close loop jat
 
                             // Add the constraint to the private array
-                            for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
-                                if (!is_allzero(consts_now_omp[i_mirror_images], eps8, loc_nonzero, 0)) {
-                                    if (consts_now_omp[i_mirror_images][loc_nonzero] < 0) {
-                                        for (j = 0; j < nparams; ++j) consts_now_omp[i_mirror_images][j] *= -1.0;
+                            // for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
+                            for (i_mi_tmp = 0; i_mi_tmp < mirror_images_found.size(); i_mi_tmp++) {
+                                if (!is_allzero(consts_now_omp[i_mi_tmp], eps8, loc_nonzero, 0)) {
+                                    if (consts_now_omp[i_mi_tmp][loc_nonzero] < 0) {
+                                        for (j = 0; j < nparams; ++j) consts_now_omp[i_mi_tmp][j] *= -1.0;
                                     }
 
                                     const_tmp_omp.clear();
                                     for (j = 0; j < nparams; ++j) {
-                                        if (std::abs(consts_now_omp[i_mirror_images][j]) > 0) {
-                                            const_tmp_omp.emplace_back(j, consts_now_omp[i_mirror_images][j]);
+                                        if (std::abs(consts_now_omp[i_mi_tmp][j]) > 0) {
+                                            const_tmp_omp.emplace_back(j, consts_now_omp[i_mi_tmp][j]);
                                         }
                                     }
                                     if (const_tmp_omp.empty()) {
