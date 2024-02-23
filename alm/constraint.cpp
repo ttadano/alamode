@@ -1362,8 +1362,8 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     unsigned int isize;
 
     std::vector<int> data;
-    std::unordered_set<FcProperty> list_found;
-    std::unordered_set<FcProperty>::iterator iter_found;
+    std::vector<std::set<FcProperty>> list_found(3*natmin, std::set<FcProperty>());
+    std::set<FcProperty>::iterator iter_found;
     std::vector<std::vector<int>> data_vec;
     std::vector<FcProperty> list_vec;
     std::vector<double> const_now;
@@ -1381,17 +1381,23 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
     // Create force constant table for search
 
-    list_found.clear();
+    for(iat = 0; iat < natmin*3; ++iat){
+        list_found[iat].clear();
+    }
 
     for (const auto &p: fc_table) {
         for (i = 0; i < order + 2; ++i) {
             ind[i] = p.elems[i];
         }
-        if (list_found.find(FcProperty(order + 2, p.sign,
-                                       ind, p.mother)) != list_found.end()) {
+
+        // get (atom number in the primitive cell)x3 + ixyz for the center atom
+        int ind_tmp = symmetry->get_map_s2p()[ind[0]/3].atom_num * 3 + ind[0]%3;
+
+        if (list_found[ind_tmp].find(FcProperty(order + 2, p.sign,
+                                       ind, p.mother)) != list_found[ind_tmp].end()) {
             exit("get_constraint_translation", "Duplicate interaction list found");
         }
-        list_found.insert(FcProperty(order + 2, p.sign,
+        list_found[ind_tmp].insert(FcProperty(order + 2, p.sign,
                                      ind, p.mother));
     }
 
@@ -1538,13 +1544,15 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
                                     sort_tail(order + 2, intarr_copy_omp);
 
-                                    iter_found = list_found.find(FcProperty(order + 2, 1.0,
+                                    i_tmp = i*3+xyzcomponent[ixyz][0];
+
+                                    iter_found = list_found[i_tmp].find(FcProperty(order + 2, 1.0,
                                                                             intarr_copy_omp, 1));
 
                                     auto cluster_found = cluster->get_interaction_cluster(order, i).find(
                                             InteractionCluster(atom_tmp, cell_dummy));
 
-                                    if (iter_found != list_found.end()) {
+                                    if (iter_found != list_found[i_tmp].end()) {
                                         if (cluster_found == cluster->get_interaction_cluster(order, i).end()) {
                                             std::cout << "Warning: cluster corresponding to the IFC is NOT found.\n";
                                         } else {
