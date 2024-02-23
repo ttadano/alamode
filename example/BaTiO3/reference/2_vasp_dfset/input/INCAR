@@ -1,0 +1,18 @@
+general:
+ System = BTO
+ LREAL = .False.
+
+ ENCUT  =    550
+ ISMEAR = 0; SIGMA = 0.05;
+ EDIFF = 1.0E-8
+
+ PREC = Accurate
+ ADDGRID = .True.
+ NPAR = 16
+ NCORE = 1
+ # LSCALAPACK = .False.
+
+ GGA = PS
+
+ LCHARG = .False.
+ LWAVE  = .False.
