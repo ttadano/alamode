@@ -1414,13 +1414,10 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
         // Generate atom pairs for each order
 
-        if (order == 0) continue;  // there is no new translational invariance
-
-        if (order > 2) {
-            // we assume that the cutoff radius is enough small
-            // for 5th or higher-order IFCs
-            continue;
-        } else {
+        if (order == 0) {
+            continue;  // there is no new translational invariance
+        }
+        else {
 
             // Anharmonic cases
 
