@@ -21,16 +21,16 @@
   DFSET = ../2_vasp_dfset/DFSET_AIMD_random
   FC2XML = ../cBTO222_harmonic.xml
 
-  CV = 4 # split the DFSET to 4 sets and perform CV
+  CV = 0 # switch off CV
   L1_RATIO = 1.0 # LASSO
+  L1_ALPHA = 2.51189e-06 # Add this line.
   CV_MINALPHA = 1.0e-8
   CV_MAXALPHA = 0.01
   CV_NALPHA = 30
 
   STANDARDIZE = 1
-  CONV_TOL = 1.0e-8
+  CONV_TOL = 1.0e-9 # was CONV_TOL = 1.0e-8 in CV
 
-  STOP_CRITERION = 100
 /
 
 &cell

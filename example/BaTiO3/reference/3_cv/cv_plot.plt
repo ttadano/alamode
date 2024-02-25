@@ -1,8 +1,9 @@
 set logscale x
+set format x "%.1e"
 set grid
 
-set terminal pdf
-set output "cv.pdf"
+set terminal png
+set output "BTO_IFC_cv.png"
 
 set xlabel "CV alpha"
 set ylabel "error"
