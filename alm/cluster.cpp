@@ -286,7 +286,7 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
 
                 // prepare relative vector for comparison
                 relvecs1.clear();
-                for (i_periodic = 0; i_mirror < cluster_tmp.cell.size(); i_periodic++) {
+                for (i_periodic = 0; i_periodic < cluster_tmp.cell.size(); i_periodic++) {
                     relvecs1.emplace_back(order);
                     // first relative vector
                     relvec_tmp.clear();
@@ -317,7 +317,7 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                 }
 
                 relvecs2.clear();
-                for (i_periodic = 0; i_mirror < (*cluster_tmp2).cell.size(); i_periodic++) {
+                for (i_periodic = 0; i_periodic < (*cluster_tmp2).cell.size(); i_periodic++) {
                     relvecs2.emplace_back(order);
 
                     for (j2 = 0; j2 < order + 1; j2++) {
