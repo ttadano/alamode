@@ -761,7 +761,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
                     std::complex<double> exp_phase_tmp = std::complex<double>(0.0, 0.0);
                     unsigned int atm_s2 = system->map_p2s[jat][i];
 
-                    // Average over mirror atoms
+                    // Average over periodic images
 
                     for (j = 0; j < mindist_list[iat][atm_s2].size(); ++j) {
                         unsigned int cell = mindist_list[iat][atm_s2][j];

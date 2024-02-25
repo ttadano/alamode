@@ -260,7 +260,7 @@ public:
 
     void init(const System *system,
               const Symmetry *symmetry,
-              const int mirror_image_conv,
+              const int periodic_image_conv,
               const int verbosity,
               Timer *timer);
 
@@ -350,7 +350,7 @@ private:
                                    const std::vector<std::vector<int>> &map_p2s,
                                    const double *const *const *x_image,
                                    const int *exist,
-                                   const int mirror_image_conv) const;
+                                   const int periodic_image_conv) const;
 
     void set_interaction_cluster(const int order,
                                  const size_t natmin,
@@ -359,7 +359,7 @@ private:
                                  const std::vector<int> *interaction_pair_in,
                                  const double *const *const *x_image,
                                  const int *exist,
-                                 const int mirror_image_conv,
+                                 const int periodic_image_conv,
                                  std::set<InteractionCluster> *interaction_cluster_out) const;
 
     void cell_combination(const std::vector<std::vector<int>> &,
