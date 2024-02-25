@@ -210,7 +210,7 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
     int isym_tran, isym;
     int j, j2;
     int iat, jat, j2at;
-    int iat_translated, jat_translated, j2at_translated;
+    int iat_translated, j2at_translated;
     int iat_prim;
     int jat_prim;
     int i_periodic;
@@ -244,7 +244,6 @@ void Cluster::check_permutation_symmetry(const std::unique_ptr<System> &system,
                 isym_tran = symnum_tran_to_prim[jat];
                 isym = symmetry->get_symnum_tran()[isym_tran];
 
-                jat_translated = symmetry->get_map_sym()[jat][isym];
                 jat_prim = symmetry->get_map_super_to_trueprim()[jat].atom_num;
 
                 data_now.clear();

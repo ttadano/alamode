@@ -1152,7 +1152,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
 
     int ik, is, js;
     int is1, is2;
-    int i1, i2, i3, i4;
+    int i1;
     int iat1, ixyz1, ixyz2;
     std::string str_tmp;
 
@@ -1203,7 +1203,7 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     double **u_tensor, **eta_tensor;
 
     // structure update
-    double dq0, du0;
+    double du0;
     double du_tensor;
     double *delta_q0, *delta_u0;
     double *delta_umn;
@@ -2227,8 +2227,7 @@ void Scph::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out,
     size_t is2_1, js2_1, is2_2, js2_2;
     size_t is2, js2, ks2, ls2;
     unsigned int **ind;
-    unsigned int i, j;
-    std::complex<double> ret;
+    unsigned int j;
     long int ii;
 
     const auto nk_scph = kmesh_dense_in->nk;
@@ -2528,13 +2527,11 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
     const size_t nk_reduced_interpolate = kmesh_coarse_in->nk_irred;
     const size_t ns = dynamical->neval;
     const size_t ns2 = ns * ns;
-    const size_t ns3 = ns * ns * ns;
     const size_t ns4 = ns * ns * ns * ns;
     int is, js, ks, ls;
-    size_t is2_1, js2_1, is2_2, js2_2;
-    size_t is2, js2, ks2, ls2;
+    size_t is2_1, js2_1, is2_2;
+    size_t is2;
     int is4_1;
-    int is3_1;
     unsigned int knum;
     unsigned int **ind;
     unsigned int i, j;
@@ -3425,9 +3422,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     using namespace Eigen;
 
     int ik, jk;
-    unsigned int i;
     unsigned int is, js, ks;
-    unsigned int kk;
     const auto nk = kmesh_dense->nk;
     const auto ns = dynamical->neval;
     const auto ns2 = ns * ns;
@@ -3454,10 +3449,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all,
     double alpha = mixalpha;
 
     double **eval_interpolate;
-    double re_tmp, im_tmp;
     bool has_negative;
 
-    std::complex<double> ctmp;
     std::complex<double> ***evec_new;
     std::complex<double> ***dymat_r_new;
     std::complex<double> ***dymat_q, ***dymat_q_HA;
@@ -3931,10 +3924,8 @@ void Scph::compute_anharmonic_frequency2(std::complex<double> ***v4_array_all,
     constexpr auto complex_one = std::complex<double>(1.0, 0.0);
     constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
-    int ik, jk;
-    unsigned int i;
-    unsigned int is, js, ks;
-    unsigned int kk;
+    int ik;
+    unsigned int is, js;
     const auto nk = kmesh_dense->nk;
     const auto ns = dynamical->neval;
     unsigned int knum, knum_interpolate;

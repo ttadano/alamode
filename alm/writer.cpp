@@ -478,7 +478,8 @@ void Writer::write_displacement_pattern(const std::unique_ptr<System> &system,
             for (auto j = 0; j < 3; ++j) {
                 if (j > 0) ofs_pattern << "                      ";
                 for (auto i = 0; i < 3; ++i) {
-                    ofs_pattern << std::setprecision(15) << std::setw(20) << system->get_supercell().lattice_vector(i, j);
+                    ofs_pattern << std::setprecision(15) << std::setw(20)
+                                << system->get_supercell().lattice_vector(i, j);
                     if (j == 2 && i == 2) {
                         ofs_pattern << "]";
                     } else {
@@ -841,8 +842,6 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
         }
     }
 
-    auto ishift = fcs->get_nequiv()[0].size();
-
     // Print anharmonic force constants to the xml file.
 
     for (auto order = 1; order < cluster->get_maxorder(); ++order) {
@@ -903,7 +902,6 @@ void Writer::save_fcs_alamode_oldformat(const std::unique_ptr<System> &system,
                 exit("save_fcs_alamode_oldformat", "This cannot happen.");
             }
         }
-        ishift += fcs->get_nequiv()[order].size();
     }
 
     using namespace boost::property_tree::xml_parser;
@@ -938,7 +936,6 @@ void Writer::save_fcs_alamode(const std::unique_ptr<System> &system,
                               const int verbosity) const
 {
     using namespace H5Easy;
-    int i, j;
 
     File file(fname_fcs, File::ReadWrite | File::Create | File::Truncate);
 
@@ -1314,8 +1311,6 @@ void Writer::save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
             }
         }
     }
-
-    const auto ishift = fcs->get_nequiv()[0].size();
 
     for (const auto &it: fcs->get_fc_cart()[1]) {
 

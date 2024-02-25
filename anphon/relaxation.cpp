@@ -908,7 +908,6 @@ void Relaxation::compute_del_v1_del_umn(std::complex<double> **del_v1_del_umn,
 
     int i, ind1, is1;
     int ixyz, ixyz1;
-    double vec[3];
 
     // prepare supercell shift
 //    double **xshift_s;
@@ -997,7 +996,6 @@ void Relaxation::compute_del2_v1_del_umn2(std::complex<double> **del2_v1_del_umn
     int i, ind1, is1;
     int ixyz, ixyz1, ixyz2;
     int ixyz_comb;
-    double vec1[3], vec2[3];
 
     // prepare supercell shift
 //    double **xshift_s;
@@ -1366,13 +1364,11 @@ void Relaxation::compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
     std::complex<double> *phi3_reciprocal_tmp;
 
     int i;
-    int ixyz1, ixyz2, itmp;
-    int is1, is2, ik, knum;
+    int ixyz1, ixyz2;
 
     double *invsqrt_mass_p;
     allocate(invsqrt_mass_p, system->get_primcell().number_of_atoms);
     for (i = 0; i < system->get_primcell().number_of_atoms; ++i) {
-//        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
         invsqrt_mass_p[i] = std::sqrt(1.0 / system->get_mass_prim()[i]);
     }
 
@@ -2864,8 +2860,6 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayW
     std::vector<Eigen::Vector3d> relvecs_now, relvecs_old;
     std::vector<Eigen::Vector3d> relvecs_vel_now, relvecs_vel_old;
 
-    unsigned int nmulti;
-
     delta_fcs.clear();
 
     // new implementation
@@ -3029,33 +3023,19 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayW
 
 void Relaxation::make_supercell_mapping_by_symmetry_operations(int **symm_mapping_s)
 {
-    int natmin = system->get_primcell().number_of_atoms;
     int nat = system->get_supercell(0).number_of_atoms;
     int ntran = system->get_map_p2s().size();
 
-//    double rotmat[3][3];
-//    double shift[3];
     Eigen::Matrix3d rotmat;
     Eigen::Vector3d shift, xr_tmp;
     Eigen::MatrixXd xtmp(nat, 3);
-//    double **xtmp;
-//    double xr_tmp[3];
     int i, j;
-    int iat1, jat1, itran1, iat_prim;
+    int iat1, jat1, itran1;
     int isymm;
     int atm_found, iflag;
-    double dtmp, dtmp2;
-
-    // atomic positions in cartesian coordinate
-    //allocate(xtmp, nat, 3);
+    double dtmp;
 
     xtmp = system->get_supercell(0).x_cartesian;
-//    for (auto i = 0; i < nat; ++i) {
-//        for (auto j = 0; j < 3; ++j) {
-//            xtmp(i, j) = system->get_supercell(0).x_cartesian(i, j);
-//        }
-//       rotvec(xtmp[i], system->xr_s[i], system->lavec_s);
-//    }
 
     // make mapping
     isymm = -1;
@@ -3155,7 +3135,7 @@ void Relaxation::make_inverse_translation_mapping(int **inv_translation_mapping)
     int ntran = system->get_map_p2s(0).size();
 
     int i1, i2, i3;
-    int ixyz1, ixyz2;
+    int ixyz1;
     double x_tran1[3], x_tran2[3];
 
     int is_found, itmp;

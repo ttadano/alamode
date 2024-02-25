@@ -118,7 +118,7 @@ void Dielec::setup_dielectric(const unsigned int verbosity)
 }
 
 void Dielec::load_born(const unsigned int flag_symmborn,
-                          const unsigned int verbosity)
+                       const unsigned int verbosity)
 {
     // Read the dielectric tensor and born effective charges from file_born
 
@@ -152,7 +152,7 @@ void Dielec::load_born(const unsigned int flag_symmborn,
         std::cout << "  Dielectric constant tensor in Cartesian coordinate : \n";
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                std::cout << std::setw(15) << dielec_tensor(i,j);
+                std::cout << std::setw(15) << dielec_tensor(i, j);
             }
             std::cout << '\n';
         }

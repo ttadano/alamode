@@ -95,7 +95,7 @@ void Ewald::init()
     }
 }
 
-void Ewald::prepare_Ewald(const Eigen::Matrix3d& dielectric)
+void Ewald::prepare_Ewald(const Eigen::Matrix3d &dielectric)
 {
     int icrd;
 
@@ -209,9 +209,11 @@ void Ewald::prepare_Ewald(const Eigen::Matrix3d& dielectric)
         std::cout << "    Lmax   : " << std::setw(15) << Lmax_sub << '\n';
         std::cout << "    Gmax   : " << std::setw(15) << Gmax_sub << '\n';
         std::cout << "    Maximum number of real-space cells : "
-                  << std::setw(3) << nl_sub[0] << "x" << std::setw(3) << nl_sub[1] << "x" << std::setw(3) << nl_sub[2] << '\n';
+                  << std::setw(3) << nl_sub[0] << "x" << std::setw(3) << nl_sub[1] << "x" << std::setw(3) << nl_sub[2]
+                  << '\n';
         std::cout << "    Maximum number of reciprocal cells : "
-                  << std::setw(3) << ng_sub[0] << "x" << std::setw(3) << ng_sub[1] << "x" << std::setw(3) << ng_sub[2] << '\n';
+                  << std::setw(3) << ng_sub[0] << "x" << std::setw(3) << ng_sub[1] << "x" << std::setw(3) << ng_sub[2]
+                  << '\n';
         std::cout << '\n';
         std::cout << "  - Dynamical matrix\n";
         std::cout << "    Lambda : " << std::setw(15) << lambda << '\n';
@@ -337,7 +339,7 @@ void Ewald::get_pairs_of_minimum_distance(const int nat,
 
 void Ewald::compute_ewald_fcs()
 {
-    int i, j;
+    int j;
     int iat, jat;
     int icrd, jcrd;
     int atm_s;

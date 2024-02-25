@@ -209,7 +209,7 @@ void Symmetry::setup_symmetry_operation(const Cell &pcell,
                                         const int is_periodic[3],
                                         const int verbosity)
 {
-    size_t i, j;
+    size_t i;
 
     symmetry_data_super.clear();
     symmetry_data_prim.clear();
@@ -924,7 +924,6 @@ void Symmetry::gen_mapping_information(const Cell &scell,
 
 #pragma omp parallel
     {
-        size_t i, j;
         size_t itype;
         size_t ii, jj;
         size_t jat;

@@ -73,14 +73,11 @@ int Optimize::optimize_main(const std::unique_ptr<Symmetry> &symmetry,
 {
     timer->start_clock("optimize");
 
-    const auto natmin = symmetry->get_nat_trueprim();
     const auto ndata_used = filedata_train.nend - filedata_train.nstart + 1
                             - filedata_train.skip_e + filedata_train.skip_s;
     const auto ndata_used_validation = filedata_validation.nend - filedata_validation.nstart + 1;
-    const auto ntran = symmetry->get_ntran();
     auto info_fitting = 0;
     const auto M = get_number_of_rows_sensing_matrix();
-    const auto M_validation = 3 * natmin * ndata_used_validation * ntran;
     size_t N = 0;
     size_t N_new = 0;
     for (auto i = 0; i < maxorder; ++i) {

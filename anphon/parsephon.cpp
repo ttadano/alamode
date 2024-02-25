@@ -620,7 +620,6 @@ void Input::parse_relax_vars()
 {
     // Read input parameters in the &relax-field.
 
-    struct stat st{};
     const std::vector<std::string> input_list{
             "RELAX_ALGO", "MAX_STR_ITER",
             "COORD_CONV_TOL", "MIXBETA_COORD", "ALPHA_STDECENT",

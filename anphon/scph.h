@@ -254,8 +254,8 @@ private:
                           Eigen::MatrixXd &omega_out);
 
     static void get_permutation_matrix(const int ns,
-                                std::complex<double> **cmat_in,
-                                Eigen::MatrixXd &permutation_matrix) ;
+                                       std::complex<double> **cmat_in,
+                                       Eigen::MatrixXd &permutation_matrix);
 
     void find_degeneracy(std::vector<int> *degeneracy_out,
                          unsigned int nk_in,

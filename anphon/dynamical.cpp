@@ -488,11 +488,9 @@ void Dynamical::eval_k_ewald(const double *xk_in,
             for (icrd = 0; icrd < 3; ++icrd) {
                 for (jcrd = 0; jcrd < 3; ++jcrd) {
                     auto check = std::complex<double>(0.0, 0.0);
-                    auto count = 0;
                     for (j = 0; j < nat_prim; ++j) {
                         const auto mass = system->get_mass_prim()[i] * system->get_mass_prim()[j];
                         check += std::sqrt(mass) * dymat_k[3 * i + icrd][3 * j + jcrd];
-                        count += 1;
                     }
 
                     if (std::abs(check) > eps8) {
@@ -647,11 +645,6 @@ void Dynamical::calc_nonanalytic_k(const double *xk_in,
     }
     const auto denom = kvec_na_vec.dot(dielec_tmp * kvec_na_vec);
 
-   // rotvec(kepsilon, kvec_na_in, dielec);
-    //const auto denom = kvec_na_in[0] * kepsilon[0]
-//                       + kvec_na_in[1] * kepsilon[1]
-//                       + kvec_na_in[2] * kepsilon[2];
-
     if (denom > eps) {
 
         for (iat = 0; iat < nat_prim; ++iat) {
@@ -743,7 +736,6 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
 
     unsigned int i, j;
     const auto natmin = system->get_primcell().number_of_atoms;
-    double kepsilon[3];
     Eigen::Vector3d kvec_na_vec;
     double kz1[3], kz2[3];
     double born_tmp[3][3];
@@ -766,10 +758,7 @@ void Dynamical::calc_nonanalytic_k2(const double *xk_in,
         kvec_na_vec[i] = kvec_na_in[i];
     }
     const auto denom = kvec_na_vec.dot(dielec_tmp * kvec_na_vec);
-//    rotvec(kepsilon, kvec_na_in, dielec);
-//    double denom = kvec_na_in[0] * kepsilon[0]
-//                   + kvec_na_in[1] * kepsilon[1]
-//                   + kvec_na_in[2] * kepsilon[2];
+
 
     if (denom > eps) {
 
@@ -1750,7 +1739,7 @@ void Dynamical::compute_renormalized_harmonic_frequency(double **omega2_out,
 {
     using namespace Eigen;
 
-    int ik, jk;
+    int ik;
     int is, js;
     const auto nk = kmesh_dense->nk;
     const auto nk_interpolate = kmesh_coarse->nk;
@@ -1767,13 +1756,10 @@ void Dynamical::compute_renormalized_harmonic_frequency(double **omega2_out,
     MatrixXcd Fmat(ns, ns);
 
     double **eval_interpolate;
-    double re_tmp, im_tmp;
-    bool has_negative;
 
     std::complex<double> ***dymat_new, ***dymat_harmonic_without_renormalize;
     std::complex<double> ***dymat_q;
 
-    constexpr auto complex_one = std::complex<double>(1.0, 0.0);
     constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     SelfAdjointEigenSolver<MatrixXcd> saes;

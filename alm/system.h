@@ -107,8 +107,7 @@ public:
     const std::vector<std::vector<unsigned int>> &get_atomtype_group(const std::string cell = "super") const;
 
     Eigen::Matrix3d compute_transmat_to_prim_using_spglib(const Cell &cell_input,
-                                                                 const double symprec) const;
-
+                                                          const double symprec) const;
 
 
 private:
@@ -155,8 +154,8 @@ private:
                   const LatticeType latttype_in) const;
 
     static void set_atomtype_group(const Cell &cell_in,
-                            const Spin &spin_in,
-                            std::vector<std::vector<unsigned int>> &atomtype_group_out);
+                                   const Spin &spin_in,
+                                   std::vector<std::vector<unsigned int>> &atomtype_group_out);
 
     void find_primitive_cell(const Cell &cell_input,
                              const Spin &spin_input,

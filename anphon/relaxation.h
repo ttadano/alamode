@@ -28,7 +28,7 @@ public:
     int relax_str;
 
     // initial strain and displacement
-    double init_u_tensor[3][3] {{0.0}};
+    double init_u_tensor[3][3]{{0.0}};
     std::vector<double> init_u0;
 
     // zero-th order term of the potential energy surface

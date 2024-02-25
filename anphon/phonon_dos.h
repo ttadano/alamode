@@ -60,7 +60,6 @@ public:
                                 const bool force_update = false);
 
 
-
 private:
     void set_default_variables();
 

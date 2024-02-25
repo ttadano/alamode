@@ -167,7 +167,6 @@ void Fcs::generate_force_constant_table(const int order,
 
     int **xyzcomponent;
 
-    const auto nsym = symm_in->get_symmetry_data().size();
     bool is_zero;
     bool *is_searched;
     std::vector<std::vector<int>> map_sym;
@@ -382,7 +381,6 @@ void Fcs::get_constraint_symmetry(const size_t nat,
 
     std::vector<std::vector<int>> map_sym;
     std::vector<Eigen::Matrix3d> rotation;
-    const auto nsym = symmetry->get_symmetry_data().size();
     const auto natmin = symmetry->get_nat_trueprim();
     const auto nfcs = fc_table_in.size();
     const auto use_compatible = false;
@@ -571,7 +569,6 @@ void Fcs::get_constraint_symmetry_in_integer(const size_t nat,
 
     std::vector<std::vector<int>> map_sym;
     std::vector<Eigen::Matrix3d> rotation;
-    const auto nsym = symmetry->get_symmetry_data().size();
     const auto natmin = symmetry->get_nat_trueprim();
     const auto nfcs = fc_table_in.size();
     const auto use_compatible = false;
@@ -776,9 +773,6 @@ void Fcs::set_forceconstant_cartesian(const int maxorder,
     std::vector<std::vector<int>> atoms_grp;
     std::vector<int> elems_permutation;
     std::vector<FcProperty> fc_table_copy;
-
-    int **xyzcomponent;
-    double prod_matrix;
 
     if (fc_cart) {
         deallocate(fc_cart);

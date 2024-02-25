@@ -339,7 +339,7 @@ private:
                     const Eigen::MatrixXd &x2) const;
 
     static int nbody(const int,
-              const int *) ;
+                     const int *);
 
     void calc_interaction_clusters(const size_t natmin,
                                    const std::vector<int> &kd,

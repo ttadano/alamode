@@ -165,13 +165,13 @@ public:
     void set_projection_directions(const std::vector<std::vector<double>> projections_in);
 
     static void r2q(const double *xk_in,
-             const unsigned int nx,
-             const unsigned int ny,
-             const unsigned int nz,
-             const unsigned int ns,
-             MinimumDistList ***mindist_list_in,
-             std::complex<double> ***dymat_r_in,
-             std::complex<double> **dymat_k_out) ;
+                    const unsigned int nx,
+                    const unsigned int ny,
+                    const unsigned int nz,
+                    const unsigned int ns,
+                    MinimumDistList ***mindist_list_in,
+                    std::complex<double> ***dymat_r_in,
+                    std::complex<double> **dymat_k_out);
 
     void precompute_dymat_harm(const unsigned int nk_in,
                                double **xk_in,
@@ -205,6 +205,7 @@ public:
                                          double *,
                                          std::complex<double> **,
                                          bool) const;
+
     double **get_xrs_image() const;
 
     void exec_interpolation(const unsigned int kmesh_orig[3],
@@ -246,7 +247,7 @@ private:
                                          double *ret) const;
 
     static double distance(double *,
-                    double *) ;
+                           double *);
 
     void connect_band_by_eigen_similarity(const unsigned int nk_in,
                                           std::complex<double> ***evec,

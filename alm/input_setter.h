@@ -37,7 +37,7 @@ public:
     void set_transformation_matrices(const Eigen::Matrix3d &transmat_super_in,
                                      const Eigen::Matrix3d &transmat_prim_in,
                                      const int autoset_primcell_in,
-                                     const bool transpose=false);
+                                     const bool transpose = false);
 
     void set_magnetic_vars(const int lspin_in,
                            const Eigen::MatrixXd &magmom_in,

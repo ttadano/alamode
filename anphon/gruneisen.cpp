@@ -297,7 +297,6 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
 
     const auto norder = fcs_in[0].pairs.size();
     const auto nelems = norder - 1;
-    unsigned int nmulti;
 
     delta_fcs.clear();
     fcs_aligned.clear();

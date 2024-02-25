@@ -700,7 +700,6 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in,
     unsigned int i, j, k;
 
     const auto nmode = dynamical->neval;
-    double vec[3];
 
     for (k = 0; k < 3; ++k) {
         for (i = 0; i < nmode; ++i) {
@@ -783,7 +782,6 @@ void PhononVelocity::velocity_matrix_analytic(const double *xk_in,
 
     const auto nmode = dynamical->neval;
 
-    double vec[3], vec2[3];
     std::complex<double> ***ddymat;
 
     allocate(ddymat, nmode, nmode, 3);

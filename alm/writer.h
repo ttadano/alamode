@@ -120,7 +120,7 @@ public:
                           const std::unique_ptr<Optimize> &optimize,
                           const std::unique_ptr<Files> &files,
                           const std::string run_mode) const;
-    
+
     void write_displacement_pattern(const std::unique_ptr<System> &system,
                                     const std::unique_ptr<Cluster> &cluster,
                                     const std::unique_ptr<Displace> &displace,

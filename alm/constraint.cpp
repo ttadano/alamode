@@ -99,7 +99,6 @@ void Constraint::setup(const std::unique_ptr<System> &system,
     }
 
     constraint_mode = constraint_mode % 10;
-    const auto maxorder = cluster->get_maxorder();
 
     if (linear_model >= 2) {
         if (constraint_mode > 1) {
@@ -341,10 +340,10 @@ void Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
                                  const_rotation_self[order].begin(),
                                  const_rotation_self[order].end());
 
-        size_t nparams = 0;
-        for (auto order2 = 0; order2 < maxorder; ++order2) {
-            nparams += fcs->get_nequiv()[order2].size();
-        }
+//        size_t nparams = 0;
+//        for (auto order2 = 0; order2 < maxorder; ++order2) {
+//            nparams += fcs->get_nequiv()[order2].size();
+//        }
         //test_svd(const_self[order], nparams);
         rref_sparse(nparam, const_self[order], tolerance_constraint);
     }
@@ -558,7 +557,7 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
     }
 
     size_t irow = 0;
-    size_t icol = 0;
+//    size_t icol = 0;
     size_t ishift = 0;
 
     if (fix_harmonic) {
@@ -570,7 +569,7 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
         }
 
         irow += const_fix[0].size();
-        icol += const_fix[0].size();
+//        icol += const_fix[0].size();
         ishift += const_fix[0].size();
     }
 
@@ -585,7 +584,7 @@ size_t Constraint::calc_constraint_matrix(const int maxorder,
         }
 
         irow += const_fix[1].size();
-        icol += const_fix[1].size();
+        //icol += const_fix[1].size();
     }
 
     for (auto &p: const_total) {
@@ -988,7 +987,7 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
         std::cout << "  Generating constraints for translational invariance ...\n";
     }
 
-    for (auto order = 0; order < cluster->get_maxorder(); ++order) {
+    for (auto order = 0; order < maxorder; ++order) {
 
         if (verbosity > 0)
             std::cout << "   " << std::setw(8) << cluster->get_ordername(order) << " ...";
@@ -1016,13 +1015,13 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
             // if periodic_image_conv == 0 or order == 0, there is no need to impose additional ASR constraints.
         else { // if(periodic_image_conv > 0 && order > 0)
             get_constraint_translation_for_periodic_images(supercell,
-                                                         symmetry,
-                                                         cluster,
-                                                         fcs,
-                                                         order,
-                                                         fcs->get_fc_table()[order],
-                                                         fcs->get_nequiv()[order].size(),
-                                                         const_translation[order], true);
+                                                           symmetry,
+                                                           cluster,
+                                                           fcs,
+                                                           order,
+                                                           fcs->get_fc_table()[order],
+                                                           fcs->get_nequiv()[order].size(),
+                                                           const_translation[order], true);
         }
 
         if (verbosity > 0) std::cout << " done.\n" << std::flush;
@@ -1059,7 +1058,6 @@ void Constraint::get_constraint_translation(const Cell &supercell,
     const auto nat = supercell.number_of_atoms;
 
     unsigned int isize;
-    const auto maxorder = cluster->get_maxorder();
 
     std::vector<int> data;
     std::unordered_set<FcProperty> list_found;
@@ -1331,14 +1329,14 @@ void Constraint::get_constraint_translation(const Cell &supercell,
 }
 
 void Constraint::get_constraint_translation_for_periodic_images(const Cell &supercell,
-                                                              const std::unique_ptr<Symmetry> &symmetry,
-                                                              const std::unique_ptr<Cluster> &cluster,
-                                                              const std::unique_ptr<Fcs> &fcs,
-                                                              const int order,
-                                                              const std::vector<FcProperty> &fc_table,
-                                                              const size_t nparams,
-                                                              ConstraintSparseForm &const_out,
-                                                              const bool do_rref) const
+                                                                const std::unique_ptr<Symmetry> &symmetry,
+                                                                const std::unique_ptr<Cluster> &cluster,
+                                                                const std::unique_ptr<Fcs> &fcs,
+                                                                const int order,
+                                                                const std::vector<FcProperty> &fc_table,
+                                                                const size_t nparams,
+                                                                ConstraintSparseForm &const_out,
+                                                                const bool do_rref) const
 {
     // Generate equality constraint for the acoustic sum rule.
 
@@ -1356,7 +1354,7 @@ void Constraint::get_constraint_translation_for_periodic_images(const Cell &supe
     const auto nat = supercell.number_of_atoms;
 
     // generate combinations of periodic images
-    long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
+    //long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
 
     unsigned int isize;
 
@@ -1413,8 +1411,7 @@ void Constraint::get_constraint_translation_for_periodic_images(const Cell &supe
 
         if (order == 0) {
             continue;  // there is no new translational invariance
-        }
-        else {
+        } else {
 
             // Anharmonic cases
 
@@ -1554,13 +1551,14 @@ void Constraint::get_constraint_translation_for_periodic_images(const Cell &supe
                                                 }
 
                                                 // check if the same periodic image has already been found.
-                                                for (i_mi_tmp = 0; i_mi_tmp < periodic_images_found.size(); i_mi_tmp++){
-                                                    if(periodic_images_found[i_mi_tmp] == i_periodic_images){
+                                                for (i_mi_tmp = 0;
+                                                     i_mi_tmp < periodic_images_found.size(); i_mi_tmp++) {
+                                                    if (periodic_images_found[i_mi_tmp] == i_periodic_images) {
                                                         break;
                                                     }
                                                 }
                                                 // if not found
-                                                if(i_mi_tmp == periodic_images_found.size()){
+                                                if (i_mi_tmp == periodic_images_found.size()) {
                                                     periodic_images_found.push_back(i_periodic_images);
                                                     consts_now_omp.push_back(std::vector<double>(nparams, 0.0));
                                                 }
@@ -2963,8 +2961,6 @@ void Constraint::test_svd(ConstraintSparseForm &const_in,
         ConstraintSparseForm const_new;
 
         MapConstraintElement const_tmp2;
-        auto division_factor = 1.0;
-        int counter;
 
         const_in.clear();
 

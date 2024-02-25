@@ -312,7 +312,7 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     double **u_tensor, **eta_tensor;
 
     // structure update
-    double dq0, du0;
+    double du0;
     double du_tensor;
     double *delta_q0, *delta_u0;
     double *delta_umn;
@@ -320,7 +320,8 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
     // cell optimization
 //    double pvcell = 0.0; // pressure * v_{cell,reference} [Ry]
-    auto pvcell = relaxation->stat_pressure * system->get_primcell().volume * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in 10^9 J = GJ
+    auto pvcell = relaxation->stat_pressure * system->get_primcell().volume * std::pow(Bohr_in_Angstrom, 3) *
+                  1.0e-30; // in 10^9 J = GJ
     pvcell *= 1.0e9 / Ryd; // in Ry
 
     // temperature grid
@@ -1290,7 +1291,7 @@ void Qha::calc_del_v0_del_umn_vib(std::complex<double> *del_v0_del_umn_vib,
 
     static auto complex_zero = std::complex<double>(0.0, 0.0);
 
-    int ixyz12, ixyz1, ixyz2, is, ik;
+    int ixyz1, ixyz2, is, ik;
     std::complex<double> Qtmp;
     double omega1_tmp, n1;
 
@@ -1345,7 +1346,7 @@ void Qha::calculate_del_v1_del_umn_renorm(std::complex<double> **del_v1_del_umn_
     allocate(del_v2_strain_tmp, 9, ns, ns);
 
     double factor = 0.5 * 4.0 * nk;
-    int i1, i2, i3, ixyz1, ixyz2, ixyz3, ixyz4;
+    int i1, i2, i3, ixyz1, ixyz2;
     int is1, is2, is3;
 
     const auto complex_zero = std::complex<double>(0.0, 0.0);
@@ -1443,7 +1444,7 @@ void Qha::calculate_C2_array_renorm(double **C2_array_renorm,
     allocate(del_eta_del_u, 9, 9);
 
     int i1, i2, i3, i4, ixyz1, ixyz2, ixyz3, ixyz4;
-    int is1, is2, is3;
+    int is1, is2;
 
     double **C2_array_with_strain_eta;
     allocate(C2_array_with_strain_eta, 9, 9);

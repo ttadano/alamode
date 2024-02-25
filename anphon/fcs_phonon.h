@@ -72,8 +72,8 @@ public:
     FcsArrayWithCell(const double fcs_in,
                      const std::vector<AtomCellSuper> &pairs_in,
                      const std::vector<unsigned int> &atoms_s_in) : pairs(pairs_in),
-                                                                    fcs_val(fcs_in),
-                                                                    atoms_s(atoms_s_in)
+                                                                    atoms_s(atoms_s_in),
+                                                                    fcs_val(fcs_in)
     {
         coords.clear();
         for (const auto &it: pairs_in) {
@@ -85,8 +85,8 @@ public:
                      const std::vector<AtomCellSuper> &pairs_in,
                      const std::vector<unsigned int> &atoms_s_in,
                      const std::vector<Eigen::Vector3d> &relvecs_vel_in) : pairs(pairs_in),
-                                                                           fcs_val(fcs_in),
                                                                            atoms_s(atoms_s_in),
+                                                                           fcs_val(fcs_in),
                                                                            relvecs_velocity(relvecs_vel_in)
     {
         coords.clear();
@@ -100,8 +100,8 @@ public:
                      const std::vector<unsigned int> &atoms_s_in,
                      const std::vector<Eigen::Vector3d> &relvecs_in,
                      const std::vector<Eigen::Vector3d> &relvecs_vel_in) : pairs(pairs_in),
-                                                                           fcs_val(fcs_in),
                                                                            atoms_s(atoms_s_in),
+                                                                           fcs_val(fcs_in),
                                                                            relvecs(relvecs_in),
                                                                            relvecs_velocity(relvecs_vel_in)
     {
@@ -144,7 +144,6 @@ public:
         return false;
     }
 };
-
 
 
 struct sort_by_heading_indices {

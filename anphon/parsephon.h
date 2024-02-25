@@ -63,9 +63,9 @@ private:
                       std::map<std::string, std::string> &);
 
     static void split_str_by_space(const std::string &,
-                            std::vector<std::string> &) ;
+                                   std::vector<std::string> &);
 
-    static bool is_endof_entry(const std::string &str) ;
+    static bool is_endof_entry(const std::string &str);
 
     template<typename T_to, typename T_from>
     T_to my_cast(T_from const &);

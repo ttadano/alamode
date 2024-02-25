@@ -465,7 +465,7 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
         std::stable_sort(idx.begin(), idx.end(),
                          [&distances](size_t i1, size_t i2) { return distances[i1] < distances[i2]; });
 
-        const auto minimum_distance = distances[idx[0]];
+//        const auto minimum_distance = distances[idx[0]];
 //        std::cout << "ik = " << ik << '\n';
 //        std::cout << "xk = " << std::setw(15) << xkr[ik][0] << std::setw(15) << xkr[ik][1]
 //        << std::setw(15) << xkr[ik][2] << '\n';

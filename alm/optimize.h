@@ -254,9 +254,9 @@ private:
                                               const int verbosity) const;
 
     static void get_number_of_zero_coefs(const int maxorder,
-                                  const std::unique_ptr<Constraint> &constraint,
-                                  const Eigen::VectorXd &x,
-                                  std::vector<int> &nzeros) ;
+                                         const std::unique_ptr<Constraint> &constraint,
+                                         const Eigen::VectorXd &x,
+                                         std::vector<int> &nzeros);
 
     void get_standardizer(const Eigen::MatrixXd &Amat,
                           Eigen::VectorXd &mean,
@@ -272,18 +272,18 @@ private:
                                    const Eigen::VectorXd &bvec) const;
 
     static void apply_scaler_displacement(std::vector<std::vector<double>> &u_inout,
-                                   const double normalization_factor,
-                                   const bool scale_back = false) ;
+                                          const double normalization_factor,
+                                          const bool scale_back = false);
 
     static void apply_scaler_constraint(const int maxorder,
-                                 const double normalization_factor,
-                                 const std::unique_ptr<Constraint> &constraint,
-                                 const bool scale_back = false) ;
+                                        const double normalization_factor,
+                                        const std::unique_ptr<Constraint> &constraint,
+                                        const bool scale_back = false);
 
     static void apply_scaler_force_constants(const int maxorder,
-                                      const double normalization_factor,
-                                      const std::unique_ptr<Constraint> &constraint,
-                                      std::vector<double> &param_inout) ;
+                                             const double normalization_factor,
+                                             const std::unique_ptr<Constraint> &constraint,
+                                             std::vector<double> &param_inout);
 
     void apply_scalers(const int maxorder,
                        const std::unique_ptr<Constraint> &constraint);
@@ -292,19 +292,19 @@ private:
                           const std::unique_ptr<Constraint> &constraint);
 
     static void apply_basis_converter(std::vector<std::vector<double>> &u_multi,
-                               Eigen::Matrix3d cmat) ;
+                                      Eigen::Matrix3d cmat);
 
     static void apply_basis_converter_amat(const int natmin3,
-                                    const int ncols,
-                                    double **amat_orig_tmp,
-                                    Eigen::Matrix3d cmat) ;
+                                           const int ncols,
+                                           double **amat_orig_tmp,
+                                           Eigen::Matrix3d cmat);
 
     static int fit_without_constraints(const size_t N,
-                                const size_t M,
-                                double *amat,
-                                const double *bvec,
-                                double *param_out,
-                                const int verbosity) ;
+                                       const size_t M,
+                                       double *amat,
+                                       const double *bvec,
+                                       double *param_out,
+                                       const int verbosity);
 
     int fit_algebraic_constraints(const size_t N,
                                   const size_t M,
@@ -365,9 +365,9 @@ private:
     int factorial(const int) const;
 
     static int rankQRD(const size_t m,
-                const size_t n,
-                double *mat,
-                const double tolerance) ;
+                       const size_t n,
+                       double *mat,
+                       const double tolerance);
 
     double gamma(const int,
                  const int *) const;
@@ -403,9 +403,9 @@ private:
                        std::vector<std::vector<int>> &nonzeros) const;
 
     static void compute_alphas(const double l1_alpha_max,
-                        const double l1_alpha_min,
-                        const int num_l1_alpha,
-                        std::vector<double> &alphas) ;
+                               const double l1_alpha_min,
+                               const int num_l1_alpha,
+                               std::vector<double> &alphas);
 };
 
 inline double shrink(const double x,

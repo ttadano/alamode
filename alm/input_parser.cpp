@@ -253,15 +253,12 @@ void InputParser::parse_general_vars(ALM *alm)
     size_t i;
     std::string str_tmp, str_disp_basis, basis_force_constant;
     int printsymmetry, is_periodic[3];
-    size_t icount, ncount;
     auto trim_dispsign_for_evenfunc = true;
     int print_hessian, print_fcs_alamode, print_fc2_qefc, print_fc3_shengbte;
-    int noncollinear, trevsym;
     double tolerance;
     double tolerance_constraint;
     double fc_zero_threshold;
     int verbosity, nmaxsave, compression_level;
-    bool structure_from_file = false;
 
     std::vector<std::string> kdname_v, periodic_v;
     std::vector<std::string> supercell_v, primcell_v;

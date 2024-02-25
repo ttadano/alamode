@@ -719,12 +719,7 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
     const auto temp = system->Tmin + static_cast<double>(iT) * system->dT;
     const auto N = nk * ns;
 
-    const auto eval_harm = dos->dymat_dos->get_eigenvalues();
-    const auto evec_harm = dos->dymat_dos->get_eigenvectors();
-
     double ret = 0.0;
-
-    const auto complex_zero = std::complex<double>(0.0, 0.0);
 
 #pragma omp parallel for reduction(+ : ret)
     for (int i = 0; i < N; ++i) {

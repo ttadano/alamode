@@ -149,7 +149,7 @@ void System::print_structure_information_stdout() const
     }
     cout << "\n\n";
 
-    cout << "  Volume of the primitive cell : "<< primcell.volume << " (a.u.)^3\n\n";
+    cout << "  Volume of the primitive cell : " << primcell.volume << " (a.u.)^3\n\n";
     cout << "  Number of atoms in the primitive cell: "
          << primcell.number_of_atoms << "\n\n";
 

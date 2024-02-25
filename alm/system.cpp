@@ -45,7 +45,6 @@ void System::init(const int verbosity,
 
     // Compute primitive cell and supercell first.
     build_cells();
-    const auto nat = supercell.number_of_atoms;
 
     // Set atomic types (kind + magmom)
     set_atomtype_group(supercell, spin_super, atomtype_group_super);
@@ -575,7 +574,7 @@ void System::set_atomtype_group(const Cell &cell_in,
 
     unsigned int i;
     AtomType type_tmp{};
-    std::set < AtomType > set_type;
+    std::set<AtomType> set_type;
     set_type.clear();
 
     for (i = 0; i < cell_in.number_of_atoms; ++i) {
@@ -688,7 +687,7 @@ void System::find_primitive_cell(const Cell &cell_input,
 }
 
 Eigen::Matrix3d System::compute_transmat_to_prim_using_spglib(const Cell &cell_input,
-                                                                     const double symprec) const
+                                                              const double symprec) const
 {
     Eigen::Matrix3d transmat_out;
 

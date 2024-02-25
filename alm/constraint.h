@@ -9,6 +9,7 @@
 */
 
 #pragma once
+
 #include <unordered_map>
 #include <boost/bimap.hpp>
 #include <utility>
@@ -388,14 +389,14 @@ private:
                                     const bool do_rref = false) const;
 
     void get_constraint_translation_for_periodic_images(const Cell &supercell,
-                                                      const std::unique_ptr<Symmetry> &symmetry,
-                                                      const std::unique_ptr<Cluster> &cluster,
-                                                      const std::unique_ptr<Fcs> &fcs,
-                                                      const int order,
-                                                      const std::vector<FcProperty> &fc_table,
-                                                      const size_t nparams,
-                                                      ConstraintSparseForm &const_out,
-                                                      const bool do_rref) const;
+                                                        const std::unique_ptr<Symmetry> &symmetry,
+                                                        const std::unique_ptr<Cluster> &cluster,
+                                                        const std::unique_ptr<Fcs> &fcs,
+                                                        const int order,
+                                                        const std::vector<FcProperty> &fc_table,
+                                                        const size_t nparams,
+                                                        ConstraintSparseForm &const_out,
+                                                        const bool do_rref) const;
 
     // const_translation is updated.
     void generate_translational_constraint(const Cell &,

@@ -189,7 +189,7 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
         std::vector<unsigned int> tran_new(order + 2);
 
         for (const auto &it_trans: map_trans) {
-            for (const auto &it : force_constant_with_cell[order]) {
+            for (const auto &it: force_constant_with_cell[order]) {
 
                 for (auto i = 0; i < order + 2; ++i) {
                     atom_super[i] = it.atoms_s[i];

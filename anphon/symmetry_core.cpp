@@ -135,7 +135,6 @@ void Symmetry::setup_symmetry_operation(const Cell &cell_in,
                                         std::vector<SymmetryOperation> &symlist,
                                         const int verbosity)
 {
-    size_t i, j;
     // input cell into a true primitive cell.
     if (spin_in.lspin && spin_in.noncollinear) {
         if (verbosity > 0) {
@@ -451,8 +450,7 @@ void Symmetry::find_crystal_symmetry(const Cell &cell,
                                 + std::pow(mag[1] + mag_rot[1], 2.0)
                                 + std::pow(mag[2] + mag_rot[2], 2.0)) < eps6;
 
-                    if (!mag_sym1 && !mag_sym2)
-                    {
+                    if (!mag_sym1 && !mag_sym2) {
                         isok = false;
                     } else if (!mag_sym1 && mag_sym2 && !spin.time_reversal_symm) {
                         isok = false;
