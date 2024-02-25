@@ -211,7 +211,7 @@ public:
                const std::unique_ptr<Cluster> &cluster,
                const std::unique_ptr<Symmetry> &symmetry,
                const int linear_model,
-               const int mirror_image_conv,
+               const int periodic_image_conv,
                const int verbosity,
                std::unique_ptr<Timer> &timer);
 
@@ -283,7 +283,7 @@ public:
                                   const std::unique_ptr<Cluster> &cluster,
                                   const std::unique_ptr<Fcs> &fcs,
                                   const int verbosity,
-                                  const int mirror_image_conv);
+                                  const int periodic_image_conv);
 
     bool ready_all_constraints() const;
 
@@ -387,7 +387,7 @@ private:
                                     ConstraintSparseForm &const_out,
                                     const bool do_rref = false) const;
 
-    void get_constraint_translation_for_mirror_images(const Cell &supercell,
+    void get_constraint_translation_for_periodic_images(const Cell &supercell,
                                                       const std::unique_ptr<Symmetry> &symmetry,
                                                       const std::unique_ptr<Cluster> &cluster,
                                                       const std::unique_ptr<Fcs> &fcs,

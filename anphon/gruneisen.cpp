@@ -274,7 +274,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 
 void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                                   std::vector<FcsArrayWithCell> &delta_fcs,
-                                  const int mirror_image_mode) const
+                                  const int periodic_image_mode) const
 {
     unsigned int i, j;
     Eigen::Vector3d vec, vec_origin;
@@ -306,6 +306,19 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
         fcs_aligned.emplace_back(it);
     }
     sort_by_heading_indices operator1(1);
+
+    if (periodic_image_mode == 0) {
+        // original implementation
+        // calculate IFC renormalization for the same atomic combination in the supercell
+        // but with different periodic images at once and assign the average value for each
+        // periodic images.
+        index_old.clear();
+        const auto nelems = 2 * (norder - 2) + 1;
+        for (i = 0; i < nelems; ++i) index_old.push_back(-1);
+
+        index_with_cell.clear();
+        set_index_uniq.clear();
+
     std::sort(fcs_aligned.begin(),
               fcs_aligned.end(),
               operator1);

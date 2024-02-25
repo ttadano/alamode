@@ -1086,7 +1086,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
             "L1_RATIO", "STANDARDIZE", "ENET_DNORM",
             "L1_ALPHA", "CV_MAXALPHA", "CV_MINALPHA", "CV_NALPHA",
             "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS",
-            "MIRROR_IMAGE_CONV", "STOP_CRITERION"
+            "PERIODIC_IMAGE_CONV", "STOP_CRITERION"
     };
 
     std::map<std::string, std::string> optimize_var_dict;
@@ -1185,8 +1185,8 @@ void InputParser::parse_optimize_vars(ALM *alm)
     if (!optimize_var_dict["STOP_CRITERION"].empty()) {
         optcontrol.stop_criterion = boost::lexical_cast<int>(optimize_var_dict["STOP_CRITERION"]);
     }
-    if (!optimize_var_dict["MIRROR_IMAGE_CONV"].empty()) {
-        optcontrol.mirror_image_conv = boost::lexical_cast<int>(optimize_var_dict["MIRROR_IMAGE_CONV"]);
+    if (!optimize_var_dict["PERIODIC_IMAGE_CONV"].empty()) {
+        optcontrol.periodic_image_conv = boost::lexical_cast<int>(optimize_var_dict["PERIODIC_IMAGE_CONV"]);
     }
 
 

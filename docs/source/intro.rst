@@ -101,7 +101,7 @@ Please cite the following article when you use ALAMODE:
     * - [3]_
       - Anharmonic free energies within SCP or improved SCP (ISC)
     * - [4]_
-      - SCP-based structural optimization or ``MIRROR_IMAGE_CONV = 1`` in the **alm** code
+      - SCP-based structural optimization or ``PERIODIC_IMAGE_CONV = 1`` (default) in the **alm** code
     * - [5]_
       - QHA-based structural optimization
 

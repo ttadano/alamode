@@ -59,8 +59,8 @@ List of supported input variables
    :ref:`DFSET <alm_dfset>`, :ref:`DFSET_CV <alm_dfset_cv>`, :ref:`ENET_DNORM <alm_enet_dnorm>`, :ref:`FC2XML <alm_fc2xml>`, :ref:`FC3XML <alm_fc3xml>`
    :ref:`ICONST <alm_iconst>`, :ref:`L1_ALPHA <alm_l1_alpha>`, :ref:`L1_RATIO <alm_l1_ratio>`, :ref:`LMODEL <alm_lmodel>`
    :ref:`MAXITER <alm_maxiter>`, :ref:`NDATA <alm_ndata>`, :ref:`NDATA_CV <alm_ndata_cv>`, :ref:`NSTART NEND <alm_nstart>`, :ref:`NSTART_CV NEND_CV <alm_nstart_cv>`
-   :ref:`ROTAXIS <alm_rotaxis>`, :ref:`SKIP <alm_skip>`, :ref:`SOLUTION_PATH <alm_solution_path>`, :ref:`SPARSE <alm_sparse>`, :ref:`SPARSESOLVER <alm_sparsesolver>`
-   :ref:`STANDARDIZE <alm_standardize>`, :ref:`STOP_CRITERION <alm_stop_criterion>`
+   :ref:`PERIODIC_IMAGE_CONV<alm_periodic_image_conv>`, :ref:`ROTAXIS <alm_rotaxis>`, :ref:`SKIP <alm_skip>`, :ref:`SOLUTION_PATH <alm_solution_path>`, :ref:`SPARSE <alm_sparse>`
+   :ref:`SPARSESOLVER <alm_sparsesolver>`, :ref:`STANDARDIZE <alm_standardize>`, :ref:`STOP_CRITERION <alm_stop_criterion>`
 
 
 Description of input variables
@@ -503,6 +503,24 @@ This field is necessary when ``MODE = optimize``.
  :Default: 11
  :Type: Integer
  :Description: See :ref:`this page<constraint_IFC>` for the numerical formulae.
+
+````
+
+.. _alm_periodic_image_conv: 
+
+* PERIODIC_IMAGE_CONV-tag = 0 | 1
+
+ ===== =============================================================================================
+   0    Impose the constraints on IFCs (acoustic sum rule) in the considering supercell.
+   1    | Consider the periodic images when generating the constraints.
+        | The resultant IFCs simultaneously satisfy the permutation symmetry, ASR, 
+        | and the space group symmetry in the infinite space.
+        | For more details, please see Appendix D of the `original paper <https://arxiv.org/abs/2205.08789>`_.
+        | (Note that we use the term "mirror image" instead of "periodic image" in the paper.) 
+ ===== =============================================================================================
+
+ :Default: 1
+ :Type: Integer
 
 ````
 

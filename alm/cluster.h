@@ -258,7 +258,7 @@ public:
 
     void init(const std::unique_ptr<System> &system,
               const std::unique_ptr<Symmetry> &symmetry,
-              const int mirror_image_conv,
+              const int periodic_image_conv,
               const int verbosity,
               std::unique_ptr<Timer> &timer);
 
@@ -346,7 +346,7 @@ private:
                                    const std::vector<std::vector<int>> &map_p2s,
                                    const std::vector<Eigen::MatrixXd> &x_image,
                                    const int *exist,
-                                   const int mirror_image_conv);
+                                   const int periodic_image_conv);
 
     void set_interaction_cluster(const int order,
                                  const size_t natmin,
@@ -355,7 +355,7 @@ private:
                                  const std::vector<std::vector<int>> &interaction_pair_in,
                                  const std::vector<Eigen::MatrixXd> &x_image,
                                  const int *exist,
-                                 const int mirror_image_conv,
+                                 const int periodic_image_conv,
                                  std::vector<std::set<InteractionCluster>> &interaction_cluster_out) const;
 
     void cell_combination(const std::vector<std::vector<int>> &,

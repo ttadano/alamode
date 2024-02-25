@@ -86,7 +86,7 @@ void Constraint::setup(const std::unique_ptr<System> &system,
                        const std::unique_ptr<Cluster> &cluster,
                        const std::unique_ptr<Symmetry> &symmetry,
                        const int linear_model,
-                       const int mirror_image_conv,
+                       const int periodic_image_conv,
                        const int verbosity,
                        std::unique_ptr<Timer> &timer)
 {
@@ -211,7 +211,7 @@ void Constraint::setup(const std::unique_ptr<System> &system,
                              cluster,
                              fcs,
                              verbosity,
-                             mirror_image_conv);
+                             periodic_image_conv);
 
     if (verbosity > 0) {
         print_constraint_information(cluster);
@@ -228,7 +228,7 @@ void Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
                                           const std::unique_ptr<Cluster> &cluster,
                                           const std::unique_ptr<Fcs> &fcs,
                                           const int verbosity,
-                                          const int mirror_image_conv)
+                                          const int periodic_image_conv)
 {
     const auto maxorder = cluster->get_maxorder();
     // const_symmetry is updated.
@@ -256,7 +256,7 @@ void Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
                                           symmetry,
                                           cluster,
                                           fcs,
-                                          mirror_image_conv,
+                                          periodic_image_conv,
                                           verbosity);
     }
 
@@ -972,7 +972,7 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
                                                    const std::unique_ptr<Symmetry> &symmetry,
                                                    const std::unique_ptr<Cluster> &cluster,
                                                    const std::unique_ptr<Fcs> &fcs,
-                                                   const int mirror_image_conv,
+                                                   const int periodic_image_conv,
                                                    const int verbosity)
 {
     // Create constraint matrix for the translational invariance (aka acoustic sum rule).
@@ -1002,7 +1002,7 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
             continue;
         }
 
-        if (mirror_image_conv == 0 || order == 0) {
+        if (periodic_image_conv == 0 || order == 0) {
             get_constraint_translation(supercell,
                                        symmetry,
                                        cluster,
@@ -1012,10 +1012,10 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
                                        fcs->get_nequiv()[order].size(),
                                        const_translation[order], true);
         }
-            // make translation constraint for each mirror image combinations
-            // if mirror_image_conv == 0 or order == 0, there is no need to impose additional ASR constraints.
-        else { // if(mirror_image_conv > 0 && order > 0)
-            get_constraint_translation_for_mirror_images(supercell,
+            // make translation constraint for each periodic image combinations
+            // if periodic_image_conv == 0 or order == 0, there is no need to impose additional ASR constraints.
+        else { // if(periodic_image_conv > 0 && order > 0)
+            get_constraint_translation_for_periodic_images(supercell,
                                                          symmetry,
                                                          cluster,
                                                          fcs,
@@ -1330,7 +1330,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
     if (do_rref) rref_sparse(nparams, const_out, eps8);
 }
 
-void Constraint::get_constraint_translation_for_mirror_images(const Cell &supercell,
+void Constraint::get_constraint_translation_for_periodic_images(const Cell &supercell,
                                                               const std::unique_ptr<Symmetry> &symmetry,
                                                               const std::unique_ptr<Cluster> &cluster,
                                                               const std::unique_ptr<Fcs> &fcs,
@@ -1355,7 +1355,7 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     const auto natmin = symmetry->get_nat_trueprim();
     const auto nat = supercell.number_of_atoms;
 
-    // generate combinations of mirror images
+    // generate combinations of periodic images
     long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
 
     unsigned int isize;
@@ -1378,7 +1378,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     allocate(ind, order + 2);
 
     // Create force constant table for search
-
     list_found.clear();
 
     for (const auto &p: fc_table) {
@@ -1412,13 +1411,10 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
         // Generate atom pairs for each order
 
-        if (order == 0) continue;  // there is no new translational invariance
-
-        if (order > 2) {
-            // we assume that the cutoff radius is enough small
-            // for 5th or higher-order IFCs
-            continue;
-        } else {
+        if (order == 0) {
+            continue;  // there is no new translational invariance
+        }
+        else {
 
             // Anharmonic cases
 
@@ -1468,11 +1464,14 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                 std::vector<int> sort_table, sort_table_tmp;
                 std::vector<std::vector<double>> consts_now_omp;
 
+                std::vector<long long int> periodic_images_found;
+
                 ConstEntry const_tmp_omp;
                 std::vector<ConstEntry> constraint_list_omp;
-                long int i_mirror_images, i_tmp, j_tmp, i_tmp2;
+                long long int i_periodic_images;
+                long long int i_tmp, j_tmp, i_tmp2;
+                long int i_mi_tmp;
 
-                consts_now_omp.resize(n_mirror_images, std::vector<double>(nparams));
 #ifdef _OPENMP
 #pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found, loc_nonzero), nowait
 #endif
@@ -1491,12 +1490,8 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                         for (jcrd = 0; jcrd < 3; ++jcrd) {
 
                             // Reset the temporary array for another constraint
-                            //for (j = 0; j < nparams; ++j) const_now_omp[j] = 0;
-                            for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
-                                for (j = 0; j < nparams; j++) {
-                                    consts_now_omp[i_mirror_images][j] = 0.0;
-                                }
-                            }
+                            consts_now_omp.clear();
+                            periodic_images_found.clear();
 
                             // Loop for the last atom index
                             for (jat = 0; jat < 3 * nat; jat += 3) {
@@ -1546,20 +1541,32 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                                         if (cluster_found == cluster->get_interaction_cluster(order, i).end()) {
                                             std::cout << "Warning: cluster corresponding to the IFC is NOT found.\n";
                                         } else {
-                                            // std::cout << "cluster corresponding to the IFC is found." << '\n';
 
                                             // get weight
                                             weight = 1.0 / static_cast<double>((cluster_found->cell).size());
                                             for (auto cellvec: cluster_found->cell) {
                                                 // get number of the combination of the cell
-                                                i_mirror_images = 0;
+                                                i_periodic_images = 0;
 
                                                 for (i_tmp = 0; i_tmp < order; i_tmp++) {
-                                                    i_mirror_images *= 27;
-                                                    i_mirror_images += cellvec[sort_table[i_tmp]];
+                                                    i_periodic_images *= 27;
+                                                    i_periodic_images += cellvec[sort_table[i_tmp]];
                                                 }
+
+                                                // check if the same periodic image has already been found.
+                                                for (i_mi_tmp = 0; i_mi_tmp < periodic_images_found.size(); i_mi_tmp++){
+                                                    if(periodic_images_found[i_mi_tmp] == i_periodic_images){
+                                                        break;
+                                                    }
+                                                }
+                                                // if not found
+                                                if(i_mi_tmp == periodic_images_found.size()){
+                                                    periodic_images_found.push_back(i_periodic_images);
+                                                    consts_now_omp.push_back(std::vector<double>(nparams, 0.0));
+                                                }
+
                                                 // add to the constraint
-                                                consts_now_omp[i_mirror_images][(*iter_found).mother] +=
+                                                consts_now_omp[i_mi_tmp][(*iter_found).mother] +=
                                                         weight * (*iter_found).sign;
                                             }
                                         }
@@ -1569,16 +1576,16 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                             } // close loop jat
 
                             // Add the constraint to the private array
-                            for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
-                                if (!is_allzero(consts_now_omp[i_mirror_images], eps8, loc_nonzero, 0)) {
-                                    if (consts_now_omp[i_mirror_images][loc_nonzero] < 0) {
-                                        for (j = 0; j < nparams; ++j) consts_now_omp[i_mirror_images][j] *= -1.0;
+                            for (i_mi_tmp = 0; i_mi_tmp < periodic_images_found.size(); i_mi_tmp++) {
+                                if (!is_allzero(consts_now_omp[i_mi_tmp], eps8, loc_nonzero, 0)) {
+                                    if (consts_now_omp[i_mi_tmp][loc_nonzero] < 0) {
+                                        for (j = 0; j < nparams; ++j) consts_now_omp[i_mi_tmp][j] *= -1.0;
                                     }
 
                                     const_tmp_omp.clear();
                                     for (j = 0; j < nparams; ++j) {
-                                        if (std::abs(consts_now_omp[i_mirror_images][j]) > 0) {
-                                            const_tmp_omp.emplace_back(j, consts_now_omp[i_mirror_images][j]);
+                                        if (std::abs(consts_now_omp[i_mi_tmp][j]) > 0) {
+                                            const_tmp_omp.emplace_back(j, consts_now_omp[i_mi_tmp][j]);
                                         }
                                     }
                                     if (const_tmp_omp.empty()) {

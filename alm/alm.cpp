@@ -415,7 +415,7 @@ size_t ALM::get_number_of_irred_fc_elements(const int fc_order) // harmonic=1, .
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
-                          get_optimizer_control().mirror_image_conv,
+                          get_optimizer_control().periodic_image_conv,
                           verbosity,
                           timer);
         initialized_constraint_class = true;
@@ -426,7 +426,7 @@ size_t ALM::get_number_of_irred_fc_elements(const int fc_order) // harmonic=1, .
                                              cluster,
                                              fcs,
                                              verbosity,
-                                             get_optimizer_control().mirror_image_conv);
+                                             get_optimizer_control().periodic_image_conv);
     }
 
     return constraint->get_index_bimap(order).size();
@@ -524,7 +524,7 @@ void ALM::get_fc_irreducible(double *fc_values,
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
-                          get_optimizer_control().mirror_image_conv,
+                          get_optimizer_control().periodic_image_conv,
                           verbosity,
                           timer);
         initialized_constraint_class = true;
@@ -535,7 +535,7 @@ void ALM::get_fc_irreducible(double *fc_values,
                                              cluster,
                                              fcs,
                                              verbosity,
-                                             get_optimizer_control().mirror_image_conv);
+                                             get_optimizer_control().periodic_image_conv);
     }
 
     size_t ishift = 0;
@@ -652,7 +652,7 @@ void ALM::get_matrix_elements(double *amat,
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
-                          get_optimizer_control().mirror_image_conv,
+                          get_optimizer_control().periodic_image_conv,
                           verbosity,
                           timer);
         initialized_constraint_class = true;
@@ -663,7 +663,7 @@ void ALM::get_matrix_elements(double *amat,
                                              cluster,
                                              fcs,
                                              verbosity,
-                                             get_optimizer_control().mirror_image_conv);
+                                             get_optimizer_control().periodic_image_conv);
     }
 
     optimize->get_matrix_elements_algebraic_constraint(maxorder,
@@ -701,7 +701,7 @@ int ALM::run_optimize()
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
-                          get_optimizer_control().mirror_image_conv,
+                          get_optimizer_control().periodic_image_conv,
                           verbosity,
                           timer);
         initialized_constraint_class = true;
@@ -712,7 +712,7 @@ int ALM::run_optimize()
                                              cluster,
                                              fcs,
                                              verbosity,
-                                             get_optimizer_control().mirror_image_conv);
+                                             get_optimizer_control().periodic_image_conv);
     }
 
     const auto maxorder = cluster->get_maxorder();
@@ -758,7 +758,7 @@ void ALM::init_fc_table()
     // Build cluster & force constant table
     cluster->init(system,
                   symmetry,
-                  get_optimizer_control().mirror_image_conv,
+                  get_optimizer_control().periodic_image_conv,
                   verbosity,
                   timer);
     fcs->init(cluster,
