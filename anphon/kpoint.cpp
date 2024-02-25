@@ -397,7 +397,7 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
                                   const bool time_reversal_symmetry)
 {
     // Generates the uniform grid points in the reciprocal space
-    // Search the mirror images that minimize |q+G|
+    // Search the periodic images that minimize |q+G|
     // TODO: save all q+G having the same Euclidean distance from origin for later use
 
     unsigned int ik;
@@ -445,26 +445,26 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
         }
     }
 
-    Eigen::MatrixXd xkr_mirror(3, 27);
+    Eigen::MatrixXd xkr_periodic(3, 27);
     std::vector<double> distances(27);
     for (ik = 0; ik < nk; ++ik) {
         for (auto icell = 0; icell < 27; ++icell) {
             for (auto i = 0; i < 3; ++i) {
-                xkr_mirror(i, icell) = xkr[ik][i] + static_cast<double>(gvec_shift[icell][i]);
+                xkr_periodic(i, icell) = xkr[ik][i] + static_cast<double>(gvec_shift[icell][i]);
             }
         }
-        xkr_mirror = rlat * xkr_mirror;
+        xkr_periodic = rlat * xkr_periodic;
 
         std::vector<int> idx(27);
         std::iota(idx.begin(), idx.end(), 0);
 
         for (auto icell = 0; icell < 27; ++icell) {
-            auto norm = std::sqrt(xkr_mirror(0, icell) * xkr_mirror(0, icell)
-                                  + xkr_mirror(1, icell) * xkr_mirror(1, icell)
-                                  + xkr_mirror(2, icell) * xkr_mirror(2, icell));
+            auto norm = std::sqrt(xkr_periodic(0, icell) * xkr_periodic(0, icell)
+                                  + xkr_periodic(1, icell) * xkr_periodic(1, icell)
+                                  + xkr_periodic(2, icell) * xkr_periodic(2, icell));
             distances[icell] = norm;
         }
-        // find the mirror image having the minimum distance from (0, 0, 0)
+        // find the periodic image having the minimum distance from (0, 0, 0)
         std::stable_sort(idx.begin(), idx.end(),
                          [&distances](size_t i1, size_t i2) { return distances[i1] < distances[i2]; });
 
@@ -484,7 +484,7 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
 //                << " " << gvec_shift[idx[icell]][1] << " " << gvec_shift[idx[icell]][2] << '\n';
 //            }
 //        }
-        // Select the first mirror image that gives the shortest |q+G|
+        // Select the first periodic image that gives the shortest |q+G|
         for (auto i = 0; i < 3; ++i) {
             xkr[ik][i] += static_cast<double>(gvec_shift[idx[0]][i]);
         }
@@ -513,9 +513,9 @@ void KpointMeshUniform::gen_kmesh_niggli(const std::vector<SymmetryOperation> &s
                                          const bool time_reversal_symmetry)
 {
     // Generates the uniform grid points in the reciprocal space
-    // Search the mirror images that minimize |q+G|.
+    // Search the periodic images that minimize |q+G|.
     // Niggli reduction is done for searching Gs that minimize |q+G| exhaustively
-    // from the centering cell and the surrounding 26 mirror images.
+    // from the centering cell and the surrounding 26 periodic images.
     // TODO: save all q+G having the same Euclidean distance from origin for later use
 
     unsigned int ik;
@@ -583,26 +583,26 @@ void KpointMeshUniform::gen_kmesh_niggli(const std::vector<SymmetryOperation> &s
     }
 
     // Find the G-vector that minimizes |q+G| in the reduced basis
-    Eigen::MatrixXd xkr_mirror(3, 27);
+    Eigen::MatrixXd xkr_periodic(3, 27);
     std::vector<double> distances(27);
     for (ik = 0; ik < nk; ++ik) {
         for (auto icell = 0; icell < 27; ++icell) {
             for (auto i = 0; i < 3; ++i) {
-                xkr_mirror(i, icell) = xkr(i, ik) + static_cast<double>(gvec_shift[icell][i]);
+                xkr_periodic(i, icell) = xkr(i, ik) + static_cast<double>(gvec_shift[icell][i]);
             }
         }
-        xkr_mirror = rlat_reduced * xkr_mirror;
+        xkr_periodic = rlat_reduced * xkr_periodic;
 
         std::vector<int> idx(27);
         std::iota(idx.begin(), idx.end(), 0);
 
         for (auto icell = 0; icell < 27; ++icell) {
-            auto norm = std::sqrt(xkr_mirror(0, icell) * xkr_mirror(0, icell)
-                                  + xkr_mirror(1, icell) * xkr_mirror(1, icell)
-                                  + xkr_mirror(2, icell) * xkr_mirror(2, icell));
+            auto norm = std::sqrt(xkr_periodic(0, icell) * xkr_periodic(0, icell)
+                                  + xkr_periodic(1, icell) * xkr_periodic(1, icell)
+                                  + xkr_periodic(2, icell) * xkr_periodic(2, icell));
             distances[icell] = norm;
         }
-        // find the mirror image having the minimum distance from (0, 0, 0)
+        // find the periodic image having the minimum distance from (0, 0, 0)
         std::stable_sort(idx.begin(), idx.end(),
                          [&distances](size_t i1, size_t i2) { return distances[i1] < distances[i2]; });
 

@@ -50,8 +50,8 @@ public:
     // the solution path calculation stops when the validation error
     // increases for `stop_criterion` times consecutively.
 
-    // convention to assign IFCs to mirror images
-    int mirror_image_conv;
+    // convention to assign IFCs to periodic images
+    int periodic_image_conv;
 
 
     OptimizerControl()
@@ -73,7 +73,7 @@ public:
         num_l1_alpha = 50;
         save_solution_path = 0;
         stop_criterion = 5;
-        mirror_image_conv = 0;
+        periodic_image_conv = 1;
     }
 
     ~OptimizerControl() = default;

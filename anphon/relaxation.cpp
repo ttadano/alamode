@@ -2635,7 +2635,7 @@ void Relaxation::compute_del_v_strain_in_real_space1(const std::vector<FcsAligne
                                                      std::vector<FcsArrayWithCell> &delta_fcs,
                                                      const int ixyz1,
                                                      const int ixyz2,
-                                                     const int mirror_image_mode)
+                                                     const int periodic_image_mode)
 {
     unsigned int i, j;
     double vec[3], vec_origin[3];
@@ -2675,11 +2675,11 @@ void Relaxation::compute_del_v_strain_in_real_space1(const std::vector<FcsAligne
         }
     }
 
-    if (mirror_image_mode == 0) {
+    if (periodic_image_mode == 0) {
         // original implementation
         // calculate IFC renormalization for the same atomic combination in the supercell
-        // but with different mirror images at once and assign the average value for each
-        // mirror images.
+        // but with different periodic images at once and assign the average value for each
+        // periodic images.
         index_old.clear();
         const auto nelems = 2 * (norder - 2) + 1;
         for (i = 0; i < nelems; ++i) index_old.push_back(-1);
@@ -2790,9 +2790,9 @@ void Relaxation::compute_del_v_strain_in_real_space1(const std::vector<FcsAligne
                 delta_fcs.emplace_back(fcs_tmp, pairs_vec);
             }
         }
-    } else { // if(mirror_image_mode != 0)
+    } else { // if(periodic_image_mode != 0)
         // new implementation
-        // calculate IFC renormalization separately for each mirror image combinations.
+        // calculate IFC renormalization separately for each periodic image combinations.
         index_with_cell_old.clear();
         const auto nelems = 3 * (norder - 2) + 1;
         for (i = 0; i < nelems; ++i) index_with_cell_old.push_back(-1);
@@ -2892,15 +2892,15 @@ void Relaxation::compute_del_v_strain_in_real_space1(const std::vector<FcsAligne
     set_index_uniq.clear();
 }
 
-// mirror_image_mode = 1 is used.
-// mirror_image_mode = 0 has not been thoroughly tested.
+// periodic_image_mode = 1 is used.
+// periodic_image_mode = 0 has not been thoroughly tested.
 void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsAlignedForGruneisen> &fcs_aligned,
                                                      std::vector<FcsArrayWithCell> &delta_fcs,
                                                      const int ixyz11,
                                                      const int ixyz12,
                                                      const int ixyz21,
                                                      const int ixyz22,
-                                                     const int mirror_image_mode)
+                                                     const int periodic_image_mode)
 {
     unsigned int i, j;
     double vec1[3], vec2[3], vec_origin[3];
@@ -2940,11 +2940,11 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsAligne
         }
     }
 
-    if (mirror_image_mode == 0) {
+    if (periodic_image_mode == 0) {
         // original implementation
         // calculate IFC renormalization for the same atomic combination in the supercell
-        // but with different mirror images at once and assign the average value for each
-        // mirror images.
+        // but with different periodic images at once and assign the average value for each
+        // periodic images.
         index_old.clear();
         const auto nelems = 2 * (norder - 3) + 1;
         for (i = 0; i < nelems; ++i) index_old.push_back(-1);
@@ -3062,9 +3062,9 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsAligne
                 delta_fcs.emplace_back(fcs_tmp, pairs_vec);
             }
         }
-    } else { // if(mirror_image_mode != 0)
+    } else { // if(periodic_image_mode != 0)
         // new implementation
-        // calculate IFC renormalization separately for each mirror image combinations.
+        // calculate IFC renormalization separately for each periodic image combinations.
         index_with_cell_old.clear();
         const auto nelems = 3 * (norder - 3) + 1;
         for (i = 0; i < nelems; ++i) index_with_cell_old.push_back(-1);

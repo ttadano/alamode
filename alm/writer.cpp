@@ -120,7 +120,7 @@ void Writer::write_input_vars(const System *system,
         std::cout << "  SPARSESOLVER = " << optctrl.sparsesolver << '\n';
         std::cout << "  CONV_TOL = " << optctrl.tolerance_iteration << '\n';
         std::cout << "  MAXITER = " << optctrl.maxnum_iteration << "\n";
-        std::cout << "  MIRROR_IMAGE_CONV = " << optctrl.mirror_image_conv << "\n\n";
+        std::cout << "  PERIODIC_IMAGE_CONV = " << optctrl.periodic_image_conv << "\n\n";
         if (optctrl.linear_model == 2) {
             std::cout << " Elastic-net related variables:\n";
             std::cout << "  CV = " << std::setw(5) << optctrl.cross_validation << '\n';

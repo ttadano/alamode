@@ -297,7 +297,7 @@ void Gruneisen::calc_dfc2_reciprocal(std::complex<double> **dphi2,
 
 void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                                   std::vector<FcsArrayWithCell> &delta_fcs,
-                                  const int mirror_image_mode) const
+                                  const int periodic_image_mode) const
 {
     unsigned int i, j;
     double vec[3], vec_origin[3];
@@ -321,11 +321,11 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
     }
     std::sort(fcs_aligned.begin(), fcs_aligned.end());
 
-    if (mirror_image_mode == 0) {
+    if (periodic_image_mode == 0) {
         // original implementation
         // calculate IFC renormalization for the same atomic combination in the supercell
-        // but with different mirror images at once and assign the average value for each
-        // mirror images.
+        // but with different periodic images at once and assign the average value for each
+        // periodic images.
         index_old.clear();
         const auto nelems = 2 * (norder - 2) + 1;
         for (i = 0; i < nelems; ++i) index_old.push_back(-1);
@@ -430,9 +430,9 @@ void Gruneisen::prepare_delta_fcs(const std::vector<FcsArrayWithCell> &fcs_in,
                 delta_fcs.emplace_back(fcs_tmp, pairs_vec);
             }
         }
-    } else { // if(mirror_image_mode != 0)
+    } else { // if(periodic_image_mode != 0)
         // new implementation
-        // calculate IFC renormalization separately for each mirror image combinations.
+        // calculate IFC renormalization separately for each periodic image combinations.
         index_with_cell_old.clear();
         const auto nelems = 3 * (norder - 2) + 1;
         for (i = 0; i < nelems; ++i) index_with_cell_old.push_back(-1);
