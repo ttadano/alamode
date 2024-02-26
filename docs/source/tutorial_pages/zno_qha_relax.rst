@@ -126,9 +126,7 @@ which is specified in ``&relax``-field in the input file of :red:`anphon`.
 3. Prepare the input file.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The input file for the :red:`anphon` calclation is :red:`ZnO_scph_thermo.in`.
-
-In addition to the SCPH calculation at the fixed reference structure (:ref:`tutorial <label_tutorial_sto_scph>`), we need to ``&qha`` and ``&relax`` field.
+The input file for the :red:`anphon` calclation is :red:`ZnO_qha_thermo.in`.
 
 Run the calculation with 
 
@@ -145,7 +143,7 @@ Run the calculation with
 We can plot the :math:`T`-dependence of the thermal strain, which is written in :red:`ZnO_qha.umn_tensor`, with 
 
 .. code-block:: bash
-  
+
   $ gnuplot plot.plt
 
 to obtain the followin figure.

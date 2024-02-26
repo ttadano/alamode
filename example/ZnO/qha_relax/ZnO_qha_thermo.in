@@ -6,8 +6,6 @@
   FC2XML = ZnO442_harmonic.xml
   KD = Zn O
 
-  NONANALYTIC = 0
-
   TMIN = 0
   TMAX = 1000
   DT = 100
@@ -28,9 +26,8 @@
   CELL_CONV_TOL = 1.0e-5
   MIXBETA_CELL = 0.7
 
-  SET_INIT_STR = 1
+  SET_INIT_STR = 2
   ADD_HESS_DIAG = 0.0
-  STAT_PRESSURE = 0.0
 
   RENORM_3TO2ND = 2
   RENORM_2TO1ST = 2
