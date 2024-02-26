@@ -33,7 +33,7 @@ Here, please unzip all the xml files in **example/ZnO/qha_relax** and **example/
   and the anharmonic IFCs calculated in :math:`3\times 3\times 2` supercell
   due to the large computational cost of the DFT calculations for the 
   anharmonic IFCs.
-  This treatment is justified because the higher-order IFCs are more localized 
+  This treatment is justified because the higher-order IFCs tend to be more localized 
   in real space.
 
 .. _tutorial_ZnO_QHA_step2:
@@ -41,12 +41,12 @@ Here, please unzip all the xml files in **example/ZnO/qha_relax** and **example/
 2. Prepare the additional input files.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You need to calculate the elastic constants, the first-order strain-force couplings, and the strain-harmonic-IFC couplings
+We need to calculate the elastic constants, the strain-force coupling, and the order strain-harmonic-IFC coupling
 to calculate the :math:`T`-dependence of the shape of the unit cell.
 These input files must be placed in the directory named as the ``STRAIN_IFC_DIR``-tag, 
 which is specified in ``&relax``-field in the input file of :red:`anphon`.
 
-* The elastic constants need to be calculated by yourself.
+* The second-order elastic constants (SOEC) and the third-order elastic constants (TOEC) need to be calculated by yourself.
   The name of the input file must be :red:`elastic_constants.in`.
   The format of :red:`elastic_constants.in` is as follows.
   ::
@@ -64,18 +64,33 @@ which is specified in ``&relax``-field in the input file of :red:`anphon`.
 
   :math:`V_{cell}` is the shape of the unit cell and 
   :math:`C_{\mu_1 \nu_1, \mu_2 \nu_2} = \frac{1}{V}\frac{\partial U}{\partial u_{\mu_1 \nu_1} \partial u_{\mu_2 \nu_2}}`,
-  :math:`C_{\mu_1 \nu_1, \mu_2 \nu_2, \mu_3 \nu_3} = \frac{1}{V}\frac{\partial U}{\partial u_{\mu_1 \nu_1} \partial u_{\mu_2 \nu_2} \partial u_{\mu_3 \nu_3}}`.
+  :math:`C_{\mu_1 \nu_1, \mu_2 \nu_2, \mu_3 \nu_3} = \frac{1}{V}\frac{\partial U}{\partial u_{\mu_1 \nu_1} \partial u_{\mu_2 \nu_2} \partial u_{\mu_3 \nu_3}}`
   are the elastic constants.
-  The values in ``elastic_constants.in`` are in Ry unit.
+  The values in :red:`elastic_constants.in` are in Rydberg unit.
 
-* The first-order strain-force coupling can be calculated using the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code.
-  If the first-order strain-force coupling is zero, i.e. the atomic force is zero when we apply finite strain with fixed fractional atomic coordinates, you can set ``RENORM_2TO1ST=0`` and abbreviate the corresponding input file.
-  To use ``RENORM_2TO1ST=1``, you need to impose rotational invariance on the IFCs (See Appendix C of the `original paper <https://arxiv.org/abs/2302.04537>`_ for details of the proof), which is not recommended because the it usually worsens the fitting error.
-  Note that the input file of the first-order strain-force coupling must be ``strain_force.in``.
+* The strain-force coupling can be calculated using the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code.
 
+  If the strain-force coupling is zero, i.e. the atomic force is zero when we apply finite strain with fixed fractional atomic coordinates, you can set ``RENORM_2TO1ST=0`` and abbreviate the corresponding input file.
+  To use ``RENORM_2TO1ST=1``, you need to impose rotational invariance on the IFCs (See Appendix C of the `original paper <https://arxiv.org/abs/2302.04537>`_ for details of the proof), which is not recommended because it usually worsens the fitting error.
 
-* The first-order strain-harmonic-IFC coupling can be calculated using the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code.
-  The input files are ``strain_harmonic.in`` and the related xml files.
+  Note that the input file of the strain-force coupling must be :red:`strain_force.in`.
+
+  In this tutorial, the following block of the input file means that  
+  if we apply the strain :math:`u_{xx}= 0.005`, the atomic forces that acts on the first atom is 
+  :math:`(f_x, f_y, f_z) = (0.000000,  -0.034812,  -0.022224)` [Ry/Bohr], e.t.c.
+  ::
+    xx 0.005 1.0
+    0.000000  -0.034812  -0.022224
+    0.000000  0.034812  -0.022224
+    0.000000  -0.039854  0.022224
+    0.000000  0.039854  0.022224
+
+  The meaning of the weight ``1.0`` is similar to that in the next paragraph.
+
+  Note that if you use the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code, you can obtain a set of input files that follows this format.
+
+* The strain-harmonic-IFC coupling can be calculated using the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code.
+  The input files are :red:`strain_harmonic.in` and the related xml files.
   
   For example,
   ::
@@ -96,15 +111,15 @@ which is specified in ``&relax``-field in the input file of :red:`anphon`.
     xx 0.005 0.5 ZnO442_harmonic_xx_0005.xml
     xx 0.005 0.5 ZnO442_harmonic_xx_minus_0005.xml
 
-  (Note that :red:`ZnO442_harmonic_xx_minus_0005.xml` is not provided in this tutorial.)
+  with respective weights of ``0.5``. Note that :red:`ZnO442_harmonic_xx_minus_0005.xml` is not provided in this tutorial.
 
   For the off-diagonal strain,
   :: 
     yz 0.005 1.0 ZnO442_harmonic_yz_00025.xml
   
-  means that `ZnO442_harmonic_yz_00025.xml` is the set of harmonic IFCs with :math:`u_{yz} = u_{zy} = 0.005/2 = 0.0025`.
+  means that :red:`ZnO442_harmonic_yz_00025.xml` is the set of harmonic IFCs with :math:`u_{yz} = u_{zy} = 0.005/2 = 0.0025`.
 
-  Note that if you use the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code, you can obtain a set of input files that follows these conventions.
+  Note that if you use the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code, you can obtain a set of input files that follows this format.
 
 .. _tutorial_ZnO_QHA_step3:
 
@@ -130,6 +145,7 @@ Run the calculation with
 We can plot the :math:`T`-dependence of the thermal strain, which is written in :red:`ZnO_qha.umn_tensor`, with 
 
 .. code-block:: bash
+  
   $ gnuplot plot.plt
 
 to obtain the followin figure.
