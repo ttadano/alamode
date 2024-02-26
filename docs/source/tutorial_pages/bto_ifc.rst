@@ -49,12 +49,13 @@ First, we move to the **1_configurations** directory and copy :red:`vasprun.xml`
 Here, the option ``-e 1001:5000:50`` means that we sample from the 1001-th snapshot to the 5000-th snapshot with the sampling-step of 50 time-steps.
 Thus, 80 configurations are generated in this case.
 
-The option ``--random --mag 0.04`` adds random displacements of around 0.04 |Angstrom| to each atom in the extracted snapshots to reduce correlations between successive snapshots.
+The option ``--random --mag 0.04`` adds random displacements of 0.04 |Angstrom| to each atom in the extracted snapshots to reduce correlations between successive snapshots.
 
 
 .. note::
 
-    We don't need high accuracy in the AIMD calculation because its purpose is just to generate the random structure.
+    We may use a less strict convergence criterion in the AIMD calculation because its purpose is just to generate the random structure
+    and the atomic forces obtained in AIMD is not directly used to calculate the IFCs.
     In fact, we use the following parameters, which are different from the subsequent calculation of the displacement-force data.
     
     * ENCUT = 400, EDIFF = 1.0E-6
@@ -130,9 +131,12 @@ Plotting the generated :red:`cBTO222.cvscore` with
 
 .. code-block:: bash
 
-  $ gnuplot cv_plot.png
+  $ gnuplot cv_plot.plt
  
 we get the following plot.
+Note that you need to set ``STOP_CRITERION = 30`` in ``&optimize``-field to get exactly the same plot.
+Otherwise, the calculation is stopped before calculations with small :math:`\alpha` are not performed to reduce the computational cost.
+
 
 .. figure:: ../../img/BTO_IFC_cv.png
    :scale: 60%

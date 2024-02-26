@@ -30,7 +30,7 @@
   STANDARDIZE = 1
   CONV_TOL = 1.0e-8
 
-  STOP_CRITERION = 100
+  # STOP_CRITERION = 30
 /
 
 &cell
