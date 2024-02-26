@@ -1,4 +1,4 @@
-.. _label_tutorial_sto_scph:
+.. _label_tutorial_bto_ifc:
 
 .. raw:: html
 
