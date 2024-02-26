@@ -11,7 +11,7 @@
 ZnO : A QHA-based structural optimization example
 ---------------------------------------------------
 
-This page explains how to calculate crystal structures at finite temperatures based on the quasiharmonic approximation (QHA).
+This page explains how to calculate crystal structures at finite temperatures(:math:`T`) based on the quasiharmonic approximation (QHA).
 
 Let's move to the example directory
 
