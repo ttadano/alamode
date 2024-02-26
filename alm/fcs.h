@@ -178,8 +178,8 @@ public:
               const int verbosity,
               std::unique_ptr<Timer> &timer);
 
-    void get_xyzcomponent(int,
-                          int **) const;
+    static void get_xyzcomponent(int,
+                          int **) ;
 
     void generate_force_constant_table(const int,
                                        const size_t nat,
@@ -260,42 +260,42 @@ private:
 
     void deallocate_variables();
 
-    bool is_ascending(int,
-                      const int *) const;
+    static bool is_ascending(int,
+                      const int *) ;
 
-    bool is_inprim(const int n,
+    static bool is_inprim(const int n,
                    const int *arr,
                    const size_t natmin,
-                   const std::vector<std::vector<int>> &map_p2s) const;
+                   const std::vector<std::vector<int>> &map_p2s) ;
 
-    bool is_inprim(const int n,
+    static bool is_inprim(const int n,
                    const size_t natmin,
-                   const std::vector<std::vector<int>> &map_p2s) const;
+                   const std::vector<std::vector<int>> &map_p2s) ;
 
-    bool is_allzero(const std::vector<double> &,
+    static bool is_allzero(const std::vector<double> &,
                     double,
-                    int &) const;
+                    int &) ;
 
-    bool is_allzero(const std::vector<int> &,
-                    int &) const;
+    static bool is_allzero(const std::vector<int> &,
+                    int &) ;
 
-    void get_available_symmop(const size_t nat,
+    static void get_available_symmop(const size_t nat,
                               const std::unique_ptr<Symmetry> &symmetry,
                               const std::string basis,
                               std::vector<std::vector<int>> &mapping_symm,
                               std::vector<Eigen::Matrix3d> &rotation,
-                              const bool use_compatible) const;
+                              const bool use_compatible) ;
 
-    int get_minimum_index_in_primitive(const int n,
+    static int get_minimum_index_in_primitive(const int n,
                                        const int *arr,
                                        const size_t nat,
                                        const size_t natmin,
-                                       const std::vector<std::vector<int>> &map_p2s) const;
+                                       const std::vector<std::vector<int>> &map_p2s) ;
 
-    double coef_sym(const int,
+    static double coef_sym(const int,
                     const Eigen::Matrix3d &rot,
                     const int *,
-                    const int *) const;
+                    const int *) ;
 
     void set_basis_conversion_matrix(const Cell &supercell);
 };

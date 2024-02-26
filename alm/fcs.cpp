@@ -332,27 +332,6 @@ void Fcs::generate_force_constant_table(const int order,
     deallocate(ind_tmp);
     deallocate(ind_mapped_tmp);
     deallocate(is_searched);
-
-    // sort fc_vec
-
-    // We don't need here, but commenting out this part will change the pairs printed out in
-    // the harmonic unique section of the xml file.
-//    if (!ndup.empty()) {
-//        std::sort(fc_vec.begin(), fc_vec.begin() + ndup[0]);
-//        auto nbegin = ndup[0];
-//        for (size_t mm = 1; mm < ndup.size(); ++mm) {
-//            const auto nend = nbegin + ndup[mm];
-//            std::sort(fc_vec.begin() + nbegin, fc_vec.begin() + nend);
-//            nbegin += ndup[mm];
-//        }
-//    }
-
-//    size_t counter = 0;
-//    for (auto ii = 0; ii < ndup.size(); ++ii) {
-//        std::cout << std::setw(5) << fc_vec[counter].mother  << std::setw(4) << fc_vec[counter].sign << '\n';
-//        counter += ndup[ii];
-//    }
-
 }
 
 void Fcs::get_constraint_symmetry(const size_t nat,
@@ -1023,7 +1002,7 @@ void Fcs::get_available_symmop(const size_t nat,
                                const std::string basis,
                                std::vector<std::vector<int>> &mapping_symm,
                                std::vector<Eigen::Matrix3d> &rotation,
-                               const bool use_compatible) const
+                               const bool use_compatible)
 {
     // Return mapping information of atoms and the rotation matrices of symmetry operations
     // that are (compatible, incompatible) with the given lattice basis (Cartesian or Lattice).
@@ -1076,7 +1055,7 @@ void Fcs::get_available_symmop(const size_t nat,
 double Fcs::coef_sym(const int n,
                      const Eigen::Matrix3d &rot,
                      const int *arr1,
-                     const int *arr2) const
+                     const int *arr2)
 {
     auto tmp = 1.0;
 
@@ -1087,7 +1066,7 @@ double Fcs::coef_sym(const int n,
 }
 
 bool Fcs::is_ascending(const int n,
-                       const int *arr) const
+                       const int *arr)
 {
     for (auto i = 0; i < n - 1; ++i) {
         if (arr[i] > arr[i + 1]) return false;
@@ -1099,7 +1078,7 @@ int Fcs::get_minimum_index_in_primitive(const int n,
                                         const int *arr,
                                         const size_t nat,
                                         const size_t natmin,
-                                        const std::vector<std::vector<int>> &map_p2s) const
+                                        const std::vector<std::vector<int>> &map_p2s)
 {
     int i, atmnum;
 
@@ -1132,7 +1111,7 @@ int Fcs::get_minimum_index_in_primitive(const int n,
 bool Fcs::is_inprim(const int n,
                     const int *arr,
                     const size_t natmin,
-                    const std::vector<std::vector<int>> &map_p2s) const
+                    const std::vector<std::vector<int>> &map_p2s)
 {
     for (auto i = 0; i < n; ++i) {
         for (size_t j = 0; j < natmin; ++j) {
@@ -1144,7 +1123,7 @@ bool Fcs::is_inprim(const int n,
 
 bool Fcs::is_inprim(const int n,
                     const size_t natmin,
-                    const std::vector<std::vector<int>> &map_p2s) const
+                    const std::vector<std::vector<int>> &map_p2s)
 {
     const auto atmn = n / 3;
 
@@ -1156,7 +1135,7 @@ bool Fcs::is_inprim(const int n,
 }
 
 void Fcs::get_xyzcomponent(const int n,
-                           int **xyz) const
+                           int **xyz)
 {
     // Return xyz component for the given order using boost algorithm library
 
@@ -1179,7 +1158,7 @@ void Fcs::get_xyzcomponent(const int n,
 
 bool Fcs::is_allzero(const std::vector<double> &vec,
                      const double tol,
-                     int &loc) const
+                     int &loc)
 {
     loc = -1;
     const auto n = vec.size();
@@ -1193,7 +1172,7 @@ bool Fcs::is_allzero(const std::vector<double> &vec,
 }
 
 bool Fcs::is_allzero(const std::vector<int> &vec,
-                     int &loc) const
+                     int &loc)
 {
     loc = -1;
     for (auto i = 0; i < vec.size(); ++i) {

@@ -2043,19 +2043,40 @@ void Optimize::get_matrix_elements(const int maxorder,
                               fcs->get_basis_conversion_matrix());
     }
 
+    std::vector<int> ind_tmp(maxorder + 1);
+    // Precompute the product of gamma and sign,
+    // which does not change durint the iteration over the training data
+    std::vector<std::vector<double>> gamma_precomputed(maxorder);
+    for (auto order = 0; order < maxorder; ++order) {
+        auto ii = 0;
+
+        gamma_precomputed[order].resize(fcs->get_fc_table()[order].size(), 0.0);
+
+        for (const auto &iter: fcs->get_nequiv()[order]) {
+            for (i = 0; i < iter; ++i) {
+                ind_tmp[0] = fcs->get_fc_table()[order][ii].elems[0];
+                for (j = 1; j < order + 2; ++j) {
+                    ind_tmp[j] = fcs->get_fc_table()[order][ii].elems[j];
+                }
+                gamma_precomputed[order][ii] = gamma(order + 2, ind_tmp.data())
+                                               * fcs->get_fc_table()[order][ii].sign;
+                ++ii;
+            }
+        }
+    }
+
+
 
 #ifdef _OPENMP
 #pragma omp parallel private(irow, i, j)
 #endif
     {
-        int *ind;
         int mm, order, iat, k;
         size_t im, iparam;
         size_t idata;
         double amat_tmp;
         double **amat_orig_tmp;
 
-        allocate(ind, maxorder + 1);
         allocate(amat_orig_tmp, natmin3, ncols);
 
 #ifdef _OPENMP
@@ -2089,15 +2110,12 @@ void Optimize::get_matrix_elements(const int maxorder,
 
                 for (const auto &iter: fcs->get_nequiv()[order]) {
                     for (i = 0; i < iter; ++i) {
-                        ind[0] = fcs->get_fc_table()[order][mm].elems[0];
-                        k = inprim_index(ind[0], symmetry);
+                        k = inprim_index(fcs->get_fc_table()[order][mm].elems[0], symmetry);
                         amat_tmp = 1.0;
                         for (j = 1; j < order + 2; ++j) {
-                            ind[j] = fcs->get_fc_table()[order][mm].elems[j];
                             amat_tmp *= u_multi[irow][fcs->get_fc_table()[order][mm].elems[j]];
                         }
-                        amat_orig_tmp[k][iparam] -= gamma(order + 2, ind) * fcs->get_fc_table()[order][mm].sign *
-                                                    amat_tmp;
+                        amat_orig_tmp[k][iparam] -= gamma_precomputed[order][mm] * amat_tmp;
                         ++mm;
                     }
                     ++iparam;
@@ -2122,7 +2140,6 @@ void Optimize::get_matrix_elements(const int maxorder,
             }
         }
 
-        deallocate(ind);
         deallocate(amat_orig_tmp);
     }
 
@@ -2181,12 +2198,34 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                               fcs->get_basis_conversion_matrix());
     }
 
+    std::vector<int> ind_tmp(maxorder + 1);
+
+    // Precompute the product of gamma and sign,
+    // which does not change durint the iteration over the training data
+    std::vector<std::vector<double>> gamma_precomputed(maxorder);
+    for (auto order = 0; order < maxorder; ++order) {
+        auto ii = 0;
+
+        gamma_precomputed[order].resize(fcs->get_fc_table()[order].size(), 0.0);
+
+        for (const auto &iter: fcs->get_nequiv()[order]) {
+            for (i = 0; i < iter; ++i) {
+                ind_tmp[0] = fcs->get_fc_table()[order][ii].elems[0];
+                for (j = 1; j < order + 2; ++j) {
+                    ind_tmp[j] = fcs->get_fc_table()[order][ii].elems[j];
+                }
+                gamma_precomputed[order][ii] = gamma(order + 2, ind_tmp.data())
+                                                * fcs->get_fc_table()[order][ii].sign;
+                ++ii;
+            }
+        }
+    }
+
 
 #ifdef _OPENMP
 #pragma omp parallel private(irow, i, j)
 #endif
     {
-        int *ind;
         int mm, order, iat, k;
         size_t im;
         size_t idata;
@@ -2196,7 +2235,6 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
         double **amat_orig_tmp;
         double **amat_mod_tmp;
 
-        allocate(ind, maxorder + 1);
         allocate(amat_orig_tmp, natmin3, ncols);
         allocate(amat_mod_tmp, natmin3, ncols_new);
 
@@ -2235,16 +2273,12 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
 
                 for (const auto &iter: fcs->get_nequiv()[order]) {
                     for (i = 0; i < iter; ++i) {
-                        ind[0] = fcs->get_fc_table()[order][mm].elems[0];
-                        k = inprim_index(ind[0], symmetry);
-
+                        k = inprim_index(fcs->get_fc_table()[order][mm].elems[0], symmetry);
                         amat_tmp = 1.0;
                         for (j = 1; j < order + 2; ++j) {
-                            ind[j] = fcs->get_fc_table()[order][mm].elems[j];
                             amat_tmp *= u_multi[irow][fcs->get_fc_table()[order][mm].elems[j]];
                         }
-                        amat_orig_tmp[k][iparam] -= gamma(order + 2, ind)
-                                                    * fcs->get_fc_table()[order][mm].sign * amat_tmp;
+                        amat_orig_tmp[k][iparam] -= gamma_precomputed[order][mm] * amat_tmp;
                         ++mm;
                     }
                     ++iparam;
@@ -2294,17 +2328,12 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
                     for (j = 0; j < constraint->get_const_relate(order)[i].alpha.size(); ++j) {
 
                         // This part can issue an error when the constraint matrix is deviate from rref.
-
 //                        const auto right_value =  constraint->get_const_relate(order)[i].p_index_orig[j];
-
 //                        std::cout << "right = " << right_value << '\n'<< std::flush;
-
 //                        if (constraint->get_index_bimap(order).right.find(right_value) == constraint->get_index_bimap(order).right.end()) {
 //                            std::cout << "The key not found \n" << '\n' << std::flush;
 //                            std::exit(1);
 //                        }
-
-
                         inew = constraint->get_index_bimap(order).right.at(
                                 constraint->get_const_relate(order)[i].p_index_orig[j]) +
                                iparam;
@@ -2328,7 +2357,6 @@ void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
             }
         }
 
-        deallocate(ind);
         deallocate(amat_orig_tmp);
         deallocate(amat_mod_tmp);
     }
@@ -2389,11 +2417,36 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
                               fcs->get_basis_conversion_matrix());
     }
 
+
+    std::vector<int> ind_tmp(maxorder + 1);
+
+    // Precompute the product of gamma and sign,
+    // which does not change durint the iteration over the training data
+    std::vector<std::vector<double>> gamma_precomputed(maxorder);
+    for (auto order = 0; order < maxorder; ++order) {
+        auto ii = 0;
+
+        gamma_precomputed[order].resize(fcs->get_fc_table()[order].size(), 0.0);
+
+        for (const auto &iter: fcs->get_nequiv()[order]) {
+            for (i = 0; i < iter; ++i) {
+                ind_tmp[0] = fcs->get_fc_table()[order][ii].elems[0];
+                for (j = 1; j < order + 2; ++j) {
+                    ind_tmp[j] = fcs->get_fc_table()[order][ii].elems[j];
+                }
+                gamma_precomputed[order][ii] = gamma(order + 2, ind_tmp.data())
+                                               * fcs->get_fc_table()[order][ii].sign;
+                ++ii;
+            }
+        }
+    }
+
+
+
 #ifdef _OPENMP
 #pragma omp parallel private(irow, i, j)
 #endif
     {
-        int *ind;
         int mm, order, iat, k;
         size_t im, iparam;
         size_t idata;
@@ -2405,7 +2458,6 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
 
         std::vector<T> nonzero_omp;
 
-        allocate(ind, maxorder + 1);
         allocate(amat_orig_tmp, natmin3, ncols);
         allocate(amat_mod_tmp, natmin3, ncols_new);
 
@@ -2444,16 +2496,12 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
 
                 for (const auto &iter: fcs->get_nequiv()[order]) {
                     for (i = 0; i < iter; ++i) {
-                        ind[0] = fcs->get_fc_table()[order][mm].elems[0];
-                        k = inprim_index(ind[0], symmetry);
-
+                        k = inprim_index(fcs->get_fc_table()[order][mm].elems[0], symmetry);
                         amat_tmp = 1.0;
                         for (j = 1; j < order + 2; ++j) {
-                            ind[j] = fcs->get_fc_table()[order][mm].elems[j];
                             amat_tmp *= u_multi[irow][fcs->get_fc_table()[order][mm].elems[j]];
                         }
-                        amat_orig_tmp[k][iparam] -= gamma(order + 2, ind)
-                                                    * fcs->get_fc_table()[order][mm].sign * amat_tmp;
+                        amat_orig_tmp[k][iparam] -= gamma_precomputed[order][mm] * amat_tmp;
                         ++mm;
                     }
                     ++iparam;
@@ -2526,7 +2574,6 @@ void Optimize::get_matrix_elements_in_sparse_form(const int maxorder,
             }
         }
 
-        deallocate(ind);
         deallocate(amat_orig_tmp);
         deallocate(amat_mod_tmp);
 
