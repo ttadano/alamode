@@ -28,7 +28,7 @@ Let us move to the example directory.
 
 First, we calculate the harmonic IFCs in the considering supercell.
 
-The procedure is the same as explained in a :ref:`previous tutorial <label_tutorial_01>`, so we briefly describe the outline here.
+The procedure is the same as explained in :ref:`Tutorial 7.1 <label_tutorial_01>`, so we briefly describe the outline here.
 
 We first calculate the displacement patterns by **alm**.
 
@@ -51,11 +51,11 @@ calculate the harmonic IFCs with
 2. Generate the displacement-force data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the :ref:`tutorial on BaTiO3 <label_tutorial_bto_ifc>`, we used the AIMD calculation
+In :ref:`Tutorial 7.5 <label_tutorial_bto_ifc>`, we used the AIMD calculation
 to generate random configurations, from which we calculated the anharmonic IFCs.
 
 However, the low-energy region of the potential energy surface (PES) can be sampled more efficiently 
-for weakly anharmonic materials.
+for weakly anharmonic materials or materials without imaginary harmonic frequencies.
 Here, we use the harmonic IFCs and perform the independent random sampling from the 
 harmonic PES at a given temperature.
 
@@ -130,8 +130,15 @@ at ``-temp 300`` K in the harmonic PES.
 Please run the DFT calculation for each generated supercell
 using the VASP input in **example/Si/anharm_IFCs/1_harmonic/VASP_input**.
 Then, use **extract.py** to obtain :red:`DFSET_randomQ` using the procedure explained 
-in a :ref:`previous tutorial <tutorial_Si_step2>`.
+in :ref:`Tutorial 7.1 <tutorial_Si_step2>`.
 
+.. note::
+  
+  The imaginary frequencies are replaced by their absolute values in the random sampling.
+  Thus, the procedure can be performed for the strongly anharmonic materials as well.
+
+  However, the user must be careful whether the generated set of random configurations
+  is a good dataset for calculating IFCs.
 
 .. _tutorial_Si_IFC_step3:
 

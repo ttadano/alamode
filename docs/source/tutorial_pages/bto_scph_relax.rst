@@ -30,7 +30,7 @@ Let's move to the example directory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This tutorial assumes that the harmonic and anharmonic force constants are already calculated up to the fourth order.
-Please copy the file of IFCs calculated in :ref:`the previous tutorial<label_tutorial_sto_scph>` to the current directory.
+Please copy the file of IFCs calculated in :ref:`Tutorial 7.5 <label_tutorial_bto_ifc>` to the current directory.
 
 .. code-block:: bash 
 
@@ -53,7 +53,7 @@ Please copy the file of IFCs calculated in :ref:`the previous tutorial<label_tut
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In addition to the input file of the SCPH calculation at the fixed reference structure 
-(See :ref:`the tutorial <label_tutorial_sto_scph>` for example), 
+(See :ref:`Tutorial 7.4 <label_tutorial_sto_scph>` for example), 
 we need to set ``RELAX_STR``-tag in ``&scph``-field, ``&relax``-field, and ``&displace``-field properly.
 
 We specify the initial atomic displacements in ``&displace``-field, 
@@ -75,7 +75,7 @@ The structure is considered to be in the high-symmetry phase if the ``COOLING_U0
 of the atomic displacement is smaller than ``COOLING_U0_THR`` [Bohr].
 Because we count the components from zero, ``COOLING_U0_INDEX = 5`` means that we focus on 
 the :math:`z`-component of the second atom (Ti). 
-Please see :ref:`here <anphon_cooling_u0_index>` for more detailed explanations.
+Please see :ref:`the documentation <anphon_cooling_u0_index>` for more detailed explanations.
 
 To perform the heating calculation, set ``LOWER_TEMP = 0`` in ``&scph``-field and ``SET_INIT_STR = 2``.
 Then, write the low-temperature structure to the ``&displace``-field.
@@ -191,4 +191,4 @@ of the crystal structure.
   We will need to prepare additional inputs, the elastic constants, and the strain-harmonic-IFC coupling if we relax the unit cell as well.
   The strain-force coupling is not necessary for BaTiO\ :sub:`3` because they are zero from symmetry.
 
-  Please see the :ref:`following tutorial <label_tutorial_zno_qha_relax>` for the details of the preparation of these inputs.
+  Please see the :ref:`Tutorial 7.8 <label_tutorial_zno_qha_relax>` for the details of the preparation of these inputs.

@@ -28,6 +28,11 @@ Let's move to the example directory.
 1. Generate the randomly displaced supercells
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. note::
+  There is a more efficient way to generate supercells with random displacements 
+  for weakly anharmonic materials or materials without imaginary harmonic frequencies.
+  Please see :ref:`Tutorial 7.6 <label_tutorial_silicon_ifc>` for details.
+
 We use the *ab initio* molecular dynamics (AIMD) calculations to generate the supercells with random displacements.
 
 The example VASP inputs are provided in **example/BaTiO3/anharm_IFCs/1_vasp_md**.
@@ -82,7 +87,7 @@ The option ``--random --mag 0.04`` adds random displacements of 0.04 |Angstrom| 
 2. Generate the displacement-force data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We calculate the atomic forces for each random configuration generated in :ref:`step 1<tutorial_BTO_IFC_step1>`.
+We calculate the atomic forces for each random configuration generated in the previous step.
 
 The other VASP input files (:red:`INCAR` and :red:`KPOINTS`) are provided in **example/BaTiO3/anharm_IFCs/2_vasp_dfset**.
 
@@ -105,7 +110,7 @@ from which we can calculate the anharmonic IFCs.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We assume that the harmonic force constants are already calculated. 
-Please use the method explained :ref:`here<label_tutorial_01>` for the calculation of harmonic IFCs.
+Please use the method explained in :ref:`Tutorial 7.1 <label_tutorial_01>` for the calculation of harmonic IFCs.
 
 In the cross validation, we determine the optimal amplitude of regularization (:math:`\alpha`) in the elastic-net or adaptive lasso.
 Please see :ref:`the documentation <alm_thoery_enet>` for the notation and the theoretical background.
