@@ -109,7 +109,7 @@ Plotting the result with
 
 .. code-block:: bash
 
-  $ gnuplot plot.plt
+  $ gnuplot plot_structure.plt
 
 you will get the following plot.
 
@@ -117,13 +117,45 @@ The atomic displacements are zero at high temperatures, where the structure conv
 the high-symmetry cubic phase.
 At low temperatures, the atoms are displaced along the :math:`z`-direction and the structure 
 is in the tetragonal phase.
+The estimated transition temperature (:math:`T_c`) is around 150~175 K.
 
 .. figure:: ../../img/BaTiO3_scph_relax.png
-  :scale: 60%
+  :scale: 40%
   :align: center
 
   The :math:`T`-dependence of the atomic displacements in cubic-tetragonal
   structural phase transition of BaTiO\ :sub:`3`.
+
+The plot of the free energy can be obtained with
+
+.. code-block:: bash
+
+  $ gnuplot plot_free_energy.plt
+
+We can see that the free energy shows a discontinuous behaviour near the phase transition.
+When the transition to the lower-temperature phase occurs, the static energy (:math:`U_0`) decreases
+while the vibrational contribution (:math:`F_{vib}`) increases.
+In addition, :math:`U_0` increases and :math:`F_{vib}` decreases as the temperature rises.
+Thus, we can see the competition between the enthalpy and the entropic terms in the :math:`T`-dependence
+of the crystal structure.
+
+.. figure:: ../../img/BaTiO3_scph_relax_f.png
+  :scale: 40%
+  :align: center
+
+  The :math:`T`-dependence of the free energy in cubic-tetragonal
+  structural phase transition of BaTiO\ :sub:`3`.
+
+.. note::
+
+  We can estimate :math:`T_c` more accurately from the crossing point of the free energies of different phases.
+
+  If we perform the cooling calculation without initial displacement, we will get the free energy of the cubic phase with lower temperatures.
+  If we perform the heating calculation, we may get the free energy of the tetragonal phase with higher temperatures.
+  Then, we can find the crossing point if the :math:`T`-step (``DT``) is small enough.
+  If ``DT`` is too large to see the crossing point and the hysteresis, 
+  we can extrapolate the free energy difference :math:`F_{cubic}-F_{tetra}` from the low temperature to estimate :math:`T_c`.
+
 
 .. note::
 
@@ -138,3 +170,10 @@ is in the tetragonal phase.
   * the symmetry makes the calculation more stable and efficient. If we directly calculate the tetra-ortho transition, the symmetry 
     used in the calculation is the common subgroup of the symmetry groups of these two phases, while we can take advantage of the full symmetry of
     the orthorhombic phase if we calculate the cubic-ortho transition instead.
+
+.. note::
+  
+  We will need to prepare additional inputs, the elastic constants and the strain-harmonic-IFC coupling if we relax the unit cell as well.
+  The strain-force coupling is not necessary in BaTiO\ :sub:`3` because they are zero from symmetry.
+
+  Please see the :ref:`next tutorial <label_tutorial_zno_qha_relax>` for the details of the preparation of these inputs.

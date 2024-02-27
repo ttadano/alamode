@@ -1,4 +1,4 @@
-set terminal pdf
+set terminal pdf size 4,2.8
 set output "BaTiO3_scph_relax.pdf"
 
 set grid
