@@ -103,6 +103,17 @@ Now, run the calculation with
 
 .. _tutorial_BTO_scph_relax_step3:
 
+.. note::
+  The calculation can takes more than 10 minutes if you don't use parallelizations.
+  If you want to try the calculation in a shorter time, please use a larger value for 
+  ``COORD_CONV_TOL = 1.0e-5`` or ``DT = 25``,
+  or make ``TMAX = 400`` smaller.
+  The structure will not be completely convergent for large ``COORD_CONV_TOL``, 
+  but you will be able to get the overview of the calculation.
+
+  The calculation time may be shorter in the future as we will implement a more
+  sophisticated algorithm for the structure update.
+
 3. Analyze the calculation results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
