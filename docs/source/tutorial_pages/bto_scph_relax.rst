@@ -29,22 +29,23 @@ Let's move to the example directory
 1. Prepare force constants
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In this tutorial, we assume that the harmonic and the anharmonic force constants are already calculated up to 4th order.
+This tutorial assumes that the harmonic and anharmonic force constants are already calculated up to the fourth order.
 Please copy the file of IFCs calculated in :ref:`the previous tutorial<label_tutorial_sto_scph>` to the current directory.
 
 .. code-block:: bash 
+
   $ cp ../anharm_IFCs/4_optimize/reference/cBTO222.xml.zip
   $ unzip cBTO222.xml.zip
 
 .. note::
 
-  To calculate the structural phase transitions, we need to calculate the force constants in
-  the phase with the highest symmetry (cubic phase in the case of BaTiO\ :sub:`3`).
+  We need to calculate the force constants in the phase with the highest symmetry 
+  (cubic phase in the case of BaTiO\ :sub:`3`) to calculate the structural phase transitions. 
   This is because the calculated set of IFCs satisfies the symmetry at this reference structure.
 
-  If we calculate the IFCs at orthorhombic structure for example, the generated IFCs do not satisfy 
-  the symmetry between the states with opposite polarizations, and the structure will not converge
-  to the high-symmetry cubic phase at high temperatures.
+  Suppose we calculate the IFCs at orthorhombic structure, for example. 
+  In that case, the generated IFCs do not satisfy the symmetry between the states with opposite polarizations, 
+  and the structure will not converge to the high-symmetry cubic phase at high temperatures.
 
 .. _tutorial_BTO_scph_relax_step2:
 
@@ -52,11 +53,11 @@ Please copy the file of IFCs calculated in :ref:`the previous tutorial<label_tut
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In addition to the input file of the SCPH calculation at the fixed reference structure 
-(See :ref:`tutorial <label_tutorial_sto_scph>` for example), 
-we need to set ``RELAX_STR``-tag in ``&scph``-field, the ``&relax``-field, and the ``&displace``-field properly.
+(See :ref:`the tutorial <label_tutorial_sto_scph>` for example), 
+we need to set ``RELAX_STR``-tag in ``&scph``-field, ``&relax``-field, and ``&displace``-field properly.
 
-We specify the initial atomic displacements, which are added to the high-symmetry reference structure,
-in ``&displace``-field.
+We specify the initial atomic displacements in ``&displace``-field, 
+which are added to the high-symmetry reference structure.
 This is necessary to induce spontaneous symmetry breaking from the cubic phase.
 
 The input file of the anphon calculation is :red:`BTO_scph_thermo.in`.
@@ -68,7 +69,7 @@ The lines
 
 are for the cooling calculation. 
 With ``SET_INIT_STR = 3``, the initial structure of the SCPH-based structural optimization
-is set from the ``&displace``-field if the structure at the previous temperature converges to the
+is set from ``&displace``-field if the structure at the previous temperature converges to the
 high-symmetry phase. 
 The structure is considered to be in the high-symmetry phase if the ``COOLING_U0_INDEX`` th component 
 of the atomic displacement is smaller than ``COOLING_U0_THR`` [Bohr].
@@ -87,11 +88,11 @@ Then, write the low-temperature structure to the ``&displace``-field.
 .. note::
 
   The convergence of the structure gets significantly slower right at the vicinity of 
-  the phase transition because the the gradient of the free energy almost vanishes.
-  In such cases, it is sometimes difficult to get a smooth :math:`T`-dependence 
-  for materials with more complicated structures.
+  the phase transition because the gradient of the free energy almost vanishes.
+  In such cases, getting a smooth :math:`T`-dependence for materials 
+  with more complicated structures is sometimes difficult..
   This problem can be partially avoided by choosing a larger :math:`T`-step 
-  and estimate the transition temperature from the crossing point of
+  and estimating the transition temperature from the crossing point of
   the free energies with different phases.
 
 Now, run the calculation with 
@@ -115,8 +116,8 @@ you will get the following plot.
 
 The atomic displacements are zero at high temperatures, where the structure converges to 
 the high-symmetry cubic phase.
-At low temperatures, the atoms are displaced along the :math:`z`-direction and the structure 
-is in the tetragonal phase.
+At low temperatures, the atoms are displaced along the :math:`z`-direction,
+and the structure is in the tetragonal phase.
 The estimated transition temperature (:math:`T_c`) is around 150~175 K.
 
 .. figure:: ../../img/BaTiO3_scph_relax.png
@@ -132,10 +133,12 @@ The plot of the free energy can be obtained with
 
   $ gnuplot plot_free_energy.plt
 
-We can see that the free energy shows a discontinuous behaviour near the phase transition.
-When the transition to the lower-temperature phase occurs, the static energy (:math:`U_0`) decreases
-while the vibrational contribution (:math:`F_{vib}`) increases.
-In addition, :math:`U_0` increases and :math:`F_{vib}` decreases as the temperature rises.
+We can see that static energy :math:`U_0` monotonically increases 
+while the vibrational free energy :math:`F_{vib}` decreases monotonically with temperature.
+Such changes in :math:`U_0` and :math:`F_{vib}` are especially drastic
+near the phase transition.
+The change of the total free energy is not as significant because the free energies of the two phases
+are equal at :math:`T_c`.
 Thus, we can see the competition between the enthalpy and the entropic terms in the :math:`T`-dependence
 of the crystal structure.
 
@@ -159,21 +162,22 @@ of the crystal structure.
 
 .. note::
 
-  BaTiO\ :sub:`3` shows three-step structural phase transition between four different phases.
+  BaTiO\ :sub:`3` shows a three-step structural phase transition between four different phases.
   For the other two phase transitions that occur at lower temperatures (tetragonal-orthorhombic and orthorhombic-rhombohedral transition),
-  the symmetry of the lower temperature phases are not a subgroup of the symmetry of the higher-temperature phases.
+  the symmetry of the low-:math:`T` phases are not subgroups of the symmetry of the high-:math:`T` phases.
 
-  In such cases, we recommend to calculate cubic-orthorhombic and cubic-rhombohedral phase transitions separately and compare the free energies because
+  In such cases, we recommend calculating cubic-orthorhombic and cubic-rhombohedral phase transitions separately 
+  and comparing the free energies because
 
-  * the calculated hysteresis does not necessarily reflect the physics if the transition is strongly first-order.
+  * The calculated hysteresis does not necessarily reflect the physics if the transition is strongly first-order.
 
-  * the symmetry makes the calculation more stable and efficient. If we directly calculate the tetra-ortho transition, the symmetry 
+  * The symmetry makes the calculation more stable and efficient. If we directly calculate the tetra-ortho transition, the symmetry 
     used in the calculation is the common subgroup of the symmetry groups of these two phases, while we can take advantage of the full symmetry of
     the orthorhombic phase if we calculate the cubic-ortho transition instead.
 
 .. note::
   
-  We will need to prepare additional inputs, the elastic constants and the strain-harmonic-IFC coupling if we relax the unit cell as well.
-  The strain-force coupling is not necessary in BaTiO\ :sub:`3` because they are zero from symmetry.
+  We will need to prepare additional inputs, the elastic constants, and the strain-harmonic-IFC coupling if we relax the unit cell as well.
+  The strain-force coupling is not necessary for BaTiO\ :sub:`3` because they are zero from symmetry.
 
-  Please see the :ref:`next tutorial <label_tutorial_zno_qha_relax>` for the details of the preparation of these inputs.
+  Please see the :ref:`following tutorial <label_tutorial_zno_qha_relax>` for the details of the preparation of these inputs.
