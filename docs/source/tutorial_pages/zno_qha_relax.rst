@@ -73,7 +73,7 @@ which is specified in ``&relax``-field in the input file of :red:`anphon`.
   If the strain-force coupling is zero, i.e. the atomic force is zero when we apply finite strain with fixed fractional atomic coordinates, you can set ``RENORM_2TO1ST=0`` and abbreviate the corresponding input file.
   To use ``RENORM_2TO1ST=1``, you need to impose rotational invariance on the IFCs (See Appendix C of the `original paper <https://arxiv.org/abs/2302.04537>`_ for details of the proof), which is not recommended because it usually worsens the fitting error.
 
-  Note that the input file of the strain-force coupling must be :red:`strain_force.in`.
+  The name of the input file of the strain-force coupling must be :red:`strain_force.in`.
 
   In this tutorial, the following block of the input file means that  
   if we apply the strain :math:`u_{xx}= 0.005`, the atomic forces that acts on the first atom is 
@@ -111,7 +111,7 @@ which is specified in ``&relax``-field in the input file of :red:`anphon`.
     xx 0.005 0.5 ZnO442_harmonic_xx_0005.xml
     xx 0.005 0.5 ZnO442_harmonic_xx_minus_0005.xml
 
-  with respective weights of ``0.5``. Note that :red:`ZnO442_harmonic_xx_minus_0005.xml` is not provided in this tutorial.
+  with respective weights of ``0.5`` (:red:`ZnO442_harmonic_xx_minus_0005.xml` is not provided in this tutorial).
 
   For the off-diagonal strain,
   :: 
@@ -119,7 +119,8 @@ which is specified in ``&relax``-field in the input file of :red:`anphon`.
   
   means that :red:`ZnO442_harmonic_yz_00025.xml` is the set of harmonic IFCs with :math:`u_{yz} = u_{zy} = 0.005/2 = 0.0025`.
 
-  Note that if you use the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code, you can obtain a set of input files that follows this format.
+  Note that if you use the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code, 
+  you can obtain a set of input files that follows this format.
 
 .. _tutorial_ZnO_QHA_step3:
 
@@ -127,6 +128,16 @@ which is specified in ``&relax``-field in the input file of :red:`anphon`.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The input file for the :red:`anphon` calclation is :red:`ZnO_qha_thermo.in`.
+
+.. note::
+  
+  We set ``KMESH_QHA = 4 4 2`` to save the computational cost.
+  In addition, the convergence threshold of the structural optimization (``COORD_CONV_TOL = 1.0e-5`` and ``CELL_CONV_TOL = 1.0e-5``)
+  may not be small enough
+  if you want to calculate the thermal exapnsion coefficient :math:`\alpha(T) = \frac{1}{V}\frac{\partial V}{\partial T}` by
+  finite-difference method with a small temperature difference.
+
+  These parameters should be chosen carefully to obtain accurate calculation results.
 
 Run the calculation with 
 

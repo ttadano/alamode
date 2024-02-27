@@ -36,6 +36,16 @@ Please copy the file of IFCs calculated in :ref:`the previous tutorial<label_tut
   $ cp ../anharm_IFCs/4_optimize/reference/cBTO222.xml.zip
   $ unzip cBTO222.xml.zip
 
+.. note::
+
+  To calculate the structural phase transitions, we need to calculate the force constants in
+  the phase with the highest symmetry (cubic phase in the case of BaTiO\ :sub:`3`).
+  This is because the calculated set of IFCs satisfies the symmetry at this reference structure.
+
+  If we calculate the IFCs at orthorhombic structure for example, the generated IFCs do not satisfy 
+  the symmetry between the states with opposite polarizations, and the structure will not converge
+  to the high-symmetry cubic phase at high temperatures.
+
 .. _tutorial_BTO_scph_relax_step2:
 
 2. Prepare the input file
@@ -69,6 +79,21 @@ Please see :ref:`here <anphon_cooling_u0_index>` for more detailed explanations.
 To perform the heating calculation, set ``LOWER_TEMP = 0`` in ``&scph``-field and ``SET_INIT_STR = 2``.
 Then, write the low-temperature structure to the ``&displace``-field.
 
+.. note::
+  We use a coarse SCPH :math:`q`-mesh of ``KMESH_SCPH = 4 4 4`` to save computational cost.
+  Convergence with respect to ``KMESH_SCPH`` and the threshold ``COORD_CONV_TOL`` needs 
+  to be carefully checked to obtain accurate calculation results.
+
+.. note::
+
+  The convergence of the structure gets significantly slower right at the vicinity of 
+  the phase transition because the the gradient of the free energy almost vanishes.
+  In such cases, it is sometimes difficult to get a smooth :math:`T`-dependence 
+  for materials with more complicated structures.
+  This problem can be partially avoided by choosing a larger :math:`T`-step 
+  and estimate the transition temperature from the crossing point of
+  the free energies with different phases.
+
 Now, run the calculation with 
 
 .. code-block:: bash
@@ -99,3 +124,17 @@ is in the tetragonal phase.
 
   The :math:`T`-dependence of the atomic displacements in cubic-tetragonal
   structural phase transition of BaTiO\ :sub:`3`.
+
+.. note::
+
+  BaTiO\ :sub:`3` shows three-step structural phase transition between four different phases.
+  For the other two phase transitions that occur at lower temperatures (tetragonal-orthorhombic and orthorhombic-rhombohedral transition),
+  the symmetry of the lower temperature phases are not a subgroup of the symmetry of the higher-temperature phases.
+
+  In such cases, we recommend to calculate cubic-orthorhombic and cubic-rhombohedral phase transitions separately and compare the free energies because
+
+  * the calculated hysteresis does not necessarily reflect the physics if the transition is strongly first-order.
+
+  * the symmetry makes the calculation more stable and efficient. If we directly calculate the tetra-ortho transition, the symmetry 
+    used in the calculation is the common subgroup of the symmetry groups of these two phases, while we can take advantage of the full symmetry of
+    the orthorhombic phase if we calculate the cubic-ortho transition instead.
