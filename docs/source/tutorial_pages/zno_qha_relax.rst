@@ -71,7 +71,7 @@ specified in ``&relax``-field in the input file of :red:`anphon`.
 * The strain-force coupling can be calculated using the `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ code.
 
   Suppose the strain-force coupling is zero, i.e., the atomic force is zero when we apply finite strain with fixed fractional atomic coordinates. 
-  In that case you can set ``RENORM_2TO1ST=0`` and abbreviate the corresponding input file.
+  In that case you can set ``RENORM_2TO1ST=0`` and omit the corresponding input file.
   To use ``RENORM_2TO1ST=1``, we need to impose rotational invariance on the IFCs 
   (See Appendix C of the `original paper <https://arxiv.org/abs/2302.04537>`_ for the proof), which is not recommended because it usually worsens the fitting error.
 
