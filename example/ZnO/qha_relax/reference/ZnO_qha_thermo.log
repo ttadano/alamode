@@ -1,0 +1,1008 @@
+ +-----------------------------------------------------------------+
+ +                         Program ANPHON                          +
+ +                             Ver.  1.5.0                         +
+ +-----------------------------------------------------------------+
+
+ Job started at Mon Feb 26 19:05:12 2024
+
+ The number of MPI processes: 1
+ The number of OpenMP threads: 16
+
+
+ Input variables:
+ -----------------------------------------------------------------
+ General:
+  PREFIX = ZnO_qha
+  MODE = QHA
+  FCSXML = ZnO332_500K_cutoff1208_nbody233.xml
+  FC2XML = ZnO442_harmonic.xml
+
+  NKD = 2; KD =   Zn   O
+  MASS = 
+  NSYM = 0; TOLERANCE = 0.001; PRINTSYM = 0
+
+  NONANALYTIC = 0
+
+  TMIN = 0; TMAX = 1000; DT = 100
+  EMIN = 0; EMAX = 1000; DELTA_E = 10
+
+  ISMEAR = -1; EPSILON = 10
+
+  CLASSICAL = 0
+  BCONNECT = 0
+
+ QHA:
+  KMESH_INTERPOLATE =     4    4    2
+  KMESH_QHA         =     4    4    2
+  LOWER_TEMP = 1
+  RELAX_STR = 2
+
+ Structure_opt:
+  RELAX_ALGO = 2
+  MAX_STR_ITER = 1000
+  COORD_CONV_TOL = 1e-05
+  CELL_CONV_TOL = 1e-05
+  MIXBETA_COORD = 0.5
+  MIXBETA_CELL = 0.7
+  SET_INIT_STR = 2
+  ADD_HESS_DIAG = 0
+  STAT_PRESSURE = 0
+  QHA_SCHEME = 0
+  RENORM_3TO2ND = 2
+  RENORM_2TO1ST = 2
+  RENORM_34TO1ST = 0
+  STRAIN_IFC_DIR = strain_IFC/
+
+ Kpoint:
+  KPMODE (1st entry for &kpoint) = 2
+
+
+ Analysis:
+
+
+ -----------------------------------------------------------------
+
+                        MODE = QHA                           
+                                                             
+      QHA calculation to compute crystal structure           
+      at finite temperatures.                         
+      Harmonic to quartic force constants will be used.      
+
+ -----------------------------------------------------------------
+
+ Crystal structure
+ =================
+
+ Lattice Vectors:
+
+ * Supercell (from ZnO332_500K_cutoff1208_nbody233.xml )
+
+    1.834466e+01   0.000000e+00  -0.000000e+00 : a1
+   -9.172332e+00   1.588694e+01   0.000000e+00 : a2
+    0.000000e+00   0.000000e+00   1.974655e+01 : a3
+
+    3.425075e-01   1.977468e-01  -0.000000e+00 : b1
+   -0.000000e+00   3.954936e-01   0.000000e+00 : b2
+    0.000000e+00   0.000000e+00   3.181916e-01 : b3
+
+ * Primitive cell 
+
+    6.114888e+00   0.000000e+00   0.000000e+00 : a1
+   -3.057444e+00   5.295648e+00   0.000000e+00 : a2
+    0.000000e+00   0.000000e+00   9.873275e+00 : a3
+
+    1.027523e+00   5.932404e-01  -0.000000e+00 : b1
+    0.000000e+00   1.186481e+00   0.000000e+00 : b2
+    0.000000e+00  -0.000000e+00   6.363831e-01 : b3
+
+
+  Volume of the primitive cell : 3.197193e+02 (a.u.)^3
+
+  Number of atoms in the supercell     : 72
+  Number of atoms in the primitive cell: 4
+
+
+  FC2XML is given: Harmonic IFCs will be replaced by the values in ZnO442_harmonic.xml
+
+ * Supercell for HARMONIC (from ZnO442_harmonic.xml )
+
+    2.445955e+01   0.000000e+00  -0.000000e+00 : a1
+   -1.222978e+01   2.118259e+01   0.000000e+00 : a2
+    0.000000e+00   0.000000e+00   1.974655e+01 : a3
+
+    2.568806e-01   1.483101e-01  -0.000000e+00 : b1
+   -0.000000e+00   2.966202e-01   0.000000e+00 : b2
+    0.000000e+00   0.000000e+00   3.181916e-01 : b3
+
+  Number of atoms in the supercell (HARMONIC)   : 128
+
+  Atomic positions in the primitive cell (fractional):
+   1:   3.333333e-01   6.666667e-01   7.329609e-04  Zn
+   2:   6.666667e-01   3.333333e-01   5.007330e-01  Zn
+   3:   3.333333e-01   6.666667e-01   3.795770e-01   O
+   4:   6.666667e-01   3.333333e-01   8.795770e-01   O
+
+  Mass of atomic species (u):
+  Zn:   65.380000
+   O:   15.999400
+
+
+ Symmetry
+ ========
+
+  NSYM = 0 is given: Trying to find symmetry operations.
+  NSYM = 0 is given: Trying to find symmetry operations.
+
+  Number of symmetry operations : 12
+  Number of symmetry operations in reference structure : 12
+
+ k points
+ ========
+
+  KPMODE = 2: Uniform grid
+  Gamma-centered uniform grid with the following mesh density: 
+  nk1:   8
+  nk2:   8
+  nk3:   8
+
+  Number of k points : 512
+  Number of irreducible k points : 80
+
+  List of irreducible k points (reciprocal coordinate, weight) : 
+      1:   0.00000e+00   0.00000e+00   0.00000e+00   0.001953
+      2:   0.00000e+00   0.00000e+00   1.25000e-01   0.001953
+      3:   0.00000e+00   0.00000e+00   2.50000e-01   0.001953
+      4:   0.00000e+00   0.00000e+00   3.75000e-01   0.001953
+      5:   0.00000e+00   0.00000e+00   5.00000e-01   0.001953
+      6:   0.00000e+00   0.00000e+00  -3.75000e-01   0.001953
+      7:   0.00000e+00   0.00000e+00  -2.50000e-01   0.001953
+      8:   0.00000e+00   0.00000e+00  -1.25000e-01   0.001953
+      9:   0.00000e+00   1.25000e-01   0.00000e+00   0.011719
+     10:   0.00000e+00   1.25000e-01   1.25000e-01   0.011719
+     11:   0.00000e+00   1.25000e-01   2.50000e-01   0.011719
+     12:   0.00000e+00   1.25000e-01   3.75000e-01   0.011719
+     13:   0.00000e+00   1.25000e-01  -5.00000e-01   0.011719
+     14:   0.00000e+00   1.25000e-01  -3.75000e-01   0.011719
+     15:   0.00000e+00   1.25000e-01  -2.50000e-01   0.011719
+     16:   0.00000e+00   1.25000e-01  -1.25000e-01   0.011719
+     17:   0.00000e+00   2.50000e-01   0.00000e+00   0.011719
+     18:   0.00000e+00   2.50000e-01   1.25000e-01   0.011719
+     19:   0.00000e+00   2.50000e-01   2.50000e-01   0.011719
+     20:   0.00000e+00   2.50000e-01   3.75000e-01   0.011719
+     21:   0.00000e+00   2.50000e-01  -5.00000e-01   0.011719
+     22:   0.00000e+00   2.50000e-01  -3.75000e-01   0.011719
+     23:   0.00000e+00   2.50000e-01  -2.50000e-01   0.011719
+     24:   0.00000e+00   2.50000e-01  -1.25000e-01   0.011719
+     25:   0.00000e+00   3.75000e-01   0.00000e+00   0.011719
+     26:   0.00000e+00   3.75000e-01   1.25000e-01   0.011719
+     27:   0.00000e+00   3.75000e-01   2.50000e-01   0.011719
+     28:   0.00000e+00   3.75000e-01   3.75000e-01   0.011719
+     29:   0.00000e+00   3.75000e-01  -5.00000e-01   0.011719
+     30:   0.00000e+00   3.75000e-01  -3.75000e-01   0.011719
+     31:   0.00000e+00   3.75000e-01  -2.50000e-01   0.011719
+     32:   0.00000e+00   3.75000e-01  -1.25000e-01   0.011719
+     33:   0.00000e+00   5.00000e-01   0.00000e+00   0.005859
+     34:   0.00000e+00  -5.00000e-01   1.25000e-01   0.005859
+     35:   0.00000e+00  -5.00000e-01   2.50000e-01   0.005859
+     36:   0.00000e+00  -5.00000e-01   3.75000e-01   0.005859
+     37:   0.00000e+00   5.00000e-01   5.00000e-01   0.005859
+     38:   0.00000e+00   5.00000e-01  -3.75000e-01   0.005859
+     39:   0.00000e+00   5.00000e-01  -2.50000e-01   0.005859
+     40:   0.00000e+00   5.00000e-01  -1.25000e-01   0.005859
+     41:   1.25000e-01   1.25000e-01   0.00000e+00   0.011719
+     42:   1.25000e-01   1.25000e-01   1.25000e-01   0.011719
+     43:   1.25000e-01   1.25000e-01   2.50000e-01   0.011719
+     44:   1.25000e-01   1.25000e-01   3.75000e-01   0.011719
+     45:   1.25000e-01   1.25000e-01  -5.00000e-01   0.011719
+     46:   1.25000e-01   1.25000e-01  -3.75000e-01   0.011719
+     47:   1.25000e-01   1.25000e-01  -2.50000e-01   0.011719
+     48:   1.25000e-01   1.25000e-01  -1.25000e-01   0.011719
+     49:   1.25000e-01   2.50000e-01   0.00000e+00   0.023438
+     50:   1.25000e-01   2.50000e-01   1.25000e-01   0.023438
+     51:   1.25000e-01   2.50000e-01   2.50000e-01   0.023438
+     52:   1.25000e-01   2.50000e-01   3.75000e-01   0.023438
+     53:   1.25000e-01   2.50000e-01  -5.00000e-01   0.023438
+     54:   1.25000e-01   2.50000e-01  -3.75000e-01   0.023438
+     55:   1.25000e-01   2.50000e-01  -2.50000e-01   0.023438
+     56:   1.25000e-01   2.50000e-01  -1.25000e-01   0.023438
+     57:   1.25000e-01   3.75000e-01   0.00000e+00   0.023438
+     58:   1.25000e-01   3.75000e-01   1.25000e-01   0.023438
+     59:   1.25000e-01   3.75000e-01   2.50000e-01   0.023438
+     60:   1.25000e-01   3.75000e-01   3.75000e-01   0.023438
+     61:   1.25000e-01   3.75000e-01  -5.00000e-01   0.023438
+     62:   1.25000e-01   3.75000e-01  -3.75000e-01   0.023438
+     63:   1.25000e-01   3.75000e-01  -2.50000e-01   0.023438
+     64:   1.25000e-01   3.75000e-01  -1.25000e-01   0.023438
+     65:   2.50000e-01   2.50000e-01   0.00000e+00   0.011719
+     66:   2.50000e-01   2.50000e-01   1.25000e-01   0.011719
+     67:   2.50000e-01   2.50000e-01   2.50000e-01   0.011719
+     68:   2.50000e-01   2.50000e-01   3.75000e-01   0.011719
+     69:   2.50000e-01   2.50000e-01  -5.00000e-01   0.011719
+     70:   2.50000e-01   2.50000e-01  -3.75000e-01   0.011719
+     71:   2.50000e-01   2.50000e-01  -2.50000e-01   0.011719
+     72:   2.50000e-01   2.50000e-01  -1.25000e-01   0.011719
+     73:   2.50000e-01   3.75000e-01   0.00000e+00   0.011719
+     74:   2.50000e-01   3.75000e-01   1.25000e-01   0.011719
+     75:   2.50000e-01   3.75000e-01   2.50000e-01   0.011719
+     76:   2.50000e-01   3.75000e-01   3.75000e-01   0.011719
+     77:   2.50000e-01   3.75000e-01  -5.00000e-01   0.011719
+     78:   2.50000e-01   3.75000e-01  -3.75000e-01   0.011719
+     79:   2.50000e-01   3.75000e-01  -2.50000e-01   0.011719
+     80:   2.50000e-01   3.75000e-01  -1.25000e-01   0.011719
+
+ Force constant
+ ==============
+
+  Reading force constants from the XML file ... done !
+  Number of non-zero IFCs for 2 order: 6444
+  Number of non-zero IFCs for 3 order: 283646
+  Number of non-zero IFCs for 4 order: 530140
+
+  Maximum deviation from the translational invariance: 
+   Order 2 : 3.193111e-16
+   Order 3 : 2.084151e-12
+   Order 4 : 8.220083e-11
+
+
+ Dynamical matrix
+ ================
+
+  NONANALYTIC = 0 : No non-analytic correction. 
+
+
+ -----------------------------------------------------------------
+
+
+ ISMEAR = -1: Tetrahedron method will be used.
+
+ Now, move on to phonon calculations.
+
+ Diagonalizing dynamical matrices for all k points ... done!
+ Setting up the QHA calculations ...
+
+  Gamma-centered uniform grid with the following mesh density:
+  nk1:    4
+  nk2:    4
+  nk3:    2
+
+  Number of k points : 32
+  Number of irreducible k points : 8
+
+  Fourier interpolation from reciprocal to real space
+  will be performed with the following mesh density:
+  nk1:    4
+  nk2:    4
+  nk3:    2
+
+  Number of k points : 32
+  Number of irreducible k points : 8
+
+ Diagonalizing dynamical matrices for all k points ... done !
+ Preparing for calculating V3 & V4  ... done!
+ SELF_OFFDIAG = 1: Calculating all components of v4_array ...  done !
+
+ Time Elapsed: 1.392434e+01 sec.
+
+ SELF_OFFDIAG = 1: Calculating all components of v3_array ...  done !
+
+ Time Elapsed: 1.393468e+01 sec.
+
+ RELAX_STR = 2: Calculating derivatives of k-space IFCs by strain.
+
+  - first-order derivatives of first-order IFCs (finite difference method) ...   done!
+  - second-order derivatives of first-order IFCs (set zero) ...   done!
+  - third-order derivatives of first-order IFCs (set zero) ...   done!
+  - first-order derivatives of harmonic IFCs (finite displacement method)
+    use inputs with all strain patterns ...   done!
+  - second-order derivatives of harmonic IFCs (from quartic IFCs) ...   done!
+  - first-order derivatives of cubic IFCs (from quartic IFCs) ...   done!
+
+ Time Elapsed: 2.869338e+01 sec.
+
+  Warning: file C1_array.in could not be open.
+  The stress tensor at the reference structure is set zero.
+ Start structural optimization.
+  Internal coordinates and shape of the unit cell are relaxed.
+
+ ----------------------------------------------------------------
+ Temperature = 1.000000e+03 K
+ Temperature index :    0/  11
+
+ SET_INIT_STR = 2: set initial structure from the input file.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   0.000000e+00   0.000000e+00   0.000000e+00
+    u_{1,x}   u_{1,y}   u_{1,z} :   0.000000e+00   0.000000e+00   0.000000e+00
+    u_{2,x}   u_{2,y}   u_{2,z} :   0.000000e+00   0.000000e+00   0.000000e+00
+    u_{3,x}   u_{3,y}   u_{3,z} :   0.000000e+00   0.000000e+00   0.000000e+00
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    0.000000e+00   0.000000e+00   0.000000e+00
+    0.000000e+00   0.000000e+00   0.000000e+00
+    0.000000e+00   0.000000e+00   0.000000e+00
+
+ ----------------------------------------------------------------
+ Start structural optimization at 1.000000e+03 K.
+ Structure loop :    1 du0 =   3.497001e-03 [Bohr] du_tensor =   7.095624e-03
+ Structure loop :    2 du0 =   2.433474e-03 [Bohr] du_tensor =   2.777424e-03
+ Structure loop :    3 du0 =   2.033472e-03 [Bohr] du_tensor =   1.158714e-03
+ Structure loop :    4 du0 =   1.797114e-03 [Bohr] du_tensor =   5.424570e-04
+ Structure loop :    5 du0 =   1.607796e-03 [Bohr] du_tensor =   3.243015e-04
+ Structure loop :    6 du0 =   1.439194e-03 [Bohr] du_tensor =   2.486719e-04
+ Structure loop :    7 du0 =   1.285746e-03 [Bohr] du_tensor =   2.128152e-04
+ Structure loop :    8 du0 =   1.146231e-03 [Bohr] du_tensor =   1.874011e-04
+ Structure loop :    9 du0 =   1.020030e-03 [Bohr] du_tensor =   1.659484e-04
+ Structure loop :   10 du0 =   9.064148e-04 [Bohr] du_tensor =   1.470299e-04
+ Structure loop :   11 du0 =   8.045077e-04 [Bohr] du_tensor =   1.302091e-04
+ Structure loop :   12 du0 =   7.133604e-04 [Bohr] du_tensor =   1.152448e-04
+ Structure loop :   13 du0 =   6.320159e-04 [Bohr] du_tensor =   1.019432e-04
+ Structure loop :   14 du0 =   5.595477e-04 [Bohr] du_tensor =   9.013153e-05
+ Structure loop :   15 du0 =   4.950816e-04 [Bohr] du_tensor =   7.965269e-05
+ Structure loop :   16 du0 =   4.378049e-04 [Bohr] du_tensor =   7.036420e-05
+ Structure loop :   17 du0 =   3.869699e-04 [Bohr] du_tensor =   6.213701e-05
+ Structure loop :   18 du0 =   3.418938e-04 [Bohr] du_tensor =   5.485473e-05
+ Structure loop :   19 du0 =   3.019566e-04 [Bohr] du_tensor =   4.841262e-05
+ Structure loop :   20 du0 =   2.665975e-04 [Bohr] du_tensor =   4.271672e-05
+ Structure loop :   21 du0 =   2.353111e-04 [Bohr] du_tensor =   3.768291e-05
+ Structure loop :   22 du0 =   2.076436e-04 [Bohr] du_tensor =   3.323602e-05
+ Structure loop :   23 du0 =   1.831882e-04 [Bohr] du_tensor =   2.930903e-05
+ Structure loop :   24 du0 =   1.615811e-04 [Bohr] du_tensor =   2.584224e-05
+ Structure loop :   25 du0 =   1.424978e-04 [Bohr] du_tensor =   2.278257e-05
+ Structure loop :   26 du0 =   1.256490e-04 [Bohr] du_tensor =   2.008288e-05
+ Structure loop :   27 du0 =   1.107774e-04 [Bohr] du_tensor =   1.770131e-05
+ Structure loop :   28 du0 =   9.765433e-05 [Bohr] du_tensor =   1.560079e-05
+ Structure loop :   29 du0 =   8.607682e-05 [Bohr] du_tensor =   1.374846e-05
+ Structure loop :   30 du0 =   7.586486e-05 [Bohr] du_tensor =   1.211522e-05
+ Structure loop :   31 du0 =   6.685897e-05 [Bohr] du_tensor =   1.067536e-05
+ Structure loop :   32 du0 =   5.891792e-05 [Bohr] du_tensor =   9.406119e-06
+ Structure loop :   33 du0 =   5.191677e-05 [Bohr] du_tensor =   8.287395e-06
+ Structure loop :   34 du0 =   4.574500e-05 [Bohr] du_tensor =   7.301425e-06
+ Structure loop :   35 du0 =   4.030494e-05 [Bohr] du_tensor =   6.432524e-06
+ Structure loop :   36 du0 =   3.551028e-05 [Bohr] du_tensor =   5.666843e-06
+ Structure loop :   37 du0 =   3.128480e-05 [Bohr] du_tensor =   4.992163e-06
+ Structure loop :   38 du0 =   2.756119e-05 [Bohr] du_tensor =   4.397698e-06
+ Structure loop :   39 du0 =   2.428006e-05 [Bohr] du_tensor =   3.873937e-06
+ Structure loop :   40 du0 =   2.138898e-05 [Bohr] du_tensor =   3.412489e-06
+ Structure loop :   41 du0 =   1.884172e-05 [Bohr] du_tensor =   3.005956e-06
+ Structure loop :   42 du0 =   1.659748e-05 [Bohr] du_tensor =   2.647814e-06
+ Structure loop :   43 du0 =   1.462029e-05 [Bohr] du_tensor =   2.332311e-06
+ Structure loop :   44 du0 =   1.287844e-05 [Bohr] du_tensor =   2.054379e-06
+ Structure loop :   45 du0 =   1.134395e-05 [Bohr] du_tensor =   1.809548e-06
+ Structure loop :   46 du0 =   9.992174e-06 [Bohr] du_tensor =   1.593881e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 46-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 1.000000e+03 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   4.034972e-13  -2.326942e-13  -4.037350e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -4.034989e-13   2.327147e-13  -4.037350e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -5.675360e-13   3.273251e-13   1.649824e-02
+    u_{3,x}   u_{3,y}   u_{3,z} :   5.675407e-13  -3.274044e-13   1.649824e-02
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    8.048045e-03   5.545657e-14  -5.013760e-19
+    5.545657e-14   8.048045e-03  -1.925891e-17
+   -5.013760e-19  -1.925891e-17   4.438396e-03
+
+ ----------------------------------------------------------------
+ Temperature = 9.000000e+02 K
+ Temperature index :    1/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   4.034972e-13  -2.326942e-13  -4.037350e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -4.034989e-13   2.327147e-13  -4.037350e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -5.675360e-13   3.273251e-13   1.649824e-02
+    u_{3,x}   u_{3,y}   u_{3,z} :   5.675407e-13  -3.274044e-13   1.649824e-02
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    8.048045e-03   5.545657e-14  -5.013760e-19
+    5.545657e-14   8.048045e-03  -1.925891e-17
+   -5.013760e-19  -1.925891e-17   4.438396e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 9.000000e+02 K.
+ Structure loop :    1 du0 =   6.064419e-04 [Bohr] du_tensor =   7.374181e-04
+ Structure loop :    2 du0 =   3.963919e-04 [Bohr] du_tensor =   3.036507e-04
+ Structure loop :    3 du0 =   3.414267e-04 [Bohr] du_tensor =   1.339238e-04
+ Structure loop :    4 du0 =   3.052722e-04 [Bohr] du_tensor =   7.113306e-05
+ Structure loop :    5 du0 =   2.710776e-04 [Bohr] du_tensor =   4.921857e-05
+ Structure loop :    6 du0 =   2.388253e-04 [Bohr] du_tensor =   4.003370e-05
+ Structure loop :    7 du0 =   2.094775e-04 [Bohr] du_tensor =   3.434109e-05
+ Structure loop :    8 du0 =   1.833482e-04 [Bohr] du_tensor =   2.986517e-05
+ Structure loop :    9 du0 =   1.603329e-04 [Bohr] du_tensor =   2.606506e-05
+ Structure loop :   10 du0 =   1.401598e-04 [Bohr] du_tensor =   2.277257e-05
+ Structure loop :   11 du0 =   1.225153e-04 [Bohr] du_tensor =   1.990398e-05
+ Structure loop :   12 du0 =   1.070952e-04 [Bohr] du_tensor =   1.740028e-05
+ Structure loop :   13 du0 =   9.362267e-05 [Bohr] du_tensor =   1.521349e-05
+ Structure loop :   14 du0 =   8.185179e-05 [Bohr] du_tensor =   1.330280e-05
+ Structure loop :   15 du0 =   7.156672e-05 [Bohr] du_tensor =   1.163296e-05
+ Structure loop :   16 du0 =   6.257880e-05 [Bohr] du_tensor =   1.017339e-05
+ Structure loop :   17 du0 =   5.472342e-05 [Bohr] du_tensor =   8.897426e-06
+ Structure loop :   18 du0 =   4.785703e-05 [Bohr] du_tensor =   7.781864e-06
+ Structure loop :   19 du0 =   4.185445e-05 [Bohr] du_tensor =   6.806451e-06
+ Structure loop :   20 du0 =   3.660649e-05 [Bohr] du_tensor =   5.953512e-06
+ Structure loop :   21 du0 =   3.201788e-05 [Bohr] du_tensor =   5.207620e-06
+ Structure loop :   22 du0 =   2.800546e-05 [Bohr] du_tensor =   4.555302e-06
+ Structure loop :   23 du0 =   2.449665e-05 [Bohr] du_tensor =   3.984790e-06
+ Structure loop :   24 du0 =   2.142805e-05 [Bohr] du_tensor =   3.485802e-06
+ Structure loop :   25 du0 =   1.874430e-05 [Bohr] du_tensor =   3.049354e-06
+ Structure loop :   26 du0 =   1.639703e-05 [Bohr] du_tensor =   2.667595e-06
+ Structure loop :   27 du0 =   1.434396e-05 [Bohr] du_tensor =   2.333662e-06
+ Structure loop :   28 du0 =   1.254816e-05 [Bohr] du_tensor =   2.041557e-06
+ Structure loop :   29 du0 =   1.097734e-05 [Bohr] du_tensor =   1.786033e-06
+ Structure loop :   30 du0 =   9.603283e-06 [Bohr] du_tensor =   1.562505e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 30-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 9.000000e+02 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   3.166968e-13  -1.826294e-13  -3.405104e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -3.166974e-13   1.826488e-13  -3.405104e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -4.346709e-13   2.506367e-13   1.391463e-02
+    u_{3,x}   u_{3,y}   u_{3,z} :   4.346717e-13  -2.507125e-13   1.391463e-02
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    7.137041e-03   4.097235e-14  -9.168866e-19
+    4.097235e-14   7.137041e-03  -1.556242e-17
+   -9.168866e-19  -1.556242e-17   4.075269e-03
+
+ ----------------------------------------------------------------
+ Temperature = 8.000000e+02 K
+ Temperature index :    2/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   3.166968e-13  -1.826294e-13  -3.405104e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -3.166974e-13   1.826488e-13  -3.405104e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -4.346709e-13   2.506367e-13   1.391463e-02
+    u_{3,x}   u_{3,y}   u_{3,z} :   4.346717e-13  -2.507125e-13   1.391463e-02
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    7.137041e-03   4.097235e-14  -9.168866e-19
+    4.097235e-14   7.137041e-03  -1.556242e-17
+   -9.168866e-19  -1.556242e-17   4.075269e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 8.000000e+02 K.
+ Structure loop :    1 du0 =   5.797852e-04 [Bohr] du_tensor =   7.201786e-04
+ Structure loop :    2 du0 =   3.681310e-04 [Bohr] du_tensor =   2.884172e-04
+ Structure loop :    3 du0 =   3.140268e-04 [Bohr] du_tensor =   1.237745e-04
+ Structure loop :    4 du0 =   2.780414e-04 [Bohr] du_tensor =   6.464830e-05
+ Structure loop :    5 du0 =   2.446433e-04 [Bohr] du_tensor =   4.464890e-05
+ Structure loop :    6 du0 =   2.137964e-04 [Bohr] du_tensor =   3.629684e-05
+ Structure loop :    7 du0 =   1.861587e-04 [Bohr] du_tensor =   3.102128e-05
+ Structure loop :    8 du0 =   1.618268e-04 [Bohr] du_tensor =   2.683381e-05
+ Structure loop :    9 du0 =   1.405819e-04 [Bohr] du_tensor =   2.327913e-05
+ Structure loop :   10 du0 =   1.220993e-04 [Bohr] du_tensor =   2.021177e-05
+ Structure loop :   11 du0 =   1.060437e-04 [Bohr] du_tensor =   1.755390e-05
+ Structure loop :   12 du0 =   9.210389e-05 [Bohr] du_tensor =   1.524795e-05
+ Structure loop :   13 du0 =   8.000251e-05 [Bohr] du_tensor =   1.324632e-05
+ Structure loop :   14 du0 =   6.949666e-05 [Bohr] du_tensor =   1.150838e-05
+ Structure loop :   15 du0 =   6.037500e-05 [Bohr] du_tensor =   9.999123e-06
+ Structure loop :   16 du0 =   5.245420e-05 [Bohr] du_tensor =   8.688283e-06
+ Structure loop :   17 du0 =   4.557533e-05 [Bohr] du_tensor =   7.549649e-06
+ Structure loop :   18 du0 =   3.960068e-05 [Bohr] du_tensor =   6.560509e-06
+ Structure loop :   19 du0 =   3.441089e-05 [Bohr] du_tensor =   5.701168e-06
+ Structure loop :   20 du0 =   2.990246e-05 [Bohr] du_tensor =   4.954543e-06
+ Structure loop :   21 du0 =   2.598563e-05 [Bohr] du_tensor =   4.305812e-06
+ Structure loop :   22 du0 =   2.258255e-05 [Bohr] du_tensor =   3.742111e-06
+ Structure loop :   23 du0 =   1.962567e-05 [Bohr] du_tensor =   3.252274e-06
+ Structure loop :   24 du0 =   1.705635e-05 [Bohr] du_tensor =   2.826605e-06
+ Structure loop :   25 du0 =   1.482370e-05 [Bohr] du_tensor =   2.456688e-06
+ Structure loop :   26 du0 =   1.288353e-05 [Bohr] du_tensor =   2.135209e-06
+ Structure loop :   27 du0 =   1.119746e-05 [Bohr] du_tensor =   1.855821e-06
+ Structure loop :   28 du0 =   9.732178e-06 [Bohr] du_tensor =   1.613006e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 28-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 8.000000e+02 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   2.482083e-13  -1.430987e-13  -2.841544e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -2.482083e-13   1.431141e-13  -2.841544e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -3.162211e-13   1.822900e-13   1.161169e-02
+    u_{3,x}   u_{3,y}   u_{3,z} :   3.162194e-13  -1.823499e-13   1.161169e-02
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    6.277059e-03   2.661134e-14   1.283840e-19
+    2.661134e-14   6.277059e-03  -1.455051e-17
+    1.283840e-19  -1.455051e-17   3.708378e-03
+
+ ----------------------------------------------------------------
+ Temperature = 7.000000e+02 K
+ Temperature index :    3/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   2.482083e-13  -1.430987e-13  -2.841544e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -2.482083e-13   1.431141e-13  -2.841544e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -3.162211e-13   1.822900e-13   1.161169e-02
+    u_{3,x}   u_{3,y}   u_{3,z} :   3.162194e-13  -1.823499e-13   1.161169e-02
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    6.277059e-03   2.661134e-14   1.283840e-19
+    2.661134e-14   6.277059e-03  -1.455051e-17
+    1.283840e-19  -1.455051e-17   3.708378e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 7.000000e+02 K.
+ Structure loop :    1 du0 =   5.410607e-04 [Bohr] du_tensor =   6.999531e-04
+ Structure loop :    2 du0 =   3.298586e-04 [Bohr] du_tensor =   2.720489e-04
+ Structure loop :    3 du0 =   2.789359e-04 [Bohr] du_tensor =   1.130526e-04
+ Structure loop :    4 du0 =   2.448954e-04 [Bohr] du_tensor =   5.753601e-05
+ Structure loop :    5 du0 =   2.137123e-04 [Bohr] du_tensor =   3.937014e-05
+ Structure loop :    6 du0 =   1.853797e-04 [Bohr] du_tensor =   3.189686e-05
+ Structure loop :    7 du0 =   1.603147e-04 [Bohr] du_tensor =   2.713946e-05
+ Structure loop :    8 du0 =   1.384579e-04 [Bohr] du_tensor =   2.334727e-05
+ Structure loop :    9 du0 =   1.195219e-04 [Bohr] du_tensor =   2.013447e-05
+ Structure loop :   10 du0 =   1.031609e-04 [Bohr] du_tensor =   1.737492e-05
+ Structure loop :   11 du0 =   8.903953e-05 [Bohr] du_tensor =   1.499703e-05
+ Structure loop :   12 du0 =   7.685544e-05 [Bohr] du_tensor =   1.294617e-05
+ Structure loop :   13 du0 =   6.634334e-05 [Bohr] du_tensor =   1.117672e-05
+ Structure loop :   14 du0 =   5.727317e-05 [Bohr] du_tensor =   9.649773e-06
+ Structure loop :   15 du0 =   4.944632e-05 [Bohr] du_tensor =   8.331900e-06
+ Structure loop :   16 du0 =   4.269161e-05 [Bohr] du_tensor =   7.194352e-06
+ Structure loop :   17 du0 =   3.686156e-05 [Bohr] du_tensor =   6.212366e-06
+ Structure loop :   18 du0 =   3.182912e-05 [Bohr] du_tensor =   5.364604e-06
+ Structure loop :   19 du0 =   2.748480e-05 [Bohr] du_tensor =   4.632670e-06
+ Structure loop :   20 du0 =   2.373424e-05 [Bohr] du_tensor =   4.000703e-06
+ Structure loop :   21 du0 =   2.049608e-05 [Bohr] du_tensor =   3.455025e-06
+ Structure loop :   22 du0 =   1.770017e-05 [Bohr] du_tensor =   2.983832e-06
+ Structure loop :   23 du0 =   1.528599e-05 [Bohr] du_tensor =   2.576943e-06
+ Structure loop :   24 du0 =   1.320134e-05 [Bohr] du_tensor =   2.225572e-06
+ Structure loop :   25 du0 =   1.140117e-05 [Bohr] du_tensor =   1.922135e-06
+ Structure loop :   26 du0 =   9.846619e-06 [Bohr] du_tensor =   1.660087e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 26-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 7.000000e+02 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   1.896770e-13  -1.093318e-13  -2.353309e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -1.896785e-13   1.093440e-13  -2.353309e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -2.261682e-13   1.303364e-13   9.616569e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   2.261731e-13  -1.303835e-13   9.616569e-03
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    5.473816e-03   1.690046e-14  -1.122433e-18
+    1.690046e-14   5.473816e-03  -1.197665e-17
+   -1.122433e-18  -1.197665e-17   3.330416e-03
+
+ ----------------------------------------------------------------
+ Temperature = 6.000000e+02 K
+ Temperature index :    4/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   1.896770e-13  -1.093318e-13  -2.353309e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -1.896785e-13   1.093440e-13  -2.353309e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -2.261682e-13   1.303364e-13   9.616569e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   2.261731e-13  -1.303835e-13   9.616569e-03
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    5.473816e-03   1.690046e-14  -1.122433e-18
+    1.690046e-14   5.473816e-03  -1.197665e-17
+   -1.122433e-18  -1.197665e-17   3.330416e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 6.000000e+02 K.
+ Structure loop :    1 du0 =   5.071572e-04 [Bohr] du_tensor =   6.747626e-04
+ Structure loop :    2 du0 =   2.957647e-04 [Bohr] du_tensor =   2.543720e-04
+ Structure loop :    3 du0 =   2.483908e-04 [Bohr] du_tensor =   1.024602e-04
+ Structure loop :    4 du0 =   2.163478e-04 [Bohr] du_tensor =   5.102388e-05
+ Structure loop :    5 du0 =   1.873138e-04 [Bohr] du_tensor =   3.475070e-05
+ Structure loop :    6 du0 =   1.613287e-04 [Bohr] du_tensor =   2.810409e-05
+ Structure loop :    7 du0 =   1.386055e-04 [Bohr] du_tensor =   2.381418e-05
+ Structure loop :    8 du0 =   1.189638e-04 [Bohr] du_tensor =   2.037728e-05
+ Structure loop :    9 du0 =   1.020696e-04 [Bohr] du_tensor =   1.747179e-05
+ Structure loop :   10 du0 =   8.756735e-05 [Bohr] du_tensor =   1.498796e-05
+ Structure loop :   11 du0 =   7.512722e-05 [Bohr] du_tensor =   1.285946e-05
+ Structure loop :   12 du0 =   6.445813e-05 [Bohr] du_tensor =   1.103431e-05
+ Structure loop :   13 du0 =   5.530788e-05 [Bohr] du_tensor =   9.468865e-06
+ Structure loop :   14 du0 =   4.745962e-05 [Bohr] du_tensor =   8.125975e-06
+ Structure loop :   15 du0 =   4.072740e-05 [Bohr] du_tensor =   6.973870e-06
+ Structure loop :   16 du0 =   3.495195e-05 [Bohr] du_tensor =   5.985354e-06
+ Structure loop :   17 du0 =   2.999684e-05 [Bohr] du_tensor =   5.137135e-06
+ Structure loop :   18 du0 =   2.574520e-05 [Bohr] du_tensor =   4.409254e-06
+ Structure loop :   19 du0 =   2.209690e-05 [Bohr] du_tensor =   3.784603e-06
+ Structure loop :   20 du0 =   1.896613e-05 [Bohr] du_tensor =   3.248516e-06
+ Structure loop :   21 du0 =   1.627934e-05 [Bohr] du_tensor =   2.788418e-06
+ Structure loop :   22 du0 =   1.397346e-05 [Bohr] du_tensor =   2.393524e-06
+ Structure loop :   23 du0 =   1.199441e-05 [Bohr] du_tensor =   2.054583e-06
+ Structure loop :   24 du0 =   1.029582e-05 [Bohr] du_tensor =   1.763660e-06
+ Structure loop :   25 du0 =   8.837883e-06 [Bohr] du_tensor =   1.513946e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 25-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 6.000000e+02 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   1.405913e-13  -8.101186e-14  -1.926433e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -1.405919e-13   8.102117e-14  -1.926433e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -1.578152e-13   9.091389e-14   7.872182e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   1.578166e-13  -9.094990e-14   7.872182e-03
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    4.725926e-03   1.038545e-14   1.198899e-19
+    1.038545e-14   4.725926e-03  -1.145780e-17
+    1.198899e-19  -1.145780e-17   2.952302e-03
+
+ ----------------------------------------------------------------
+ Temperature = 5.000000e+02 K
+ Temperature index :    5/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   1.405913e-13  -8.101186e-14  -1.926433e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -1.405919e-13   8.102117e-14  -1.926433e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -1.578152e-13   9.091389e-14   7.872182e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   1.578166e-13  -9.094990e-14   7.872182e-03
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    4.725926e-03   1.038545e-14   1.198899e-19
+    1.038545e-14   4.725926e-03  -1.145780e-17
+    1.198899e-19  -1.145780e-17   2.952302e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 5.000000e+02 K.
+ Structure loop :    1 du0 =   4.757088e-04 [Bohr] du_tensor =   6.408589e-04
+ Structure loop :    2 du0 =   2.634234e-04 [Bohr] du_tensor =   2.341602e-04
+ Structure loop :    3 du0 =   2.201677e-04 [Bohr] du_tensor =   9.150104e-05
+ Structure loop :    4 du0 =   1.903389e-04 [Bohr] du_tensor =   4.478943e-05
+ Structure loop :    5 du0 =   1.635664e-04 [Bohr] du_tensor =   3.050599e-05
+ Structure loop :    6 du0 =   1.399355e-04 [Bohr] du_tensor =   2.466318e-05
+ Structure loop :    7 du0 =   1.194862e-04 [Bohr] du_tensor =   2.081960e-05
+ Structure loop :    8 du0 =   1.019500e-04 [Bohr] du_tensor =   1.772350e-05
+ Structure loop :    9 du0 =   8.696697e-05 [Bohr] du_tensor =   1.511228e-05
+ Structure loop :   10 du0 =   7.418313e-05 [Bohr] du_tensor =   1.289052e-05
+ Structure loop :   11 du0 =   6.328072e-05 [Bohr] du_tensor =   1.099682e-05
+ Structure loop :   12 du0 =   5.398373e-05 [Bohr] du_tensor =   9.382026e-06
+ Structure loop :   13 du0 =   4.605543e-05 [Bohr] du_tensor =   8.004818e-06
+ Structure loop :   14 du0 =   3.929375e-05 [Bohr] du_tensor =   6.830104e-06
+ Structure loop :   15 du0 =   3.352649e-05 [Bohr] du_tensor =   5.828017e-06
+ Structure loop :   16 du0 =   2.860697e-05 [Bohr] du_tensor =   4.973126e-06
+ Structure loop :   17 du0 =   2.441023e-05 [Bohr] du_tensor =   4.243761e-06
+ Structure loop :   18 du0 =   2.082984e-05 [Bohr] du_tensor =   3.621458e-06
+ Structure loop :   19 du0 =   1.777511e-05 [Bohr] du_tensor =   3.090475e-06
+ Structure loop :   20 du0 =   1.516871e-05 [Bohr] du_tensor =   2.637395e-06
+ Structure loop :   21 du0 =   1.294476e-05 [Bohr] du_tensor =   2.250773e-06
+ Structure loop :   22 du0 =   1.104706e-05 [Bohr] du_tensor =   1.920853e-06
+ Structure loop :   23 du0 =   9.427701e-06 [Bohr] du_tensor =   1.639312e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 23-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 5.000000e+02 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   1.004118e-13  -5.784059e-14  -1.554628e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -1.004118e-13   5.784971e-14  -1.554628e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -1.071674e-13   6.169230e-14   6.352839e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   1.071665e-13  -6.172793e-14   6.352839e-03
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    4.038307e-03   6.249157e-15  -3.472875e-20
+    6.249157e-15   4.038307e-03  -9.198319e-18
+   -3.472875e-20  -9.198319e-18   2.582816e-03
+
+ ----------------------------------------------------------------
+ Temperature = 4.000000e+02 K
+ Temperature index :    6/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   1.004118e-13  -5.784059e-14  -1.554628e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -1.004118e-13   5.784971e-14  -1.554628e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -1.071674e-13   6.169230e-14   6.352839e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   1.071665e-13  -6.172793e-14   6.352839e-03
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    4.038307e-03   6.249157e-15  -3.472875e-20
+    6.249157e-15   4.038307e-03  -9.198319e-18
+   -3.472875e-20  -9.198319e-18   2.582816e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 4.000000e+02 K.
+ Structure loop :    1 du0 =   4.475121e-04 [Bohr] du_tensor =   5.906472e-04
+ Structure loop :    2 du0 =   2.329063e-04 [Bohr] du_tensor =   2.091185e-04
+ Structure loop :    3 du0 =   1.942638e-04 [Bohr] du_tensor =   7.953403e-05
+ Structure loop :    4 du0 =   1.667612e-04 [Bohr] du_tensor =   3.869491e-05
+ Structure loop :    5 du0 =   1.423030e-04 [Bohr] du_tensor =   2.660647e-05
+ Structure loop :    6 du0 =   1.209940e-04 [Bohr] du_tensor =   2.155873e-05
+ Structure loop :    7 du0 =   1.027268e-04 [Bohr] du_tensor =   1.814112e-05
+ Structure loop :    8 du0 =   8.717283e-05 [Bohr] du_tensor =   1.536968e-05
+ Structure loop :    9 du0 =   7.396343e-05 [Bohr] du_tensor =   1.303752e-05
+ Structure loop :   10 du0 =   6.275545e-05 [Bohr] du_tensor =   1.106213e-05
+ Structure loop :   11 du0 =   5.324821e-05 [Bohr] du_tensor =   9.386939e-06
+ Structure loop :   12 du0 =   4.518381e-05 [Bohr] du_tensor =   7.965914e-06
+ Structure loop :   13 du0 =   3.834288e-05 [Bohr] du_tensor =   6.760336e-06
+ Structure loop :   14 du0 =   3.253930e-05 [Bohr] du_tensor =   5.737449e-06
+ Structure loop :   15 du0 =   2.761536e-05 [Bohr] du_tensor =   4.869501e-06
+ Structure loop :   16 du0 =   2.343739e-05 [Bohr] du_tensor =   4.132977e-06
+ Structure loop :   17 du0 =   1.989216e-05 [Bohr] du_tensor =   3.507942e-06
+ Structure loop :   18 du0 =   1.688365e-05 [Bohr] du_tensor =   2.977496e-06
+ Structure loop :   19 du0 =   1.433048e-05 [Bohr] du_tensor =   2.527306e-06
+ Structure loop :   20 du0 =   1.216364e-05 [Bohr] du_tensor =   2.145217e-06
+ Structure loop :   21 du0 =   1.032462e-05 [Bohr] du_tensor =   1.820917e-06
+ Structure loop :   22 du0 =   8.763757e-06 [Bohr] du_tensor =   1.545660e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 22-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 4.000000e+02 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   6.869267e-14  -3.954860e-14  -1.229549e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -6.869300e-14   3.955615e-14  -1.229549e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -6.985205e-14   4.019115e-14   5.024432e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   6.985269e-14  -4.022074e-14   5.024432e-03
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    3.421223e-03   3.595102e-15  -3.959186e-19
+    3.595102e-15   3.421223e-03  -7.161104e-18
+   -3.959186e-19  -7.161104e-18   2.239370e-03
+
+ ----------------------------------------------------------------
+ Temperature = 3.000000e+02 K
+ Temperature index :    7/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   6.869267e-14  -3.954860e-14  -1.229549e-03
+    u_{1,x}   u_{1,y}   u_{1,z} :  -6.869300e-14   3.955615e-14  -1.229549e-03
+    u_{2,x}   u_{2,y}   u_{2,z} :  -6.985205e-14   4.019115e-14   5.024432e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   6.985269e-14  -4.022074e-14   5.024432e-03
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    3.421223e-03   3.595102e-15  -3.959186e-19
+    3.595102e-15   3.421223e-03  -7.161104e-18
+   -3.959186e-19  -7.161104e-18   2.239370e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 3.000000e+02 K.
+ Structure loop :    1 du0 =   4.166568e-04 [Bohr] du_tensor =   5.074558e-04
+ Structure loop :    2 du0 =   1.986202e-04 [Bohr] du_tensor =   1.741199e-04
+ Structure loop :    3 du0 =   1.659386e-04 [Bohr] du_tensor =   6.486155e-05
+ Structure loop :    4 du0 =   1.415206e-04 [Bohr] du_tensor =   3.193808e-05
+ Structure loop :    5 du0 =   1.200129e-04 [Bohr] du_tensor =   2.244218e-05
+ Structure loop :    6 du0 =   1.014944e-04 [Bohr] du_tensor =   1.827460e-05
+ Structure loop :    7 du0 =   8.574626e-05 [Bohr] du_tensor =   1.534036e-05
+ Structure loop :    8 du0 =   7.241788e-05 [Bohr] du_tensor =   1.294259e-05
+ Structure loop :    9 du0 =   6.115680e-05 [Bohr] du_tensor =   1.092879e-05
+ Structure loop :   10 du0 =   5.164778e-05 [Bohr] du_tensor =   9.229934e-06
+ Structure loop :   11 du0 =   4.361928e-05 [Bohr] du_tensor =   7.795698e-06
+ Structure loop :   12 du0 =   3.684067e-05 [Bohr] du_tensor =   6.584643e-06
+ Structure loop :   13 du0 =   3.111697e-05 [Bohr] du_tensor =   5.561946e-06
+ Structure loop :   14 du0 =   2.628363e-05 [Bohr] du_tensor =   4.698250e-06
+ Structure loop :   15 du0 =   2.220185e-05 [Bohr] du_tensor =   3.968790e-06
+ Structure loop :   16 du0 =   1.875455e-05 [Bohr] du_tensor =   3.352670e-06
+ Structure loop :   17 du0 =   1.584292e-05 [Bohr] du_tensor =   2.832256e-06
+ Structure loop :   18 du0 =   1.338363e-05 [Bohr] du_tensor =   2.392665e-06
+ Structure loop :   19 du0 =   1.130630e-05 [Bohr] du_tensor =   2.021333e-06
+ Structure loop :   20 du0 =   9.551552e-06 [Bohr] du_tensor =   1.707651e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 20-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 3.000000e+02 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   4.490092e-14  -2.583118e-14  -9.532071e-04
+    u_{1,x}   u_{1,y}   u_{1,z} :  -4.490160e-14   2.583674e-14  -9.532071e-04
+    u_{2,x}   u_{2,y}   u_{2,z} :  -4.398571e-14   2.529681e-14   3.895189e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   4.398794e-14  -2.531854e-14   3.895189e-03
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    2.903167e-03   2.093321e-15  -2.822355e-19
+    2.093321e-15   2.903167e-03  -5.783555e-18
+   -2.822355e-19  -5.783555e-18   1.945126e-03
+
+ ----------------------------------------------------------------
+ Temperature = 2.000000e+02 K
+ Temperature index :    8/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   4.490092e-14  -2.583118e-14  -9.532071e-04
+    u_{1,x}   u_{1,y}   u_{1,z} :  -4.490160e-14   2.583674e-14  -9.532071e-04
+    u_{2,x}   u_{2,y}   u_{2,z} :  -4.398571e-14   2.529681e-14   3.895189e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   4.398794e-14  -2.531854e-14   3.895189e-03
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    2.903167e-03   2.093321e-15  -2.822355e-19
+    2.093321e-15   2.903167e-03  -5.783555e-18
+   -2.822355e-19  -5.783555e-18   1.945126e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 2.000000e+02 K.
+ Structure loop :    1 du0 =   3.749664e-04 [Bohr] du_tensor =   3.533533e-04
+ Structure loop :    2 du0 =   1.550397e-04 [Bohr] du_tensor =   1.180483e-04
+ Structure loop :    3 du0 =   1.306112e-04 [Bohr] du_tensor =   4.434662e-05
+ Structure loop :    4 du0 =   1.107245e-04 [Bohr] du_tensor =   2.349335e-05
+ Structure loop :    5 du0 =   9.342745e-05 [Bohr] du_tensor =   1.738109e-05
+ Structure loop :    6 du0 =   7.869055e-05 [Bohr] du_tensor =   1.430522e-05
+ Structure loop :    7 du0 =   6.623741e-05 [Bohr] du_tensor =   1.199857e-05
+ Structure loop :    8 du0 =   5.574503e-05 [Bohr] du_tensor =   1.009296e-05
+ Structure loop :    9 du0 =   4.691360e-05 [Bohr] du_tensor =   8.493823e-06
+ Structure loop :   10 du0 =   3.948240e-05 [Bohr] du_tensor =   7.148749e-06
+ Structure loop :   11 du0 =   3.322970e-05 [Bohr] du_tensor =   6.016957e-06
+ Structure loop :   12 du0 =   2.796839e-05 [Bohr] du_tensor =   5.064533e-06
+ Structure loop :   13 du0 =   2.354101e-05 [Bohr] du_tensor =   4.263000e-06
+ Structure loop :   14 du0 =   1.981514e-05 [Bohr] du_tensor =   3.588416e-06
+ Structure loop :   15 du0 =   1.667943e-05 [Bohr] du_tensor =   3.020648e-06
+ Structure loop :   16 du0 =   1.404028e-05 [Bohr] du_tensor =   2.542761e-06
+ Structure loop :   17 du0 =   1.181895e-05 [Bohr] du_tensor =   2.140514e-06
+ Structure loop :   18 du0 =   9.949231e-06 [Bohr] du_tensor =   1.801924e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 18-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 2.000000e+02 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   2.862014e-14  -1.645849e-14  -7.332114e-04
+    u_{1,x}   u_{1,y}   u_{1,z} :  -2.862130e-14   1.646297e-14  -7.332114e-04
+    u_{2,x}   u_{2,y}   u_{2,z} :  -2.773113e-14   1.592884e-14   2.996197e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   2.773544e-14  -1.594638e-14   2.996197e-03
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    2.545735e-03   1.430281e-15  -3.629717e-19
+    1.430281e-15   2.545735e-03  -4.447483e-18
+   -3.629717e-19  -4.447483e-18   1.751080e-03
+
+ ----------------------------------------------------------------
+ Temperature = 1.000000e+02 K
+ Temperature index :    9/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   2.862014e-14  -1.645849e-14  -7.332114e-04
+    u_{1,x}   u_{1,y}   u_{1,z} :  -2.862130e-14   1.646297e-14  -7.332114e-04
+    u_{2,x}   u_{2,y}   u_{2,z} :  -2.773113e-14   1.592884e-14   2.996197e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   2.773544e-14  -1.594638e-14   2.996197e-03
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    2.545735e-03   1.430281e-15  -3.629717e-19
+    1.430281e-15   2.545735e-03  -4.447483e-18
+   -3.629717e-19  -4.447483e-18   1.751080e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 1.000000e+02 K.
+ Structure loop :    1 du0 =   2.806793e-04 [Bohr] du_tensor =   7.780528e-05
+ Structure loop :    2 du0 =   8.710083e-05 [Bohr] du_tensor =   2.789282e-05
+ Structure loop :    3 du0 =   7.483704e-05 [Bohr] du_tensor =   1.543224e-05
+ Structure loop :    4 du0 =   6.302218e-05 [Bohr] du_tensor =   1.175341e-05
+ Structure loop :    5 du0 =   5.300836e-05 [Bohr] du_tensor =   9.727285e-06
+ Structure loop :    6 du0 =   4.456522e-05 [Bohr] du_tensor =   8.158884e-06
+ Structure loop :    7 du0 =   3.746192e-05 [Bohr] du_tensor =   6.856391e-06
+ Structure loop :    8 du0 =   3.149022e-05 [Bohr] du_tensor =   5.763416e-06
+ Structure loop :    9 du0 =   2.647095e-05 [Bohr] du_tensor =   4.844949e-06
+ Structure loop :   10 du0 =   2.225234e-05 [Bohr] du_tensor =   4.072969e-06
+ Structure loop :   11 du0 =   1.870657e-05 [Bohr] du_tensor =   3.424076e-06
+ Structure loop :   12 du0 =   1.572620e-05 [Bohr] du_tensor =   2.878623e-06
+ Structure loop :   13 du0 =   1.322096e-05 [Bohr] du_tensor =   2.420105e-06
+ Structure loop :   14 du0 =   1.111503e-05 [Bohr] du_tensor =   2.034652e-06
+ Structure loop :   15 du0 =   9.344696e-06 [Bohr] du_tensor =   1.710613e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 15-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 1.000000e+02 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   1.944474e-14  -1.118101e-14  -6.005964e-04
+    u_{1,x}   u_{1,y}   u_{1,z} :  -1.944581e-14   1.118458e-14  -6.005964e-04
+    u_{2,x}   u_{2,y}   u_{2,z} :  -2.052529e-14   1.179054e-14   2.454279e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   2.052930e-14  -1.180451e-14   2.454279e-03
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    2.460651e-03   1.595015e-15  -2.528548e-20
+    1.595015e-15   2.460651e-03  -3.115493e-18
+   -2.528548e-20  -3.115493e-18   1.740172e-03
+
+ ----------------------------------------------------------------
+ Temperature = 0.000000e+00 K
+ Temperature index :   10/  11
+
+ SET_INIT_STR = 2: start from structure from the previous temperature.
+
+ Initial atomic displacements [Bohr] : 
+    u_{0,x}   u_{0,y}   u_{0,z} :   1.944474e-14  -1.118101e-14  -6.005964e-04
+    u_{1,x}   u_{1,y}   u_{1,z} :  -1.944581e-14   1.118458e-14  -6.005964e-04
+    u_{2,x}   u_{2,y}   u_{2,z} :  -2.052529e-14   1.179054e-14   2.454279e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   2.052930e-14  -1.180451e-14   2.454279e-03
+
+ Initial strain (displacement gradient tensor u_{mu nu}) : 
+    2.460651e-03   1.595015e-15  -2.528548e-20
+    1.595015e-15   2.460651e-03  -3.115493e-18
+   -2.528548e-20  -3.115493e-18   1.740172e-03
+
+ ----------------------------------------------------------------
+ Start structural optimization at 0.000000e+00 K.
+ Structure loop :    1 du0 =   8.892930e-05 [Bohr] du_tensor =   8.970386e-05
+ Structure loop :    2 du0 =   1.889711e-05 [Bohr] du_tensor =   2.814869e-05
+ Structure loop :    3 du0 =   1.626478e-05 [Bohr] du_tensor =   9.241951e-06
+ Structure loop :    4 du0 =   1.350302e-05 [Bohr] du_tensor =   3.700701e-06
+ Structure loop :    5 du0 =   1.130641e-05 [Bohr] du_tensor =   2.248697e-06
+ Structure loop :    6 du0 =   9.493536e-06 [Bohr] du_tensor =   1.764939e-06
+
+
+ du0 is smaller than COORD_CONV_TOL =    1.000000e-05
+ du_tensor is smaller than CELL_CONV_TOL =    1.000000e-05
+ Structural optimization converged in 6-th loop.
+
+ break structural loop.
+
+ ----------------------------------------------------------------
+ Final atomic displacements [Bohr] at 0.000000e+00 K
+    u_{0,x}   u_{0,y}   u_{0,z} :   1.670045e-14  -9.605622e-15  -5.739736e-04
+    u_{1,x}   u_{1,y}   u_{1,z} :  -1.670182e-14   9.608877e-15  -5.739736e-04
+    u_{2,x}   u_{2,y}   u_{2,z} :  -1.907919e-14   1.096779e-14   2.345488e-03
+    u_{3,x}   u_{3,y}   u_{3,z} :   1.908444e-14  -1.098049e-14   2.345488e-03
+
+ Final strain (displacement gradient tensor u_{mu nu}) : 
+    2.534757e-03   1.894557e-15  -2.461385e-20
+    1.894557e-15   2.534757e-03  -2.788286e-18
+   -2.461385e-20  -2.788286e-18   1.815699e-03
+ ----------------------------------------------------------------
+
+  ZnO_qha.renorm_harm_dymat : Anharmonic dynamical matrix (restart file)
+  ZnO_qha.V0          : Renormalized static potential V0 (restart file)
+  ZnO_qha.qha_dfc2    : Anharmonic corrections to the second-order IFCs (QHA)
+
+ Running postprocess of SCPH/QHA (calculation of free energy, MSD, DOS)
+ The number of temperature points: 11  
+   ...........
+
+  ZnO_qha.qha_dos     : QHA DOS
+  ZnO_qha.qha_thermo  : QHA heat capcaity and free energy
+
+ Job finished at Mon Feb 26 19:06:03 2024
+
