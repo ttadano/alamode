@@ -268,6 +268,11 @@ To improve the resolution of DOS, try again with a denser :math:`k` grid and a s
 5. Estimate cubic IFCs for thermal conductivity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. note::
+    Note that there are more efficient ways to calculate anharmonic IFCs, especially when 
+    you calculate the quartic or higher-order terms.
+    Please :ref:`Tutorial 7.5 <label_tutorial_bto_ifc>` and :ref:`Tutorial 7.6 <label_tutorial_silicon_ifc>` for details.
+
 Copy file :red:`si_alm.in` to :red:`si_alm2.in`. 
 Edit the **&general**, **&interaction**, and **&cutoff** fields of :red:`si_alm2.in` as the following::
 

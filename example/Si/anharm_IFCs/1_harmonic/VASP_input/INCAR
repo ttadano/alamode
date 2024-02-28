@@ -1,0 +1,25 @@
+SYSTEM = Si
+EDIFF = 1.0e-8
+PREC = Accurate
+
+ENCUT = 500
+ADDGRID = .TRUE.
+LREAL=.FALSE.
+ISMEAR = 0
+SIGMA = 0.05
+
+#KPAR = 8 # kpoints parallelization
+NPAR = 16
+NCORE = 1
+
+LWAVE = .FALSE.
+LCHARG = .FALSE.
+
+#LORBIT = 11
+#ICHARG = 11
+
+ISIF = 3 # calculate stress tensor
+# NSW = 100 # no structure optimization
+# IBRION = 2 
+
+GGA = PS # use PBEsol
