@@ -16,18 +16,17 @@ from importlib.util import find_spec
 import numpy as np
 
 try:
-    try:
-        # cElementTree on Python 2.5+
-        import xml.etree.cElementTree as etree
-    except ModuleNotFoundError:
-        # ElementTree on Python 2.5+
-        import xml.etree.ElementTree as etree
+    # Try to import lxml
+    from lxml import etree
+
+    USING_LXML = True
 except ModuleNotFoundError:
+    USING_LXML = False
     try:
-        # cElementTree
-        import cElementTree as etree
+        # If lxml is not available, try to import ElementTree
+        import xml.etree.ElementTree as etree
     except ModuleNotFoundError:
-        # ElementTree
+        # If failed, try cElementTree next
         import elementtree.ElementTree as etree
 
 try:
@@ -39,7 +38,6 @@ except ModuleNotFoundError:
 class VaspParser(object):
 
     def __init__(self):
-        #self._support_h5parse = importlib.util.find_spec("py4vasp") is not None
         self._support_h5parse = find_spec("py4vasp") is not None
         self._prefix = None
         self._lattice_vector = None
@@ -59,7 +57,7 @@ class VaspParser(object):
         self._print_force = True
         self._print_energy = False
         self._print_born = False
-        self._BOHR_TO_ANGSTROM = 0.5291772108
+        self._BOHR_TO_ANGSTROM = 0.529177210903
         self._RYDBERG_TO_EV = 13.60569253
 
     def load_initial_structure(self, file_in):
@@ -112,14 +110,22 @@ class VaspParser(object):
         self._x_fractional = xf
         self._initial_structure_loaded = True
 
-    def generate_structures(self, prefix, header_list, disp_list):
+    def update_initial_structure(self, structure_dict):
+        print(structure_dict)
+
+    def generate_structures(self, prefix, header_list, disp_list, updated_structure=None):
 
         self._set_number_of_zerofill(len(disp_list))
         self._prefix = prefix
         self._counter = 1
 
-        for header, disp in zip(header_list, disp_list):
-            self._generate_input(header, disp)
+        if updated_structure:
+            for header, disp in zip(header_list, disp_list):
+                self._generate_input2(header, disp, updated_structure)
+            self._generate_original_supercell(updated_structure)
+        else:
+            for header, disp in zip(header_list, disp_list):
+                self._generate_input(header, disp)
 
     def parse(self, initial_poscar, target_files, offset_file, str_unit,
               output_flags, filter_emin=None, filter_emax=None):
@@ -175,7 +181,7 @@ class VaspParser(object):
 
         return disp_merged
 
-    def _generate_input(self, header, disp):
+    def _generate_input(self, header, disp, save_supercell_structure=True):
 
         filename = self._prefix + str(self._counter).zfill(self._nzerofills) + ".POSCAR"
 
@@ -204,6 +210,89 @@ class VaspParser(object):
                 f.write("\n")
 
         self._counter += 1
+
+    def _generate_input2(self, header, disp, updated_structure):
+
+        filename = self._prefix + str(self._counter).zfill(self._nzerofills) + ".POSCAR"
+        lavec = updated_structure['lattice_vector'] * self._BOHR_TO_ANGSTROM
+
+        kd = updated_structure['kd']
+        kd_uniq = []
+        for entry in kd:
+            if entry not in kd_uniq:
+                kd_uniq.append(entry)
+
+        nat_elem = []
+        for entry in kd_uniq:
+            nat_elem.append(kd.count(entry))
+
+        x_fractional = updated_structure['x_fractional']
+
+        with open(filename, 'w') as f:
+            f.write("%s\n" % header)
+            f.write("%s\n" % "1.0")
+            for i in range(3):
+                f.write("%20.15f %20.15f %20.15f\n" % (lavec[0][i],
+                                                       lavec[1][i],
+                                                       lavec[2][i]))
+
+            for i in range(len(self._elements)):
+                f.write("%s " % self._elements[i])
+            if len(self._elements) > 0:
+                f.write("\n")
+
+            for i in range(len(nat_elem)):
+                f.write("%d " % nat_elem[i])
+            f.write("\n")
+
+            f.write("Direct\n")
+
+            for i in range(len(disp)):
+                for j in range(3):
+                    f.write("%20.15f" % (x_fractional[i][j] + disp[i][j]))
+                f.write("\n")
+
+        self._counter += 1
+
+    def _generate_original_supercell(self, structure):
+
+        filename = "SPOSCAR0"
+        lavec = structure['lattice_vector'] * self._BOHR_TO_ANGSTROM
+        kd = structure['kd']
+        kd_uniq = []
+        for entry in kd:
+            if entry not in kd_uniq:
+                kd_uniq.append(entry)
+
+        nat_elem = []
+        for entry in kd_uniq:
+            nat_elem.append(kd.count(entry))
+
+        x_fractional = structure['x_fractional']
+
+        with open(filename, 'w') as f:
+            f.write("Supercell without displacements\n")
+            f.write("%s\n" % "1.0")
+            for i in range(3):
+                f.write("%20.15f %20.15f %20.15f\n" % (lavec[0][i],
+                                                       lavec[1][i],
+                                                       lavec[2][i]))
+
+            for i in range(len(self._elements)):
+                f.write("%s " % self._elements[i])
+            if len(self._elements) > 0:
+                f.write("\n")
+
+            for i in range(len(nat_elem)):
+                f.write("%d " % nat_elem[i])
+            f.write("\n")
+
+            f.write("Direct\n")
+
+            for i in range(len(x_fractional)):
+                for j in range(3):
+                    f.write("%20.15f" % x_fractional[i][j])
+                f.write("\n")
 
     def _print_displacements_and_forces(self, target_files,
                                         file_offset,
@@ -384,11 +473,12 @@ class VaspParser(object):
         else:
             raise RuntimeError("This cannot happen.")
 
-        self._force_conversion_factor = self._energy_conversion_factor / self._disp_conversion_factor
+        self._force_conversion_factor \
+            = self._energy_conversion_factor / self._disp_conversion_factor
 
     def _set_output_flags(self, output_flags):
         self._print_disp, self._print_force, \
-        self._print_energy, self._print_born = output_flags
+            self._print_energy, self._print_born = output_flags
 
     @property
     def nat(self):
@@ -419,6 +509,32 @@ class VaspParser(object):
         else:
             return x
 
+    @staticmethod
+    def parse_or_repair_xml_file(file_path):
+        if USING_LXML:
+            try:
+                # Attempt to parse the XML file directly with lxml
+                tree = etree.parse(file_path)
+                return tree
+            except etree.XMLSyntaxError:
+                # If a parsing error occurs with lxml,
+                # attempt to repair by re-reading the file with the 'recover' parser
+                repair_parser = etree.XMLParser(recover=True)
+                tree = etree.parse(file_path, parser=repair_parser)
+                return tree
+        else:
+            # Fallback to use xml.etree.ElementTree if lxml is not available
+            try:
+                # Attempt to parse the XML file directly
+                tree = etree.parse(file_path)
+                return tree
+            except etree.ParseError as e:
+                print(f"Failed to parse XML file with ElementTree due to: {e}")
+                print("Consider installing lxml for better XML parsing support.")
+                # Handle the error or attempt a manual repair if necessary
+                # Note: ElementTree doesn't have a built-in 'recover' mode like lxml,
+                # so you may need to manually fix the XML or use a different strategy
+
     def _get_coordinates_and_forces(self, file_to_parse):
 
         hdf5_mode = (file_to_parse.lower().split('.')[-1] in ['h5', 'hdf5'])
@@ -430,22 +546,22 @@ class VaspParser(object):
                 raise RuntimeError("failed to import py4vasp. Please install py4vasp by pip.")
 
             try:
-                obj = py4vasp.Calculation.from_path(file_to_parse)
+                obj = py4vasp.Calculation.from_file(file_to_parse)
                 forces = obj.force[:].read()
                 x = np.ravel(forces['structure']['positions'])
                 f = np.ravel(forces['forces'])
                 return x, f
 
             except:
-                raise RuntimeError(
-                    "Error in reading atomic positions and forces from the HDF5 file: %s" % file_to_parse)
+                raise RuntimeError("Error in reading atomic positions and "
+                                   "forces from the HDF5 file: %s" % file_to_parse)
 
         else:
             x = []
             f = []
             # assume that the target file is XML and use XML parser
             try:
-                xml = etree.parse(file_to_parse)
+                xml = self.parse_or_repair_xml_file(file_to_parse)
                 root = xml.getroot()
 
                 for elems in root.findall('calculation/structure/varray'):
@@ -465,8 +581,8 @@ class VaspParser(object):
                 return np.array(x, dtype=float), np.array(f, dtype=float)
 
             except:
-                raise RuntimeError(
-                    "Error in reading atomic positions and forces from the XML file: %s" % file_to_parse)
+                raise RuntimeError("Error in reading atomic positions and "
+                                   "forces from the XML file: %s" % file_to_parse)
 
     def _get_energies(self, file_to_parse):
 
@@ -478,7 +594,7 @@ class VaspParser(object):
                 raise RuntimeError("failed to import py4vasp. Please install py4vasp by pip.")
 
             try:
-                obj = py4vasp.Calculation.from_path(file_to_parse)
+                obj = py4vasp.Calculation.from_file(file_to_parse)
                 energy = obj.energy[:].read()
 
                 etot_array = energy['free energy    TOTEN']
@@ -488,8 +604,8 @@ class VaspParser(object):
 
                 return etot_array, ekin_array
             except:
-                raise RuntimeError(
-                    "Error in reading atomic positions and forces from the HDF5 file: %s" % file_to_parse)
+                raise RuntimeError("Error in reading atomic positions and "
+                                   "forces from the HDF5 file: %s" % file_to_parse)
 
         else:
 
@@ -497,7 +613,7 @@ class VaspParser(object):
             ekin_array = []
 
             try:
-                xml = etree.parse(file_to_parse)
+                xml = self.parse_or_repair_xml_file(file_to_parse)
                 root = xml.getroot()
 
                 for elems in root.findall('calculation/energy'):
@@ -515,7 +631,8 @@ class VaspParser(object):
 
                 return etot_array, ekin_array
             except:
-                raise RuntimeError("Error in reading energies from the XML file: %s" % file_to_parse)
+                raise RuntimeError("Error in reading energies "
+                                   "from the XML file: %s" % file_to_parse)
 
     def _get_borninfo(self, file_to_parse):
 
@@ -541,7 +658,7 @@ class VaspParser(object):
                     "Error in reading electronic dielectric tensor from the HDF5 file: %s" % file_to_parse)
 
             try:
-                obj = py4vasp.Calculation.from_path(file_to_parse)
+                obj = py4vasp.Calculation.from_file(file_to_parse)
                 borncharge = obj.born_effective_charge.read()['charge_tensors']
             except:
                 raise RuntimeError(
@@ -555,7 +672,7 @@ class VaspParser(object):
             borncharge = []
 
             try:
-                xml = etree.parse(file_to_parse)
+                xml = self.parse_or_repair_xml_file(file_to_parse)
                 root = xml.getroot()
 
                 for elems in root.findall('calculation/varray'):
