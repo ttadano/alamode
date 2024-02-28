@@ -230,7 +230,7 @@ def preprocess_data(files, unitname, normalize_xaxis, emin=None, emax=None):
         = gridspec_setup(data_merged, xtickslabels, xticksvars)
 
     return naxes, xticks_grids, xticklabels_grids, \
-           xmin, xmax, ymin, ymax, data_merged_grids
+        xmin, xmax, ymin, ymax, data_merged_grids
 
 
 def run_plot(files, nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax,
@@ -318,7 +318,7 @@ if __name__ == '__main__':
         print("Number of files = %d" % nfiles)
 
     nax, xticks_ax, xticklabels_ax, xmin_ax, xmax_ax, ymin, ymax, \
-    data_merged_ax = preprocess_data(
+        data_merged_ax = preprocess_data(
         files, options.unitname, options.normalize_xaxis, options.emin, options.emax)
 
     run_plot(files, nax, xticks_ax, xticklabels_ax,

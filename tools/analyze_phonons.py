@@ -297,7 +297,7 @@ def print_cumulative_thermal_conductivity(analyze_obj, cumulative_mode, file_res
                       + str(beg_s) + " " + str(end_s) \
                       + " " + isotope + " " + file_isotope \
                       + " " + str(max_len) + " " \
-                      + str(d_len) + " " + options.temp + " "\
+                      + str(d_len) + " " + options.temp + " " \
                       + str(options.nsample) + " " \
                       + options.gridtype
 

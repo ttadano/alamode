@@ -10,10 +10,12 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 from __future__ import print_function
-import numpy as np
-import math
+
 import copy
+import math
 import sys
+
+import numpy as np
 
 
 class QEParser(object):
@@ -765,7 +767,7 @@ class QEParser(object):
 
     def _set_output_flags(self, output_flags):
         self._print_disp, self._print_force, \
-        self._print_energy, self._print_born = output_flags
+            self._print_energy, self._print_born = output_flags
 
     @property
     def nat(self):
@@ -918,7 +920,7 @@ class QEParser(object):
             line = f.readline()
 
         if not found_tag:
-            #print("%s tag not found in %s" % (search_flag, pwout_file), file=sys.stderr)
+            # print("%s tag not found in %s" % (search_flag, pwout_file), file=sys.stderr)
             return None
 
         x = self._celldm[0] * np.dot(x, self._inverse_lattice_vector.transpose()) \
@@ -1030,7 +1032,7 @@ class QEParser(object):
 
         found_tag1 = False
         found_tag2 = False
-        
+
         while line:
             if search_tag1 in line:
                 found_tag1 = True
@@ -1055,5 +1057,3 @@ class QEParser(object):
         dielec = np.reshape(np.array(dielec[9:]), (3, 3))
         borncharge = np.reshape(np.array(borncharge), (nat2, 3, 3))
         return dielec, borncharge[:nat2 // 2, :, :]
-
-

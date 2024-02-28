@@ -238,11 +238,12 @@ class XtappParser(object):
         else:
             raise RuntimeError("This cannot happen.")
 
-        self._force_conversion_factor = self._energy_conversion_factor / self._disp_conversion_factor
+        self._force_conversion_factor = (self._energy_conversion_factor
+                                         / self._disp_conversion_factor)
 
     def _set_output_flags(self, output_flags):
         self._print_disp, self._print_force, \
-        self._print_energy, self._print_born = output_flags
+            self._print_energy, self._print_born = output_flags
 
     @property
     def nat(self):
