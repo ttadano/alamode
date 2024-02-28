@@ -36,7 +36,8 @@ Let's move to the example directory.
 We use the *ab initio* molecular dynamics (AIMD) calculations to generate the supercells with random displacements.
 
 The example VASP inputs are provided in **example/BaTiO3/anharm_IFCs/1_vasp_md**.
-Prepare the :red:`POTCAR` file by yourself and run the AIMD calculation to obtain :red:`vasprun.xml`.
+Prepare the :red:`POTCAR` file by yourself and run the AIMD calculation to obtain :red:`vasprun.xml`
+(You can skip this part because :red:`vasprun.xml` is provided in **1_vasp_md/reference**).
 
 Next, we generate the supercells with random atomic displacements from the AIMD trajectory.
 First, we move to the **1_configurations** directory and copy :red:`vasprun.xml`
@@ -44,11 +45,13 @@ First, we move to the **1_configurations** directory and copy :red:`vasprun.xml`
 .. code-block:: bash
 
   $ cd 1_configurations
-  $ cp ../1_vasp_md/vasprun.xml ./
+  $ cp ../1_vasp_md/vasprun.xml ./ # If you have performed the AIMD calculation
+  $ cp ../1_vasp_md/reference/vasprun.xml ./ # If you skip the AIMD and use the reference result
 
 :red:`POSCAR_ref_supercell` is the structure of the reference supercell for which we want to calculate the IFCs.
 
 .. code-block:: bash
+
   $ python3 ${ALAMODE_ROOT}/tools/displace.py --VASP POSCAR_ref_supercell -md vasprun.xml -e 1001:5000:50 --random --mag 0.04 --prefix disp_aimd+random_
 
 Here, the option ``-e 1001:5000:50`` means that we sample from the 1001-th snapshot to the 5000-th snapshot with the sampling step of 50 time-steps.
@@ -90,14 +93,17 @@ The option ``--random --mag 0.04`` adds random displacements of 0.04 |Angstrom| 
 We calculate the atomic forces for each random configuration generated in the previous step.
 
 The other VASP input files (:red:`INCAR` and :red:`KPOINTS`) are provided in **example/BaTiO3/anharm_IFCs/2_vasp_dfset**.
+After running the VASP calculations, collect the resultant :red:`vasprun.xml` of 
+each calculation in **example/BaTiO3/anharm_IFCs/2_vasp_dfset**.
 
-After collecting the resultant :red:`vasprun.xml` of each calculation in **example/BaTiO3/anharm_IFCs/2_vasp_dfset**, 
-generate the displacement-force data with the command
+If you want to skip the VASP calculations, please copy or move the 80 :red:`vasprun.xml` 
+files provided in **2_vasp_dfset/reference** to **2_vasp_dfset**.
+
+Generate the displacement-force data with the command
 
 .. code-block:: bash
 
-  $ cd ${ALAMODE_ROOT}/example/BaTiO3/anharm_IFCs
-  $ cd 2_vasp_dfset
+  $ cd ${ALAMODE_ROOT}/example/BaTiO3/anharm_IFCs/2_vasp_dfset
   $ cp ../1_configurations/POSCAR_ref_supercell ./
   $ python3 ${ALAMODE_ROOT}/tools/extract.py --VASP=POSCAR_ref_supercell vasprun*.xml > DFSET_AIMD_random
 

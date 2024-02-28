@@ -146,7 +146,7 @@ Run the calculation with
 
 .. code-block:: bash 
 
-  $ ${ALAMODE_ROOT}/anphon/anphon ZnO_scph_thermo.in > ZnO_scph_thermo.log
+  $ ${ALAMODE_ROOT}/anphon/anphon ZnO_qha_thermo.in > ZnO_qha_thermo.log
 
 
 .. _tutorial_ZnO_QHA_step4:

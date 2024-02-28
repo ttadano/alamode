@@ -39,7 +39,8 @@ We first calculate the displacement patterns by **alm**.
 
 Then, generate the VASP input files using the generated ``si222_harmonic.pattern_HARMONIC`` 
 and the input files in the **VASP_input** directory.
-After running the VASP calculation and obtaining ``DFSET_harmonic``, 
+After running the VASP calculation and obtaining :red:`DFSET_harmonic`
+(You can skip this part because :red:`DFSET_harmonic` is provided in this tutorial), 
 calculate the harmonic IFCs with 
 
 .. code-block:: bash
@@ -153,7 +154,7 @@ in separate jobs.
 The preparation of the input files is slightly complicated, but it will be time-saving
 when the computational cost of the CV calculation is significant.
 
-The input files are :red:`si_alm_cvset1.in` to :red:`si_alm_cvset4.in`.
+The input files are :red:`si_alm_cvset1.in` to :red:`si_alm_cvset4.in` in **example/Si/anharm_IFCs/3_cv**.
 
 The essential parts of the input file :red:`si_alm_cvset1.in` are as follows.
 
@@ -190,6 +191,7 @@ Run the calculation with
 
 .. code-block:: bash
 
+  $ cd ${ALAMODE_ROOT}/example/Si/anharm_IFCs/3_cv
   $ ${ALAMODE_ROOT}/alm/alm si_alm_cvset1.in > si_alm_cvset1.log
   $ ${ALAMODE_ROOT}/alm/alm si_alm_cvset2.in > si_alm_cvset2.log
   $ ${ALAMODE_ROOT}/alm/alm si_alm_cvset3.in > si_alm_cvset3.log
@@ -232,6 +234,7 @@ Run the calculation with
 
 .. code-block:: bash 
 
+  $ cd ${ALAMODE_ROOT}/example/Si/anharm_IFCs/4_optimize
   $ ${ALAMODE_ROOT}/alm/alm si_alm_opt.in > si_alm_opt.log
 
 The calculated IFCs are written out in :red:`si222.xml` and :red:`si222.fcs`.

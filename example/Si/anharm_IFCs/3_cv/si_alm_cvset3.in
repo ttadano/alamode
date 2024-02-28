@@ -20,7 +20,7 @@
   DFSET = DFSET_randomQ
   FC2XML = ../2_generate_config/si222_harmonic.xml
 
-  CV = -1
+  CV = -1  # manual CV
   L1_RATIO = 1.0 # LASSO
   CV_MINALPHA = 1.0e-7
   CV_MAXALPHA = 0.02
