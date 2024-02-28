@@ -177,9 +177,16 @@ public:
     double **kvec_na = nullptr;
 };
 
+struct KpointSymmetry {
+public:
+    int symmetry_op;
+    unsigned int knum_irred_orig;
+    unsigned int knum_orig;
+};
+
 class KpointMeshUniform {
 public:
-    KpointMeshUniform() = default;;
+    KpointMeshUniform() = default;
 
     KpointMeshUniform(const unsigned int nk_in[3])
     {
@@ -215,10 +222,15 @@ public:
     std::vector<std::vector<KpointList>> kpoint_irred_all;
     std::vector<std::vector<int>> small_group_of_k;
     std::vector<unsigned int> kindex_minus_xk;
+    std::vector<std::vector<int>> symop_minus_at_k;
+    std::vector<KpointSymmetry> kpoint_map_symmetry;
+
+    bool niggli_reduced = false;
 
     void setup(const std::vector<SymmetryOperation> &symmlist,
                const double rlavec_p[3][3],
-               const bool time_reversal_symmetry = true);
+               const bool time_reversal_symmetry = true,
+               const bool niggli_reduce_in = false);
 
     int get_knum(const double xk[3]) const;
 
@@ -238,16 +250,25 @@ public:
                               std::vector<KsListGroup> &quartet,
                               const int sign = -1) const;
 
+    void setup_kpoint_symmetry(const std::vector<SymmetryOperationWithMapping> &symmlist);
+
+
 private:
 
     void gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
+                   const double rlavec_p[3][3],
                    const bool usesym,
                    const bool time_reversal_symmetry);
+
+    void gen_kmesh_niggli(const std::vector<SymmetryOperation> &symmlist,
+                          const double rlavec_p[3][3],
+                          const bool usesym,
+                          const bool time_reversal_symmetry);
 
     void reduce_kpoints(const unsigned int nsym,
                         const std::vector<SymmetryOperation> &symmlist,
                         const bool time_reversal_symmetry,
-                        double **xkr);
+                        const double *const *xkr);
 
     void gen_nkminus();
 
@@ -344,6 +365,10 @@ public:
     void get_commensurate_kpoints(const double [3][3],
                                   const double [3][3],
                                   std::vector<std::vector<double>> &) const;
+
+    int get_kmap_coarse_to_dense(const KpointMeshUniform *kmesh_coarse,
+                                 const KpointMeshUniform *kmesh_dense,
+                                 std::vector<int> &kmap) const;
 
 private:
     void set_default_variables();

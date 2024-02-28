@@ -258,7 +258,10 @@ int main(int argc,
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
 
-        calc_kappa_cumulative(max_len, d_len, itemp);
+        int nsample = atoi(argv[11]);
+        std::string gridtype = argv[12];
+
+        calc_kappa_cumulative(max_len, d_len, itemp, nsample, gridtype);
 
     } else if (calc == "cumulative2") {
 
@@ -301,7 +304,10 @@ int main(int argc,
             size_flag[i] = atoi(argv[11 + i]);
         }
 
-        calc_kappa_cumulative2(max_len, d_len, itemp, size_flag);
+        int nsample = atoi(argv[14]);
+        std::string gridtype = argv[15];
+
+        calc_kappa_cumulative2(max_len, d_len, itemp, size_flag, nsample, gridtype);
 
     } else if (calc == "kappa_matthiessen") {
 
@@ -527,9 +533,10 @@ void calc_kappa()
 
 void calc_kappa_cumulative(double max_length,
                            double delta_length,
-                           int itemp)
+                           int itemp,
+                           const int nsample,
+                           const std::string &gridtype)
 {
-    int nlength = static_cast<int>(max_length / delta_length);
     double length;
     double kappa[3][3];
     int il, ik, is;
@@ -546,9 +553,52 @@ void calc_kappa_cumulative(double max_length,
     cout << "# (v_x)^2+(v_y)^2+(v_z)^2 < L^2 is satisfied." << endl;
     cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
 
+    std::vector<double> length_vec;
+    int nlength;
+
+    if (delta_length > eps) {
+        nlength = static_cast<int>(max_length / delta_length);
+        length_vec.resize(nlength);
+        for (il = 0; il < nlength; ++il) {
+            length_vec[il] = delta_length * static_cast<double>(il);
+        }
+    } else {
+        nlength = nsample;
+
+        double mfp_min = DBL_MAX;
+        double mfp_max = 0;
+
+        for (ik = 0; ik < nk; ++ik) {
+            for (is = beg_s; is < end_s; ++is) {
+                tau_tmp = tau[itemp][ik][is];
+                vel_tmp = pow(vel[ik][is][0][0], 2)
+                          + pow(vel[ik][is][0][1], 2)
+                          + pow(vel[ik][is][0][2], 2);
+                mfp_tmp = tau_tmp * sqrt(vel_tmp) * 0.001; // in nm unit
+                if (mfp_tmp > eps6) {
+                    mfp_min = min(mfp_min, mfp_tmp);
+                    mfp_max = max(mfp_max, mfp_tmp);
+                }
+            }
+        }
+
+        length_vec.resize(nlength);
+
+        if (gridtype == "linear") {
+            const double dl = (mfp_max - mfp_min) / static_cast<double>(nlength);
+            for (il = 0; il < nlength; ++il) {
+                length_vec[il] = mfp_min + dl * static_cast<double>(il);
+            }
+        } else if (gridtype == "log" || gridtype == "logarithmic") {
+            for (il = 0; il < nlength; ++il) {
+                length_vec[il] = mfp_min * std::pow(mfp_max / mfp_min,
+                                                    static_cast<double>(il) / static_cast<double>(nlength - 1));
+            }
+        }
+    }
 
     for (il = 0; il < nlength; ++il) {
-        length = delta_length * static_cast<double>(il);
+        length = length_vec[il];
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -556,33 +606,52 @@ void calc_kappa_cumulative(double max_length,
             }
         }
 
-        for (ik = 0; ik < nk; ++ik) {
-            nsame = n_weight[ik];
-
-            for (is = beg_s; is < end_s; ++is) {
-                tau_tmp = tau[itemp][ik][is];
-
-                if (classical) {
-                    c_tmp = k_Boltzmann;
-                } else {
-                    c_tmp = Cv(omega[ik][is], temp[itemp]);
+#pragma omp parallel
+        {
+            double kappa_omp[3][3];
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    kappa_omp[i][j] = 0.0;
                 }
+            }
 
-                vel_tmp = pow(vel[ik][is][0][0], 2)
-                          + pow(vel[ik][is][0][1], 2)
-                          + pow(vel[ik][is][0][2], 2);
-                mfp_tmp = tau_tmp * sqrt(vel_tmp) * 0.001;
+#pragma omp for private(nsame, tau_tmp, c_tmp, vel_tmp, mfp_tmp, is, i, j, k)
+            for (ik = 0; ik < nk; ++ik) {
+                nsame = n_weight[ik];
 
-                if (mfp_tmp < length) {
-                    for (i = 0; i < nsame; ++i) {
-                        for (j = 0; j < 3; ++j) {
-                            for (k = 0; k < 3; ++k) {
-                                kappa[j][k] += c_tmp
-                                               * vel[ik][is][i][j]
-                                               * vel[ik][is][i][k]
-                                               * tau_tmp;
+                for (is = beg_s; is < end_s; ++is) {
+                    tau_tmp = tau[itemp][ik][is];
+
+                    if (classical) {
+                        c_tmp = k_Boltzmann;
+                    } else {
+                        c_tmp = Cv(omega[ik][is], temp[itemp]);
+                    }
+
+                    vel_tmp = pow(vel[ik][is][0][0], 2)
+                              + pow(vel[ik][is][0][1], 2)
+                              + pow(vel[ik][is][0][2], 2);
+                    mfp_tmp = tau_tmp * sqrt(vel_tmp) * 0.001;
+
+                    if (mfp_tmp < length) {
+                        for (i = 0; i < nsame; ++i) {
+                            for (j = 0; j < 3; ++j) {
+                                for (k = 0; k < 3; ++k) {
+                                    kappa_omp[j][k] += c_tmp
+                                                       * vel[ik][is][i][j]
+                                                       * vel[ik][is][i][k]
+                                                       * tau_tmp;
+                                }
                             }
                         }
+                    }
+                }
+            }
+#pragma omp critical
+            {
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        kappa[i][j] += kappa_omp[i][j];
                     }
                 }
             }
@@ -601,9 +670,10 @@ void calc_kappa_cumulative(double max_length,
 void calc_kappa_cumulative2(double max_length,
                             double delta_length,
                             int itemp,
-                            int flag[3])
+                            int flag[3],
+                            const int nsample,
+                            const std::string &gridtype)
 {
-    int nlength = static_cast<int>(max_length / delta_length);
     double length;
     double kappa[3][3];
     int il, ik, is;
@@ -624,8 +694,54 @@ void calc_kappa_cumulative2(double max_length,
     cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
 
 
+    std::vector<double> length_vec;
+    int nlength;
+
+    if (delta_length > eps) {
+        nlength = static_cast<int>(max_length / delta_length);
+        length_vec.resize(nlength);
+        for (il = 0; il < nlength; ++il) {
+            length_vec[il] = delta_length * static_cast<double>(il);
+        }
+    } else {
+        nlength = nsample;
+
+        double mfp_min = DBL_MAX;
+        double mfp_max = 0;
+        double vel_tmp;
+        double mfp_norm;
+
+        for (ik = 0; ik < nk; ++ik) {
+            for (is = beg_s; is < end_s; ++is) {
+                tau_tmp = tau[itemp][ik][is];
+                vel_tmp = pow(vel[ik][is][0][0], 2)
+                          + pow(vel[ik][is][0][1], 2)
+                          + pow(vel[ik][is][0][2], 2);
+                mfp_norm = tau_tmp * sqrt(vel_tmp) * 0.001; // in nm unit
+                if (mfp_norm > eps6) {
+                    mfp_min = min(mfp_min, mfp_norm);
+                    mfp_max = max(mfp_max, mfp_norm);
+                }
+            }
+        }
+
+        length_vec.resize(nlength);
+
+        if (gridtype == "linear") {
+            const double dl = (mfp_max - mfp_min) / static_cast<double>(nlength);
+            for (il = 0; il < nlength; ++il) {
+                length_vec[il] = mfp_min + dl * static_cast<double>(il);
+            }
+        } else if (gridtype == "log" || gridtype == "logarithmic") {
+            for (il = 0; il < nlength; ++il) {
+                length_vec[il] = mfp_min * std::pow(mfp_max / mfp_min,
+                                                    static_cast<double>(il) / static_cast<double>(nlength - 1));
+            }
+        }
+    }
+
     for (il = 0; il < nlength; ++il) {
-        length = delta_length * static_cast<double>(il);
+        length = length_vec[il];
 
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -633,37 +749,59 @@ void calc_kappa_cumulative2(double max_length,
             }
         }
 
-        for (ik = 0; ik < nk; ++ik) {
-            nsame = n_weight[ik];
+#pragma omp parallel
+        {
 
-            for (is = beg_s; is < end_s; ++is) {
-                tau_tmp = tau[itemp][ik][is];
+            double kappa_omp[3][3];
 
-                if (classical) {
-                    c_tmp = k_Boltzmann;
-                } else {
-                    c_tmp = Cv(omega[ik][is], temp[itemp]);
+            for (i = 0; i < 3; ++i) {
+                for (j = 0; j < 3; ++j) {
+                    kappa_omp[i][j] = 0.0;
                 }
+            }
 
-                for (i = 0; i < nsame; ++i) {
+#pragma omp for private(nsame, tau_tmp, c_tmp, mfp_tmp, is_longer_than_L, is, i, j, k)
+            for (ik = 0; ik < nk; ++ik) {
+                nsame = n_weight[ik];
 
-                    for (j = 0; j < 3; ++j) {
-                        mfp_tmp[j] = tau_tmp * abs(vel[ik][is][i][j]) * 0.001;
-                        is_longer_than_L[j] = mfp_tmp[j] > length;
+                for (is = beg_s; is < end_s; ++is) {
+                    tau_tmp = tau[itemp][ik][is];
+
+                    if (classical) {
+                        c_tmp = k_Boltzmann;
+                    } else {
+                        c_tmp = Cv(omega[ik][is], temp[itemp]);
                     }
 
-                    if ((flag[0] && is_longer_than_L[0]) |
-                        (flag[1] && is_longer_than_L[1]) |
-                        (flag[2] && is_longer_than_L[2]))
-                        continue;
+                    for (i = 0; i < nsame; ++i) {
 
-                    for (j = 0; j < 3; ++j) {
-                        for (k = 0; k < 3; ++k) {
-                            kappa[j][k] += c_tmp
-                                           * vel[ik][is][i][j]
-                                           * vel[ik][is][i][k]
-                                           * tau_tmp;
+                        for (j = 0; j < 3; ++j) {
+                            mfp_tmp[j] = tau_tmp * abs(vel[ik][is][i][j]) * 0.001;
+                            is_longer_than_L[j] = mfp_tmp[j] > length;
                         }
+
+                        if ((flag[0] && is_longer_than_L[0]) |
+                            (flag[1] && is_longer_than_L[1]) |
+                            (flag[2] && is_longer_than_L[2]))
+                            continue;
+
+                        for (j = 0; j < 3; ++j) {
+                            for (k = 0; k < 3; ++k) {
+                                kappa_omp[j][k] += c_tmp
+                                                   * vel[ik][is][i][j]
+                                                   * vel[ik][is][i][k]
+                                                   * tau_tmp;
+                            }
+                        }
+                    }
+                }
+            }
+
+#pragma omp critical
+            {
+                for (i = 0; i < 3; ++i) {
+                    for (j = 0; j < 3; ++j) {
+                        kappa[i][j] += kappa_omp[i][j];
                     }
                 }
             }

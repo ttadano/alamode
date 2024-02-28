@@ -220,11 +220,8 @@ public:
                                      const MinDistList &b)
     {
         // This function works properly when dvec_a.size() > 0 and dvec_b.size() > 0
-        std::vector<double> dvec_a, dvec_b;
-        std::copy(a.dist.begin(), a.dist.end(), std::back_inserter(dvec_a));
-        std::copy(b.dist.begin(), b.dist.end(), std::back_inserter(dvec_b));
-        const auto max_dist_a = *std::max_element(dvec_a.begin(), dvec_a.end());
-        const auto max_dist_b = *std::max_element(dvec_b.begin(), dvec_b.end());
+        const auto max_dist_a = *std::max_element(a.dist.begin(), a.dist.end());
+        const auto max_dist_b = *std::max_element(b.dist.begin(), b.dist.end());
 
         return max_dist_a < max_dist_b;
     }
@@ -263,7 +260,7 @@ public:
 
     void init(const System *system,
               const Symmetry *symmetry,
-              const int mirror_image_conv,
+              const int periodic_image_conv,
               const int verbosity,
               Timer *timer);
 
@@ -353,7 +350,7 @@ private:
                                    const std::vector<std::vector<int>> &map_p2s,
                                    const double *const *const *x_image,
                                    const int *exist,
-                                   const int mirror_image_conv) const;
+                                   const int periodic_image_conv) const;
 
     void set_interaction_cluster(const int order,
                                  const size_t natmin,
@@ -362,7 +359,7 @@ private:
                                  const std::vector<int> *interaction_pair_in,
                                  const double *const *const *x_image,
                                  const int *exist,
-                                 const int mirror_image_conv,
+                                 const int periodic_image_conv,
                                  std::set<InteractionCluster> *interaction_cluster_out) const;
 
     void cell_combination(const std::vector<std::vector<int>> &,

@@ -804,12 +804,3 @@ void get_pairs_of_minimum_distance(const int natmin, const int nat, int **map_p2
     deallocate(xcrd);
 }
 
-
-double distance(double *x1, double *x2)
-{
-    double dist;
-    dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
-    dist = std::sqrt(dist);
-
-    return dist;
-}

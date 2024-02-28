@@ -73,5 +73,3 @@ void recips(double [3][3], double [3][3]);
 std::string double2string(const double);
 
 void get_pairs_of_minimum_distance(const int, const int, int **, double **, std::vector<DistInfo> **);
-
-double distance(double *, double *);

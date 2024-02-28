@@ -25,6 +25,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <algorithm>
 #include "parsephon.h"
 #include "mathfunctions.h"
+#include "niggli_wrapper.h"
+#include <Eigen/Core>
+#include <numeric>
 
 using namespace PHON_NS;
 
@@ -149,7 +152,8 @@ void Kpoint::kpoint_setups(const std::string mode)
             dos->kmesh_dos = new KpointMeshUniform(nk_tmp);
             dos->kmesh_dos->setup(symmetry->SymmList,
                                   system->rlavec_p,
-                                  symmetry->time_reversal_sym);
+                                  symmetry->time_reversal_sym,
+                                  true);
 
             if (mympi->my_rank == 0) {
                 std::cout << "  Gamma-centered uniform grid with the following mesh density: " << std::endl;
@@ -341,11 +345,18 @@ void Kpoint::setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
 
 void KpointMeshUniform::setup(const std::vector<SymmetryOperation> &symmlist,
                               const double rlavec_p[3][3],
-                              const bool time_reversal_symmetry)
+                              const bool time_reversal_symmetry,
+                              const bool niggli_reduce_in)
 {
     const bool usesym = true;
 
-    gen_kmesh(symmlist, usesym, time_reversal_symmetry);
+    niggli_reduced = niggli_reduce_in;
+
+    if (niggli_reduced) {
+        gen_kmesh_niggli(symmlist, rlavec_p, usesym, time_reversal_symmetry);
+    } else {
+        gen_kmesh(symmlist, rlavec_p, usesym, time_reversal_symmetry);
+    }
 
     for (auto i = 0; i < nk; ++i) {
         for (auto j = 0; j < 3; ++j) kvec_na[i][j] = xk[i][j];
@@ -381,15 +392,48 @@ void KpointMeshUniform::setup(const std::vector<SymmetryOperation> &symmlist,
 }
 
 void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
+                                  const double rlavec_p[3][3],
                                   const bool usesym,
                                   const bool time_reversal_symmetry)
 {
+    // Generates the uniform grid points in the reciprocal space
+    // Search the periodic images that minimize |q+G|
+    // TODO: save all q+G having the same Euclidean distance from origin for later use
+
     unsigned int ik;
     double **xkr;
     unsigned int nsym;
+    Eigen::Matrix3d rlat;
+
+    // transpose the input matrix for reciprocal lattice
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            rlat(i, j) = rlavec_p[j][i];
+        }
+    }
+    std::vector<std::vector<int>> gvec_shift;
+    std::vector<int> gvec_tmp(3);
+
+    gvec_tmp[0] = 0;
+    gvec_tmp[1] = 0;
+    gvec_tmp[2] = 0;
+    gvec_shift.emplace_back(gvec_tmp);
+
+    for (auto ia = -1; ia <= 1; ++ia) {
+        for (auto ja = -1; ja <= 1; ++ja) {
+            for (auto ka = -1; ka <= 1; ++ka) {
+
+                if (ia == 0 && ja == 0 && ka == 0) continue;
+
+                gvec_tmp[0] = ia;
+                gvec_tmp[1] = ja;
+                gvec_tmp[2] = ka;
+                gvec_shift.emplace_back(gvec_tmp);
+            }
+        }
+    }
 
     allocate(xkr, nk, 3);
-
     for (unsigned int ix = 0; ix < nk_i[0]; ++ix) {
         for (unsigned int iy = 0; iy < nk_i[1]; ++iy) {
             for (unsigned int iz = 0; iz < nk_i[2]; ++iz) {
@@ -400,6 +444,52 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
             }
         }
     }
+
+    Eigen::MatrixXd xkr_periodic(3, 27);
+    std::vector<double> distances(27);
+    for (ik = 0; ik < nk; ++ik) {
+        for (auto icell = 0; icell < 27; ++icell) {
+            for (auto i = 0; i < 3; ++i) {
+                xkr_periodic(i, icell) = xkr[ik][i] + static_cast<double>(gvec_shift[icell][i]);
+            }
+        }
+        xkr_periodic = rlat * xkr_periodic;
+
+        std::vector<int> idx(27);
+        std::iota(idx.begin(), idx.end(), 0);
+
+        for (auto icell = 0; icell < 27; ++icell) {
+            auto norm = std::sqrt(xkr_periodic(0, icell) * xkr_periodic(0, icell)
+                                  + xkr_periodic(1, icell) * xkr_periodic(1, icell)
+                                  + xkr_periodic(2, icell) * xkr_periodic(2, icell));
+            distances[icell] = norm;
+        }
+        // find the periodic image having the minimum distance from (0, 0, 0)
+        std::stable_sort(idx.begin(), idx.end(),
+                         [&distances](size_t i1, size_t i2) { return distances[i1] < distances[i2]; });
+
+        const auto minimum_distance = distances[idx[0]];
+//        std::cout << "ik = " << ik << '\n';
+//        std::cout << "xk = " << std::setw(15) << xkr[ik][0] << std::setw(15) << xkr[ik][1]
+//        << std::setw(15) << xkr[ik][2] << '\n';
+//        std::cout  << "icell = " << idx[0] << " distance = " << distances[idx[0]] << '\n';
+//        std::cout << " Gvec = " << gvec_shift[idx[0]][0] << " " << gvec_shift[idx[0]][1]
+//        << " " << gvec_shift[idx[0]][2] << '\n';
+//        for (auto icell = 1; icell < 27; ++icell) {
+//            if (distances[idx[icell]] - minimum_distance > eps4) {
+//                break;
+//            } else {
+//                std::cout << "icell = " << idx[icell] << " distance = " << distances[idx[icell]] << '\n';
+//                std::cout << " Gvec = " << gvec_shift[idx[icell]][0]
+//                << " " << gvec_shift[idx[icell]][1] << " " << gvec_shift[idx[icell]][2] << '\n';
+//            }
+//        }
+        // Select the first periodic image that gives the shortest |q+G|
+        for (auto i = 0; i < 3; ++i) {
+            xkr[ik][i] += static_cast<double>(gvec_shift[idx[0]][i]);
+        }
+    }
+
     if (usesym) {
         nsym = symmlist.size();
     } else {
@@ -409,17 +499,163 @@ void KpointMeshUniform::gen_kmesh(const std::vector<SymmetryOperation> &symmlist
 
     for (ik = 0; ik < nk; ++ik) {
         for (unsigned int i = 0; i < 3; ++i) {
-            xk[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+//            xk[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+            xk[ik][i] = xkr[ik][i];
         }
     }
 
     deallocate(xkr);
 }
 
+void KpointMeshUniform::gen_kmesh_niggli(const std::vector<SymmetryOperation> &symmlist,
+                                         const double rlavec_p[3][3],
+                                         const bool usesym,
+                                         const bool time_reversal_symmetry)
+{
+    // Generates the uniform grid points in the reciprocal space
+    // Search the periodic images that minimize |q+G|.
+    // Niggli reduction is done for searching Gs that minimize |q+G| exhaustively
+    // from the centering cell and the surrounding 26 periodic images.
+    // TODO: save all q+G having the same Euclidean distance from origin for later use
+
+    unsigned int ik;
+    unsigned int nsym;
+    Eigen::Matrix3d rlat, rlat_reduced, c_matrix, c_matrix_inv;
+
+    // transpose the input matrix for reciprocal lattice
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            rlat(i, j) = rlavec_p[j][i];
+        }
+    }
+    auto success = niggli_reduction(rlat, rlat_reduced, c_matrix);
+    if (!success) {
+        exit("gen_kmesh_niggli", "Niggli reduction failed");
+    }
+
+    c_matrix_inv = c_matrix.inverse();
+
+    std::vector<std::vector<int>> gvec_shift;
+    std::vector<int> gvec_tmp(3);
+
+    gvec_tmp[0] = 0;
+    gvec_tmp[1] = 0;
+    gvec_tmp[2] = 0;
+    gvec_shift.emplace_back(gvec_tmp);
+
+    for (auto ia = -1; ia <= 1; ++ia) {
+        for (auto ja = -1; ja <= 1; ++ja) {
+            for (auto ka = -1; ka <= 1; ++ka) {
+
+                if (ia == 0 && ja == 0 && ka == 0) continue;
+
+                gvec_tmp[0] = ia;
+                gvec_tmp[1] = ja;
+                gvec_tmp[2] = ka;
+                gvec_shift.emplace_back(gvec_tmp);
+            }
+        }
+    }
+
+
+    Eigen::MatrixXd xkr(3, nk);
+
+    // Generate regular mesh in the original basis
+    for (unsigned int ix = 0; ix < nk_i[0]; ++ix) {
+        for (unsigned int iy = 0; iy < nk_i[1]; ++iy) {
+            for (unsigned int iz = 0; iz < nk_i[2]; ++iz) {
+                ik = iz + iy * nk_i[2] + ix * nk_i[2] * nk_i[1];
+                xkr(0, ik) = static_cast<double>(ix) / static_cast<double>(nk_i[0]);
+                xkr(1, ik) = static_cast<double>(iy) / static_cast<double>(nk_i[1]);
+                xkr(2, ik) = static_cast<double>(iz) / static_cast<double>(nk_i[2]);
+            }
+        }
+    }
+    // Convert to the reduced basis
+    xkr = c_matrix_inv * xkr;
+
+    // Move back to the 0<=q<1 segment
+    for (ik = 0; ik < nk; ++ik) {
+        for (auto i = 0; i < 3; ++i) {
+            xkr(i, ik) = std::fmod(xkr(i, ik), 1.0);
+            if (xkr(i, ik) < 0.0) xkr(i, ik) += 1.0;
+        }
+    }
+
+    // Find the G-vector that minimizes |q+G| in the reduced basis
+    Eigen::MatrixXd xkr_periodic(3, 27);
+    std::vector<double> distances(27);
+    for (ik = 0; ik < nk; ++ik) {
+        for (auto icell = 0; icell < 27; ++icell) {
+            for (auto i = 0; i < 3; ++i) {
+                xkr_periodic(i, icell) = xkr(i, ik) + static_cast<double>(gvec_shift[icell][i]);
+            }
+        }
+        xkr_periodic = rlat_reduced * xkr_periodic;
+
+        std::vector<int> idx(27);
+        std::iota(idx.begin(), idx.end(), 0);
+
+        for (auto icell = 0; icell < 27; ++icell) {
+            auto norm = std::sqrt(xkr_periodic(0, icell) * xkr_periodic(0, icell)
+                                  + xkr_periodic(1, icell) * xkr_periodic(1, icell)
+                                  + xkr_periodic(2, icell) * xkr_periodic(2, icell));
+            distances[icell] = norm;
+        }
+        // find the periodic image having the minimum distance from (0, 0, 0)
+        std::stable_sort(idx.begin(), idx.end(),
+                         [&distances](size_t i1, size_t i2) { return distances[i1] < distances[i2]; });
+
+//        const auto minimum_distance = distances[idx[0]];
+//        std::cout << "ik = " << ik << '\n';
+//        std::cout  << "icell = " << idx[0] << " distance = " << distances[idx[0]] << '\n';
+//        for (auto icell = 1; icell < 27; ++icell) {
+//            if (distances[idx[icell]] - minimum_distance > eps4) {
+//                break;
+//            } else {
+//                std::cout << "icell = " << idx[icell] << " distance = " << distances[idx[icell]] << '\n';
+//            }
+//        }
+
+        // Select the first G that minimizes |q+G|
+        for (auto i = 0; i < 3; ++i) {
+            xkr(i, ik) += static_cast<double>(gvec_shift[idx[0]][i]);
+        }
+    }
+
+    // Move back to the original basis
+    xkr = c_matrix * xkr;
+
+    double **xkr_arr;
+    allocate(xkr_arr, nk, 3);
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (auto i = 0; i < 3; ++i) {
+            xkr_arr[ik][i] = xkr(i, ik);
+        }
+    }
+
+    if (usesym) {
+        nsym = symmlist.size();
+    } else {
+        nsym = 1;
+    }
+    reduce_kpoints(nsym, symmlist, time_reversal_symmetry, xkr_arr);
+
+    for (ik = 0; ik < nk; ++ik) {
+        for (unsigned int i = 0; i < 3; ++i) {
+            // xk[ik][i] = xkr[ik][i] - static_cast<double>(nint(xkr[ik][i]));
+            xk[ik][i] = xkr_arr[ik][i];
+        }
+    }
+
+    deallocate(xkr_arr);
+}
+
 void KpointMeshUniform::reduce_kpoints(const unsigned int nsym,
                                        const std::vector<SymmetryOperation> &symmlist,
                                        const bool time_reversal_symmetry,
-                                       double **xkr)
+                                       const double *const *xkr)
 {
     unsigned int ik;
     unsigned int i, j;
@@ -498,7 +734,7 @@ void KpointMeshUniform::reduce_kpoints(const unsigned int nsym,
 
             // Time-reversal symmetry
 
-            if (time_reversal_symmetry) {
+            if (0) {
 
                 for (i = 0; i < 3; ++i) xk_sym[i] *= -1.0;
 
@@ -1215,4 +1451,99 @@ void KpointMeshUniform::get_unique_quartet_k(const int ik,
     }
 
     deallocate(flag_found);
+}
+
+void KpointMeshUniform::setup_kpoint_symmetry(const std::vector<SymmetryOperationWithMapping> &symmlist)
+{
+    double k[3], k_minus[3], Sk[3];
+    double S_cart[3][3], S_frac[3][3], S_frac_inv[3][3], S_recip[3][3];
+
+    symop_minus_at_k.resize(nk_irred);
+    kpoint_map_symmetry.resize(nk);
+
+    std::vector<int> flag(nk, 0);
+
+    for (auto ik = 0; ik < nk_irred; ++ik) {
+        symop_minus_at_k[ik].clear();
+        const auto knum = kpoint_irred_all[ik][0].knum;
+        for (auto icrd = 0; icrd < 3; ++icrd) {
+            k[icrd] = xk[knum][icrd];
+            k_minus[icrd] = -k[icrd];
+        }
+
+        const auto knum_minus = kindex_minus_xk[knum];
+
+        unsigned int isym = 0;
+        for (const auto &it: symmlist) {
+            for (auto icrd = 0; icrd < 3; ++icrd) {
+                for (auto jcrd = 0; jcrd < 3; ++jcrd) {
+                    S_cart[icrd][jcrd] = it.rot[3 * icrd + jcrd];
+                    S_frac[icrd][jcrd] = it.rot_real[3 * icrd + jcrd];
+                    S_recip[icrd][jcrd] = it.rot_reciprocal[3 * icrd + jcrd];
+                }
+            }
+            invmat3(S_frac_inv, S_frac);
+            rotvec(Sk, k, S_recip);
+
+            for (double &x: Sk) x = x - nint(x);
+            const auto knum_sym = get_knum(Sk);
+
+            if (knum_sym == -1) {
+                exit("setup_kpoint_symmetry",
+                     "Cannot find the kpoint");
+            }
+
+            if (knum_sym == knum_minus) symop_minus_at_k[ik].emplace_back(isym);
+
+            if (!flag[knum_sym]) {
+                kpoint_map_symmetry[knum_sym].symmetry_op = isym;
+                kpoint_map_symmetry[knum_sym].knum_irred_orig = ik;
+                kpoint_map_symmetry[knum_sym].knum_orig = knum;
+                flag[knum_sym] = 1;
+            }
+            ++isym;
+        }
+    }
+
+    for (auto ik = 0; ik < nk_irred; ++ik) {
+
+        const auto knum = kpoint_irred_all[ik][0].knum;
+        for (auto icrd = 0; icrd < 3; ++icrd) {
+            k[icrd] = xk[knum][icrd];
+            k_minus[icrd] = -k[icrd];
+        }
+
+        const auto knum_minus = get_knum(k_minus);
+
+        if (!flag[knum_minus]) {
+            kpoint_map_symmetry[knum_minus].symmetry_op = -1;
+            kpoint_map_symmetry[knum_minus].knum_irred_orig = ik;
+            kpoint_map_symmetry[knum_minus].knum_orig = knum;
+            flag[knum_minus] = 1;
+        }
+    }
+
+}
+
+int Kpoint::get_kmap_coarse_to_dense(const KpointMeshUniform *kmesh_coarse,
+                                     const KpointMeshUniform *kmesh_dense,
+                                     std::vector<int> &kmap) const
+{
+    int info_mapping = 0;
+
+    kmap.resize(kmesh_coarse->nk);
+    double xtmp[3];
+
+    for (auto ik = 0; ik < kmesh_coarse->nk; ++ik) {
+        for (auto i = 0; i < 3; ++i) xtmp[i] = kmesh_coarse->xk[ik][i];
+
+        const auto loc = kmesh_dense->get_knum(xtmp);
+
+        if (loc == -1) {
+            info_mapping = 1;
+        }
+
+        kmap[ik] = loc;
+    }
+    return info_mapping;
 }

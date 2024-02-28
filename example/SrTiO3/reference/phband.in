@@ -1,0 +1,24 @@
+&general
+ PREFIX = STO222_NA3
+ MODE = phonons
+ NKD = 3; KD = Sr Ti O
+ FCSXML = STO_anharm.xml 
+ NONANALYTIC = 3; BORNINFO = BORN
+/
+
+&cell
+7.363
+1.0 0.0 0.0 
+0.0 1.0 0.0
+0.0 0.0 1.0
+/
+
+&kpoint
+1
+G 0.0 0.0 0.0 X 0.5 0.0 0.0 51
+X 0.5 0.0 0.0 M 0.5 0.5 0.0 51
+M 0.5 0.5 0.0 G 0.0 0.0 0.0 51
+G 0.0 0.0 0.0 R 0.5 0.5 0.5 51
+R 0.5 0.5 0.5 M 0.5 0.5 0.0 51
+/
+ 

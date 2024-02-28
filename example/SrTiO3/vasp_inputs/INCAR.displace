@@ -1,0 +1,18 @@
+general:
+ System = STO
+ LREAL = .False.
+ ENCUT  =    550
+ ISMEAR = 0; SIGMA = 0.05;
+ EDIFF = 1.0E-8
+
+ PREC = Accurate
+ ADDGRID = .True.
+ LSCALAPACK = .False.
+
+ ALGO = Normal
+ GGA = PS
+
+ NPAR = 12
+
+ LWAVE = .False.
+ LCHARG = .False.

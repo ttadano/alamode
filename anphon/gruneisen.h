@@ -54,36 +54,7 @@ public:
     }
 };
 
-//inline bool operator<(const FcsAlignedForGruneisen &a, const FcsAlignedForGruneisen &b)
-//{
-//    std::vector<unsigned int> array_a, array_b;
-//    array_a.clear();
-//    array_b.clear();
-//    int len = a.pairs.size();
-//    for (int i = 0; i < len - 1; ++i) {
-//        array_a.push_back(a.pairs[i].index);
-//        //            array_a.push_back(a.pairs[i].index/3);
-//        array_a.push_back(a.pairs[i].tran);
-//        //            array_a.push_back(a.pairs[i].cell_s);
-//        //            array_a.push_back(a.pairs[i].index%3);
-//        array_b.push_back(b.pairs[i].index);
-//        //            array_b.push_back(b.pairs[i].index/3);
-//        array_b.push_back(b.pairs[i].tran);
-//        //            array_b.push_back(b.pairs[i].cell_s);
-//        //            array_b.push_back(b.pairs[i].index%3);
-//    }
-//    for (int i = 0; i < len - 1; ++i) {
-//        array_a.push_back(a.pairs[i].cell_s);
-//        array_b.push_back(b.pairs[i].cell_s);
-//    }
-
-//    array_a.push_back(a.pairs[len - 1].index);
-//    array_a.push_back(a.pairs[len - 1].tran);
-//    array_b.push_back(b.pairs[len - 1].index);
-//    array_b.push_back(b.pairs[len - 1].tran);
-//    return std::lexicographical_compare(array_a.begin(), array_a.end(),
-//                                        array_b.begin(), array_b.end());
-//}
+bool less_FcsAlignedForGruneisen2(const FcsAlignedForGruneisen &obj1, const FcsAlignedForGruneisen &obj2);
 
 class Gruneisen : protected Pointers {
 public:

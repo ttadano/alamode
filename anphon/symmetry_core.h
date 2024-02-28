@@ -118,13 +118,16 @@ public:
 
     ~Symmetry();
 
-    unsigned int nsym;
+    unsigned int nsym, nsym_ref;
     bool time_reversal_sym;
     int time_reversal_sym_from_alm;
     bool printsymmetry;
     double tolerance;
     std::vector<SymmetryOperation> SymmList;
     std::vector<SymmetryOperationWithMapping> SymmListWithMap;
+
+    std::vector<SymmetryOperation> SymmList_ref;
+    std::vector<SymmetryOperationWithMapping> SymmListWithMap_ref;
 
     void setup_symmetry();
 
@@ -139,7 +142,8 @@ private:
                                   double [3][3],
                                   double [3][3],
                                   double **,
-                                  unsigned int *);
+                                  unsigned int *,
+                                  std::vector<SymmetryOperation> &);
 
     void findsym(int,
                  double [3][3],
@@ -147,7 +151,9 @@ private:
                  std::vector<SymmetryOperation> &) const;
 
     void gensym_withmap(double **,
-                        const unsigned int *);
+                        const unsigned int *,
+                        std::vector<SymmetryOperation> &,
+                        std::vector<SymmetryOperationWithMapping> &);
 
     bool is_proper(double [3][3]) const;
 

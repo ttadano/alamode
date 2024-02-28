@@ -31,6 +31,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
 using namespace ALM_NS;
 
@@ -84,7 +85,7 @@ void Constraint::setup(const System *system,
                        const Cluster *cluster,
                        const Symmetry *symmetry,
                        const int linear_model,
-                       const int mirror_image_conv,
+                       const int periodic_image_conv,
                        const int verbosity,
                        Timer *timer)
 {
@@ -210,7 +211,7 @@ void Constraint::setup(const System *system,
                              cluster,
                              fcs,
                              verbosity,
-                             mirror_image_conv);
+                             periodic_image_conv);
 
     if (verbosity > 0) {
         print_constraint_information(cluster);
@@ -227,7 +228,7 @@ void Constraint::update_constraint_matrix(const System *system,
                                           const Cluster *cluster,
                                           const Fcs *fcs,
                                           const int verbosity,
-                                          const int mirror_image_conv)
+                                          const int periodic_image_conv)
 {
     const auto maxorder = cluster->get_maxorder();
     // const_symmetry is updated.
@@ -255,7 +256,7 @@ void Constraint::update_constraint_matrix(const System *system,
                                           symmetry,
                                           cluster,
                                           fcs,
-                                          mirror_image_conv,
+                                          periodic_image_conv,
                                           verbosity);
     }
 
@@ -971,7 +972,7 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
                                                    const Symmetry *symmetry,
                                                    const Cluster *cluster,
                                                    const Fcs *fcs,
-                                                   const int mirror_image_conv,
+                                                   const int periodic_image_conv,
                                                    const int verbosity)
 {
     // Create constraint matrix for the translational invariance (aka acoustic sum rule).
@@ -1001,7 +1002,7 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
             continue;
         }
 
-        if (mirror_image_conv == 0 || order == 0) {
+        if (periodic_image_conv == 0 || order == 0) {
             get_constraint_translation(supercell,
                                        symmetry,
                                        cluster,
@@ -1011,10 +1012,10 @@ void Constraint::generate_translational_constraint(const Cell &supercell,
                                        fcs->get_nequiv()[order].size(),
                                        const_translation[order], true);
         }
-            // make translation constraint for each mirror image combinations
-            // if mirror_image_conv == 0 or order == 0, there is no need to impose additional ASR constraints.
-        else { // if(mirror_image_conv > 0 && order > 0)
-            get_constraint_translation_for_mirror_images(supercell,
+            // make translation constraint for each periodic image combinations
+            // if periodic_image_conv == 0 or order == 0, there is no need to impose additional ASR constraints.
+        else { // if(periodic_image_conv > 0 && order > 0)
+            get_constraint_translation_for_periodic_images(supercell,
                                                          symmetry,
                                                          cluster,
                                                          fcs,
@@ -1330,7 +1331,7 @@ void Constraint::get_constraint_translation(const Cell &supercell,
     if (do_rref) rref_sparse(nparams, const_out, eps8);
 }
 
-void Constraint::get_constraint_translation_for_mirror_images(const Cell &supercell,
+void Constraint::get_constraint_translation_for_periodic_images(const Cell &supercell,
                                                               const Symmetry *symmetry,
                                                               const Cluster *cluster,
                                                               const Fcs *fcs,
@@ -1355,10 +1356,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     const auto natmin = symmetry->get_nat_prim();
     const auto nat = supercell.number_of_atoms;
 
-    // generate combinations of mirror images
-    long int i_mirror_images, i_tmp, j_tmp, i_tmp2;
-    long int n_mirror_images = nint(std::pow(static_cast<double>(27), order));
-
     unsigned int isize;
 
     std::vector<int> data;
@@ -1380,7 +1377,6 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
     allocate(ind, order + 2);
 
     // Create force constant table for search
-
     list_found.clear();
 
     for (const auto &p: fc_table) {
@@ -1415,10 +1411,9 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
         // Generate atom pairs for each order
 
         if (order == 0) {
-            // there is no new translational invariance
-            continue;
-
-        } else {
+            continue;  // there is no new translational invariance
+        }
+        else {
 
             // Anharmonic cases
 
@@ -1466,15 +1461,18 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                 std::vector<int> data_omp;
                 std::vector<int> atom_tmp;
                 std::vector<int> sort_table, sort_table_tmp;
-                // std::vector<int> const_now_omp;
-                std::vector<std::vector<double> > consts_now_omp;
+                std::vector<std::vector<double>> consts_now_omp;
+
+                std::vector<long long int> periodic_images_found;
 
                 ConstEntry const_tmp_omp;
                 std::vector<ConstEntry> constraint_list_omp;
+                long long int i_periodic_images;
+                long long int i_tmp, j_tmp, i_tmp2;
+                long int i_mi_tmp;
 
-                consts_now_omp.resize(n_mirror_images, std::vector<double>(nparams));
 #ifdef _OPENMP
-#pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found, loc_nonzero, i_mirror_images), nowait
+#pragma omp for private(isize, ixyz, jcrd, j, jat, iter_found, loc_nonzero), nowait
 #endif
                 for (idata = 0; idata < ndata; ++idata) {
 
@@ -1491,12 +1489,8 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                         for (jcrd = 0; jcrd < 3; ++jcrd) {
 
                             // Reset the temporary array for another constraint
-                            //for (j = 0; j < nparams; ++j) const_now_omp[j] = 0;
-                            for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
-                                for (j = 0; j < nparams; j++) {
-                                    consts_now_omp[i_mirror_images][j] = 0.0;
-                                }
-                            }
+                            consts_now_omp.clear();
+                            periodic_images_found.clear();
 
                             // Loop for the last atom index
                             for (jat = 0; jat < 3 * nat; jat += 3) {
@@ -1544,23 +1538,34 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
 
                                     if (iter_found != list_found.end()) {
                                         if (cluster_found == cluster->get_interaction_cluster(order, i).end()) {
-                                            std::cout << "Warning: cluster corresponding to the IFC is NOT found."
-                                                      << std::endl;
+                                            std::cout << "Warning: cluster corresponding to the IFC is NOT found.\n";
                                         } else {
-                                            // std::cout << "cluster corresponding to the IFC is found." << std::endl;
 
                                             // get weight
                                             weight = 1.0 / static_cast<double>((cluster_found->cell).size());
                                             for (auto cellvec: cluster_found->cell) {
                                                 // get number of the combination of the cell
-                                                i_mirror_images = 0;
+                                                i_periodic_images = 0;
 
                                                 for (i_tmp = 0; i_tmp < order; i_tmp++) {
-                                                    i_mirror_images *= 27;
-                                                    i_mirror_images += cellvec[sort_table[i_tmp]];
+                                                    i_periodic_images *= 27;
+                                                    i_periodic_images += cellvec[sort_table[i_tmp]];
                                                 }
+
+                                                // check if the same periodic image has already been found.
+                                                for (i_mi_tmp = 0; i_mi_tmp < periodic_images_found.size(); i_mi_tmp++){
+                                                    if(periodic_images_found[i_mi_tmp] == i_periodic_images){
+                                                        break;
+                                                    }
+                                                }
+                                                // if not found
+                                                if(i_mi_tmp == periodic_images_found.size()){
+                                                    periodic_images_found.push_back(i_periodic_images);
+                                                    consts_now_omp.push_back(std::vector<double>(nparams, 0.0));
+                                                }
+
                                                 // add to the constraint
-                                                consts_now_omp[i_mirror_images][(*iter_found).mother] +=
+                                                consts_now_omp[i_mi_tmp][(*iter_found).mother] +=
                                                         weight * (*iter_found).sign;
                                             }
                                         }
@@ -1570,20 +1575,20 @@ void Constraint::get_constraint_translation_for_mirror_images(const Cell &superc
                             } // close loop jat
 
                             // Add the constraint to the private array
-                            for (i_mirror_images = 0; i_mirror_images < n_mirror_images; i_mirror_images++) {
-                                if (!is_allzero(consts_now_omp[i_mirror_images], eps8, loc_nonzero, 0)) {
-                                    if (consts_now_omp[i_mirror_images][loc_nonzero] < 0) {
-                                        for (j = 0; j < nparams; ++j) consts_now_omp[i_mirror_images][j] *= -1.0;
+                            for (i_mi_tmp = 0; i_mi_tmp < periodic_images_found.size(); i_mi_tmp++) {
+                                if (!is_allzero(consts_now_omp[i_mi_tmp], eps8, loc_nonzero, 0)) {
+                                    if (consts_now_omp[i_mi_tmp][loc_nonzero] < 0) {
+                                        for (j = 0; j < nparams; ++j) consts_now_omp[i_mi_tmp][j] *= -1.0;
                                     }
 
                                     const_tmp_omp.clear();
                                     for (j = 0; j < nparams; ++j) {
-                                        if (std::abs(consts_now_omp[i_mirror_images][j]) > 0) {
-                                            const_tmp_omp.emplace_back(j, consts_now_omp[i_mirror_images][j]);
+                                        if (std::abs(consts_now_omp[i_mi_tmp][j]) > 0) {
+                                            const_tmp_omp.emplace_back(j, consts_now_omp[i_mi_tmp][j]);
                                         }
                                     }
                                     if (const_tmp_omp.empty()) {
-                                        std::cout << "This cannot happen" << std::endl;
+                                        std::cout << "This cannot happen\n";
                                     }
                                     constraint_list_omp.emplace_back(const_tmp_omp);
                                 }
@@ -2602,6 +2607,22 @@ void Constraint::get_forceconstants_from_file(const int order,
         exit("fix_forceconstants_to_file", "Failed to open ", file_to_fix.c_str());
     }
 
+    const auto version_from_file = get_value_from_xml(pt, "Data.ALM_version");
+
+    std::vector<std::string> version_array;
+    boost::split(version_array, version_from_file, boost::is_any_of("."));
+    std::vector<int> version_array_int;
+    for (const auto &it : version_array) {
+        version_array_int.emplace_back(std::stoi(it));
+    }
+    if ((version_array_int[0] <= 1) & (version_array_int[1] <= 4))
+    {
+        exit("fit_forceconstants_to_file",
+             "FCSXML files generated by older versions (<=1.4.2) do not have compatibility with\n"
+             " a newer version for fixing force constants. Please use a newer version (>=1.5) and"
+             " regenerate the FC2XML or FC3XML files");
+    }
+
     const auto nat_ref = boost::lexical_cast<size_t>(
             get_value_from_xml(pt, "Data.Structure.NumberOfAtoms"));
     const auto ntran_ref = boost::lexical_cast<size_t>(
@@ -2715,31 +2736,27 @@ void Constraint::set_forceconstants_to_fix(const std::vector<std::vector<int>> &
 void Constraint::generate_fix_constraint(const Symmetry *symmetry,
                                          const Fcs *fcs)
 {
-    std::unordered_set<FcProperty> list_found;
-    std::unordered_set<FcProperty>::iterator iter_found;
-
     if (status_constraint_subset["fix2"] == 0) {
         const auto order = 0;
         auto intpair_to_fix = intpair_fix_fc2;
 
         fcs->translate_forceconstant_index_to_centercell(symmetry,
                                                          intpair_to_fix);
-        std::vector<ForceConstantTable> fc_fix_table;
+        std::set<ForceConstantTable> fc_fix_table;
 
         const auto nfcs = intpair_to_fix.size();
 
         for (auto i = 0; i < nfcs; ++i) {
-            fc_fix_table.emplace_back(values_fix_fc2[i],
-                                      intpair_to_fix[i]);
+            fc_fix_table.insert(ForceConstantTable(values_fix_fc2[i],
+                                                   intpair_to_fix[i]));
         }
-        std::sort(fc_fix_table.begin(), fc_fix_table.end());
 
         size_t ihead = 0;
 
         std::vector<int> index_tmp;
         double sign;
         size_t mother;
-        std::vector<ForceConstantTable>::iterator it_found;
+        std::set<ForceConstantTable>::iterator it_found;
         bool found_element;
 
         const_fix[order].clear();
@@ -2749,16 +2766,13 @@ void Constraint::generate_fix_constraint(const Symmetry *symmetry,
 
             mother = fcs->get_fc_table()[order][ihead].mother;
             found_element = false;
-            // sign_mother may be -1 (which is confusing and should be fixed in the future),
-            // so keep its sign so that the sign of the fixed parameter becomes consistent.
-            const auto sign_mother = fcs->get_fc_table()[order][ihead].sign;
 
             for (auto j = 0; j < fcs->get_nequiv()[order][ui]; ++j) {
                 index_tmp = fcs->get_fc_table()[order][ihead + j].elems;
 
-                it_found = std::lower_bound(fc_fix_table.begin(),
-                                            fc_fix_table.end(),
-                                            ForceConstantTable(0.0, index_tmp));
+                it_found = std::find(fc_fix_table.begin(),
+                                     fc_fix_table.end(),
+                                     ForceConstantTable(0.0, index_tmp));
 
                 if (it_found != fc_fix_table.end()) {
                     found_element = true;
@@ -2768,8 +2782,8 @@ void Constraint::generate_fix_constraint(const Symmetry *symmetry,
             }
 
             if (found_element) {
-                const_fix[order].emplace_back(ConstraintTypeFix(mother,
-                                                                sign_mother * sign * (*it_found).fc_value));
+                const_fix[order].emplace_back(mother,
+                                              sign * (*it_found).fc_value);
             }
             ihead += fcs->get_nequiv()[order][ui];
         }
@@ -2785,20 +2799,19 @@ void Constraint::generate_fix_constraint(const Symmetry *symmetry,
 
         const auto nfcs = intpair_to_fix.size();
 
-        std::vector<ForceConstantTable> fc_fix_table;
+        std::set<ForceConstantTable> fc_fix_table;
 
         for (auto i = 0; i < nfcs; ++i) {
-            fc_fix_table.emplace_back(values_fix_fc3[i],
-                                      intpair_to_fix[i]);
+            fc_fix_table.insert(ForceConstantTable(values_fix_fc3[i],
+                                                   intpair_to_fix[i]));
         }
-        std::sort(fc_fix_table.begin(), fc_fix_table.end());
 
         size_t ihead = 0;
 
         std::vector<int> index_tmp;
         double sign;
         size_t mother;
-        std::vector<ForceConstantTable>::iterator it_found;
+        std::set<ForceConstantTable>::iterator it_found;
         bool found_element;
 
         const_fix[order].clear();
@@ -2808,15 +2821,12 @@ void Constraint::generate_fix_constraint(const Symmetry *symmetry,
 
             mother = fcs->get_fc_table()[order][ihead].mother;
             found_element = false;
-            // sign_mother may be -1 (which is confusing and should be fixed in the future),
-            // so keep its sign so that the sign of the fixed parameter becomes consistent.
-            const auto sign_mother = fcs->get_fc_table()[order][ihead].sign;
 
             for (auto j = 0; j < fcs->get_nequiv()[order][ui]; ++j) {
                 index_tmp = fcs->get_fc_table()[order][ihead + j].elems;
-                it_found = std::lower_bound(fc_fix_table.begin(),
-                                            fc_fix_table.end(),
-                                            ForceConstantTable(0.0, index_tmp));
+                it_found = std::find(fc_fix_table.begin(),
+                                     fc_fix_table.end(),
+                                     ForceConstantTable(0.0, index_tmp));
 
                 if (it_found != fc_fix_table.end()) {
                     found_element = true;
@@ -2826,8 +2836,8 @@ void Constraint::generate_fix_constraint(const Symmetry *symmetry,
             }
 
             if (found_element) {
-                const_fix[order].emplace_back(ConstraintTypeFix(mother,
-                                                                sign_mother * sign * (*it_found).fc_value));
+                const_fix[order].emplace_back(mother,
+                                              sign * (*it_found).fc_value);
             }
             ihead += fcs->get_nequiv()[order][ui];
         }

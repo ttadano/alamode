@@ -10,7 +10,7 @@ Format of input files
 Each input file should consist of entry fields.
 Available entry fields are 
 
-**&general**, **&cell**, **&analysis**, and **&kpoint**.
+**&general**, **&cell**, **&scph**, **&qha**, **&relax**, **&kpoint**, **&strain**, and **&displace**.
 
 The format of the input file is the same as that of *alm* which can be found :ref:`here <reference_input_alm>`.
 
@@ -21,22 +21,33 @@ List of supported input variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. csv-table::
-   :widths: 20, 20, 20, 20, 20
+   :widths: 25, 25, 25, 25
 
    **&general**
-   :ref:`BCONNECT <anphon_bconnect>`, :ref:`BORNINFO <anphon_borninfo>`, :ref:`BORNSYM <anphon_bornsym>`, :ref:`CLASSICAL <anphon_classical>`, :ref:`EMIN <anphon_emin>`
-   :ref:`EPSILON <anphon_epsilon>`, :ref:`FC2XML <anphon_fc2xml>`, :ref:`FCSXML <anphon_fcsxml>`, :ref:`ISMEAR <anphon_ismear>`, :ref:`KD <anphon_kd>`
-   :ref:`MASS <anphon_mass>`, :ref:`MODE <anphon_mode>`, :ref:`NA_SIGMA <anphon_na_sigma>`, :ref:`NKD <anphon_nkd>`, :ref:`NONANALYTIC <anphon_nonanalytic>`
-   :ref:`PREFIX <anphon_prefix>`, :ref:`PRINTSYM <anphon_printsym>`, :ref:`RESTART <anphon_restart>`, :ref:`TMIN <anphon_tmin>`, :ref:`TOLERANCE <anphon_tolerance>`
+   :ref:`BCONNECT <anphon_bconnect>`, :ref:`BORNINFO <anphon_borninfo>`, :ref:`BORNSYM <anphon_bornsym>`, :ref:`CLASSICAL <anphon_classical>`
+   :ref:`EMIN <anphon_emin>`, :ref:`EPSILON <anphon_epsilon>`, :ref:`FC2XML <anphon_fc2xml>`, :ref:`FCSXML <anphon_fcsxml>`
+   :ref:`ISMEAR <anphon_ismear>`, :ref:`KD <anphon_kd>`, :ref:`MASS <anphon_mass>`, :ref:`MODE <anphon_mode>`
+   :ref:`NA_SIGMA <anphon_na_sigma>`, :ref:`NKD <anphon_nkd>`, :ref:`NONANALYTIC <anphon_nonanalytic>`, :ref:`PREFIX <anphon_prefix>`
+   :ref:`PRINTSYM <anphon_printsym>`, :ref:`RESTART <anphon_restart>`, :ref:`TMIN <anphon_tmin>`, :ref:`TOLERANCE <anphon_tolerance>`
    :ref:`TRISYM <anphon_trisym>`
    **&scph**
-   :ref:`IALGO <anphon_ialgo>`, :ref:`KMESH_INTERPOLATE <anphon_kmesh_interpolate>`, :ref:`KMESH_SCPH <anphon_kmesh_scph>`, :ref:`LOWER_TEMP <anphon_lower_temp>`, :ref:`MAXITER <anphon_maxiter>`
-   :ref:`MIXALPHA <anphon_mixalpha>`, :ref:`RESTART_SCPH <anphon_restart_scph>`, :ref:`SELF_OFFDIAG <anphon_self_offdiag>`, :ref:`TOL_SCPH <anphon_tol_scph>`, :ref:`WARMSTART <anphon_warmstart>`
+   :ref:`BUBBLE <anphon_bubble>`, :ref:`IALGO <anphon_ialgo>`, :ref:`KMESH_INTERPOLATE <anphon_kmesh_interpolate>`, :ref:`KMESH_SCPH <anphon_kmesh_scph>`
+   :ref:`LOWER_TEMP <anphon_lower_temp>`, :ref:`MAXITER <anphon_maxiter>`, :ref:`MIXALPHA <anphon_mixalpha>`, :ref:`RELAX_STR <anphon_relax_str>`
+   :ref:`RESTART_SCPH <anphon_restart_scph>`, :ref:`SELF_OFFDIAG <anphon_self_offdiag>`, :ref:`TOL_SCPH <anphon_tol_scph>`, :ref:`WARMSTART <anphon_warmstart>`
+   **&qha**
+   :ref:`KMESH_INTERPOLATE <anphon_qha_kmesh_interpolate>`, :ref:`KMESH_QHA <anphon_qha_kmesh_qha>`, :ref:`LOWER_TEMP <anphon_qha_lower_temp>`, :ref:`QHA_SCHEME <anphon_qha_scheme>`
+   :ref:`RELAX_STR <anphon_qha_relax_str>`
+   **&relax**
+   :ref:`ADD_HESS_DIAG <anphon_add_hess_diag>`, :ref:`ALPHA_STDECENT <anphon_alpha_stdecent>`, :ref:`CELL_CONV_TOL <anphon_cell_conv_tol>`, :ref:`COOLING_U0_INDEX <anphon_cooling_u0_index>`
+   :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>`, :ref:`COORD_CONV_TOL <anphon_coord_conv_tol>`, :ref:`MAX_STR_ITER <anphon_max_str_iter>`, :ref:`MIXBETA_CELL <anphon_mixbeta_cell>`
+   :ref:`MIXBETA_COORD <anphon_mixbeta_coord>`,  :ref:`RELAX_ALGO <anphon_relax_algo>`, :ref:`RENORM_2TO1ST <anphon_renorm_2to1st>`, :ref:`RENORM_34TO1ST <anphon_renorm_34to1st>`
+   :ref:`RENORM_3TO2ND <anphon_renorm_3to2nd>`, :ref:`SET_INIT_STR <anphon_set_init_str>`, :ref:`STAT_PRESSURE <anphon_stat_pressure>`, :ref:`STRAIN_IFC_DIR <anphon_strain_ifc_dir>`
    **&analysis**
-   :ref:`ANIME <anphon_anime>`, :ref:`ANIME_FRAMES <anphon_anime_frames>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`GRUNEISEN <anphon_gruneisen>`, :ref:`ISOFACT <anphon_isofact>`
-   :ref:`ISOTOPE <anphon_isotope>`, :ref:`KAPPA_COHERENT <anphon_kappa_coherent>`, :ref:`KAPPA_SPEC <anphon_kappa_spec>`, :ref:`PDOS <anphon_pdos>`, :ref:`PRINTEVEC <anphon_printevec>`
-   :ref:`PRINTMSD <anphon_printmsd>`, :ref:`PRINTPR <anphon_printpr>`, :ref:`PRINTVEL <anphon_printvel>`, :ref:`PRINTXSF <anphon_printxsf>`
-   :ref:`SPS <anphon_sps>`, :ref:`TDOS <anphon_tdos>`, :ref:`UCORR <anphon_ucorr>`, :ref:`ZMODE <anphon_zmode>`
+   :ref:`ANIME <anphon_anime>`, :ref:`ANIME_FRAMES <anphon_anime_frames>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`GRUNEISEN <anphon_gruneisen>`
+   :ref:`ISOFACT <anphon_isofact>`, :ref:`ISOTOPE <anphon_isotope>`, :ref:`KAPPA_COHERENT <anphon_kappa_coherent>`, :ref:`KAPPA_SPEC <anphon_kappa_spec>`
+   :ref:`PDOS <anphon_pdos>`, :ref:`PRINTEVEC <anphon_printevec>`, :ref:`PRINTMSD <anphon_printmsd>`, :ref:`PRINTPR <anphon_printpr>`
+   :ref:`PRINTVEL <anphon_printvel>`, :ref:`PRINTXSF <anphon_printxsf>`, :ref:`SPS <anphon_sps>`, :ref:`TDOS <anphon_tdos>`
+   :ref:`UCORR <anphon_ucorr>`, :ref:`ZMODE <anphon_zmode>`
 
 
 
@@ -164,7 +175,7 @@ Description of input variables
 
  :Default: 0
  :Type: Integer
- :Description: When ``NONANALYTIC > 0``, appropriate ``NA_SIGMA`` and ``BORNINFO`` have to be given.
+ :Description: When ``NONANALYTIC > 0``, appropriate ``BORNINFO`` needs to be given. If ``NONANALYTIC = 1``, one may need to adjust the ``NA_SIGMA`` value to obtain reasonably smooth dispersion curves.
 
 ````
 
@@ -215,7 +226,7 @@ Description of input variables
 
 * EMIN, EMAX, DELTA_E-tags : Energy range and its stride in units of kayser (cm\ :sup:`-1`)
 
- :Default: ``EMIN = 0``, ``EMAX = 1000``, ``DELTA_E = 10``
+ :Default: ``EMIN`` and ``EMAX`` are set automatically from the eigenfrequencies as of ver. 1.5.0. The default value for ``DELTA_E`` is 10.0.
  :Type: Double
 
 ````
@@ -279,6 +290,25 @@ Description of input variables
  :Default: 0
  :Type: Integer
  :Description: When ``CLASSICAL = 1``, all thermodynamic functions including the occupation function, heat capacity, and mean square displacements are calculated using the classical formulae. This option may be useful when comparing the lattice dynamics and molecular dynamics results.
+
+
+ .. list-table:: Comparison of quantum and classical values
+    :header-rows: 1
+
+    * - Function
+      - Quantum (``CLASSICAL = 0``)
+      - Classical (``CLASSICAL = 1``)
+    * - Occupation number
+      - :math:`\displaystyle n_\mathrm{B}=\frac{1}{\exp(\beta\hbar\omega) - 1}`
+      - :math:`\displaystyle n_\mathrm{C}=\frac{1}{\beta\hbar\omega}`
+    * - Mode specific heat
+      - :math:`\displaystyle c_{q} = k_{\mathrm{B}}\left[\frac{\beta\hbar\omega_q}{2}\mathrm{csch}\bigg({\frac{\beta\hbar\omega_q}{2}}\bigg)\right]^2`
+      - :math:`\displaystyle c_{q} = k_{\mathrm{B}}`
+    * - MSD of normal mode :math:`\braket{Q^{*}_qQ_q}`
+      - :math:`\displaystyle \frac{\hbar (1 + n_{\mathrm{B}})}{2\omega_q}`
+      - :math:`\displaystyle \frac{1}{\beta\omega_{q}^{2}}`
+
+
 
 ````
 
@@ -444,6 +474,353 @@ Description of input variables
 
 ````
 
+.. _anphon_bubble:
+
+* BUBBLE-tag = 0 | 1
+
+ === ==============================================================
+  0   No bubble correction to the dynamical matrix
+  1   Calculate bubble correction on top of the SCPH dynamical matrix
+ === ==============================================================
+
+ :Default: 0
+ :Type: Integer
+
+
+````
+
+.. _anphon_relax_str:
+
+* RELAX_STR-tag = 0 | 1 | 2 | 3
+
+ === ==============================================================
+  0   Don't relax the crystal structure (not supported when ``mode = QHA``).
+  1   Relax atomic positions.
+  2   Relax both atomic positions and the shape of the unit cell.
+  3   Lowest-order perturbation theory (not supported when ``MODE = SCPH``).
+ === ==============================================================
+
+ :Default: 0
+ :Type: Integer
+
+````
+
+"&qha"-field (Read only when ``MODE = QHA``)
+++++++++++++++++++++++++++++++++++++++++++++++
+
+.. _anphon_qha_kmesh_interpolate:
+
+* KMESH_INTERPOLATE-tag = k1, k2, k3
+
+ :Default: None
+ :Type: Array of integers
+ :Description: In the structural optimization based on quasiharmonic approximation (QHA), 
+               the interpolation is done using the 
+               :math:`k` mesh defined by ``KMESH_INTERPOLATE``. 
+
+````
+
+.. _anphon_qha_kmesh_qha:
+
+* KMESH_QHA-tag = k1, k2, k3
+
+ :Default: None
+ :Type: Array of integers
+ :Description: This :math:`k` mesh is used for the QHA-based structural optimization. 
+               Each value of ``KMESH_QHA`` must be equal to or a multiple of the number of ``KMESH_INTERPOLATE`` in the same direction.
+
+````
+
+.. _anphon_qha_relax_str:
+
+* RELAX_STR-tag = 0 | 1 | 2 | 3
+
+ === ==============================================================
+  0   Don't relax the crystal structure (not supported when ``mode = QHA``).
+  1   Relax atomic positions.
+  2   Relax both atomic positions and the shape of the unit cell.
+  3   Lowest-order perturbation theory (not supported when ``mode = SCPH``).
+ === ==============================================================
+
+ :Default: 0
+ :Type: Integer
+
+````
+
+.. _anphon_qha_lower_temp:
+
+* LOWER_TEMP-tag = 0 | 1
+
+ === ===============================================================================
+  0   The structural optimization start from ``TMIN`` to ``TMAX``. (Raise the temperature)
+  1   The structural optimization start from ``TMAX`` to ``TMIN``. (Lower the temperature)
+ === ===============================================================================
+
+ :Default: 1
+ :Type: Integer
+
+````
+
+.. _anphon_qha_scheme:
+
+* QHA_SCHEME-tag = 0 | 1 | 2
+
+ === ==============================================================
+  0   Full optimization within QHA.
+  1   zero-static internal stress approximation (ZSISA).
+  2   volumetric ZSISA (v-ZSISA).
+ === ==============================================================
+
+ :Default: 0
+ :Type: Integer
+
+ :Description: This option is used only when ``mode = QHA`` and ``RELAX_STR = 2``.
+
+````
+
+
+
+"&relax"-field (Read only when ``RELAX_STR != 0``)
+++++++++++++++++
+
+.. _anphon_relax_algo:
+
+* RELAX_ALGO-tag = 1 | 2
+
+ === ==============================================================
+  1   Steepest decent (not recommended)
+  2   Newton-like method
+ === ==============================================================
+
+ :Default: 2
+ :Type: Integer
+
+ :Description: Algorithm to update the crystal structure in structural optimization. 
+               This option is used only when ``RELAX_STR = 1, 2``.
+               ``RELAX_ALGO = 1`` works properly only when the unit cell is fixed (``RELAX_STR = 1``).
+
+````
+
+.. _anphon_alpha_stdecent:
+
+* ALPHA_STDECENT-tag: Coefficient of steepest decent in structural optimization
+
+ :Default: 1.0e4
+ :Type: Double
+
+ :Description: :math:`\alpha` coefficient in structural optimization with steepest-decent algorithm.
+               The unit is [:math:`m_e a_B^2/(2\text{Ry})`]. 
+               This option is used only when ``RELAX_ALGO = 1``.
+
+````
+
+.. _anphon_max_str_iter:
+
+* MAX_STR_ITER-tag: Maximum number of structure updates.
+
+ :Default: 100
+ :Type: Integer
+
+ :Description: This option is used only when ``RELAX_STR = 1, 2``.
+
+````
+
+.. _anphon_add_hess_diag:
+
+* ADD_HESS_DIAG-tag: Correction to the estimated Hessian of free energy in units of kayser (cm\ :sup:`-1`)
+
+ :Default: 100.0
+ :Type: Double
+
+ :Description: The squared ``ADD_HESS_DIAG`` is added to the diagonal components of estimated Hessians, 
+               which is used to update crystal structures in structural optimization.
+               ``ADD_HESS_DIAG`` makes the calculation more robust in the presence of soft modes near the structural phase transition, but setting large values will make the convergence slower.
+               This option is used only when ``RELAX_ALGO = 2``.
+
+````
+
+.. _anphon_coord_conv_tol:
+
+* COORD_CONV_TOL-tag: Threshold of convergence for atomic positions in structural optimization.
+
+ :Default: 1.0e-5
+ :Type: Double
+
+ :Description: The value is interpreted in units of Bohr.
+               This option is used only when ``RELAX_STR = 1, 2``.
+
+````
+
+.. _anphon_mixbeta_coord:
+
+* MIXBETA_COORD-tag: Mixing coefficient for atomic positions in structure updates.
+
+ :Default: 0.5
+ :Type: Double
+
+ :Description: This option is used only when ``RELAX_STR = 1, 2``.
+
+````
+
+.. _anphon_cell_conv_tol:
+
+* CELL_CONV_TOL-tag: Threshold of convergence for displacement gradient tensor :math:`u_{\mu \nu}` in structural optimization.
+
+ :Default: 1.0e-5
+ :Type: Double
+
+ :Description: This option is used only when ``RELAX_STR = 2``.
+
+````
+
+.. _anphon_mixbeta_cell:
+
+* MIXBETA_CELL-tag: Mixing coefficient for displacement gradient tensor :math:`u_{\mu \nu}` in structure updates.
+
+ :Default: 0.5
+ :Type: Double
+
+ :Description: This option is used only when ``RELAX_STR = 2``.
+
+````
+
+.. _anphon_set_init_str:
+
+* SET_INIT_STR-tag = 1 | 2 | 3
+
+ === ==============================================================
+  1   Set initial structure from the input file at each temperature.
+  2   Start from the crystal structure of the previous temperature.
+  3   Start from the crystal structure of the previous temperature in low-symmetry phase.
+ === ==============================================================
+
+ :Default: 1
+ :Type: Integer
+
+ :Description: This option specifies how to set the initial structure of structural optimization at different temperatures.
+               This option is used when ``RELAX_STR = 1, 2``.
+               In all options, the initial structure at the initial temperature is set from the input file.
+               The initial structure of the input file is read from the ``&strain`` and ``&displace`` field.
+               When ``SET_INIT_STR = 3``, the initial displacement from the input file is used if the crystal structure converges to the high-symmetry phase in the previous temperature. The criteria to distinguish low-symmetry and high-symmetry phases is explained in :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>`.
+
+````
+
+.. _anphon_cooling_u0_index:
+
+* COOLING_U0_INDEX-tag = 0 | 1 | ... | 3N-1 (N : the number of atoms in the unit cell)
+
+ :Default: 0
+ :Type: Integer
+
+ :Description: Specify as :math:`3\times\alpha + \mu`. Here, :math:`\alpha` denotes the atom index in the primitive cell and :math:`\mu` is the xyz index, where both indices are zero-indexed.
+  See the description of :ref:`COOLING_U0_THR <anphon_cooling_u0_thr>` for details.
+  This option is used only when ``SET_INIT_STR = 3``.
+
+````
+
+.. _anphon_cooling_u0_thr:
+
+* COOLING_U0_THR-tag: Threshold to judge high-symmetry phase in structural optimization [Bohr].
+
+ :Default: 0.001
+ :Type: Double
+
+ :Description: The crystal structure is judged to be back to the high-symmetry phase if 
+               :math:`u^{(0)}` [``COOLING_U0_INDEX``] < ``COOLING_U0_THR``. 
+               This option is useful in cooling calculations because small displacements to the high-symmetry structure is required to induce spontaneous symmetry breaking.
+               This option is used only when ``SET_INIT_STR = 3``.
+ 
+````
+
+.. _anphon_stat_pressure:
+
+* STAT_PRESSURE-tag: Hydrostatic pressure in GPa.
+
+ :Default: 0.0
+ :Type: Double
+
+````
+
+.. _anphon_renorm_2to1st:
+
+* RENORM_2TO1ST-tag = 0 | 1 | 2
+
+ === ==============================================================
+  0   Set zero.
+  1   Real-space IFC renormalization. (not recommended)
+  2   Finite difference method with respect to strain.
+ === ==============================================================
+
+ :Default: 2
+ :Type: Integer
+
+ :Description: This option specifies the method to calculate first-order derivatives of first-order IFCs with respect to strain
+ 
+  :math:`\frac{\partial \Phi_{\mu}(0\alpha)}{\partial u_{\mu_1 \nu_1} }`.
+
+  This option is used only when ``RELAX_STR = 2, 3``.
+  Note that ``RENORM_2TO1ST = 1`` requires rotational invariance on IFCs, which is not checked in the program ANPHON.
+  ``RENORM_2TO1ST = 0`` can be used for high-symmetry materials in which strain-force coupling is zero, which a user need to confirm themselves.
+
+````
+
+.. _anphon_renorm_34to1st:
+
+* RENORM_34TO1ST-tag = 0 | 1 
+
+ === ==============================================================
+  0   Set zero.
+  1   Real-space IFC renormalization.
+ === ==============================================================
+
+ :Default: 0
+ :Type: Integer
+
+ :Description: This option specifies the method to calculate second and higher-order derivatives of first-order IFCs with respect to strain. 
+
+  :math:`\frac{\partial^2 \Phi_{\mu}(0\alpha)}{\partial u_{\mu_1 \nu_1} \partial u_{\mu_2 \nu_2}}`,
+  :math:`\frac{\partial^3 \Phi_{\mu}(0\alpha)}{\partial u_{\mu_1 \nu_1} \partial u_{\mu_2 \nu_2} \partial u_{\mu_3 \nu_3}}`  
+
+  This option is used only when ``RELAX_STR = 2, 3``.
+  Note that ``RENORM_34TO1ST = 1`` requires rotational invariance on IFCs, which a user need to confirm themselves.
+
+````
+
+.. _anphon_renorm_3to2nd:
+
+* RENORM_3TO2ND-tag = 1 | 2 | 3
+
+ === ==============================================================
+  1   Real-space IFC renormalization.
+  2   Finite difference method (Read input from all six strain patterns).
+  3   Finite difference method (Read input from specified strain patterns).
+ === ==============================================================
+
+ :Default: 2
+ :Type: Integer
+
+ :Description: This option specifies the method to calculate first-order derivatives of harmonic IFCs with respect to strain.
+ 
+  :math:`\frac{\partial \Phi_{\mu_1 \mu_2}(0\alpha_1, R \alpha_2)}{\partial u_{\mu \nu}}`
+
+  This option is used only when ``RELAX_STR = 2, 3``.
+  To use ``RENORM_3TO2ND = 3``, the entries of the rotation matrices of ALL the space-group operations must be either 0 or :math:`\pm` 1 in Cartesian representation.
+
+````
+
+.. _anphon_strain_ifc_dir:
+
+* STRAIN_IFC_DIR-tag: Directory name of the inputs of strain-IFC couplings.
+
+ :Default: None
+ :Type: String
+
+ :Description: When ``RENORM_2TO1ST = 2 `` or ``RENORM_3TO2ND = 3``,
+   the input files of the strain-IFC couplings must be given properly in this directory.
+
+
+````
+
 "&cell"-field
 +++++++++++++
 
@@ -513,6 +890,56 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
   /
 
 ````
+
+"&strain"-field (Read only when ``RELAX_STR = 2``)
++++++++++++++++++
+
+Please specify the initial displacement gradient tensor :math:`u_{\mu \nu}` for structural optimization as ::
+
+ &cell
+ u_xx u_xy u_xz
+ u_yx u_yy u_yz
+ u_zx u_zy u_zz
+ /
+
+Note that a user need to give a symmetric matrix.
+
+"&displace"-field (Read only when ``RELAX_STR = 1, 2``)
++++++++++++++++++
+
+Please specify the initial atomic displacements :math:`u^{(0)}_{\alpha \mu}` [Bohr].
+
+* **DISPMODE = 0** : Fractional coordinate representation
+
+ The ``&displace`` entry should be written as follows.
+ The first four lines after DISPMODE (= 0) specifies the unit cell, whose format is the same as the ``&cell`` field.
+ Note that the unit cell in the ``&displace`` field is used only for transforming the input to the real space representation. Thus, the unit cell here does not need to be commensurate with the primitive cell or some supercells.
+ 
+ u_ij is the j-th component of the displacement of i-th atom in the primitive cell in fractional coordinate representation.
+ ::
+
+  &displace
+   0
+   a
+   a11 a12 a13
+   a21 a22 a23
+   a31 a32 a33
+   u_01, u_02, u_03
+   ...
+  /
+
+* **DISPMODE = 1** : Cartesian coordinate representation
+
+ Each line after DISPMODE (= 1) specifies the initial atomic displacement in Cartesian representation. 
+ u_ij is the j component of the displacement of i-th atom in the primitive cell.
+ ::
+
+  &displace
+   1
+   u_0x, u_0y, u_0z
+   ...
+  /
+
 
 "&analysis"-field
 +++++++++++++++++
@@ -849,7 +1276,7 @@ The first entry **KPMODE** specifies the types of calculation which is followed 
 Format of BORNINFO
 ~~~~~~~~~~~~~~~~~~
 
-When one wants to consider the LO-TO splitting near the :math:`\Gamma` point, it is necessary to set ``NONANALYTIC = 1`` and
+When one wants to consider the LO-TO splitting near the :math:`\Gamma` point, it is necessary to set ``NONANALYTIC > 0`` and
 provide ``BORNINFO`` file containing dielectric tensor :math:`\epsilon^{\infty}` and Born effective charge :math:`Z^{*}`.
 In ``BORNINFO`` file, the dielectric tensor should be written in first 3 lines which are followed by Born effective charge tensors
 for each atom as the following.

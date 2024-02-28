@@ -11,26 +11,11 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 
-import numpy as np
 import optparse
-import matplotlib.pyplot as plt
+
 import matplotlib as mpl
-
-# parser options
-usage = "usage: %prog [options] file1.dos file2.dos ... "
-parser = optparse.OptionParser(usage=usage)
-
-parser.add_option("--pdos", action="store_true", dest="print_pdos", default=False,
-                  help="print atom-projected phonon DOS")
-parser.add_option("--nokey", action="store_false", dest="print_key", default=True,
-                  help="don't print the key in the figure")
-parser.add_option("-u", "--unit", action="store", type="string", dest="unitname", default="kayser",
-                  help="print the band dispersion in units of UNIT. Available options are kayser, meV, and THz", metavar="UNIT")
-parser.add_option("--emin", action="store", type="float", dest="emin",
-                  help="minimum value of the energy axis")
-parser.add_option("--emax", action="store", type="float", dest="emax",
-                  help="maximum value of the energy axis")
-
+import matplotlib.pyplot as plt
+import numpy as np
 
 # font styles
 mpl.rc('font', **{'family': 'Times New Roman', 'sans-serif': ['Helvetica']})
@@ -42,7 +27,6 @@ lsty = ['-', '-', '-', '-', '--', '--', '--', '--', '-', '-', '-', '-']
 
 
 def get_natoms_and_symbols(file_in):
-
     ftmp = open(file_in, 'r')
     str_symbols = ftmp.readline().rstrip('\n').split()
     str_natoms = ftmp.readline().rstrip('\n').split()
@@ -58,7 +42,6 @@ def get_natoms_and_symbols(file_in):
 
 
 def get_x_minmax(array):
-
     xmin, xmax = [0, 0]
 
     for i in range(len(array)):
@@ -69,7 +52,6 @@ def get_x_minmax(array):
 
 
 def get_y_minmax(array):
-
     ymin, ymax = [0, 0]
 
     for i in range(len(array)):
@@ -81,7 +63,6 @@ def get_y_minmax(array):
 
 
 def change_xscale(array, str_scale):
-
     str_tmp = str_scale.lower()
 
     if str_tmp == 'kayser':
@@ -91,7 +72,7 @@ def change_xscale(array, str_scale):
     elif str_tmp == 'mev':
         print("Phonon DOS will be shown in units of meV")
         kayser_to_mev = 0.0299792458 * 1.0e+12 * \
-            6.62606896e-34 / 1.602176565e-19 * 1000
+                        6.62606896e-34 / 1.602176565e-19 * 1000
 
         for i in range(len(array)):
             array[i] *= kayser_to_mev
@@ -114,7 +95,6 @@ def change_xscale(array, str_scale):
 
 
 def sum_atom_projected_dos(pdos_tmp, natoms_tmp):
-
     nenergy, natom = np.shape(pdos_tmp)
     nkinds = len(natoms_tmp)
 
@@ -133,19 +113,7 @@ def sum_atom_projected_dos(pdos_tmp, natoms_tmp):
     return pdos_sum
 
 
-if __name__ == '__main__':
-
-    options, args = parser.parse_args()
-    files = args[0:]
-    nfiles = len(files)
-
-    if nfiles == 0:
-        print("Usage: plotdos.py [options] file1.dos file2.dos ...")
-        print("For details of available options, please type\n$ python plotdos.py -h")
-        exit(1)
-    else:
-        print("Number of files = %d" % nfiles)
-
+def run_plot(files, unitname='kayser', print_pdos=False, print_key=False, emin=None, emax=None, show=True):
     energy_axis = []
     dos_merged = []
 
@@ -154,7 +122,7 @@ if __name__ == '__main__':
         energy_axis.append(data_tmp[:, 0])
         dos_merged.append(data_tmp[:, 1:])
 
-    energy_axis = change_xscale(energy_axis, options.unitname)
+    energy_axis = change_xscale(energy_axis, unitname)
     xmin, xmax = get_x_minmax(energy_axis)
     ymin, ymax = get_y_minmax(dos_merged)
 
@@ -168,7 +136,7 @@ if __name__ == '__main__':
 
         counter_line += 1
 
-        if options.print_pdos:
+        if print_pdos:
             symbols, natoms = get_natoms_and_symbols(files[i])
 
             if len(dos_merged[i][0, 1:]) != np.sum(natoms):
@@ -179,30 +147,29 @@ if __name__ == '__main__':
                 pdos = sum_atom_projected_dos(dos_merged[i][:, 1:], natoms)
 
                 for j in range(len(pdos[0, :])):
-
                     plt.plot(energy_axis[i][:], pdos[:, j], linestyle=lsty[counter_line],
                              color=color[counter_line], label="File" + str(i + 1) + "." + symbols[j])
 
                     counter_line += 1
 
-    if options.unitname.lower() == "mev":
+    if unitname.lower() == "mev":
         plt.xlabel("Frequency (meV)", fontsize=16)
-    elif options.unitname.lower() == "thz":
+    elif unitname.lower() == "thz":
         plt.xlabel("Frequency (THz)", fontsize=16)
     else:
         plt.xlabel("Frequency (cm${}^{-1}$)", fontsize=16)
 
     plt.ylabel("Phonon DOS", fontsize=16, labelpad=20)
 
-    if options.emin == None and options.emax == None:
+    if emin == None and emax == None:
         factor = 1.00
         xmin *= factor
         xmax *= factor
     else:
-        if options.emin != None:
-            xmin = options.emin
-        if options.emax != None:
-            xmax = options.emax
+        if emin != None:
+            xmin = emin
+        if emax != None:
+            xmax = emax
 
         if xmin > xmax:
             print("Warning: emin > emax")
@@ -213,8 +180,42 @@ if __name__ == '__main__':
     plt.xticks(fontsize=16)
     plt.yticks([])
 
-    if options.print_key:
+    if print_key:
         plt.legend(loc='upper right', prop={'size': 12})
 
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
+
+
+if __name__ == '__main__':
+
+    usage = "usage: %prog [options] file1.dos file2.dos ... "
+    parser = optparse.OptionParser(usage=usage)
+
+    parser.add_option("--pdos", action="store_true", dest="print_pdos", default=False,
+                      help="print atom-projected phonon DOS")
+    parser.add_option("--nokey", action="store_false", dest="print_key", default=True,
+                      help="don't print the key in the figure")
+    parser.add_option("-u", "--unit", action="store", type="string", dest="unitname", default="kayser",
+                      help="print the band dispersion in units of UNIT. "
+                           "Available options are kayser, meV, and THz",
+                      metavar="UNIT")
+    parser.add_option("--emin", action="store", type="float", dest="emin",
+                      help="minimum value of the energy axis")
+    parser.add_option("--emax", action="store", type="float", dest="emax",
+                      help="maximum value of the energy axis")
+
+    options, args = parser.parse_args()
+    files = args[0:]
+    nfiles = len(files)
+
+    if nfiles == 0:
+        print("Usage: plotdos.py [options] file1.dos file2.dos ...")
+        print("For details of available options, please type\n$ python plotdos.py -h")
+        exit(1)
+    else:
+        print("Number of files = %d" % nfiles)
+
+    run_plot(files, options.unitname,
+             options.print_pdos, options.print_key, options.emin, options.emax)

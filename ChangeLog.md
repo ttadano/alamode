@@ -1,3 +1,11 @@
+# Ver. 1.5.0 (2023-03-31)
+
+## New
+- Structural optimization at finite temperatures based on SCPH or QHA.  
+> **Note**
+> The structural optimization of the current version CANNOT be used with thermal conductivity calculations or bubble corrections.
+> The standard SCPH dispersion and thermodynamic properties are correctly calculated for relaxed configurations.
+
 # Ver. 1.4.2 (2022-09-28)
 
 ## Fixes

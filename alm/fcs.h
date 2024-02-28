@@ -148,6 +148,11 @@ public:
         return std::lexicographical_compare(flattenarray.begin(), flattenarray.end(),
                                             a.flattenarray.begin(), a.flattenarray.end());
     }
+
+    bool operator==(const ForceConstantTable &a) const
+    {
+        return flattenarray == a.flattenarray;
+    }
 };
 
 class Fcs {
@@ -212,7 +217,7 @@ public:
     void set_forceconstant_cartesian(const int maxorder,
                                      double *param_in);
 
-    void set_fc_zero_threshold(const int threshold_in);
+    void set_fc_zero_threshold(const double threshold_in);
 
     double get_fc_zero_threshold() const;
 

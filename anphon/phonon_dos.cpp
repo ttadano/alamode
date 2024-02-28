@@ -45,7 +45,6 @@ void Dos::set_default_variables()
     two_phonon_dos = false;
     longitudinal_projected_dos = false;
     scattering_phase_space = 0;
-    energy_dos = nullptr;
     dos_phonon = nullptr;
     pdos_phonon = nullptr;
     dos2_phonon = nullptr;
@@ -55,13 +54,14 @@ void Dos::set_default_variables()
     tetra_nodes_dos = nullptr;
     kmesh_dos = nullptr;
     dymat_dos = nullptr;
+    auto_set_emin = true;
+    auto_set_emax = true;
+    emin = 0.0;
+    emax = 1000.0;
 }
 
 void Dos::deallocate_variables()
 {
-    if (energy_dos) {
-        deallocate(energy_dos);
-    }
     if (dos_phonon) {
         deallocate(dos_phonon);
     }
@@ -92,6 +92,8 @@ void Dos::setup()
 
     MPI_Bcast(&emin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&emax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&auto_set_emin, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&auto_set_emax, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&delta_e, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&compute_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
     MPI_Bcast(&projected_dos, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
@@ -110,7 +112,7 @@ void Dos::setup()
 
     if (flag_dos) {
 
-        set_dos_energy_grid();
+        update_dos_energy_grid(emin, emax, true);
 
         dymat_dos = new DymatEigenValue(dynamical->eigenvectors,
                                         false,
@@ -125,45 +127,27 @@ void Dos::setup()
         } else {
             tetra_nodes_dos = new TetraNodes();
         }
-
-        if (compute_dos) {
-            allocate(dos_phonon, n_energy);
-        }
-
-        if (projected_dos) {
-            allocate(pdos_phonon, system->natmin, n_energy);
-        }
-
-        if (two_phonon_dos) {
-            allocate(dos2_phonon, kmesh_dos->nk_irred, n_energy, 4);
-        }
-
-        if (longitudinal_projected_dos) {
-            allocate(longitude_dos, n_energy);
-        }
-
-        if (scattering_phase_space == 1) {
-            allocate(sps3_mode, kmesh_dos->nk_irred,
-                     dynamical->neval, 2);
-        } else if (scattering_phase_space == 2) {
-            const auto Tmin = system->Tmin;
-            const auto Tmax = system->Tmax;
-            const auto dT = system->dT;
-            const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
-
-            allocate(sps3_with_bose, kmesh_dos->nk_irred,
-                     dynamical->neval, NT, 2);
-        }
     }
 }
 
-void Dos::set_dos_energy_grid()
+void Dos::update_dos_energy_grid(const double emin_in,
+                                 const double emax_in,
+                                 const bool force_update)
 {
-    n_energy = static_cast<int>((emax - emin) / delta_e);
-    allocate(energy_dos, n_energy);
+    if (auto_set_emin || force_update) {
+        if (emin_in < 0.0) {
+            emin = emin_in;
+        } else {
+            emin = 0.0;
+        }
+    }
+    if (auto_set_emax || force_update) emax = emax_in;
 
+    n_energy = static_cast<int>((emax_in - emin_in) / delta_e) + 1;
+    energy_dos.clear();
+    energy_dos.resize(n_energy);
     for (auto i = 0; i < n_energy; ++i) {
-        energy_dos[i] = emin + delta_e * static_cast<double>(i);
+        energy_dos[i] = emin_in + delta_e * static_cast<double>(i);
     }
 }
 
@@ -181,7 +165,21 @@ void Dos::calc_dos_all()
         }
     }
 
+    auto emin_now = std::numeric_limits<double>::max();
+    auto emax_now = std::numeric_limits<double>::min();
+
+    for (size_t j = 0; j < kmesh_dos->nk_irred; ++j) {
+        const auto jj = kmesh_dos->kpoint_irred_all[j][0].knum;
+        for (size_t k = 0; k < neval; ++k) {
+            emin_now = std::min(emin_now, eval[k][j]);
+            emax_now = std::max(emax_now, eval[k][j]);
+        }
+    }
+    emax_now += delta_e;
+    update_dos_energy_grid(emin_now, emax_now);
+
     if (compute_dos) {
+        allocate(dos_phonon, n_energy);
         calc_dos(nk, kmesh_dos->nk_irred,
                  &kmesh_dos->kmap_to_irreducible[0],
                  eval, n_energy, energy_dos,
@@ -192,6 +190,7 @@ void Dos::calc_dos_all()
     }
 
     if (projected_dos) {
+        allocate(pdos_phonon, system->natmin, n_energy);
         calc_atom_projected_dos(nk, eval, n_energy, energy_dos,
                                 pdos_phonon, neval, system->natmin,
                                 integration->ismear,
@@ -199,6 +198,7 @@ void Dos::calc_dos_all()
     }
 
     if (longitudinal_projected_dos) {
+        allocate(longitude_dos, n_energy);
         calc_longitudinal_projected_dos(nk, kmesh_dos->xk,
                                         system->rlavec_p,
                                         eval, n_energy, energy_dos,
@@ -210,6 +210,7 @@ void Dos::calc_dos_all()
     deallocate(eval);
 
     if (two_phonon_dos) {
+        allocate(dos2_phonon, kmesh_dos->nk_irred, n_energy, 4);
         calc_two_phonon_dos(dymat_dos->get_eigenvalues(),
                             n_energy,
                             energy_dos,
@@ -218,10 +219,19 @@ void Dos::calc_dos_all()
     }
 
     if (scattering_phase_space == 1) {
+        allocate(sps3_mode, kmesh_dos->nk_irred,
+                 dynamical->neval, 2);
         calc_total_scattering_phase_space(dymat_dos->get_eigenvalues(),
                                           integration->ismear,
                                           sps3_mode, total_sps3);
     } else if (scattering_phase_space == 2) {
+        const auto Tmin = system->Tmin;
+        const auto Tmax = system->Tmax;
+        const auto dT = system->dT;
+        const auto NT = static_cast<unsigned int>((Tmax - Tmin) / dT) + 1;
+
+        allocate(sps3_with_bose, kmesh_dos->nk_irred,
+                 dynamical->neval, NT, 2);
         calc_scattering_phase_space_with_Bose(dymat_dos->get_eigenvalues(),
                                               integration->ismear,
                                               sps3_with_bose);
@@ -234,7 +244,7 @@ void Dos::calc_dos(const unsigned int nk,
                    const unsigned int *map_k,
                    const double *const *eval,
                    const unsigned int n,
-                   const double *energy,
+                   const std::vector<double> &energy,
                    const unsigned int neval,
                    const int smearing_method,
                    const unsigned int ntetra,
@@ -282,7 +292,7 @@ void Dos::calc_dos(const unsigned int nk,
 void Dos::calc_atom_projected_dos(const unsigned int nk,
                                   double *const *eval,
                                   const unsigned int n,
-                                  const double *energy,
+                                  const std::vector<double> &energy,
                                   double **ret,
                                   const unsigned int neval,
                                   const unsigned int natmin,
@@ -362,7 +372,7 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
                                           const double rlavec_p[3][3],
                                           double *const *eval,
                                           const unsigned int n,
-                                          const double *energy,
+                                          const std::vector<double> &energy,
                                           double *ret,
                                           const unsigned int neval,
                                           const unsigned int natmin,
@@ -399,11 +409,11 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
         rotvec(xq_cart, xq_cart, rlavec_p, 'T');
 
         const double norm = std::sqrt(xq_cart[0] * xq_cart[0]
-                + xq_cart[1] * xq_cart[1]
-                + xq_cart[2] * xq_cart[2]);
+                                      + xq_cart[1] * xq_cart[1]
+                                      + xq_cart[2] * xq_cart[2]);
 
         if (norm > eps) {
-            for (i = 0; i <3; ++i) xq_cart[i] /= norm;
+            for (i = 0; i < 3; ++i) xq_cart[i] /= norm;
         }
 
         for (i = 0; i < 3; ++i) qvec(i) = xq_cart[i];
@@ -433,36 +443,36 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
 #ifdef _OPENMP
 #pragma omp parallel private (weight)
 #endif
-        {
-            allocate(weight, nk);
+    {
+        allocate(weight, nk);
 #ifdef _OPENMP
 #pragma omp for
 #endif
-            for (i = 0; i < n; ++i) {
-                ret[i] = 0.0;
+        for (i = 0; i < n; ++i) {
+            ret[i] = 0.0;
 
-                for (unsigned int k = 0; k < neval; ++k) {
-                    if (smearing_method == -1) {
-                        integration->calc_weight_tetrahedron(nk, kmap_identity,
-                                                             eval[k], energy[i],
-                                                             tetra_nodes_dos->get_ntetra(),
-                                                             tetra_nodes_dos->get_tetras(),
-                                                             weight);
-                    } else {
-                        integration->calc_weight_smearing(nk, nk, kmap_identity,
-                                                          eval[k], energy[i],
-                                                          smearing_method,
-                                                          weight);
-                    }
+            for (unsigned int k = 0; k < neval; ++k) {
+                if (smearing_method == -1) {
+                    integration->calc_weight_tetrahedron(nk, kmap_identity,
+                                                         eval[k], energy[i],
+                                                         tetra_nodes_dos->get_ntetra(),
+                                                         tetra_nodes_dos->get_tetras(),
+                                                         weight);
+                } else {
+                    integration->calc_weight_smearing(nk, nk, kmap_identity,
+                                                      eval[k], energy[i],
+                                                      smearing_method,
+                                                      weight);
+                }
 
-                    for (unsigned int j = 0; j < nk; ++j) {
-                        ret[i] += proj[k][j] * weight[j];
-                    }
+                for (unsigned int j = 0; j < nk; ++j) {
+                    ret[i] += proj[k][j] * weight[j];
                 }
             }
-
-            deallocate(weight);
         }
+
+        deallocate(weight);
+    }
     deallocate(proj);
     deallocate(kmap_identity);
 
@@ -472,7 +482,7 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
 
 void Dos::calc_two_phonon_dos(double *const *eval_in,
                               const unsigned int n,
-                              const double *energy,
+                              const std::vector<double> &energy,
                               const int smearing_method,
                               double ***ret) const
 {
@@ -722,6 +732,7 @@ void Dos::calc_dos_from_given_frequency(const KpointMeshUniform *kmesh_in,
             eval[k][j] = writes->in_kayser(eval_in[j][k]);
         }
     }
+
 
     calc_dos(nk, kmesh_in->nk_irred,
              &kmesh_in->kmap_to_irreducible[0],

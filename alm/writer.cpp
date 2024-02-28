@@ -120,7 +120,7 @@ void Writer::write_input_vars(const System *system,
         std::cout << "  SPARSESOLVER = " << optctrl.sparsesolver << '\n';
         std::cout << "  CONV_TOL = " << optctrl.tolerance_iteration << '\n';
         std::cout << "  MAXITER = " << optctrl.maxnum_iteration << "\n";
-        std::cout << "  MIRROR_IMAGE_CONV = " << optctrl.mirror_image_conv << "\n\n";
+        std::cout << "  PERIODIC_IMAGE_CONV = " << optctrl.periodic_image_conv << "\n\n";
         if (optctrl.linear_model == 2) {
             std::cout << " Elastic-net related variables:\n";
             std::cout << "  CV = " << std::setw(5) << optctrl.cross_validation << '\n';
@@ -603,7 +603,7 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
         multiplicity = (*iter_cluster).cell.size();
 
         auto &child = pt.add("Data.ForceConstants.HarmonicUnique.FC2",
-                             double2string(fcs_vals[k]));
+                             double2string(fcs_vals[k] * fcs->get_fc_table()[0][ihead].sign));
         child.put("<xmlattr>.pairs",
                   std::to_string(fcs->get_fc_table()[0][ihead].elems[0])
                   + " " + std::to_string(fcs->get_fc_table()[0][ihead].elems[1]));
@@ -641,7 +641,7 @@ void Writer::save_fcs_alamode_oldformat(const System *system,
 
 
             auto &child = pt.add("Data.ForceConstants.CubicUnique.FC3",
-                                 double2string(fcs_vals[k]));
+                                 double2string(fcs_vals[k] * fcs->get_fc_table()[1][ihead].sign));
             child.put("<xmlattr>.pairs",
                       std::to_string(fcs->get_fc_table()[1][ihead].elems[0])
                       + " " + std::to_string(fcs->get_fc_table()[1][ihead].elems[1])

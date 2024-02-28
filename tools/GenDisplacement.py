@@ -10,11 +10,13 @@
 # or http://opensource.org/licenses/mit-license.php for information.
 #
 from __future__ import print_function
-import numpy as np
-import random
+
+import cmath
 import copy
 import math
-import cmath
+import random
+
+import numpy as np
 
 
 class AlamodeDisplace(object):
@@ -94,7 +96,7 @@ class AlamodeDisplace(object):
                 print("1.0")
                 for elem in self._primitive_lattice_vector.transpose():
                     for i in range(3):
-                        print("%20.15f" % (elem[i]/self._BOHR_TO_ANGSTROM), end='')
+                        print("%20.15f" % (elem[i] / self._BOHR_TO_ANGSTROM), end='')
                     print('')
                 print("/")
                 print("&kpoint")
@@ -310,7 +312,7 @@ class AlamodeDisplace(object):
         except:
             try:
                 for target in file_mddata:
-                    disp = np.loadtxt(target, dtype=np.float)
+                    disp = np.loadtxt(target, dtype=float)
                     disp *= self._BOHR_TO_ANGSTROM
                     disp_merged.extend(np.reshape(disp, (len(disp) // self._supercell.nat, self._supercell.nat, 3)))
             except:
@@ -500,7 +502,7 @@ class AlamodeDisplace(object):
             for i in range(3):
                 # convert the unit of disp from bohr*amu_ry^(1/2) to angstrom
                 disp[:, i, idata] = factor[:] * disp[:, i, idata] * self._BOHR_TO_ANGSTROM
-                #disp[:, i, idata] = factor[:] * disp[:, i, idata]
+                # disp[:, i, idata] = factor[:] * disp[:, i, idata]
 
             # Transform to the fractional coordinate
             for iat in range(self._supercell.nat):
