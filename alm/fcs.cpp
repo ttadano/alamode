@@ -272,10 +272,10 @@ void Fcs::generate_force_constant_table(const int order,
                         if (list_found.find(IntList(order + 2, ind_mapped)) == list_found.end()) {
                             list_found.insert(IntList(order + 2, ind_mapped));
 
-                            fc_vec.emplace_back(FcProperty(order + 2,
-                                                           c_tmp,
-                                                           ind_mapped,
-                                                           nmother));
+                            fc_vec.emplace_back(order + 2,
+                                                c_tmp,
+                                                ind_mapped,
+                                                nmother);
                             ++ndeps;
 
                             // Add equivalent interaction list (permutation) if there are two or more indices
@@ -292,10 +292,10 @@ void Fcs::generate_force_constant_table(const int order,
                                     for (j = 0; j < order + 2; ++j) ind_mapped_tmp[j] = ind_mapped[j];
                                     std::swap(ind_mapped_tmp[0], ind_mapped_tmp[i]);
                                     sort_tail(order + 2, ind_mapped_tmp);
-                                    fc_vec.emplace_back(FcProperty(order + 2,
-                                                                   c_tmp,
-                                                                   ind_mapped_tmp,
-                                                                   nmother));
+                                    fc_vec.emplace_back(order + 2,
+                                                        c_tmp,
+                                                        ind_mapped_tmp,
+                                                        nmother);
 
                                     ++ndeps;
 

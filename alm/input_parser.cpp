@@ -1187,7 +1187,7 @@ void InputParser::parse_optimize_vars(ALM *alm)
     }
 
 
-    DispForceFile datfile_train;
+    DispForceFile datfile_train, datfile_validation;
 
     if (optimize_var_dict["DFSET"].empty()) {
         exit("parse_optimize_vars", "DFSET tag must be given.");
@@ -1236,7 +1236,6 @@ void InputParser::parse_optimize_vars(ALM *alm)
              "NDATA, NSTART, NEND and SKIP tags are inconsistent.");
     }
 
-    auto datfile_validation = datfile_train;
     datfile_validation.skip_s = 0;
     datfile_validation.skip_e = 0;
 
@@ -1253,6 +1252,8 @@ void InputParser::parse_optimize_vars(ALM *alm)
 
     if (!optimize_var_dict["DFSET_CV"].empty()) {
         datfile_validation.filename = optimize_var_dict["DFSET_CV"];
+    } else {
+        datfile_validation.filename = datfile_train.filename;
     }
 
     if (!is_data_range_consistent(datfile_validation)) {
@@ -1270,7 +1271,6 @@ void InputParser::parse_optimize_vars(ALM *alm)
                  "NDATA_CV, NSTART_CV and NEND_CV tags are inconsistent.");
         }
     }
-
 
     input_setter->set_optimize_vars(alm,
                                     u_tmp1, f_tmp1,
