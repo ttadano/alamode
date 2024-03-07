@@ -16,18 +16,17 @@ from importlib.util import find_spec
 import numpy as np
 
 try:
-    try:
-        # cElementTree on Python 2.5+
-        import xml.etree.cElementTree as etree
-    except ModuleNotFoundError:
-        # ElementTree on Python 2.5+
-        import xml.etree.ElementTree as etree
+    # Try to import lxml
+    from lxml import etree
+
+    USING_LXML = True
 except ModuleNotFoundError:
+    USING_LXML = False
     try:
-        # cElementTree
-        import cElementTree as etree
+        # If lxml is not available, try to import ElementTree
+        import xml.etree.ElementTree as etree
     except ModuleNotFoundError:
-        # ElementTree
+        # If failed, try cElementTree next
         import elementtree.ElementTree as etree
 
 try:
@@ -474,11 +473,12 @@ class VaspParser(object):
         else:
             raise RuntimeError("This cannot happen.")
 
-        self._force_conversion_factor = self._energy_conversion_factor / self._disp_conversion_factor
+        self._force_conversion_factor \
+            = self._energy_conversion_factor / self._disp_conversion_factor
 
     def _set_output_flags(self, output_flags):
         self._print_disp, self._print_force, \
-        self._print_energy, self._print_born = output_flags
+            self._print_energy, self._print_born = output_flags
 
     @property
     def nat(self):
@@ -509,6 +509,32 @@ class VaspParser(object):
         else:
             return x
 
+    @staticmethod
+    def parse_or_repair_xml_file(file_path):
+        if USING_LXML:
+            try:
+                # Attempt to parse the XML file directly with lxml
+                tree = etree.parse(file_path)
+                return tree
+            except etree.XMLSyntaxError:
+                # If a parsing error occurs with lxml,
+                # attempt to repair by re-reading the file with the 'recover' parser
+                repair_parser = etree.XMLParser(recover=True)
+                tree = etree.parse(file_path, parser=repair_parser)
+                return tree
+        else:
+            # Fallback to use xml.etree.ElementTree if lxml is not available
+            try:
+                # Attempt to parse the XML file directly
+                tree = etree.parse(file_path)
+                return tree
+            except etree.ParseError as e:
+                print(f"Failed to parse XML file with ElementTree due to: {e}")
+                print("Consider installing lxml for better XML parsing support.")
+                # Handle the error or attempt a manual repair if necessary
+                # Note: ElementTree doesn't have a built-in 'recover' mode like lxml,
+                # so you may need to manually fix the XML or use a different strategy
+
     def _get_coordinates_and_forces(self, file_to_parse):
 
         hdf5_mode = (file_to_parse.lower().split('.')[-1] in ['h5', 'hdf5'])
@@ -527,15 +553,15 @@ class VaspParser(object):
                 return x, f
 
             except:
-                raise RuntimeError(
-                    "Error in reading atomic positions and forces from the HDF5 file: %s" % file_to_parse)
+                raise RuntimeError("Error in reading atomic positions and "
+                                   "forces from the HDF5 file: %s" % file_to_parse)
 
         else:
             x = []
             f = []
             # assume that the target file is XML and use XML parser
             try:
-                xml = etree.parse(file_to_parse)
+                xml = self.parse_or_repair_xml_file(file_to_parse)
                 root = xml.getroot()
 
                 for elems in root.findall('calculation/structure/varray'):
@@ -555,8 +581,8 @@ class VaspParser(object):
                 return np.array(x, dtype=float), np.array(f, dtype=float)
 
             except:
-                raise RuntimeError(
-                    "Error in reading atomic positions and forces from the XML file: %s" % file_to_parse)
+                raise RuntimeError("Error in reading atomic positions and "
+                                   "forces from the XML file: %s" % file_to_parse)
 
     def _get_energies(self, file_to_parse):
 
@@ -578,8 +604,8 @@ class VaspParser(object):
 
                 return etot_array, ekin_array
             except:
-                raise RuntimeError(
-                    "Error in reading atomic positions and forces from the HDF5 file: %s" % file_to_parse)
+                raise RuntimeError("Error in reading atomic positions and "
+                                   "forces from the HDF5 file: %s" % file_to_parse)
 
         else:
 
@@ -587,7 +613,7 @@ class VaspParser(object):
             ekin_array = []
 
             try:
-                xml = etree.parse(file_to_parse)
+                xml = self.parse_or_repair_xml_file(file_to_parse)
                 root = xml.getroot()
 
                 for elems in root.findall('calculation/energy'):
@@ -605,7 +631,8 @@ class VaspParser(object):
 
                 return etot_array, ekin_array
             except:
-                raise RuntimeError("Error in reading energies from the XML file: %s" % file_to_parse)
+                raise RuntimeError("Error in reading energies "
+                                   "from the XML file: %s" % file_to_parse)
 
     def _get_borninfo(self, file_to_parse):
 
@@ -645,7 +672,7 @@ class VaspParser(object):
             borncharge = []
 
             try:
-                xml = etree.parse(file_to_parse)
+                xml = self.parse_or_repair_xml_file(file_to_parse)
                 root = xml.getroot()
 
                 for elems in root.findall('calculation/varray'):

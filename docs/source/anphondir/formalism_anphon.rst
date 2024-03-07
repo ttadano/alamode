@@ -320,7 +320,7 @@ where :math:`i\omega_{m}` is the Matsubara frequency. In equation :eq:`self3`, w
   
     V^{(3)}_{\boldsymbol{q}j,\boldsymbol{q}^{\prime}j^{\prime},\boldsymbol{q}^{\prime\prime}j^{\prime\prime}} 
     & = \left( \frac{\hbar}{2N_{q}}\right)^{\frac{3}{2}}
-    \frac{1}{\sqrt{\omega_{\boldsymbol{q}n}\omega_{\boldsymbol{q}^{\prime}j^{\prime}}\omega_{\boldsymbol{q}^{\prime\prime}j^{\prime\prime}}}}
+    \frac{1}{\sqrt{\omega_{\boldsymbol{q}j}\omega_{\boldsymbol{q}^{\prime}j^{\prime}}\omega_{\boldsymbol{q}^{\prime\prime}j^{\prime\prime}}}}
     \sum_{\ell,\ell^{\prime},\ell^{\prime\prime}}
     \exp{\left[\mathrm{i}(\boldsymbol{q}\cdot\boldsymbol{r}(\ell)+\boldsymbol{q}^{\prime}\cdot\boldsymbol{r}(\ell^{\prime})+\boldsymbol{q}^{\prime\prime}\cdot\boldsymbol{r}(\ell^{\prime\prime}))\right]} \notag \\
     & \times \sum_{\kappa,\kappa^{\prime},\kappa^{\prime\prime}} \frac{1}{\sqrt{M_{\kappa}M_{\kappa^{\prime}}M_{\kappa^{\prime\prime}}}}

@@ -191,7 +191,8 @@ class LammpsParser(object):
                                                                                 f[i, 1],
                                                                                 f[i, 2]))
         else:
-            raise RuntimeError("Could not find ITEM: TIMESTEP keyword in the dump file %s" % lammps_files[0])
+            raise RuntimeError("Could not find ITEM: "
+                               "TIMESTEP keyword in the dump file %s" % lammps_files[0])
 
     @staticmethod
     def _compute_lattice_vector_from_boxparams(box_params):
@@ -292,7 +293,8 @@ class LammpsParser(object):
                                                            disp[i, 2]))
 
         else:
-            raise RuntimeError("Could not find ITEM: TIMESTEP keyword in the dump file %s" % lammps_files[0])
+            raise RuntimeError("Could not find ITEM: "
+                               "TIMESTEP keyword in the dump file %s" % lammps_files[0])
 
     def _print_atomicforces(self, lammps_files, file_offset):
 
@@ -344,7 +346,7 @@ class LammpsParser(object):
 
     def _set_output_flags(self, output_flags):
         self._print_disp, self._print_force, \
-        self._print_energy, self._print_born = output_flags
+            self._print_energy, self._print_born = output_flags
 
     def _set_number_of_zerofill(self, npattern):
 
