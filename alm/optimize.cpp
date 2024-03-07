@@ -572,6 +572,7 @@ double Optimize::run_manual_cv(const std::string job_prefix,
                                              fcs,
                                              constraint);
 
+
     Eigen::MatrixXd A = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], amat_1D.size() / N_new, N_new);
     Eigen::VectorXd b = Eigen::Map<Eigen::VectorXd>(&bvec[0], bvec.size());
     Eigen::MatrixXd A_validation = Eigen::Map<Eigen::MatrixXd>(&amat_1D_validation[0],
@@ -603,10 +604,24 @@ double Optimize::run_manual_cv(const std::string job_prefix,
     const auto file_coef = job_prefix + ".solution_path";
     const auto file_cv = job_prefix + ".cvset";
 
-    compute_alphas(optcontrol.l1_alpha_max,
-                   optcontrol.l1_alpha_min,
-                   optcontrol.num_l1_alpha,
-                   alphas);
+    if (optcontrol.l1_alpha_max > 0) {
+        compute_alphas(optcontrol.l1_alpha_max,
+                       optcontrol.l1_alpha_min,
+                       optcontrol.num_l1_alpha,
+                       alphas);
+    } else {
+        if (optcontrol.l1_alpha_min > 0) {
+            compute_alphas(estimated_max_alpha,
+                           optcontrol.l1_alpha_min,
+                           optcontrol.num_l1_alpha,
+                           alphas);
+        } else {
+            compute_alphas(estimated_max_alpha,
+                           estimated_max_alpha * 1e-6,
+                           optcontrol.num_l1_alpha,
+                           alphas);
+        }
+    }
 
     solution_path(maxorder, A, b, A_validation, b_validation,
                   fnorm, fnorm_validation,
