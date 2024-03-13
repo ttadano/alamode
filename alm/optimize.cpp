@@ -2105,8 +2105,8 @@ int Optimize::solve_normal_equation(const size_t N,
                                     std::vector<double> &param_out,
                                     const double fnorm,
                                     const int maxorder,
-                                    const Fcs *fcs,
-                                    const Constraint *constraint,
+                                    const std::unique_ptr<Fcs> &fcs,
+                                    const std::unique_ptr<Constraint> &constraint,
                                     const int verbosity,
                                     const bool algebraic_constraint) const
 {
@@ -2746,9 +2746,9 @@ void Optimize::get_matrix_elements_normal_equation(const int maxorder,
                                                    const std::vector<std::vector<double>> &u_in,
                                                    const std::vector<std::vector<double>> &f_in,
                                                    double &fnorm,
-                                                   const Symmetry *symmetry,
-                                                   const Fcs *fcs,
-                                                   const Constraint *constraint) const
+                                                   const std::unique_ptr<Symmetry> &symmetry,
+                                                   const std::unique_ptr<Fcs> &fcs,
+                                                   const std::unique_ptr<Constraint> &constraint) const
 {
     long irow;
 
@@ -2758,7 +2758,7 @@ void Optimize::get_matrix_elements_normal_equation(const int maxorder,
     }
 
     const auto ndata_fit = u_in.size();
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto natmin3 = 3 * natmin;
     const auto nat3 = u_in[0].size();
     const auto nrows = ndata_fit * nat3;
@@ -2841,7 +2841,7 @@ void Optimize::get_matrix_elements_normal_equation(const int maxorder,
 
                 // generate r.h.s vector B
                 for (ii = 0; ii < natmin; ++ii) {
-                    iat = symmetry->get_map_p2s()[ii][0];
+                    iat = symmetry->get_map_trueprim_to_super()[ii][0];
                     for (jj = 0; jj < 3; ++jj) {
                         bvec_subset[3 * ii + jj + idata] = f_multi[irow][3 * iat + jj];
                         bvec_orig[3 * ii + jj + natmin3 * irow] = f_multi[irow][3 * iat + jj];
@@ -2986,8 +2986,8 @@ void Optimize::get_matrix_elements_normal_equation(const int maxorder,
                                                    std::vector<double> &atb_total,
                                                    const std::vector<std::vector<double>> &u_in,
                                                    const std::vector<std::vector<double>> &f_in,
-                                                   const Symmetry *symmetry,
-                                                   const Fcs *fcs) const
+                                                   const std::unique_ptr<Symmetry> &symmetry,
+                                                   const std::unique_ptr<Fcs> &fcs) const
 {
     long irow;
 
@@ -2997,7 +2997,7 @@ void Optimize::get_matrix_elements_normal_equation(const int maxorder,
     }
 
     const auto ndata_fit = u_in.size();
-    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin = symmetry->get_nat_trueprim();
     const auto natmin3 = 3 * natmin;
     const auto nat3 = u_in[0].size();
     const auto nrows = ndata_fit * nat3;
@@ -3071,7 +3071,7 @@ void Optimize::get_matrix_elements_normal_equation(const int maxorder,
 
                 // generate r.h.s vector B
                 for (ii = 0; ii < natmin; ++ii) {
-                    iat = symmetry->get_map_p2s()[ii][0];
+                    iat = symmetry->get_map_trueprim_to_super()[ii][0];
                     for (jj = 0; jj < 3; ++jj) {
                         bvec_subset[3 * ii + jj + idata] = f_multi[irow][3 * iat + jj];
                     }

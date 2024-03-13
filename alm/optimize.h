@@ -134,9 +134,9 @@ public:
                                              const std::vector<std::vector<double>> &u_in,
                                              const std::vector<std::vector<double>> &f_in,
                                              double &fnorm,
-                                             const Symmetry *symmetry,
-                                             const Fcs *fcs,
-                                             const Constraint *constraint) const;
+                                             const std::unique_ptr<Symmetry> &symmetry,
+                                             const std::unique_ptr<Fcs> &fcs,
+                                             const std::unique_ptr<Constraint> &constraint) const;
 
     void set_fcs_values(const int maxorder,
                         double *fc_in,
@@ -347,8 +347,8 @@ private:
                               std::vector<double> &param_out,
                               const double fnorm,
                               const int maxorder,
-                              const Fcs *fcs,
-                              const Constraint *constraint,
+                              const std::unique_ptr<Fcs> &fcs,
+                              const std::unique_ptr<Constraint> &constraint,
                               const int verbosity,
                               const bool algebraic_constraint) const;
 
@@ -376,8 +376,8 @@ private:
                                              std::vector<double> &atb_total,
                                              const std::vector<std::vector<double>> &u_in,
                                              const std::vector<std::vector<double>> &f_in,
-                                             const Symmetry *symmetry,
-                                             const Fcs *fcs) const;
+                                             const std::unique_ptr<Symmetry> &symmetry,
+                                             const std::unique_ptr<Fcs> &fcs) const;
 
     int run_eigen_sparse_solver(const SpMat &sp_mat,
                                 const Eigen::VectorXd &sp_bvec,
