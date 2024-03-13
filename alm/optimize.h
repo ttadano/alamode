@@ -30,6 +30,7 @@ public:
     int use_sparse_solver;    // 0: No, 1: Yes
     std::string sparsesolver; // Method name of Eigen sparse solver
     int use_cholesky;         // 0: No, 1: Yes
+    int chunk_size;            // chunk size used for the decomposed computation of (A^T A)
     int maxnum_iteration;
     double tolerance_iteration;
     int output_frequency;
@@ -76,6 +77,7 @@ public:
         stop_criterion = 5;
         periodic_image_conv = 1;
         use_cholesky = 0;
+        chunk_size = 100;
     }
 
     ~OptimizerControl() = default;
@@ -340,14 +342,15 @@ private:
                              const int verbosity) const;
 
     int solve_normal_equation(const size_t N,
-                                         double *amat,
-                                         double *bvec,
-                                         std::vector<double> &param_out,
-                                         const double fnorm,
-                                         const int maxorder,
-                                         const Fcs *fcs,
-                                         const Constraint *constraint,
-                                         const int verbosity) const;
+                              double *amat,
+                              double *bvec,
+                              std::vector<double> &param_out,
+                              const double fnorm,
+                              const int maxorder,
+                              const Fcs *fcs,
+                              const Constraint *constraint,
+                              const int verbosity,
+                              const bool algebraic_constraint) const;
 
 
     void get_matrix_elements(const int maxorder,
@@ -367,6 +370,14 @@ private:
                                             const Symmetry *symmetry,
                                             const Fcs *fcs,
                                             const Constraint *constraint) const;
+
+    void get_matrix_elements_normal_equation(const int maxorder,
+                                             std::vector<double> &ata_total,
+                                             std::vector<double> &atb_total,
+                                             const std::vector<std::vector<double>> &u_in,
+                                             const std::vector<std::vector<double>> &f_in,
+                                             const Symmetry *symmetry,
+                                             const Fcs *fcs) const;
 
     int run_eigen_sparse_solver(const SpMat &sp_mat,
                                 const Eigen::VectorXd &sp_bvec,

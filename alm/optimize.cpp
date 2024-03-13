@@ -298,7 +298,7 @@ int Optimize::least_squares(const int maxorder,
                                                 maxorder,
                                                 fcs,
                                                 constraint,
-                                                verbosity);
+                                                verbosity, true);
             } else {
 
                 // Use a direct solver for a dense matrix
@@ -345,23 +345,25 @@ int Optimize::least_squares(const int maxorder,
             std::cout << "  Use a solver for dense matrix." << std::endl;
         }
 
-        std::vector<double> amat;
-        std::vector<double> bvec;
-
-        get_matrix_elements(maxorder,
-                            amat,
-                            bvec,
-                            u_train,
-                            f_train,
-                            symmetry,
-                            fcs);
-
-        // Perform fitting with SVD or QRD
-
-        assert(!amat.empty());
-        assert(!bvec.empty());
 
         if (constraint->get_exist_constraint()) {
+
+            std::vector<double> amat;
+            std::vector<double> bvec;
+
+            get_matrix_elements(maxorder,
+                                amat,
+                                bvec,
+                                u_train,
+                                f_train,
+                                symmetry,
+                                fcs);
+
+            // Perform fitting with SVD or QRD
+
+            assert(!amat.empty());
+            assert(!bvec.empty());
+
             info_fitting
                     = fit_with_constraints(N,
                                            M,
@@ -373,13 +375,62 @@ int Optimize::least_squares(const int maxorder,
                                            constraint->get_const_rhs(),
                                            verbosity);
         } else {
-            info_fitting
-                    = fit_without_constraints(N,
-                                              M,
-                                              &amat[0],
-                                              &bvec[0],
-                                              &param_out[0],
-                                              verbosity);
+
+            if (optcontrol.use_cholesky) {
+
+                std::vector<double> ata_mat; // (A^T A)
+                std::vector<double> atb_vec; // (A^T b)
+
+                // Compute (A^T A) and (A^T b) by summation by parts.
+                get_matrix_elements_normal_equation(maxorder,
+                                                    ata_mat,
+                                                    atb_vec,
+                                                    u_train,
+                                                    f_train,
+                                                    symmetry,
+                                                    fcs);
+
+                double fnorm = 0.0;
+                // Solve the normal equation using Cholesky decomposition
+                info_fitting
+                        = solve_normal_equation(N,
+                                                ata_mat.data(),
+                                                atb_vec.data(),
+                                                param_out,
+                                                fnorm,
+                                                maxorder,
+                                                fcs,
+                                                constraint,
+                                                verbosity, false);
+
+
+            } else {
+
+                std::vector<double> amat;
+                std::vector<double> bvec;
+
+                get_matrix_elements(maxorder,
+                                    amat,
+                                    bvec,
+                                    u_train,
+                                    f_train,
+                                    symmetry,
+                                    fcs);
+
+                // Perform fitting with SVD or QRD
+
+                assert(!amat.empty());
+                assert(!bvec.empty());
+
+                info_fitting
+                        = fit_without_constraints(N,
+                                                  M,
+                                                  &amat[0],
+                                                  &bvec[0],
+                                                  &param_out[0],
+                                                  verbosity);
+            }
+
         }
     }
 
@@ -2051,7 +2102,8 @@ int Optimize::solve_normal_equation(const size_t N,
                                     const int maxorder,
                                     const Fcs *fcs,
                                     const Constraint *constraint,
-                                    const int verbosity) const
+                                    const int verbosity,
+                                    const bool algebraic_constraint) const
 {
     if (verbosity > 0) {
         std::cout << "  Entering fitting routine: Solve normal equation (A^T A)x= (A^T b) by Cholesky.\n" << std::flush;
@@ -2067,18 +2119,24 @@ int Optimize::solve_normal_equation(const size_t N,
 
     if (verbosity > 0) std::cout << " finished. \n" << std::flush;
 
-    auto f_residual = 0.0;
-
     if (info == 0) {
-        std::vector<double> param_irred(N, 0.0);
-        for (auto i = 0; i < N; ++i) param_irred[i] = bvec[i];
-        // Recover reducible set of force constants
+        if (algebraic_constraint) {
 
-        recover_original_forceconstants(maxorder,
-                                        param_irred,
-                                        param_out,
-                                        fcs->get_nequiv(),
-                                        constraint);
+            std::vector<double> param_irred(N, 0.0);
+            for (auto i = 0; i < N; ++i) param_irred[i] = bvec[i];
+            // Recover reducible set of force constants
+
+            recover_original_forceconstants(maxorder,
+                                            param_irred,
+                                            param_out,
+                                            fcs->get_nequiv(),
+                                            constraint);
+        } else {
+            param_out.resize(N, 0.0);
+            for (size_t i = 0; i < N; ++i) {
+                param_out[i] = bvec[i];
+            }
+        }
     }
     return info;
 }
@@ -2648,7 +2706,7 @@ void Optimize::get_matrix_elements_normal_equation(const int maxorder,
         ncols_new += constraint->get_index_bimap(i).size();
     }
 
-    auto ndata_subset = 100;
+    auto ndata_subset = optcontrol.chunk_size;
     auto nsubset = ndata_fit / ndata_subset;
     if (nsubset * ndata_subset < ndata_fit) {
         ++nsubset;
@@ -2781,9 +2839,9 @@ void Optimize::get_matrix_elements_normal_equation(const int maxorder,
                     for (ii = 0; ii < constraint->get_const_fix(order).size(); ++ii) {
                         for (jj = 0; jj < natmin3; ++jj) {
                             bvec_subset[jj + idata] -= constraint->get_const_fix(order)[ii].val_to_fix
-                                                      * amat_orig_tmp[jj][ishift +
-                                                                         constraint->get_const_fix(
-                                                                                 order)[ii].p_index_target];
+                                                       * amat_orig_tmp[jj][ishift +
+                                                                           constraint->get_const_fix(
+                                                                                   order)[ii].p_index_target];
                         }
                     }
 
@@ -2856,6 +2914,171 @@ void Optimize::get_matrix_elements_normal_equation(const int maxorder,
     u_multi.clear();
     f_multi.clear();
 //    std::cout << "OK5\n" << std::flush;
+}
+
+
+void Optimize::get_matrix_elements_normal_equation(const int maxorder,
+                                                   std::vector<double> &ata_total,
+                                                   std::vector<double> &atb_total,
+                                                   const std::vector<std::vector<double>> &u_in,
+                                                   const std::vector<std::vector<double>> &f_in,
+                                                   const Symmetry *symmetry,
+                                                   const Fcs *fcs) const
+{
+    long irow;
+
+    if (u_in.size() != f_in.size()) {
+        exit("get_matrix_elements_normal_equation",
+             "The lengths of displacement array and force array are diferent.");
+    }
+
+    const auto ndata_fit = u_in.size();
+    const auto natmin = symmetry->get_nat_prim();
+    const auto natmin3 = 3 * natmin;
+    const auto nat3 = u_in[0].size();
+    const auto nrows = ndata_fit * nat3;
+    size_t ncols = 0;
+
+    for (auto i = 0; i < maxorder; ++i) {
+        ncols += fcs->get_nequiv()[i].size();
+    }
+
+    auto ndata_subset = optcontrol.chunk_size;
+    auto nsubset = ndata_fit / ndata_subset;
+    if (nsubset * ndata_subset < ndata_fit) {
+        ++nsubset;
+    }
+
+    ata_total.resize(ncols * ncols, 0.0);
+    atb_total.resize(ncols, 0.0);
+
+    std::vector<double> bvec(nrows, 0.0);
+//    std::vector<double> bvec_orig(nrows, 0.0);
+    std::vector<std::vector<double>> u_multi, f_multi;
+
+    data_multiplier(u_in, u_multi, symmetry);
+    data_multiplier(f_in, f_multi, symmetry);
+
+    if (fcs->get_forceconstant_basis() == "Lattice") {
+        apply_basis_converter(u_multi,
+                              fcs->get_basis_conversion_matrix());
+    }
+
+    Eigen::MatrixXd ata_subset(ncols, ncols);
+    Eigen::VectorXd atb_subset(ncols);
+
+    for (size_t isub = 0; isub < nsubset; ++isub) {
+
+        const size_t istart = isub * ndata_subset;
+        size_t iend = (isub + 1) * ndata_subset;
+        if (iend > ndata_fit) {
+            iend = ndata_fit;
+        }
+
+        auto nrows_now = (iend - istart) * nat3;
+
+        const long istart_cycle = istart * symmetry->get_ntran();
+        const long iend_cycle = iend * symmetry->get_ntran();
+
+        Eigen::MatrixXd amat_subset(nrows_now, ncols);
+        Eigen::MatrixXd amat_subset_transpose(ncols, nrows_now);
+        Eigen::VectorXd bvec_subset(nrows_now);
+
+        amat_subset.setZero();
+        bvec_subset.setZero();
+
+#pragma omp parallel private(irow)
+        {
+            std::vector<int> ind;
+            int mm, order, iat, k;
+            size_t ii, jj;
+            size_t idata;
+            size_t iparam;
+            double amat_tmp;
+            double **amat_orig_tmp;
+
+            ind.resize(maxorder + 1, 0);
+            allocate(amat_orig_tmp, natmin3, ncols);
+
+#pragma omp for
+            for (irow = istart_cycle; irow < iend_cycle; ++irow) {
+
+                idata = natmin3 * (irow - istart_cycle);
+
+                // generate r.h.s vector B
+                for (ii = 0; ii < natmin; ++ii) {
+                    iat = symmetry->get_map_p2s()[ii][0];
+                    for (jj = 0; jj < 3; ++jj) {
+                        bvec_subset[3 * ii + jj + idata] = f_multi[irow][3 * iat + jj];
+                    }
+                }
+
+                for (ii = 0; ii < natmin3; ++ii) {
+                    for (jj = 0; jj < ncols; ++jj) {
+                        amat_orig_tmp[ii][jj] = 0.0;
+                    }
+                }
+
+                // generate l.h.s. matrix A
+
+                iparam = 0;
+
+                for (order = 0; order < maxorder; ++order) {
+
+                    mm = 0;
+
+                    for (const auto &iter: fcs->get_nequiv()[order]) {
+                        for (ii = 0; ii < iter; ++ii) {
+                            ind[0] = fcs->get_fc_table()[order][mm].elems[0];
+                            k = inprim_index(ind[0], symmetry);
+
+                            amat_tmp = 1.0;
+                            for (jj = 1; jj < order + 2; ++jj) {
+                                ind[jj] = fcs->get_fc_table()[order][mm].elems[jj];
+                                amat_tmp *= u_multi[irow][fcs->get_fc_table()[order][mm].elems[jj]];
+                            }
+                            amat_orig_tmp[k][iparam] -= gamma(order + 2, ind.data())
+                                                        * fcs->get_fc_table()[order][mm].sign * amat_tmp;
+                            ++mm;
+                        }
+                        ++iparam;
+                    }
+                }
+
+                // When the force constants are defined in the fractional coordinate,
+                // we need to multiply the basis_conversion_matrix to obtain atomic forces
+                // in the Cartesian coordinate.
+                if (fcs->get_forceconstant_basis() == "Lattice") {
+                    apply_basis_converter_amat(natmin3,
+                                               ncols,
+                                               amat_orig_tmp,
+                                               fcs->get_basis_conversion_matrix());
+                }
+
+                for (ii = 0; ii < natmin3; ++ii) {
+                    for (jj = 0; jj < ncols; ++jj) {
+                        // Transpose here for later use of lapack without transpose
+                        amat_subset(idata + ii, jj) = amat_orig_tmp[ii][jj];
+                    }
+                }
+            }
+
+            deallocate(amat_orig_tmp);
+        }
+
+        amat_subset_transpose = amat_subset.transpose();
+        ata_subset = amat_subset_transpose * amat_subset;
+        atb_subset = amat_subset_transpose * bvec_subset;
+
+        for (size_t i = 0; i < ncols; ++i) {
+            for (size_t j = 0; j < ncols; ++j) {
+                ata_total[i * ncols + j] += ata_subset(i, j);
+            }
+            atb_total[i] += atb_subset(i);
+        }
+    }
+    u_multi.clear();
+    f_multi.clear();
 }
 
 

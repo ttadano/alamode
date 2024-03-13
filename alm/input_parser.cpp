@@ -690,7 +690,8 @@ void InputParser::parse_optimize_vars(ALM *alm)
             "L1_RATIO", "STANDARDIZE", "ENET_DNORM",
             "L1_ALPHA", "CV_MAXALPHA", "CV_MINALPHA", "CV_NALPHA",
             "CV", "MAXITER", "CONV_TOL", "NWRITE", "SOLUTION_PATH", "DEBIAS_OLS",
-            "PERIODIC_IMAGE_CONV", "STOP_CRITERION", "USE_CHOLESKY"
+            "PERIODIC_IMAGE_CONV", "STOP_CRITERION",
+            "USE_CHOLESKY", "CHUNKSIZE"
     };
 
     std::map<std::string, std::string> optimize_var_dict;
@@ -790,6 +791,9 @@ void InputParser::parse_optimize_vars(ALM *alm)
     }
     if (!optimize_var_dict["USE_CHOLESKY"].empty()) {
         optcontrol.use_cholesky = boost::lexical_cast<int>(optimize_var_dict["USE_CHOLESKY"]);
+    }
+    if (!optimize_var_dict["CHUNKSIZE"].empty()) {
+        optcontrol.chunk_size = boost::lexical_cast<int>(optimize_var_dict["CHUNKSIZE"]);
     }
 
     DispForceFile datfile_train;
