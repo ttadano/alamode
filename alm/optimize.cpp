@@ -10,12 +10,10 @@
 
 #include "optimize.h"
 #include "files.h"
-#include "constants.h"
 #include "constraint.h"
 #include "error.h"
 #include "fcs.h"
 #include "input_parser.h"
-#include "mathfunctions.h"
 #include "memory.h"
 #include "symmetry.h"
 #include "timer.h"
@@ -24,10 +22,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseQR>
 #include <Eigen/SparseCholesky>
@@ -247,9 +243,9 @@ int Optimize::least_squares(const int maxorder,
 
     get_matrix_elements_unified(maxorder, matrix_out, u_train, f_train,
                                 symmetry, fcs, constraint,
-                                compact, sparse, return_ata, 1);
+                                compact, sparse, return_ata, (verbosity > 0));
     auto fnorm = 0.0;
-    for (const auto &it : matrix_out->original_forces) {
+    for (const auto &it: matrix_out->original_forces) {
         fnorm += it * it;
     }
     fnorm = std::sqrt(fnorm);
@@ -294,7 +290,7 @@ int Optimize::least_squares(const int maxorder,
                                             maxorder,
                                             fcs,
                                             constraint,
-                                            verbosity, true);
+                                            verbosity, compact);
         }
 
     } else {
@@ -359,7 +355,7 @@ int Optimize::least_squares(const int maxorder,
     return info_fitting;
 }
 
-int Optimize::compressive_sensing(const std::string job_prefix,
+int Optimize::compressive_sensing(const std::string &job_prefix,
                                   const int maxorder,
                                   const size_t N_new,
                                   const size_t M,
@@ -537,7 +533,7 @@ double Optimize::crossvalidation(const std::string job_prefix,
     }
 }
 
-double Optimize::run_manual_cv(const std::string job_prefix,
+double Optimize::run_manual_cv(const std::string &job_prefix,
                                const int maxorder,
                                const std::unique_ptr<Fcs> &fcs,
                                const std::unique_ptr<Symmetry> &symmetry,
@@ -578,13 +574,13 @@ double Optimize::run_manual_cv(const std::string job_prefix,
                                                                matrix_validation->bvec.size());
 
     fnorm = 0.0;
-    for (const auto &it : matrix_train->original_forces) {
+    for (const auto &it: matrix_train->original_forces) {
         fnorm += it * it;
     }
     fnorm = std::sqrt(fnorm);
 
     fnorm_validation = 0.0;
-    for (const auto &it : matrix_validation->original_forces) {
+    for (const auto &it: matrix_validation->original_forces) {
         fnorm_validation += it * it;
     }
     fnorm_validation = std::sqrt(fnorm_validation);
@@ -663,7 +659,7 @@ double Optimize::run_manual_cv(const std::string job_prefix,
     return alphas[ialpha];
 }
 
-double Optimize::run_auto_cv(const std::string job_prefix,
+double Optimize::run_auto_cv(const std::string &job_prefix,
                              const int maxorder,
                              const std::unique_ptr<Fcs> &fcs,
                              const std::unique_ptr<Symmetry> &symmetry,
@@ -813,13 +809,13 @@ double Optimize::run_auto_cv(const std::string job_prefix,
 
 
         fnorm = 0.0;
-        for (const auto &it : matrix_train->original_forces) {
+        for (const auto &it: matrix_train->original_forces) {
             fnorm += it * it;
         }
         fnorm = std::sqrt(fnorm);
 
         fnorm_validation = 0.0;
-        for (const auto &it : matrix_validation->original_forces) {
+        for (const auto &it: matrix_validation->original_forces) {
             fnorm_validation += it * it;
         }
         fnorm_validation = std::sqrt(fnorm_validation);
@@ -927,7 +923,7 @@ double Optimize::run_auto_cv(const std::string job_prefix,
 }
 
 
-void Optimize::write_cvresult_to_file(const std::string file_out,
+void Optimize::write_cvresult_to_file(const std::string &file_out,
                                       const std::vector<double> &alphas,
                                       const std::vector<double> &training_error,
                                       const std::vector<double> &validation_error,
@@ -957,7 +953,7 @@ void Optimize::write_cvresult_to_file(const std::string file_out,
     ofs_cv.close();
 }
 
-void Optimize::write_cvscore_to_file(const std::string file_out,
+void Optimize::write_cvscore_to_file(const std::string &file_out,
                                      const std::vector<double> &alphas,
                                      const std::vector<double> &terr_mean,
                                      const std::vector<double> &terr_std,
@@ -1057,7 +1053,7 @@ void Optimize::solution_path(const int maxorder,
                              Eigen::VectorXd &b_validation,
                              const double fnorm,
                              const double fnorm_validation,
-                             const std::string file_coef,
+                             const std::string &file_coef,
                              const int verbosity,
                              const std::unique_ptr<Constraint> &constraint,
                              const std::vector<double> &alphas,
@@ -2258,9 +2254,11 @@ void Optimize::get_matrix_elements_unified(const int maxorder,
                 if (verbosity > 0) {
                     std::cout << "  Calculate the sensing matrix A using dense data type\n";
                     std::cout << "  Directly construct (A^T A) and (A^T b)\n";
-                    const auto memory_full = static_cast<float>(nrows * ncols * 8) / static_cast<float>(1024 * 1024 * 1024);
+                    const auto memory_full =
+                            static_cast<float>(nrows * ncols * 8) / static_cast<float>(1024 * 1024 * 1024);
                     const auto memory_chunk =
-                            static_cast<float>(optcontrol.chunk_size * ncols * 8) / static_cast<float>(1024 * 1024 * 1024);
+                            static_cast<float>(optcontrol.chunk_size * ncols * 8) /
+                            static_cast<float>(1024 * 1024 * 1024);
                     std::cout << "  At least " << std::fixed << std::setprecision(3)
                               << std::min(memory_full, memory_chunk) << " GiB of memory will be allocated.\n";
                 }

@@ -121,11 +121,11 @@ public:
     void set_validation_data(const std::vector<std::vector<double>> &u_validation_in,
                              const std::vector<std::vector<double>> &f_validation_in);
 
-    std::vector<std::vector<double>> get_u_train() const;
+    [[nodiscard]] std::vector<std::vector<double>> get_u_train() const;
 
-    std::vector<std::vector<double>> get_f_train() const;
+    [[nodiscard]] std::vector<std::vector<double>> get_f_train() const;
 
-    size_t get_number_of_data() const;
+    [[nodiscard]] size_t get_number_of_data() const;
 
     void get_matrix_elements_algebraic_constraint(const int maxorder,
                                                   std::vector<double> &amat,
@@ -154,15 +154,15 @@ public:
                         std::vector<size_t> *nequiv,
                         const std::unique_ptr<Constraint> &constraint);
 
-    size_t get_number_of_rows_sensing_matrix() const;
+    [[nodiscard]] size_t get_number_of_rows_sensing_matrix() const;
 
-    double *get_params() const;
+    [[nodiscard]] double *get_params() const;
 
     void set_optimizer_control(const OptimizerControl &);
 
-    OptimizerControl get_optimizer_control() const;
+    [[nodiscard]] OptimizerControl get_optimizer_control() const;
 
-    double get_cv_l1_alpha() const;
+    [[nodiscard]] double get_cv_l1_alpha() const;
 
 private:
 
@@ -183,7 +183,7 @@ private:
                          const std::unique_ptr<Symmetry> &symmetry) const;
 
     static int inprim_index(const int n,
-                     const std::unique_ptr<Symmetry> &symmetry) ;
+                            const std::unique_ptr<Symmetry> &symmetry);
 
     int least_squares(const int maxorder,
                       const size_t N,
@@ -195,7 +195,7 @@ private:
                       const std::unique_ptr<Constraint> &constraint,
                       std::vector<double> &param_out);
 
-    int compressive_sensing(const std::string job_prefix,
+    int compressive_sensing(const std::string &job_prefix,
                             const int maxorder,
                             const size_t N_new,
                             const size_t M,
@@ -213,27 +213,27 @@ private:
                            const std::unique_ptr<Constraint> &constraint,
                            const int verbosity);
 
-    double run_manual_cv(const std::string job_prefix,
+    double run_manual_cv(const std::string &job_prefix,
                          const int maxorder,
                          const std::unique_ptr<Fcs> &fcs,
                          const std::unique_ptr<Symmetry> &symmetry,
                          const std::unique_ptr<Constraint> &constraint,
                          const int verbosity);
 
-    double run_auto_cv(const std::string job_prefix,
+    double run_auto_cv(const std::string &job_prefix,
                        const int maxorder,
                        const std::unique_ptr<Fcs> &fcs,
                        const std::unique_ptr<Symmetry> &symmetry,
                        const std::unique_ptr<Constraint> &constraint,
                        const int verbosity);
 
-    void write_cvresult_to_file(const std::string file_out,
+    void write_cvresult_to_file(const std::string &file_out,
                                 const std::vector<double> &alphas,
                                 const std::vector<double> &training_error,
                                 const std::vector<double> &validation_error,
                                 const std::vector<std::vector<int>> &nonzeros) const;
 
-    void write_cvscore_to_file(const std::string file_out,
+    void write_cvscore_to_file(const std::string &file_out,
                                const std::vector<double> &alphas,
                                const std::vector<double> &terr_mean,
                                const std::vector<double> &terr_std,
@@ -281,8 +281,8 @@ private:
                             const Eigen::VectorXd &mean,
                             const Eigen::VectorXd &dev) const;
 
-    double get_estimated_max_alpha(const Eigen::MatrixXd &Amat,
-                                   const Eigen::VectorXd &bvec) const;
+    [[nodiscard]] double get_estimated_max_alpha(const Eigen::MatrixXd &Amat,
+                                                 const Eigen::VectorXd &bvec) const;
 
     static void apply_scaler_displacement(std::vector<std::vector<double>> &u_inout,
                                           const double normalization_factor,
@@ -353,18 +353,18 @@ private:
 
 
     void get_matrix_elements2(const int maxorder,
-                             const size_t ncycle,
-                             const size_t nrows,
-                             const size_t ncols,
-                             const size_t ncols_compact,
-                             std::unique_ptr<SensingMatrix> &matrix_out,
-                             const std::vector<std::vector<double>> &u_multi,
-                             const std::vector<std::vector<double>> &f_multi,
-                             const std::vector<std::vector<double>> &gamma_precomputed,
-                             const std::unique_ptr<Symmetry> &symmetry,
-                             const std::unique_ptr<Fcs> &fcs,
-                             const std::unique_ptr<Constraint> &constraint,
-                             const bool sparse) const;
+                              const size_t ncycle,
+                              const size_t nrows,
+                              const size_t ncols,
+                              const size_t ncols_compact,
+                              std::unique_ptr<SensingMatrix> &matrix_out,
+                              const std::vector<std::vector<double>> &u_multi,
+                              const std::vector<std::vector<double>> &f_multi,
+                              const std::vector<std::vector<double>> &gamma_precomputed,
+                              const std::unique_ptr<Symmetry> &symmetry,
+                              const std::unique_ptr<Fcs> &fcs,
+                              const std::unique_ptr<Constraint> &constraint,
+                              const bool sparse) const;
 
     void get_matrix_elements_normal_equation2(const int maxorder,
                                               const size_t ncycle,
@@ -420,7 +420,7 @@ private:
                                          const std::vector<size_t> *nequiv,
                                          const std::unique_ptr<Constraint> &constraint) const;
 
-    int factorial(const int) const;
+    [[nodiscard]] int factorial(const int) const;
 
     static int rankQRD(const size_t m,
                        const size_t n,
@@ -452,7 +452,7 @@ private:
                        Eigen::VectorXd &b_validation,
                        const double fnorm,
                        const double fnorm_validation,
-                       const std::string file_coef,
+                       const std::string &file_coef,
                        const int verbosity,
                        const std::unique_ptr<Constraint> &constraint,
                        const std::vector<double> &alphas,
