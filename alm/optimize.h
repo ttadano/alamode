@@ -127,16 +127,6 @@ public:
 
     [[nodiscard]] size_t get_number_of_data() const;
 
-    void get_matrix_elements_algebraic_constraint(const int maxorder,
-                                                  std::vector<double> &amat,
-                                                  std::vector<double> &bvec,
-                                                  const std::vector<std::vector<double>> &u_in,
-                                                  const std::vector<std::vector<double>> &f_in,
-                                                  double &fnorm,
-                                                  const std::unique_ptr<Symmetry> &symmetry,
-                                                  const std::unique_ptr<Fcs> &fcs,
-                                                  const std::unique_ptr<Constraint> &constraint) const;
-
     void get_matrix_elements_unified(const int maxorder,
                                      std::unique_ptr<SensingMatrix> &matrix_out,
                                      const std::vector<std::vector<double>> &u_in,

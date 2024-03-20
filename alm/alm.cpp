@@ -666,22 +666,30 @@ void ALM::get_matrix_elements(double *amat,
                                              get_optimizer_control().periodic_image_conv);
     }
 
-    optimize->get_matrix_elements_algebraic_constraint(maxorder,
-                                                       amat_vec,
-                                                       bvec_vec,
-                                                       optimize->get_u_train(),
-                                                       optimize->get_f_train(),
-                                                       fnorm,
-                                                       symmetry,
-                                                       fcs,
-                                                       constraint);
+    std::unique_ptr<SensingMatrix> matrix_out = std::make_unique<SensingMatrix>();
+
+    optimize->get_matrix_elements_unified(maxorder,
+                                          matrix_out,
+                                          optimize->get_u_train(),
+                                          optimize->get_f_train(),
+                                          symmetry, fcs, constraint,
+                                          true, false, false, 0);
+//    optimize->get_matrix_elements_algebraic_constraint(maxorder,
+//                                                       amat_vec,
+//                                                       bvec_vec,
+//                                                       optimize->get_u_train(),
+//                                                       optimize->get_f_train(),
+//                                                       fnorm,
+//                                                       symmetry,
+//                                                       fcs,
+//                                                       constraint);
     // This may be inefficient.
     auto i = 0;
-    for (const auto it: amat_vec) {
+    for (const auto it: matrix_out->amat_dense) {
         amat[i++] = it;
     }
     i = 0;
-    for (const auto it: bvec_vec) {
+    for (const auto it: matrix_out->bvec) {
         bvec[i++] = it;
     }
     //amat = amat_vec.data();

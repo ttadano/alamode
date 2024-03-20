@@ -75,15 +75,15 @@ int Optimize::optimize_main(const std::unique_ptr<Symmetry> &symmetry,
     const auto ndata_used_validation = filedata_validation.nend - filedata_validation.nstart + 1;
     auto info_fitting = 0;
     const auto M = get_number_of_rows_sensing_matrix();
-    size_t N = 0;
-    size_t N_new = 0;
+    size_t nparams = 0;
+    size_t nparams_irred = 0;
     for (auto i = 0; i < maxorder; ++i) {
-        N += fcs->get_nequiv()[i].size();
+        nparams += fcs->get_nequiv()[i].size();
     }
 
     if (constraint->get_constraint_algebraic()) {
         for (auto i = 0; i < maxorder; ++i) {
-            N_new += constraint->get_index_bimap(i).size();
+            nparams_irred += constraint->get_index_bimap(i).size();
         }
     }
 
@@ -114,22 +114,22 @@ int Optimize::optimize_main(const std::unique_ptr<Symmetry> &symmetry,
                           << " entries will be used for validation.\n\n";
             }
         }
-        std::cout << "  Total Number of Parameters : " << N << '\n';
+        std::cout << "  Total Number of Parameters : " << nparams << '\n';
         if (constraint->get_constraint_algebraic()) {
-            std::cout << "  Total Number of Free Parameters : " << N_new << '\n';
+            std::cout << "  Total Number of Free Parameters : " << nparams_irred << '\n';
         }
         std::cout << '\n';
     }
 
     // Run optimization and obtain force constants
 
-    std::vector<double> fcs_tmp(N, 0.0);
+    std::vector<double> fcs_tmp(nparams, 0.0);
     if (optcontrol.linear_model == 1) {
         // Use ordinary least-squares
 
         info_fitting = least_squares(maxorder,
-                                     N,
-                                     N_new,
+                                     nparams,
+                                     nparams_irred,
                                      M,
                                      verbosity,
                                      symmetry,
@@ -172,7 +172,7 @@ int Optimize::optimize_main(const std::unique_ptr<Symmetry> &symmetry,
 
         info_fitting = compressive_sensing(file_prefix,
                                            maxorder,
-                                           N_new,
+                                           nparams_irred,
                                            M,
                                            symmetry,
                                            str_order,
@@ -188,8 +188,8 @@ int Optimize::optimize_main(const std::unique_ptr<Symmetry> &symmetry,
         if (params) {
             deallocate(params);
         }
-        allocate(params, N);
-        for (auto i = 0; i < N; ++i) params[i] = fcs_tmp[i];
+        allocate(params, nparams);
+        for (auto i = 0; i < nparams; ++i) params[i] = fcs_tmp[i];
 
         // Set calculated force constants in FCS class
         auto maxorder_min = std::min(maxorder, output_maxorder);
@@ -1244,7 +1244,6 @@ void Optimize::optimize_with_given_l1alpha(const int maxorder,
     // Start Elastic-net or adaptive lasso optimization
     int i;
     bool *has_prod;
-    double fnorm;
 
     Eigen::MatrixXd A, Prod;
     Eigen::VectorXd b, grad0, grad, x;
@@ -1253,22 +1252,20 @@ void Optimize::optimize_with_given_l1alpha(const int maxorder,
     Eigen::VectorXd mean, dev;
     Eigen::VectorXd weight_adalasso;
 
-    std::vector<double> amat_1D;
-    std::vector<double> bvec;
 
-    get_matrix_elements_algebraic_constraint(maxorder,
-                                             amat_1D,
-                                             bvec,
-                                             u_train,
-                                             f_train,
-                                             fnorm,
-                                             symmetry,
-                                             fcs,
-                                             constraint);
+    std::unique_ptr<SensingMatrix> matrix_train = std::make_unique<SensingMatrix>();
+    get_matrix_elements_unified(maxorder, matrix_train, u_train, f_train,
+                                symmetry, fcs, constraint,
+                                true, false, false);
 
+    double fnorm = 0.0;
+    for (const auto &it: matrix_train->original_forces) {
+        fnorm += it * it;
+    }
+    fnorm = std::sqrt(fnorm);
 
-    A = Eigen::Map<Eigen::MatrixXd>(&amat_1D[0], M, N_new);
-    b = Eigen::Map<Eigen::VectorXd>(&bvec[0], M);
+    A = Eigen::Map<Eigen::MatrixXd>(matrix_train->amat_dense.data(), M, N_new);
+    b = Eigen::Map<Eigen::VectorXd>(matrix_train->bvec.data(), M);
 
     if (optcontrol.linear_model == 3) {
         Eigen::VectorXd x_ols = A.colPivHouseholderQr().solve(b);
@@ -2753,230 +2750,6 @@ void Optimize::project_constraints(const int maxorder,
         ishift += fcs->get_nequiv()[order].size();
         iparam += constraint->get_index_bimap(order).size();
     }
-}
-
-
-void Optimize::get_matrix_elements_algebraic_constraint(const int maxorder,
-                                                        std::vector<double> &amat,
-                                                        std::vector<double> &bvec,
-                                                        const std::vector<std::vector<double>> &u_in,
-                                                        const std::vector<std::vector<double>> &f_in,
-                                                        double &fnorm,
-                                                        const std::unique_ptr<Symmetry> &symmetry,
-                                                        const std::unique_ptr<Fcs> &fcs,
-                                                        const std::unique_ptr<Constraint> &constraint) const
-{
-    size_t i, j;
-    long irow;
-
-    if (u_in.size() != f_in.size()) {
-        exit("get_matrix_elements",
-             "The lengths of displacement array and force array are diferent.");
-    }
-
-    const auto ndata_fit = u_in.size();
-    const auto natmin = symmetry->get_nat_trueprim();
-    const auto natmin3 = 3 * natmin;
-    const auto nrows = u_in.size() * u_in[0].size();
-    size_t ncols = 0;
-    size_t ncols_new = 0;
-
-    for (i = 0; i < maxorder; ++i) {
-        ncols += fcs->get_nequiv()[i].size();
-        ncols_new += constraint->get_index_bimap(i).size();
-    }
-
-    const auto ncycle = ndata_fit * symmetry->get_ntran();
-
-    if (amat.size() != nrows * ncols_new) {
-        amat.resize(nrows * ncols_new, 0.0);
-    }
-    if (bvec.size() != nrows) {
-        bvec.resize(nrows, 0.0);
-    }
-
-    std::vector<double> bvec_orig(nrows, 0.0);
-    std::vector<std::vector<double>> u_multi, f_multi;
-
-    data_multiplier(u_in, u_multi, symmetry);
-    data_multiplier(f_in, f_multi, symmetry);
-
-    if (fcs->get_forceconstant_basis() == "Lattice") {
-        apply_basis_converter(u_multi,
-                              fcs->get_basis_conversion_matrix());
-    }
-
-    std::vector<int> ind_tmp(maxorder + 1);
-
-    // Precompute the product of gamma and sign,
-    // which does not change durint the iteration over the training data
-    std::vector<std::vector<double>> gamma_precomputed(maxorder);
-    for (auto order = 0; order < maxorder; ++order) {
-        auto ii = 0;
-
-        gamma_precomputed[order].resize(fcs->get_fc_table()[order].size(), 0.0);
-
-        for (const auto &iter: fcs->get_nequiv()[order]) {
-            for (i = 0; i < iter; ++i) {
-                ind_tmp[0] = fcs->get_fc_table()[order][ii].elems[0];
-                for (j = 1; j < order + 2; ++j) {
-                    ind_tmp[j] = fcs->get_fc_table()[order][ii].elems[j];
-                }
-                gamma_precomputed[order][ii] = gamma(order + 2, ind_tmp.data())
-                                               * fcs->get_fc_table()[order][ii].sign;
-                ++ii;
-            }
-        }
-    }
-
-
-#ifdef _OPENMP
-#pragma omp parallel private(irow, i, j)
-#endif
-    {
-        int mm, order, iat, k;
-        size_t im;
-        size_t idata;
-        size_t ishift, iparam;
-        size_t iold, inew;
-        double amat_tmp;
-        double **amat_orig_tmp;
-        double **amat_mod_tmp;
-
-        allocate(amat_orig_tmp, natmin3, ncols);
-        allocate(amat_mod_tmp, natmin3, ncols_new);
-
-#ifdef _OPENMP
-#pragma omp for
-#endif
-        for (irow = 0; irow < ncycle; ++irow) {
-
-            // generate r.h.s vector B
-            for (i = 0; i < natmin; ++i) {
-                iat = symmetry->get_map_trueprim_to_super()[i][0];
-                for (j = 0; j < 3; ++j) {
-                    im = 3 * i + j + natmin3 * irow;
-                    bvec[im] = f_multi[irow][3 * iat + j];
-                    bvec_orig[im] = f_multi[irow][3 * iat + j];
-                }
-            }
-
-            for (i = 0; i < natmin3; ++i) {
-                for (j = 0; j < ncols; ++j) {
-                    amat_orig_tmp[i][j] = 0.0;
-                }
-                for (j = 0; j < ncols_new; ++j) {
-                    amat_mod_tmp[i][j] = 0.0;
-                }
-            }
-
-            // generate l.h.s. matrix A
-
-            idata = natmin3 * irow;
-            iparam = 0;
-
-            for (order = 0; order < maxorder; ++order) {
-
-                mm = 0;
-
-                for (const auto &iter: fcs->get_nequiv()[order]) {
-                    for (i = 0; i < iter; ++i) {
-                        k = inprim_index(fcs->get_fc_table()[order][mm].elems[0], symmetry);
-                        amat_tmp = 1.0;
-                        for (j = 1; j < order + 2; ++j) {
-                            amat_tmp *= u_multi[irow][fcs->get_fc_table()[order][mm].elems[j]];
-                        }
-                        amat_orig_tmp[k][iparam] -= gamma_precomputed[order][mm] * amat_tmp;
-                        ++mm;
-                    }
-                    ++iparam;
-                }
-            }
-
-            // When the force constants are defined in the fractional coordinate,
-            // we need to multiply the basis_conversion_matrix to obtain atomic forces
-            // in the Cartesian coordinate.
-            if (fcs->get_forceconstant_basis() == "Lattice") {
-                apply_basis_converter_amat(natmin3,
-                                           ncols,
-                                           amat_orig_tmp,
-                                           fcs->get_basis_conversion_matrix());
-            }
-
-            // Convert the full matrix and vector into a smaller irreducible form
-            // by using constraint information.
-
-            ishift = 0;
-            iparam = 0;
-
-            for (order = 0; order < maxorder; ++order) {
-
-                for (i = 0; i < constraint->get_const_fix(order).size(); ++i) {
-
-                    for (j = 0; j < natmin3; ++j) {
-                        bvec[j + idata] -= constraint->get_const_fix(order)[i].val_to_fix
-                                           * amat_orig_tmp[j][ishift +
-                                                              constraint->get_const_fix(order)[i].p_index_target];
-                    }
-                }
-
-                for (const auto &it: constraint->get_index_bimap(order)) {
-                    inew = it.left + iparam;
-                    iold = it.right + ishift;
-
-                    for (j = 0; j < natmin3; ++j) {
-                        amat_mod_tmp[j][inew] = amat_orig_tmp[j][iold];
-                    }
-                }
-
-                for (i = 0; i < constraint->get_const_relate(order).size(); ++i) {
-
-                    iold = constraint->get_const_relate(order)[i].p_index_target + ishift;
-
-                    for (j = 0; j < constraint->get_const_relate(order)[i].alpha.size(); ++j) {
-
-                        // This part can issue an error when the constraint matrix is deviate from rref.
-//                        const auto right_value =  constraint->get_const_relate(order)[i].p_index_orig[j];
-//                        std::cout << "right = " << right_value << '\n'<< std::flush;
-//                        if (constraint->get_index_bimap(order).right.find(right_value) == constraint->get_index_bimap(order).right.end()) {
-//                            std::cout << "The key not found \n" << '\n' << std::flush;
-//                            std::exit(1);
-//                        }
-                        inew = constraint->get_index_bimap(order).right.at(
-                                constraint->get_const_relate(order)[i].p_index_orig[j]) +
-                               iparam;
-
-                        for (k = 0; k < natmin3; ++k) {
-                            amat_mod_tmp[k][inew] -= amat_orig_tmp[k][iold]
-                                                     * constraint->get_const_relate(order)[i].alpha[j];
-                        }
-                    }
-                }
-
-                ishift += fcs->get_nequiv()[order].size();
-                iparam += constraint->get_index_bimap(order).size();
-            }
-
-            for (i = 0; i < natmin3; ++i) {
-                for (j = 0; j < ncols_new; ++j) {
-                    // Transpose here for later use of lapack without transpose
-                    amat[natmin3 * ncycle * j + i + idata] = amat_mod_tmp[i][j];
-                }
-            }
-        }
-
-        deallocate(amat_orig_tmp);
-        deallocate(amat_mod_tmp);
-    }
-
-    fnorm = 0.0;
-    for (i = 0; i < bvec_orig.size(); ++i) {
-        fnorm += bvec_orig[i] * bvec_orig[i];
-    }
-    fnorm = std::sqrt(fnorm);
-
-    u_multi.clear();
-    f_multi.clear();
 }
 
 void Optimize::recover_original_forceconstants(const int maxorder,

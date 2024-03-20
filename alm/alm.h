@@ -52,7 +52,7 @@ public:
 
     void set_verbosity(int verbosity_in);
 
-    int get_verbosity() const;
+    [[nodiscard]] int get_verbosity() const;
 
     void set_output_filename_prefix(std::string prefix) const;
 
@@ -109,7 +109,7 @@ public:
 
     void set_fc_fix(const int order, const bool fc_fix) const;
 
-    bool ready_all_constraints() const;
+    [[nodiscard]] bool ready_all_constraints() const;
 
     void set_forceconstants_to_fix(const std::vector<std::vector<int>> &intpair_fix,
                                    const std::vector<double> &values_fix) const;
@@ -118,15 +118,15 @@ public:
 
     void set_forceconstant_basis(const std::string preferred_basis) const;
 
-    std::string get_forceconstant_basis() const;
+    [[nodiscard]] std::string get_forceconstant_basis() const;
 
     void set_nmaxsave(const int nmaxsave) const; // NMAXSAVE
 
-    int get_nmaxsave() const;
+    [[nodiscard]] int get_nmaxsave() const;
 
     void set_compression_level(const int level) const; // COMPRESSION
 
-    int get_compression_level() const;
+    [[nodiscard]] int get_compression_level() const;
 
     //void set_fitting_filenames(std::string dfile,
     //                           std::string ffile) const;
@@ -136,51 +136,51 @@ public:
                 const double *cutoff_radii) const;
 
     //int get_ndata_used() const;
-    OptimizerControl get_optimizer_control() const;
+    [[nodiscard]] OptimizerControl get_optimizer_control() const;
 
-    std::vector<std::vector<double>> get_u_train() const;
+    [[nodiscard]] std::vector<std::vector<double>> get_u_train() const;
 
-    std::vector<std::vector<double>> get_f_train() const;
+    [[nodiscard]] std::vector<std::vector<double>> get_f_train() const;
 
-    size_t get_number_of_data() const;
+    [[nodiscard]] size_t get_number_of_data() const;
 
-    size_t get_nrows_sensing_matrix() const;
+    [[nodiscard]] size_t get_nrows_sensing_matrix() const;
 
-    double get_cv_l1_alpha() const;
+    [[nodiscard]] double get_cv_l1_alpha() const;
 
-    double get_symmetry_tolerance() const;
+    [[nodiscard]] double get_symmetry_tolerance() const;
 
-    Cell get_supercell() const;
+    [[nodiscard]] Cell get_supercell() const;
 
-    std::vector<std::string> get_kdname() const;
+    [[nodiscard]] std::vector<std::string> get_kdname() const;
 
-    Spin get_spin() const;
+    [[nodiscard]] Spin get_spin() const;
 
     void set_str_magmom(std::string);
 
-    std::string get_str_magmom() const;
+    [[nodiscard]] std::string get_str_magmom() const;
 
-    const std::vector<Eigen::MatrixXd> &get_x_image() const;
+    [[nodiscard]] const std::vector<Eigen::MatrixXd> &get_x_image() const;
 
-    int *get_periodicity() const;
+    [[nodiscard]] int *get_periodicity() const;
 
-    const std::vector<std::vector<int>> &get_atom_mapping_by_pure_translations() const;
+    [[nodiscard]] const std::vector<std::vector<int>> &get_atom_mapping_by_pure_translations() const;
 
-    int get_maxorder() const;
+    [[nodiscard]] int get_maxorder() const;
 
-    int *get_nbody_include() const;
+    [[nodiscard]] int *get_nbody_include() const;
 
-    size_t get_number_of_displacement_patterns(const int fc_order) const; // harmonic=1, ...
+    [[nodiscard]] size_t get_number_of_displacement_patterns(const int fc_order) const; // harmonic=1, ...
     void get_number_of_displaced_atoms(int *numbers,
                                        int fc_order) const; // harmonic=1, ...
     int get_displacement_patterns(int *atom_indices,
                                   double *disp_patterns,
                                   int fc_order) const;          // harmonic=1, ...
-    size_t get_number_of_fc_elements(const int fc_order) const; // harmonic=1, ...
-    size_t get_number_of_irred_fc_elements(const int fc_order); // harmonic=1, ...
+    [[nodiscard]] size_t get_number_of_fc_elements(const int fc_order) const; // harmonic=1, ...
+    [[nodiscard]] size_t get_number_of_irred_fc_elements(const int fc_order); // harmonic=1, ...
 
-    size_t get_number_of_fc_origin(const int fc_order, // harmonic = 1
-                                   const int permutation) const;
+    [[nodiscard]] size_t get_number_of_fc_origin(const int fc_order, // harmonic = 1
+                                                 const int permutation) const;
 
     void get_fc_origin(double *fc_values,
                        int *elem_indices, // (len(fc_value), fc_order) is flatten.
@@ -202,7 +202,7 @@ public:
 
     void set_fc_zero_threshold(const double threshold_in);
 
-    double get_fc_zero_threshold() const;
+    [[nodiscard]] double get_fc_zero_threshold() const;
 
     void get_matrix_elements(double *amat,
                              double *bvec);
@@ -223,11 +223,11 @@ public:
 
     void set_input_vars(const std::map<std::string, std::string> &input_var_dict) const;
 
-    std::string get_input_var(const std::string &key) const;
+    [[nodiscard]] std::string get_input_var(const std::string &key) const;
 
     void set_pattern_format(const std::string &format_name) const;
 
-    std::string get_format_pattern() const;
+    [[nodiscard]] std::string get_format_pattern() const;
 
 private:
 
