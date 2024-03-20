@@ -223,18 +223,18 @@ public:
                                 std::vector<ConstraintTypeRelate> *const_relate_out,
                                 boost::bimap<size_t, size_t> *index_bimap_out) const;
 
-    int get_constraint_mode() const;
+    [[nodiscard]] int get_constraint_mode() const;
 
     void set_constraint_mode(const int);
 
-    size_t get_number_of_constraints() const;
+    [[nodiscard]] size_t get_number_of_constraints() const;
 
-    std::string get_fc_file(const int) const;
+    [[nodiscard]] std::string get_fc_file(const int) const;
 
     void set_fc_file(const int,
                      const std::string);
 
-    bool get_fix_harmonic() const;
+    [[nodiscard]] bool get_fix_harmonic() const;
 
     void set_fix_harmonic(const bool);
 
@@ -244,33 +244,33 @@ public:
 
     void set_constraint_algebraic(const int constraint_algebraic_in);
 
-    int get_constraint_algebraic() const;
+    [[nodiscard]] int get_constraint_algebraic() const;
 
-    double **get_const_mat() const;
+    [[nodiscard]] double **get_const_mat() const;
 
-    double *get_const_rhs() const;
+    [[nodiscard]] double *get_const_rhs() const;
 
-    double get_tolerance_constraint() const;
+    [[nodiscard]] double get_tolerance_constraint() const;
 
     void set_tolerance_constraint(const double);
 
-    bool get_exist_constraint() const;
+    [[nodiscard]] bool get_exist_constraint() const;
 
-    std::string get_rotation_axis() const;
+    [[nodiscard]] std::string get_rotation_axis() const;
 
     void set_rotation_axis(const std::string);
 
-    const ConstraintSparseForm &get_const_symmetry(const int) const;
+    [[nodiscard]] const ConstraintSparseForm &get_const_symmetry(const int) const;
 
-    const std::vector<ConstraintTypeFix> &get_const_fix(const int) const;
+    [[nodiscard]] const std::vector<ConstraintTypeFix> &get_const_fix(const int) const;
 
     void set_const_fix_val_to_fix(const int order,
                                   const size_t idx,
                                   const double val);
 
-    const std::vector<ConstraintTypeRelate> &get_const_relate(const int) const;
+    [[nodiscard]] const std::vector<ConstraintTypeRelate> &get_const_relate(const int) const;
 
-    const boost::bimap<size_t, size_t> &get_index_bimap(const int) const;
+    [[nodiscard]] const boost::bimap<size_t, size_t> &get_index_bimap(const int) const;
 
     void set_constraint_flag(const std::string const_name, const int use_constraint);
 
@@ -286,7 +286,7 @@ public:
                                   const int verbosity,
                                   const int periodic_image_conv);
 
-    bool ready_all_constraints() const;
+    [[nodiscard]] bool ready_all_constraints() const;
 
 private:
 
@@ -328,9 +328,9 @@ private:
 
     void deallocate_variables();
 
-    int levi_civita(const int,
-                    const int,
-                    const int) const;
+    [[nodiscard]] int levi_civita(const int,
+                                  const int,
+                                  const int) const;
 
     void generate_rotational_constraint(const std::unique_ptr<System> &system,
                                         const std::unique_ptr<Symmetry> &symmetry,
@@ -341,9 +341,9 @@ private:
 
 
     // const_mat and const_rhs are updated.
-    size_t calc_constraint_matrix(const int maxorder,
-                                  const std::vector<size_t> *nequiv,
-                                  const size_t nparams) const;
+    [[nodiscard]] size_t calc_constraint_matrix(const int maxorder,
+                                                const std::vector<size_t> *nequiv,
+                                                const size_t nparams) const;
 
     void print_constraint(const ConstraintSparseForm &) const;
 
@@ -351,17 +351,17 @@ private:
 
     void setup_rotation_axis(bool [3][3]);
 
-    bool is_allzero(const int,
-                    const double *,
-                    const int nshift = 0) const;
+    [[nodiscard]] bool is_allzero(const int,
+                                  const double *,
+                                  const int nshift = 0) const;
 
-    bool is_allzero(const std::vector<int> &,
-                    int &) const;
+    [[nodiscard]] bool is_allzero(const std::vector<int> &,
+                                  int &) const;
 
-    bool is_allzero(const std::vector<double> &,
-                    const double,
-                    int &,
-                    const int nshift = 0) const;
+    [[nodiscard]] bool is_allzero(const std::vector<double> &,
+                                  const double,
+                                  int &,
+                                  const int nshift = 0) const;
 
 
     void remove_redundant_rows(const size_t n,

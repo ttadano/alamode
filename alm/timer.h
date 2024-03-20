@@ -35,18 +35,18 @@ public:
 
     void stop_clock(std::string);
 
-    double get_walltime(std::string);
+    [[nodiscard]] double get_walltime(std::string);
 
-    double get_cputime(std::string);
+    [[nodiscard]] double get_cputime(std::string);
 
-    static std::string DateAndTime();
+    [[nodiscard]] static std::string DateAndTime();
 
 private:
     void reset();
 
-    double elapsed_walltime() const;
+    [[nodiscard]] double elapsed_walltime() const;
 
-    double elapsed_cputime() const;
+    [[nodiscard]] double elapsed_cputime() const;
 
     std::map<std::string, double> walltime;
     std::map<std::string, double> cputime;

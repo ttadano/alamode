@@ -574,7 +574,7 @@ void System::set_atomtype_group(const Cell &cell_in,
 
     unsigned int i;
     AtomType type_tmp{};
-    std::set<AtomType> set_type;
+    std::set < AtomType > set_type;
     set_type.clear();
 
     for (i = 0; i < cell_in.number_of_atoms; ++i) {

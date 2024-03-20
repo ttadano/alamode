@@ -2707,7 +2707,7 @@ void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmet
 
         fcs->translate_forceconstant_index_to_centercell(symmetry,
                                                          intpair_to_fix);
-        std::set<ForceConstantTable> fc_fix_table;
+        std::set < ForceConstantTable > fc_fix_table;
 
         const auto nfcs = intpair_to_fix.size();
 
@@ -2765,7 +2765,7 @@ void Constraint::generate_fix_constraint(const std::unique_ptr<Symmetry> &symmet
 
         const auto nfcs = intpair_to_fix.size();
 
-        std::set<ForceConstantTable> fc_fix_table;
+        std::set < ForceConstantTable > fc_fix_table;
 
         for (auto i = 0; i < nfcs; ++i) {
             fc_fix_table.insert(ForceConstantTable(values_fix_fc3[i],

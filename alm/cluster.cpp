@@ -1085,7 +1085,7 @@ void Cluster::set_interaction_cluster(const int order,
                 std::vector<int> accum_tmp;
                 std::vector<MinDistList> distance_list;
                 std::vector<std::vector<int>> pairs_icell, comb_cell, comb_cell_min;
-                std::set<InteractionCluster> interaction_cluster_omp;
+                std::set < InteractionCluster > interaction_cluster_omp;
 
                 int icount;
 

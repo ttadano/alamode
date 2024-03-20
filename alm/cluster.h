@@ -276,19 +276,19 @@ public:
                 const int *nbody_include_in,
                 const double *cutoff_radii_in);
 
-    int get_maxorder() const;
+    [[nodiscard]] int get_maxorder() const;
 
-    int *get_nbody_include() const;
+    [[nodiscard]] int *get_nbody_include() const;
 
-    std::string get_ordername(const unsigned int order) const;
+    [[nodiscard]] std::string get_ordername(const unsigned int order) const;
 
-    const std::set<IntList> &get_unique_clusters(const unsigned int order) const;
+    [[nodiscard]] const std::set<IntList> &get_unique_clusters(const unsigned int order) const;
 
-    const std::vector<int> &get_atoms_in_cutoff(const unsigned int order,
-                                                const size_t atom_index) const;
+    [[nodiscard]] const std::vector<int> &get_atoms_in_cutoff(const unsigned int order,
+                                                              const size_t atom_index) const;
 
-    const std::set<InteractionCluster> &get_interaction_cluster(const unsigned int order,
-                                                                const size_t atom_index) const;
+    [[nodiscard]] const std::set<InteractionCluster> &get_interaction_cluster(const unsigned int order,
+                                                                              const size_t atom_index) const;
 
 private:
 
@@ -335,8 +335,8 @@ private:
                                        const std::vector<std::string> &kdname,
                                        const std::vector<std::vector<std::vector<int>>> &interaction_list) const;
 
-    double distance(const Eigen::MatrixXd &x1,
-                    const Eigen::MatrixXd &x2) const;
+    [[nodiscard]] double distance(const Eigen::MatrixXd &x1,
+                                  const Eigen::MatrixXd &x2) const;
 
     static int nbody(const int,
                      const int *);
@@ -375,9 +375,9 @@ private:
                                   const std::unique_ptr<Symmetry> &symmetry,
                                   std::vector<int> &symnum_tran_to_prim);
 
-    bool is_inprim(const int iat, // atom index in supercell
-                   const size_t natmin,
-                   const std::vector<std::vector<int>> &map_p2s) const;
+    [[nodiscard]] bool is_inprim(const int iat, // atom index in supercell
+                                 const size_t natmin,
+                                 const std::vector<std::vector<int>> &map_p2s) const;
 };
 }
 

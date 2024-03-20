@@ -139,27 +139,27 @@ public:
 
     void set_fcs_save_flag(const std::string key_str, const int val);
 
-    int get_fcs_save_flag(const std::string key_str);
+    [[nodiscard]] int get_fcs_save_flag(const std::string key_str);
 
     void set_filename_fcs(const std::string filename_in);
 
-    std::string get_filename_fcs() const;
+    [[nodiscard]] std::string get_filename_fcs() const;
 
     void set_output_maxorder(const int maxorder);
 
-    int get_output_maxorder() const;
+    [[nodiscard]] int get_output_maxorder() const;
 
     void set_compression_level(const int level);
 
-    int get_compression_level() const;
+    [[nodiscard]] int get_compression_level() const;
 
     void set_input_vars(const std::map<std::string, std::string> &input_var_dict);
 
-    std::string get_input_var(const std::string &key) const;
+    [[nodiscard]] std::string get_input_var(const std::string &key) const;
 
     void set_format_patternfile(const std::string &format_name);
 
-    std::string get_format_patternfile() const;
+    [[nodiscard]] std::string get_format_patternfile() const;
 
 private:
     void write_force_constants(const std::unique_ptr<Cluster> &cluster,
@@ -225,10 +225,10 @@ private:
                                       const std::string fname_out,
                                       const int verbosity) const;
 
-    std::string easyvizint(int) const;
+    [[nodiscard]] std::string easyvizint(int) const;
 
-    std::string double2string(double,
-                              int nprec = 15) const;
+    [[nodiscard]] std::string double2string(double,
+                                            int nprec = 15) const;
 
     std::map<std::string, int> save_format_flags;
     int output_maxorder, compression_level;

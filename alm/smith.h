@@ -10,15 +10,15 @@
 
 #include <Eigen/Core>
 
-int gcd(const int &a, const int &b);
+[[nodiscard]] int gcd(const int &a, const int &b);
 
-int exgcd(const int &a, const int &b, int &x, int &y);
+[[nodiscard]] int exgcd(const int &a, const int &b, int &x, int &y);
 
-bool is_lone(const Eigen::MatrixXi &A, const int s);
+[[nodiscard]] bool is_lone(const Eigen::MatrixXi &A, const int s);
 
-int locate_minval_lower_right(const Eigen::MatrixXi &A, const int s, int &irow, int &icol);
+[[nodiscard]] int locate_minval_lower_right(const Eigen::MatrixXi &A, const int s, int &irow, int &icol);
 
-bool check_divide_subelements(const Eigen::MatrixXi &A, const int s, int &irow, int &icol);
+[[nodiscard]] bool check_divide_subelements(const Eigen::MatrixXi &A, const int s, int &irow, int &icol);
 
 void swap_rows(Eigen::MatrixXi &A, const int irow, const int jrow);
 

@@ -49,7 +49,7 @@ void Displace::gen_displacement_pattern(const std::unique_ptr<Cluster> &cluster,
     std::vector<int> group_tmp;
     ConstraintSparseForm *constsym;
     std::set<int> *include_set;
-    std::set<DispAtomSet> *dispset;
+    std::set < DispAtomSet > *dispset;
 
     std::vector<size_t> *nequiv;
     std::vector<FcProperty> *fc_table, *fc_zeros;

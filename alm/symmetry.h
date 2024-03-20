@@ -122,33 +122,33 @@ public:
               const int verbosity,
               std::unique_ptr<Timer> &timer);
 
-    double get_tolerance() const;
+    [[nodiscard]] double get_tolerance() const;
 
     void set_tolerance(const double);
 
-    int get_print_symmetry() const;
+    [[nodiscard]] int get_print_symmetry() const;
 
     void set_print_symmetry(const int);
 
-    const std::vector<Maps> &get_map_super_to_trueprim() const;
+    [[nodiscard]] const std::vector<Maps> &get_map_super_to_trueprim() const;
 
-    const std::vector<Maps> &get_map_prim_to_trueprim() const;
+    [[nodiscard]] const std::vector<Maps> &get_map_prim_to_trueprim() const;
 
-    const std::vector<std::vector<int>> &get_map_trueprim_to_super() const;
+    [[nodiscard]] const std::vector<std::vector<int>> &get_map_trueprim_to_super() const;
 
-    const std::vector<std::vector<int>> &get_map_trueprim_to_prim() const;
+    [[nodiscard]] const std::vector<std::vector<int>> &get_map_trueprim_to_prim() const;
 
-    const std::vector<SymmetryOperation> &get_symmetry_data(const std::string cell = "super") const;
+    [[nodiscard]] const std::vector<SymmetryOperation> &get_symmetry_data(const std::string cell = "super") const;
 
-    const std::vector<std::vector<int>> &get_map_sym() const;
+    [[nodiscard]] const std::vector<std::vector<int>> &get_map_sym() const;
 
-    const std::vector<int> &get_symnum_tran(const std::string cell = "super") const;
+    [[nodiscard]] const std::vector<int> &get_symnum_tran(const std::string cell = "super") const;
 
-    size_t get_nsym(const std::string cell = "super") const;
+    [[nodiscard]] size_t get_nsym(const std::string cell = "super") const;
 
-    size_t get_ntran(const std::string cell = "super") const;
+    [[nodiscard]] size_t get_ntran(const std::string cell = "super") const;
 
-    size_t get_nat_trueprim() const;
+    [[nodiscard]] size_t get_nat_trueprim() const;
 
 private:
     size_t nsym_super, ntran_super;
@@ -208,11 +208,11 @@ private:
                        std::string &,
                        std::vector<SymmetryOperation> &symm_out) const;
 
-    bool is_translation(const int [3][3]) const;
+    [[nodiscard]] bool is_translation(const int [3][3]) const;
 
-    bool is_translation(const Eigen::Matrix3i &rot) const;
+    [[nodiscard]] bool is_translation(const Eigen::Matrix3i &rot) const;
 
-    bool is_proper(const Eigen::Matrix3d &rot) const;
+    [[nodiscard]] bool is_proper(const Eigen::Matrix3d &rot) const;
 
     void symop_in_cart(Eigen::Matrix3d &rot_cart,
                        const Eigen::Matrix3i &rot_lattice,

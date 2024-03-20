@@ -810,7 +810,7 @@ void InputParser::parse_structure_poscar(const std::string &fname_poscar,
 
     std::string str_species;
     std::vector<std::string> species_v;
-    std::set<std::string> unique_species;
+    std::set < std::string > unique_species;
     std::set<std::string>::iterator it_set;
     std::map<std::string, int> map_kindname_to_index;
 
@@ -1392,7 +1392,7 @@ void InputParser::parse_cutoff_radii()
     size_t i, j, k;
     int order;
     std::vector<std::string> cutoff_line;
-    std::set<std::string> element_allowed;
+    std::set < std::string > element_allowed;
     std::vector<std::string> str_pair;
     std::map<std::string, int> kd_map;
 
@@ -1531,7 +1531,7 @@ void InputParser::get_var_dict(const std::vector<std::string> &input_list,
     std::string::size_type pos_first_comment_tag;
     std::vector<std::string> str_entry, str_varval;
 
-    std::set<std::string> keyword_set;
+    std::set < std::string > keyword_set;
 
     for (const auto &it: input_list) {
         keyword_set.insert(it);

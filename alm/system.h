@@ -86,28 +86,29 @@ public:
 
     void set_tolerance(const double tolerance);
 
-    const Cell &get_supercell() const;
+    [[nodiscard]] const Cell &get_supercell() const;
 
-    const Cell &get_primcell() const;
+    [[nodiscard]] const Cell &get_primcell() const;
 
-    const Cell &get_inputcell() const;
+    [[nodiscard]] const Cell &get_inputcell() const;
 
-    const std::vector<Eigen::MatrixXd> &get_x_image() const;
+    [[nodiscard]] const std::vector<Eigen::MatrixXd> &get_x_image() const;
 
-    int *get_exist_image() const;
+    [[nodiscard]] int *get_exist_image() const;
 
-    const std::vector<std::string> &get_kdname() const;
+    [[nodiscard]] const std::vector<std::string> &get_kdname() const;
 
-    int *get_periodicity() const;
+    [[nodiscard]] int *get_periodicity() const;
 
-    const Spin &get_spin(const std::string cell = "super") const;
+    [[nodiscard]] const Spin &get_spin(const std::string cell = "super") const;
 
-    const std::string &get_str_magmom() const;
+    [[nodiscard]] const std::string &get_str_magmom() const;
 
-    const std::vector<std::vector<unsigned int>> &get_atomtype_group(const std::string cell = "super") const;
+    [[nodiscard]] const std::vector<std::vector<unsigned int>> &
+    get_atomtype_group(const std::string cell = "super") const;
 
-    Eigen::Matrix3d compute_transmat_to_prim_using_spglib(const Cell &cell_input,
-                                                          const double symprec) const;
+    [[nodiscard]] Eigen::Matrix3d compute_transmat_to_prim_using_spglib(const Cell &cell_input,
+                                                                        const double symprec) const;
 
 
 private:
@@ -150,8 +151,8 @@ private:
 
     void deallocate_variables();
 
-    double volume(const Eigen::Matrix3d &mat_in,
-                  const LatticeType latttype_in) const;
+    [[nodiscard]] double volume(const Eigen::Matrix3d &mat_in,
+                                const LatticeType latttype_in) const;
 
     static void set_atomtype_group(const Cell &cell_in,
                                    const Spin &spin_in,

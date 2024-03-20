@@ -83,18 +83,18 @@ private:
 
     void parse_optimize_vars(ALM *alm);
 
-    int locate_tag(const std::string);
+    [[nodiscard]] int locate_tag(const std::string);
 
     static void split_str_by_space(const std::string,
                                    std::vector<std::string> &);
 
-    static bool is_endof_entry(const std::string);
+    [[nodiscard]] static bool is_endof_entry(const std::string);
 
     void get_var_dict(const std::vector<std::string> &,
                       std::map<std::string,
                               std::string> &);
 
-    bool is_data_range_consistent(const DispForceFile &datfile_in) const;
+    [[nodiscard]] bool is_data_range_consistent(const DispForceFile &datfile_in) const;
 
     template<typename T>
     void assign_val(T &,
