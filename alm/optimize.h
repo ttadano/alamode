@@ -92,6 +92,7 @@ class SensingMatrix {
 public:
     std::vector<double> amat_dense; // Sensing matrix A (dense)
     std::vector<double> bvec; // vector b
+    std::vector<double> original_forces; // stored to compute the relative errors
     SpMat amat_sparse; // Sensing matrix A (sparse form)
 };
 
@@ -140,13 +141,13 @@ public:
                                      std::unique_ptr<SensingMatrix> &matrix_out,
                                      const std::vector<std::vector<double>> &u_in,
                                      const std::vector<std::vector<double>> &f_in,
-                                     double &fnorm,
                                      const std::unique_ptr<Symmetry> &symmetry,
                                      const std::unique_ptr<Fcs> &fcs,
                                      const std::unique_ptr<Constraint> &constraint,
                                      const bool compact,
                                      const bool sparse,
-                                     const bool return_ata) const;
+                                     const bool return_ata,
+                                     const int verbosity = 0) const;
 
     void set_fcs_values(const int maxorder,
                         double *fc_in,
@@ -388,8 +389,6 @@ private:
     static void fill_amat(const int maxorder,
                           const size_t natmin,
                           const size_t ncols,
-                          const size_t irow,
-                          const size_t icol,
                           const std::vector<double> &u_sub,
                           const std::vector<std::vector<double>> &gamma_precomputed,
                           const std::unique_ptr<Symmetry> &symmetry,
@@ -402,7 +401,6 @@ private:
                                     const std::unique_ptr<Fcs> &fcs,
                                     const std::unique_ptr<Constraint> &constraint,
                                     double **amat_orig,
-                                    const std::vector<double> &bvec,
                                     double **&amat_mod,
                                     std::vector<double> &bvec_mod);
 
