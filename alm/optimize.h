@@ -87,6 +87,14 @@ public:
     OptimizerControl &operator=(const OptimizerControl &obj) = default;
 };
 
+class SensingMatrix {
+    // A class storing matrix information necessary for linear algebra solvers
+public:
+    std::vector<double> amat_dense; // Sensing matrix A (dense)
+    std::vector<double> bvec; // vector b
+    SpMat amat_sparse; // Sensing matrix A (sparse form)
+};
+
 class Optimize {
 public:
     Optimize();
@@ -128,15 +136,17 @@ public:
                                                   const std::unique_ptr<Fcs> &fcs,
                                                   const std::unique_ptr<Constraint> &constraint) const;
 
-    void get_matrix_elements_normal_equation(const int maxorder,
-                                             std::vector<double> &ata_total,
-                                             std::vector<double> &atb_total,
-                                             const std::vector<std::vector<double>> &u_in,
-                                             const std::vector<std::vector<double>> &f_in,
-                                             double &fnorm,
-                                             const std::unique_ptr<Symmetry> &symmetry,
-                                             const std::unique_ptr<Fcs> &fcs,
-                                             const std::unique_ptr<Constraint> &constraint) const;
+    void get_matrix_elements_unified(const int maxorder,
+                                     std::unique_ptr<SensingMatrix> &matrix_out,
+                                     const std::vector<std::vector<double>> &u_in,
+                                     const std::vector<std::vector<double>> &f_in,
+                                     double &fnorm,
+                                     const std::unique_ptr<Symmetry> &symmetry,
+                                     const std::unique_ptr<Fcs> &fcs,
+                                     const std::unique_ptr<Constraint> &constraint,
+                                     const bool compact,
+                                     const bool sparse,
+                                     const bool return_ata) const;
 
     void set_fcs_values(const int maxorder,
                         double *fc_in,
@@ -171,8 +181,8 @@ private:
                          std::vector<std::vector<double>> &data_out,
                          const std::unique_ptr<Symmetry> &symmetry) const;
 
-    int inprim_index(const int n,
-                     const std::unique_ptr<Symmetry> &symmetry) const;
+    static int inprim_index(const int n,
+                     const std::unique_ptr<Symmetry> &symmetry) ;
 
     int least_squares(const int maxorder,
                       const size_t N,
@@ -194,18 +204,6 @@ private:
                             std::unique_ptr<Constraint> &constraint,
                             const int verbosity,
                             std::vector<double> &param_out);
-
-    int adaptive_lasso(const std::string job_prefix,
-                       const int maxorder,
-                       const size_t N_new,
-                       const size_t M,
-                       const std::unique_ptr<Symmetry> &symmetry,
-                       const std::vector<std::string> &str_order,
-                       const std::unique_ptr<Fcs> &fcs,
-                       std::unique_ptr<Constraint> &constraint,
-                       const int verbosity,
-                       std::vector<double> &param_out);
-
 
     double crossvalidation(const std::string job_prefix,
                            const int maxorder,
@@ -353,31 +351,60 @@ private:
                               const bool algebraic_constraint) const;
 
 
-    void get_matrix_elements(const int maxorder,
-                             std::vector<double> &amat,
-                             std::vector<double> &bvec,
-                             const std::vector<std::vector<double>> &u_in,
-                             const std::vector<std::vector<double>> &f_in,
+    void get_matrix_elements2(const int maxorder,
+                             const size_t ncycle,
+                             const size_t nrows,
+                             const size_t ncols,
+                             const size_t ncols_compact,
+                             std::unique_ptr<SensingMatrix> &matrix_out,
+                             const std::vector<std::vector<double>> &u_multi,
+                             const std::vector<std::vector<double>> &f_multi,
+                             const std::vector<std::vector<double>> &gamma_precomputed,
                              const std::unique_ptr<Symmetry> &symmetry,
-                             const std::unique_ptr<Fcs> &fcs) const;
+                             const std::unique_ptr<Fcs> &fcs,
+                             const std::unique_ptr<Constraint> &constraint,
+                             const bool sparse) const;
 
-    void get_matrix_elements_in_sparse_form(const int maxorder,
-                                            SpMat &sp_amat,
-                                            Eigen::VectorXd &sp_bvec,
-                                            const std::vector<std::vector<double>> &u_in,
-                                            const std::vector<std::vector<double>> &f_in,
-                                            double &fnorm,
-                                            const std::unique_ptr<Symmetry> &symmetry,
-                                            const std::unique_ptr<Fcs> &fcs,
-                                            const std::unique_ptr<Constraint> &constraint) const;
+    void get_matrix_elements_normal_equation2(const int maxorder,
+                                              const size_t ncycle,
+                                              const size_t nrows,
+                                              const size_t ncols,
+                                              const size_t ncols_compact,
+                                              std::unique_ptr<SensingMatrix> &matrix_out,
+                                              const std::vector<std::vector<double>> &u_multi,
+                                              const std::vector<std::vector<double>> &f_multi,
+                                              const std::vector<std::vector<double>> &gamma_precomputed,
+                                              const std::unique_ptr<Symmetry> &symmetry,
+                                              const std::unique_ptr<Fcs> &fcs,
+                                              const std::unique_ptr<Constraint> &constraint,
+                                              const bool sparse) const;
 
-    void get_matrix_elements_normal_equation(const int maxorder,
-                                             std::vector<double> &ata_total,
-                                             std::vector<double> &atb_total,
-                                             const std::vector<std::vector<double>> &u_in,
-                                             const std::vector<std::vector<double>> &f_in,
-                                             const std::unique_ptr<Symmetry> &symmetry,
-                                             const std::unique_ptr<Fcs> &fcs) const;
+    static void fill_bvec(const size_t natmin,
+                          const size_t irow,
+                          const std::vector<std::vector<int>> &index_mapping,
+                          const std::vector<double> &f_sub,
+                          std::vector<double> &bvec);
+
+    static void fill_amat(const int maxorder,
+                          const size_t natmin,
+                          const size_t ncols,
+                          const size_t irow,
+                          const size_t icol,
+                          const std::vector<double> &u_sub,
+                          const std::vector<std::vector<double>> &gamma_precomputed,
+                          const std::unique_ptr<Symmetry> &symmetry,
+                          const std::unique_ptr<Fcs> &fcs,
+                          double **&amat_orig);
+
+    static void project_constraints(const int maxorder,
+                                    const size_t natmin,
+                                    const size_t irow,
+                                    const std::unique_ptr<Fcs> &fcs,
+                                    const std::unique_ptr<Constraint> &constraint,
+                                    double **amat_orig,
+                                    const std::vector<double> &bvec,
+                                    double **&amat_mod,
+                                    std::vector<double> &bvec_mod);
 
     int run_eigen_sparse_solver(const SpMat &sp_mat,
                                 const Eigen::VectorXd &sp_bvec,
