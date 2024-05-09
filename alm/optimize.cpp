@@ -1956,7 +1956,7 @@ int Optimize::fit_algebraic_constraints(const size_t N,
     }
     for (i = M; i < LMAX; ++i) fsum2[i] = 0.0;
 
-    if (verbosity > 0) std::cout << "  SVD has started ... ";
+    if (verbosity > 0) std::cout << "  SVD has started ... " << std::flush;
 
     // Fitting with singular value decomposition
     // M_tmp and N_tmp are prepared to cast N and M to (non-const) int.
@@ -1970,7 +1970,7 @@ int Optimize::fit_algebraic_constraints(const size_t N,
 
     if (verbosity > 0) {
         std::cout << "finished !\n\n";
-        std::cout << "  RANK of the matrix = " << nrank << '\n';
+        std::cout << "  RANK of the matrix = " << nrank << '\n' << std::flush;
     }
 
     if (nrank < N) {

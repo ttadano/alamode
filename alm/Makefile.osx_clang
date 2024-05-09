@@ -8,7 +8,7 @@
 # Use clang++ with libomp installed via Homebrew
 CXX = g++
 CXXFLAGS = -O2 -std=c++11 -Xpreprocessor -fopenmp 
-INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include -I/usr/local/include/eigen3
+INCLUDE = -I../include -I$(HOME)/include -I$(SPGLIB_ROOT)/include -I/opt/homebrew/include/eigen3
 
 CXXL = ${CXX}
 LDFLAGS = $(SPGLIB_ROOT)/lib/libsymspg.a
