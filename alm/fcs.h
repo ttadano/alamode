@@ -148,6 +148,22 @@ public:
         return std::lexicographical_compare(flattenarray.begin(), flattenarray.end(),
                                             a.flattenarray.begin(), a.flattenarray.end());
     }
+
+    bool operator==(const ForceConstantTable &a) const
+    {
+        return flattenarray == a.flattenarray;
+    }
+
+    static bool compare_atom_index(const ForceConstantTable &a,
+                                   const ForceConstantTable &b)
+    {
+        const auto n1 = a.atoms.size();
+        const auto n2 = b.atoms.size();
+        if (n1 != n2) return n1 < n2;
+
+        return std::lexicographical_compare(a.atoms.begin(), a.atoms.end(),
+                                            b.atoms.begin(), b.atoms.end());
+    }
 };
 
 class Fcs {
@@ -156,19 +172,19 @@ public:
 
     ~Fcs();
 
-    void init(const Cluster *cluster,
-              const Symmetry *symmetry,
+    void init(const std::unique_ptr<Cluster> &cluster,
+              const std::unique_ptr<Symmetry> &symmetry,
               const Cell &supercell,
               const int verbosity,
-              Timer *timer);
+              std::unique_ptr<Timer> &timer);
 
-    void get_xyzcomponent(int,
-                          int **) const;
+    static void get_xyzcomponent(int,
+                                 int **);
 
     void generate_force_constant_table(const int,
                                        const size_t nat,
                                        const std::set<IntList> &,
-                                       const Symmetry *,
+                                       const std::unique_ptr<Symmetry> &symm_in,
                                        const std::string,
                                        std::vector<FcProperty> &,
                                        std::vector<size_t> &,
@@ -176,7 +192,7 @@ public:
                                        const bool) const;
 
     void get_constraint_symmetry(const size_t nat,
-                                 const Symmetry *symmetry,
+                                 const std::unique_ptr<Symmetry> &symmetry,
                                  const int order,
                                  const std::string basis,
                                  const std::vector<FcProperty> &fc_table_in,
@@ -186,7 +202,7 @@ public:
                                  const bool do_rref = false) const;
 
     void get_constraint_symmetry_in_integer(const size_t nat,
-                                            const Symmetry *symmetry,
+                                            const std::unique_ptr<Symmetry> &symmetry,
                                             const int order,
                                             const std::string basis,
                                             const std::vector<FcProperty> &fc_table_in,
@@ -195,29 +211,33 @@ public:
                                             ConstraintSparseForm &const_out,
                                             const bool do_rref = false) const;
 
-    std::vector<size_t> *get_nequiv() const;
+    [[nodiscard]] std::vector<size_t> *get_nequiv() const;
 
-    std::vector<FcProperty> *get_fc_table() const;
+    [[nodiscard]] std::vector<FcProperty> *get_fc_table() const;
 
-    std::vector<ForceConstantTable> *get_fc_cart() const;
+    [[nodiscard]] std::vector<ForceConstantTable> *get_fc_cart() const;
 
-    std::vector<size_t> get_nfc_cart(const int permutation) const;
+    [[nodiscard]] std::vector<size_t> get_nfc_cart(const int permutation) const;
 
     void set_forceconstant_basis(const std::string preferred_basis_in);
 
-    std::string get_forceconstant_basis() const;
+    [[nodiscard]] std::string get_forceconstant_basis() const;
 
-    Eigen::Matrix3d get_basis_conversion_matrix() const;
+    [[nodiscard]] Eigen::Matrix3d get_basis_conversion_matrix() const;
 
     void set_forceconstant_cartesian(const int maxorder,
                                      double *param_in);
 
-    void set_fc_zero_threshold(const int threshold_in);
+    void set_fc_zero_threshold(const double threshold_in);
 
-    double get_fc_zero_threshold() const;
+    [[nodiscard]] double get_fc_zero_threshold() const;
 
-    void translate_forceconstant_index_to_centercell(const Symmetry *symmetry,
+    void translate_forceconstant_index_to_centercell(const std::unique_ptr<Symmetry> &symmetry,
                                                      std::vector<std::vector<int>> &index_inout) const;
+
+    void change_basis_force_constants(const std::vector<ForceConstantTable> &fc_in,
+                                      std::vector<ForceConstantTable> &fc_out,
+                                      const int conversion_direction) const;
 
 private:
     std::vector<size_t> *nequiv;       // stores duplicate number of irreducible force constants
@@ -240,43 +260,42 @@ private:
 
     void deallocate_variables();
 
-    bool is_ascending(int,
-                      const int *) const;
+    [[nodiscard]] static bool is_ascending(int,
+                                           const int *);
 
-    bool is_inprim(const int n,
-                   const int *arr,
-                   const size_t natmin,
-                   const std::vector<std::vector<int>> &map_p2s) const;
+    [[nodiscard]] static bool is_inprim(const int n,
+                                        const int *arr,
+                                        const size_t natmin,
+                                        const std::vector<std::vector<int>> &map_p2s);
 
-    bool is_inprim(const int n,
-                   const size_t natmin,
-                   const std::vector<std::vector<int>> &map_p2s) const;
+    [[nodiscard]] static bool is_inprim(const int n,
+                                        const size_t natmin,
+                                        const std::vector<std::vector<int>> &map_p2s);
 
-    bool is_allzero(const std::vector<double> &,
-                    double,
-                    int &) const;
+    [[nodiscard]] static bool is_allzero(const std::vector<double> &,
+                                         double,
+                                         int &);
 
-    bool is_allzero(const std::vector<int> &,
-                    int &) const;
+    [[nodiscard]] static bool is_allzero(const std::vector<int> &,
+                                         int &);
 
-    void get_available_symmop(const size_t nat,
-                              const Symmetry *symmetry,
-                              const std::string basis,
-                              int &nsym_avail,
-                              int **mapping_symm,
-                              double ***rotation,
-                              const bool use_compatible) const;
+    static void get_available_symmop(const size_t nat,
+                                     const std::unique_ptr<Symmetry> &symmetry,
+                                     const std::string basis,
+                                     std::vector<std::vector<int>> &mapping_symm,
+                                     std::vector<Eigen::Matrix3d> &rotation,
+                                     const bool use_compatible);
 
-    int get_minimum_index_in_primitive(const int n,
-                                       const int *arr,
-                                       const size_t nat,
-                                       const size_t natmin,
-                                       const std::vector<std::vector<int>> &map_p2s) const;
+    [[nodiscard]] static int get_minimum_index_in_primitive(const int n,
+                                                            const int *arr,
+                                                            const size_t nat,
+                                                            const size_t natmin,
+                                                            const std::vector<std::vector<int>> &map_p2s);
 
-    double coef_sym(const int,
-                    const double *const *,
-                    const int *,
-                    const int *) const;
+    [[nodiscard]] static double coef_sym(const int,
+                                         const Eigen::Matrix3d &rot,
+                                         const int *,
+                                         const int *);
 
     void set_basis_conversion_matrix(const Cell &supercell);
 };

@@ -18,13 +18,13 @@ namespace ALM_NS {
 inline void warn(const char *file,
                  const char *message)
 {
-    std::cout << std::endl << " WARNING in " << file << "  MESSAGE: " << message << std::endl;
+    std::cout << '\n' << " WARNING in " << file << "  MESSAGE: " << message << '\n';
 }
 
 inline void exit(const char *file,
                  const char *message)
 {
-    std::cout << std::endl << " ERROR in " << file << "  MESSAGE: " << message << std::endl;
+    std::cout << '\n' << " ERROR in " << file << "  MESSAGE: " << message << '\n';
     std::exit(EXIT_FAILURE);
 }
 
@@ -33,7 +33,7 @@ void exit(const char *file,
           const char *message,
           const T info)
 {
-    std::cout << std::endl << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
+    std::cout << '\n' << " ERROR in " << file << "  MESSAGE: " << message << info << '\n';
     std::exit(EXIT_FAILURE);
 }
 
@@ -41,7 +41,7 @@ inline void exit(const char *file,
                  const char *message,
                  const char *info)
 {
-    std::cout << std::endl << " ERROR in " << file << "  MESSAGE: " << message << info << std::endl;
+    std::cout << '\n' << " ERROR in " << file << "  MESSAGE: " << message << info << '\n';
     std::exit(EXIT_FAILURE);
 }
 }

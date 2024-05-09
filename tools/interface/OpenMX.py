@@ -110,13 +110,13 @@ class OpenmxParser(object):
                 lavec.append([float(t) for t in line.strip().split()])
 
             if ipos_lavec > ipos_coord:
-                common_settings.extend(lines[:ipos_coord-1])
-                common_settings.extend(lines[fpos_coord+1:ipos_lavec-1])
-                common_settings.extend(lines[fpos_lavec+1:])
+                common_settings.extend(lines[:ipos_coord - 1])
+                common_settings.extend(lines[fpos_coord + 1:ipos_lavec - 1])
+                common_settings.extend(lines[fpos_lavec + 1:])
             else:
-                common_settings.extend(lines[:ipos_lavec-1])
-                common_settings.extend(lines[fpos_lavec+1:ipos_coord-1])
-                common_settings.extend(lines[fpos_coord+1:])
+                common_settings.extend(lines[:ipos_lavec - 1])
+                common_settings.extend(lines[fpos_lavec + 1:ipos_coord - 1])
+                common_settings.extend(lines[fpos_coord + 1:])
 
         x_frac0 = np.array(x_frac0)
         lavec = np.array(lavec).transpose()
@@ -158,7 +158,7 @@ class OpenmxParser(object):
         self._common_settings = common_settings
         self._initial_structure_loaded = True
 
-    def generate_structures(self, prefix, header_list, disp_list):
+    def generate_structures(self, prefix, header_list, disp_list, updated_structure=None):
 
         self._set_number_of_zerofill(len(disp_list))
         self._prefix = prefix
@@ -366,7 +366,7 @@ class OpenmxParser(object):
 
     def _set_output_flags(self, output_flags):
         self._print_disp, self._print_force, \
-        self._print_energy, self._print_born = output_flags
+            self._print_energy, self._print_born = output_flags
 
     @property
     def nat(self):
@@ -475,4 +475,4 @@ class OpenmxParser(object):
         if len(etot) == 0:
             raise RuntimeError("Total energy not found.")
 
-        return np.array(etot, dtype=np.float)
+        return np.array(etot, dtype=float)

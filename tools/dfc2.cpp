@@ -19,6 +19,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/version.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <Eigen/Core>
 
 #include "memory.h"
 #include "xml_parser.h"
@@ -373,7 +374,7 @@ void calculate_new_fc2(const std::vector<FcsClassExtent> &fc2_in,
 //        std::cout << std::setw(5) << vec[2];
 //
 //        std::cout << std::setw(5) << it.atm1 << std::setw(5) << it.xyz1;
-//        std::cout << std::setw(5) << map_s2p[it.atm2].atom_num << std::setw(5) << it.xyz2;
+//        std::cout << std::setw(5) << map_super_to_trueprim[it.atm2].atom_num << std::setw(5) << it.xyz2;
 //        std::cout << std::setw(15) << it.fcs_val << '\n';
 
         fc2_data.emplace_back(arr_tmp, icount);

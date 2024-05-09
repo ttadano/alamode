@@ -36,8 +36,15 @@ public:
                                      double ***dielec_out);
 
     int calc_dielectric_constant;
+    unsigned int symmetrize_borncharge{};
+    std::string file_born;
 
     std::vector<std::vector<double>> get_zstar_mode() const;
+
+    double ***get_borncharge() const;
+
+    Eigen::Matrix3d get_dielec_tensor() const;
+
 
 private:
 
@@ -45,12 +52,20 @@ private:
 
     void deallocate_variables();
 
+    void setup_dielectric(const unsigned int verbosity = 1);
+
     void compute_mode_effective_charge(std::vector<std::vector<double>> &zstar_mode,
                                        const bool do_normalize = false) const;
+
+    void load_born(const unsigned int flag_symmborn,
+                   const unsigned int verbosity = 1);
 
     double *omega_grid;
     double ***dielec;
     unsigned int nomega;
     double emax, emin, delta_e;
+
+    Eigen::Matrix3d dielec_tensor;
+    double ***borncharge{};
 };
 }

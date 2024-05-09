@@ -48,6 +48,7 @@ class AlamodeDisplace(object):
         self._qlist_uniq = []
         self._mass = None
         self._nmode = None
+        self._updated_structure = {}
 
         self._displacement_mode = displacement_mode.lower()
         self._supercell = codeobj_base
@@ -141,13 +142,27 @@ class AlamodeDisplace(object):
                       " the given *.pattern_* files" % len(self._pattern))
                 print("")
 
+            try:
+                import yaml
+                with open(file_pattern[0], 'r') as f:
+                    obj = yaml.safe_load(f)
+                    nat_from_pattern = len(obj['structure']['supercell']['coordinates']) // 3
+                    if nat_from_pattern % self._supercell.nat != 0:
+                        raise RuntimeError("The number of atoms in prefix.pattern_* is not integral multiple of that of "
+                                           "the reference structure.")
+
+                    if nat_from_pattern // self._supercell.nat > 1:
+                        self._set_updated_structure(obj['structure']['supercell'])
+            except:
+                pass
+
             for pattern in self._pattern:
                 header, disp = self._get_finite_displacement(pattern)
                 self._counter += 1
                 header_list.append(header)
                 disp_list.append(disp)
 
-            return header_list, disp_list
+            return header_list, disp_list, self._updated_structure
 
         if self._displacement_mode == "random":
 
@@ -168,7 +183,7 @@ class AlamodeDisplace(object):
                 disp_list.append(disp_random[i])
                 self._counter += 1
 
-            return header_list, disp_list
+            return header_list, disp_list, self._updated_structure
 
         if self._displacement_mode == "md":
 
@@ -196,7 +211,7 @@ class AlamodeDisplace(object):
                 disp_list.append(disp_tmp)
                 self._counter += 1
 
-            return header_list, disp_list
+            return header_list, disp_list, self._updated_structure
 
         if self._displacement_mode == "md_plus_random":
 
@@ -230,7 +245,7 @@ class AlamodeDisplace(object):
                 disp_list.append(disp_tmp)
                 self._counter += 1
 
-            return header_list, disp_list
+            return header_list, disp_list, self._updated_structure
 
         if self._displacement_mode == "random_normalcoordinate":
 
@@ -257,7 +272,7 @@ class AlamodeDisplace(object):
                 disp_list.append(disp_random[:, :, i])
                 self._counter += 1
 
-            return header_list, disp_list
+            return header_list, disp_list, self._updated_structure
 
         if self._displacement_mode == "pes":
 
@@ -297,7 +312,7 @@ class AlamodeDisplace(object):
                 disp_list.append(disp_pes[:, :, i])
                 self._counter += 1
 
-            return header_list, disp_list
+            return header_list, disp_list, self._updated_structure
 
         else:
             raise RuntimeError("This cannot happen")
@@ -312,7 +327,7 @@ class AlamodeDisplace(object):
         except:
             try:
                 for target in file_mddata:
-                    disp = np.loadtxt(target, dtype=np.float)
+                    disp = np.loadtxt(target, dtype=float)
                     disp *= self._BOHR_TO_ANGSTROM
                     disp_merged.extend(np.reshape(disp, (len(disp) // self._supercell.nat, self._supercell.nat, 3)))
             except:
@@ -341,49 +356,98 @@ class AlamodeDisplace(object):
 
         return [start, end, interval]
 
+    def _set_updated_structure(self, yamlobj):
+
+        lavec = np.reshape(np.array(yamlobj['lattice_vectors']), (3, 3)).transpose()
+        nat_updated = len(yamlobj['coordinates']) // 3
+        xf = np.reshape(np.array(yamlobj['coordinates'], dtype=float), (nat_updated, 3))
+        self._updated_structure['lattice_vector'] = lavec
+        self._updated_structure['inverse_lattice_vector'] = np.linalg.inv(lavec)
+        self._updated_structure['kd'] = yamlobj['atomic_index']
+        self._updated_structure['x_fractional'] = xf
+        self._updated_structure['nat'] = nat_updated
+
     def _parse_displacement_patterns(self, files_in):
+        import yaml
+
         self._pattern = []
 
         for file in files_in:
             pattern_tmp = []
 
             f = open(file, 'r')
-            tmp, basis = f.readline().rstrip().split(':')
-            if basis == 'F':
-                raise RuntimeError("DBASIS must be 'C'")
 
-            while True:
-                line = f.readline()
-                if not line:
-                    break
+            try:
+                # parse assuming the YAML format
+                obj = yaml.safe_load(f)
 
-                line_split_by_colon = line.rstrip().split(':')
-                is_entry = len(line_split_by_colon) == 2
+                if obj['displacements']['basis'] == 'F':
+                    raise RuntimeError("DBASIS must be 'C'")
 
-                if is_entry:
+                for pattern in obj['displacements']['patterns']:
+                    atoms = pattern['atoms']
+                    directions = pattern['directions']
+                    natom_move = len(atoms)
+
                     pattern_set = []
-                    natom_move = int(line_split_by_colon[1])
                     for i in range(natom_move):
                         disp = []
-                        line = f.readline()
-                        line_split = line.rstrip().split()
-                        disp.append(int(line_split[0]))
+                        disp.append(atoms[i])
                         for j in range(3):
-                            disp.append(float(line_split[j + 1]))
+                            disp.append(float(directions[3 * i + j]))
 
                         pattern_set.append(disp)
+
                     pattern_tmp.append(pattern_set)
+
+            except:
+                # If failed, assume the old format
+
+                tmp, basis = f.readline().rstrip().split(':')
+                if basis == 'F':
+                    raise RuntimeError("DBASIS must be 'C'")
+
+                while True:
+                    line = f.readline()
+                    if not line:
+                        break
+
+                    line_split_by_colon = line.rstrip().split(':')
+                    is_entry = len(line_split_by_colon) == 2
+
+                    if is_entry:
+                        pattern_set = []
+                        natom_move = int(line_split_by_colon[1])
+                        for i in range(natom_move):
+                            disp = []
+                            line = f.readline()
+                            line_split = line.rstrip().split()
+                            disp.append(int(line_split[0]))
+                            for j in range(3):
+                                disp.append(float(line_split[j + 1]))
+
+                            pattern_set.append(disp)
+                        pattern_tmp.append(pattern_set)
 
             for entry in pattern_tmp:
                 if entry not in self._pattern:
                     self._pattern.append(entry)
+
             f.close()
 
     def _get_finite_displacement(self, pattern):
 
         header = "Disp. Num. %i" % self._counter
         header += " ( %f Angstrom" % self._displacement_magnitude
-        disp = np.zeros((self._supercell.nat, 3))
+
+        if self._updated_structure:
+            nat_ref = self._updated_structure['nat']
+            disp = np.zeros((nat_ref, 3))
+            invlavec = self._updated_structure['inverse_lattice_vector'] / self._BOHR_TO_ANGSTROM
+        else:
+            nat_ref = self._supercell.nat
+            disp = np.zeros((nat_ref, 3))
+            invlavec = self._supercell.inverse_lattice_vector
 
         for displace in pattern:
             atom = displace[0] - 1
@@ -401,9 +465,9 @@ class AlamodeDisplace(object):
             header += str_direction
         header += ")"
 
-        if self._supercell.inverse_lattice_vector is not None:
-            for i in range(self._supercell.nat):
-                disp[i] = np.dot(disp[i], self._supercell.inverse_lattice_vector.T)
+        if invlavec is not None:
+            for i in range(nat_ref):
+                disp[i] = np.dot(disp[i], invlavec.T)
 
         return header, disp
 

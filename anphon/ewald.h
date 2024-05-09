@@ -66,7 +66,7 @@ public:
     double det_epsilon;
     double ***Born_charge;
 
-    std::vector<FcsClassExtent> fc2_without_dipole;
+    std::vector<FcsArrayWithCell> fc2_without_dipole;
 
     void init();
 
@@ -93,7 +93,7 @@ private:
 
     void deallocate_variables();
 
-    void prepare_Ewald(const double [3][3]);
+    void prepare_Ewald(const Eigen::Matrix3d &dielectric);
 
     void prepare_G();
 
@@ -103,7 +103,7 @@ private:
 
     void get_pairs_of_minimum_distance(int,
                                        const int [3],
-                                       double **) const;
+                                       const Eigen::MatrixXd &) const;
 
     void calc_longrange_fcs(int,
                             int,

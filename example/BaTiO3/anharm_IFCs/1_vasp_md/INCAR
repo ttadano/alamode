@@ -1,0 +1,33 @@
+general:
+ System = BTO
+ LREAL = .False.
+ ENCUT  =    400
+ ISMEAR = 0; SIGMA = 0.05;
+ EDIFF = 1.0E-6
+
+ PREC = Normal
+ ADDGRID = .False.
+ NPAR = 8
+ LSCALAPACK = .False.
+
+ GGA = PS
+
+ LCHARG = .False.
+ LWAVE  = .False.
+
+ nelm= 200
+ ALGO=fast  
+ kpar=4
+
+ #MD
+ ISYM = 0
+ IBRION = 0
+ NSW = 5000
+ NWRITE = 1
+ NELMIN = 4
+ MAXMIX = 40
+ MDALGO = 0
+
+ TEBEG = 300; TEEND = 300
+# Velocity scaling with dt=2.0fs
+ SMASS = -1; NBLOCK = 1; POTIM = 1

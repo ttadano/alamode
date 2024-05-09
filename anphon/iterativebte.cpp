@@ -108,8 +108,7 @@ void Iterativebte::setup_iterative()
 
     allocate(vel, nk_3ph, ns, 3);            // velocity of the full grid
     phonon_velocity->get_phonon_group_velocity_mesh_mpi(*dos->kmesh_dos,
-                                                        system->lavec_p,
-            // fcs_phonon->fc2_ext,
+                                                        system->get_primcell().lattice_vector,
                                                         vel); //this will gather to rank0 process
 
     MPI_Bcast(&vel[0][0][0], nk_3ph * ns * 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -962,7 +961,7 @@ void Iterativebte::iterative_solver()
 
                     generating_sym = -1;
                     for (isym = 0; isym < nsym; ++isym) {
-                        auto krot = dos->kmesh_dos->knum_sym(kref, symmetry->SymmList[isym].rot);
+                        auto krot = dos->kmesh_dos->knum_sym(kref, symmetry->SymmList[isym].rotation);
                         auto minuskrot = dos->kmesh_dos->kindex_minus_xk[krot];
                         if (k1 == krot) {
                             generating_sym = isym;
@@ -1004,7 +1003,7 @@ void Iterativebte::iterative_solver()
                             std::cout << std::endl;
                         }
                         for (isym = 0; isym < nsym; ++isym) {
-                            auto krot = dos->kmesh_dos->knum_sym(kref, symmetry->SymmList[isym].rot);
+                            auto krot = dos->kmesh_dos->knum_sym(kref, symmetry->SymmList[isym].rotation);
                             std::cout << "rot k: ";
                             for (int j = 0; j < 3; ++j) {
                                 std::cout << std::setw(15)
@@ -1031,9 +1030,9 @@ void Iterativebte::iterative_solver()
                             for (auto ig = 0; ig < pair.group.size(); ig++) {
 
                                 k2 = dos->kmesh_dos->knum_sym(pair.group[ig].ks[0],
-                                                              symmetry->SymmList[generating_sym].rot);
+                                                              symmetry->SymmList[generating_sym].rotation);
                                 k3 = dos->kmesh_dos->knum_sym(pair.group[ig].ks[1],
-                                                              symmetry->SymmList[generating_sym].rot);
+                                                              symmetry->SymmList[generating_sym].rotation);
                                 if (time_reverse) {
                                     k2 = dos->kmesh_dos->kindex_minus_xk[k2];
                                     k3 = dos->kmesh_dos->kindex_minus_xk[k3];
@@ -1063,9 +1062,9 @@ void Iterativebte::iterative_solver()
                             for (auto ig = 0; ig < pair.group.size(); ig++) {
 
                                 k2 = dos->kmesh_dos->knum_sym(pair.group[ig].ks[0],
-                                                              symmetry->SymmList[generating_sym].rot);
+                                                              symmetry->SymmList[generating_sym].rotation);
                                 k3 = dos->kmesh_dos->knum_sym(pair.group[ig].ks[1],
-                                                              symmetry->SymmList[generating_sym].rot);
+                                                              symmetry->SymmList[generating_sym].rotation);
                                 if (time_reverse) {
                                     k2 = dos->kmesh_dos->kindex_minus_xk[k2];
                                     k3 = dos->kmesh_dos->kindex_minus_xk[k3];
@@ -1330,7 +1329,7 @@ void Iterativebte::calc_kappa(int itemp, double ***&df, double **&kappa_out)
         }
     }
 
-    const double conversionfactor = Ryd / (time_ry * Bohr_in_Angstrom * 1.0e-10 * nk_3ph * system->volume_p);
+    const double conversionfactor = Ryd / (time_ry * Bohr_in_Angstrom * 1.0e-10 * nk_3ph * system->get_primcell().volume);
 
     for (auto k1 = 0; k1 < nk_3ph; ++k1) {
         for (auto s1 = 0; s1 < ns; ++s1) {
@@ -1441,8 +1440,8 @@ void Iterativebte::write_result()
 
         fs_result << "## General information" << std::endl;
         fs_result << "#SYSTEM" << std::endl;
-        fs_result << system->natmin << " " << system->nkd << std::endl;
-        fs_result << system->volume_p << std::endl;
+        fs_result << system->get_primcell().number_of_atoms << " " << system->nkd << std::endl;
+        fs_result << system->get_primcell().volume << std::endl;
         fs_result << "#END SYSTEM" << std::endl;
 
         fs_result << "#KPOINT" << std::endl;

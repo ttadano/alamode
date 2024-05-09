@@ -226,16 +226,14 @@ public:
                                  double **,
                                  std::complex<double> ***) const;
 
-    void prepare_relative_vector(const std::vector<FcsArrayWithCell> &,
-                                 unsigned int,
-                                 int,
-                                 std::vector<double> *,
-                                 std::vector<RelativeVector> *&) const;
+    static void prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
+                                        const int number_of_groups,
+                                        std::vector<double> *fcs_group,
+                                        std::vector<RelativeVector> *&vec_out);
 
-    void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &,
-                                          unsigned int,
-                                          int &,
-                                          std::vector<double> *&) const;
+    static void prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
+                                                 int &number_of_groups,
+                                                 std::vector<double> *&fcs_group_out);
 
     void calc_self3omega_tetrahedron(const double Temp,
                                      const KpointMeshUniform *kmesh_in,
@@ -249,6 +247,9 @@ public:
 
     void calc_phi3_reciprocal(const double *xk1,
                               const double *xk2,
+                              const int ngroup_v3_in,
+                              std::vector<double, std::allocator<double>> *fcs_group_v3_in,
+                              const std::vector<RelativeVector> *relvec_v3_in,
                               const PhaseFactorStorage *phase_storage_in,
                               std::complex<double> *ret);
 
@@ -265,6 +266,12 @@ public:
     double *get_invmass_factor(const unsigned int order) const;
 
     int **get_evec_index(const unsigned int order) const;
+
+    std::vector<RelativeVector> *get_relvec(const unsigned int order) const;
+
+    void calc_analytic_k_from_FcsArrayWithCell(const double *,
+                                               const std::vector<FcsArrayWithCell> &,
+                                               std::complex<double> **) const;
 
 
 private:

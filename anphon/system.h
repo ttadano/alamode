@@ -14,8 +14,31 @@
 #include <string>
 #include <vector>
 #include <boost/property_tree/ptree.hpp>
+#include <Eigen/Core>
 
 namespace PHON_NS {
+
+class Cell {
+public:
+    Eigen::Matrix3d lattice_vector;
+    Eigen::Matrix3d reciprocal_lattice_vector;
+    double volume;
+    size_t number_of_atoms;
+    size_t number_of_elems;
+    std::vector<int> kind;
+    Eigen::MatrixXd x_fractional;
+    Eigen::MatrixXd x_cartesian;
+    int has_entry{0};
+};
+
+class Spin {
+public:
+    int lspin;
+    int time_reversal_symm;
+    int noncollinear;
+    std::vector<std::vector<double>> magmom;
+};
+
 class AtomType {
 public:
     int element;
@@ -33,6 +56,29 @@ public:
     }
 };
 
+class Maps {
+public:
+    unsigned int atom_num;
+    unsigned int tran_num;
+};
+
+class MappingTable {
+public:
+    std::vector<Maps> to_true_primitive;
+    std::vector<std::vector<unsigned int>> from_true_primitive;
+};
+
+struct ShiftCell {
+public:
+    int sx, sy, sz;
+} __attribute__((aligned(16)));
+
+struct MinimumDistList {
+public:
+    double dist;
+    std::vector<ShiftCell> shift;
+} __attribute__((aligned(32)));
+
 class System : protected Pointers {
 public:
     System(class PHON *);
@@ -41,66 +87,121 @@ public:
 
     void setup();
 
-    double lavec_s[3][3], rlavec_s[3][3];
-    double lavec_p[3][3], rlavec_p[3][3];
-    double lavec_s_anharm[3][3], rlavec_s_anharm[3][3];
-    double **xr_p, **xr_s, **xc;
-    double **xr_s_anharm;
-    double **magmom;
-    double volume_p;
+    const Cell &get_supercell(const int index) const;
 
-    unsigned int nat, natmin, ntran;
-    unsigned int nat_anharm, ntran_anharm;
-    unsigned int *kd, nkd;
-    unsigned int *kd_anharm;
+    const Cell &get_primcell(const bool distorted = false) const;
 
-    unsigned int nclassatom;
-    std::vector<unsigned int> *atomlist_class;
+    const Spin &get_spin_super() const;
 
-    unsigned int **map_p2s, **map_p2s_anharm;
-    unsigned int **map_p2s_anharm_orig;
+    const Spin &get_spin_prim() const;
 
-    class Maps {
-    public:
-        unsigned int atom_num;
-        unsigned int tran_num;
-    };
+    const MappingTable &get_mapping_super_alm(const int index) const;
 
-    Maps *map_s2p, *map_s2p_anharm;
+    const MappingTable &get_mapping_prim_alm(const int index) const;
 
-    std::string *symbol_kd;
-    double *mass_kd, *mass, *mass_anharm;
+    const std::vector<Maps> &get_map_s2p(const int index = 0) const;
+
+    const std::vector<std::vector<unsigned int>> &get_map_p2s(const int index = 0) const;
+
+
+    Eigen::Matrix3d lavec_p_input;
+
+    int load_primitive_from_file;
+    unsigned int nkd;
+
+    std::vector<std::string> symbol_kd;
+    double *mass_kd;
 
     double Tmin, Tmax, dT;
 
-    double volume(const double [3],
-                  const double [3],
-                  const double [3]) const;
-
-    bool lspin, trevsym_mag;
-    int noncollinear;
-
     int get_atomic_number_by_name(const std::string &);
 
+    const std::vector<double> &get_invsqrt_mass() const;
+
+    const std::vector<double> &get_mass_prim() const;
+
+    const std::vector<double> &get_mass_super() const;
+
+    const std::vector<std::vector<unsigned int>> &get_atomtype_group(const bool distort = false) const;
+
+    void get_minimum_distances(const unsigned int nsize[3],
+                               MinimumDistList ***&mindist_list_out);
+
 private:
+
+    enum LatticeType {
+        Direct, Reciprocal
+    };
+
+    std::vector<Cell> supercell;
+    Cell primcell, primcell_distort;
+    Spin spin_super, spin_prim;
+    std::vector<MappingTable> map_super_alm, map_prim_alm;
+
+    std::vector<std::vector<Maps>> map_s2p_new;
+    std::vector<std::vector<std::vector<unsigned int>>> map_p2s_new;
+
+    // concatenate atomic kind and magmom (only for collinear case)
+    std::vector<std::vector<unsigned int>> atomtype_group_prim, atomtype_group_prim_distort;
+
+    std::vector<double> mass_super, mass_prim;
+    std::vector<double> invsqrt_mass_p;
+
+    double tolerance_for_coordinates;
+
     void set_default_variables();
 
     void deallocate_variables();
 
-    void set_mass_elem_from_database(const int,
-                                     const std::string *,
+    void set_mass_elem_from_database(const unsigned int,
+                                     const std::vector<std::string> &,
                                      double *);
 
-    void load_system_info_from_XML();
+    static void set_atomtype_group(const Cell &cell_in,
+                                   const Spin &spin_in,
+                                   std::vector<std::vector<unsigned int>> &atomtype_group_out);
 
-    void recips(double [3][3],
-                double [3][3]) const;
+    void print_structure_information_stdout() const;
 
-    void setup_atomic_class(unsigned int,
-                            const unsigned int *,
-                            double **);
+    void load_system_info_from_file();
 
-    void check_consistency_primitive_lattice() const;
+    void get_structure_and_mapping_table_xml(const std::string &filename,
+                                             Cell &scell_out,
+                                             Cell &pcell_out,
+                                             Spin &spin_super_out,
+                                             Spin &spin_prim_out,
+                                             MappingTable &map_super_out,
+                                             MappingTable &map_prim_out,
+                                             std::vector<std::string> &elements) const;
+
+    void get_structure_and_mapping_table_h5(const std::string &filename,
+                                            Cell &scell_out,
+                                            Cell &pcell_out,
+                                            Spin &spin_super_out,
+                                            Spin &spin_prim_out,
+                                            MappingTable &map_super_out,
+                                            MappingTable &map_prim_out,
+                                            std::vector<std::string> &elements) const;
+
+    void update_primitive_lattice();
+
+    void generate_mapping_tables();
+
+    void initialize_distorted_primitive_cell();
+
+    void generate_mapping_primitive_super(const Cell &pcell,
+                                          const Cell &scell,
+                                          std::vector<std::vector<unsigned int>> &map_p2s_out,
+                                          std::vector<Maps> &map_s2p_out) const;
+
+    static void recips(const Eigen::Matrix3d &mat_in,
+                       Eigen::Matrix3d &rmat_out);
+
+//    void check_consistency_primitive_lattice() const;
+
+
+    static double volume(const Eigen::Matrix3d &mat_in,
+                         const LatticeType latttype_in);
 
     std::vector<std::string> element_names{
             "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",

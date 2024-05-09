@@ -23,9 +23,26 @@ public:
     void set_cell_parameter(const double a,
                             const double lavec_in[3][3]);
 
+    void set_cell_parameter(const Eigen::Matrix3d &lavec_in);
+
     void set_atomic_positions(const size_t nat_in,
                               const int *kd_in,
                               const double (*xcoord_in)[3]);
+
+    void set_atomic_positions(const Eigen::MatrixXd &positions_in);
+
+    void set_element_types(const std::vector<int> &kd_in,
+                           const std::vector<std::string> &kdnames_in);
+
+    void set_transformation_matrices(const Eigen::Matrix3d &transmat_super_in,
+                                     const Eigen::Matrix3d &transmat_prim_in,
+                                     const int autoset_primcell_in,
+                                     const bool transpose = false);
+
+    void set_magnetic_vars(const int lspin_in,
+                           const Eigen::MatrixXd &magmom_in,
+                           const int noncollinear_in,
+                           const int time_reversal_symm_in);
 
     void set_geometric_structure(ALM *alm);
 
@@ -43,26 +60,20 @@ public:
                           const std::string &mode,
                           int verbosity,
                           const std::string &str_disp_basis,
-                          const std::string &str_magmom,
-                          size_t nat_in,
-                          size_t nkd_in,
                           int printsymmetry,
                           const int is_periodic_in[3],
                           bool trim_dispsign_for_evenfunc,
-                          bool lspin_in,
                           int print_hessian,
                           int print_fcs_alamode,
                           int print_fc3_shengbte,
                           int print_fc2_qefc,
-                          int noncollinear_in,
-                          int trevsym_in,
-                          const std::string *kdname_in,
-                          const double *const *magmom_in,
                           double tolerance,
                           double tolerance_constraint,
                           const std::string &basis_force_constant,
                           const int nmaxsave,
-                          const double fc_zero_threshold);
+                          const double fc_zero_threshold,
+                          const int compression_level,
+                          const std::string &format_pattern);
 
     void set_optimize_vars(ALM *alm,
                            const std::vector<std::vector<double>> &u_train_in,
@@ -83,18 +94,19 @@ public:
                              bool fix_harmonic,
                              bool fix_cubic) const;
 
-    void set_geometric_structure(ALM *alm) const;
+    void set_input_var_dict(ALM *alm, const std::map<std::string, std::string> &dict_in) const;
+
 
 private:
-    size_t nat, nkd;
-    int *kd;
-    double lavec[3][3];
-    double (*xcoord)[3]; // fractional coordinate
-    std::string *kdname;
+    size_t nat_base, nkd;
+    Eigen::Matrix3d lavec_base_mat;
+    Eigen::MatrixXd xcoord_base_mat;
+    std::vector<int> kd_base_vec;
+    std::vector<std::string> kdnames_vec;
     int is_periodic[3];
 
     bool lspin;
-    double (*magmom)[3];
+    Eigen::MatrixXd magmom_base_mat;
     int noncollinear;
     int trevsym;
     std::string str_magmom;
@@ -102,5 +114,8 @@ private:
     int maxorder;
     int *nbody_include;
     double *cutoff_radii;
+
+    Eigen::Matrix3d transmat_super, transmat_prim;
+    int autoset_primcell;
 };
 }

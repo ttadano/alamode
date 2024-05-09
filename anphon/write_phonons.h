@@ -24,17 +24,19 @@ public:
 
     ~Writes();
 
-    void write_phonon_info();
+    void writePhononInfo();
 
-    void print_phonon_energy() const;
+    void printPhononEnergies() const;
 
-    void write_gruneisen();
+    void writeGruneisen();
 
-    void write_input_vars();
+    void setupResultIo();
 
-    void write_kappa() const;
+    void writeInputVars();
 
-    void write_selfenergy_isotope() const;
+    void writeKappa() const;
+
+    void writeSelfenergyIsotope() const;
 
     bool print_zmode;
 
@@ -51,28 +53,38 @@ public:
                          const int shift_ucorr_[3],
                          const bool print_zmode_);
 
-    void write_scph_energy(const unsigned int nk_in,
-                           const double *const *const *eval_in,
-                           const int bubble = 0) const;
+    void writePhononEnergies(const unsigned int nk_in,
+                             const double *const *const *eval_in,
+                             const bool is_qha = false,
+                             const int bubble = 0) const;
 
-    void write_scph_bands(const unsigned int nk_in,
+    void writePhononBands(const unsigned int nk_in,
                           const double *kaxis_in,
                           const double *const *const *eval_in,
+                          const bool is_qha = false,
                           const int bubble = 0) const;
 
-    void write_scph_dos(double **,
+    void writePhononDos(double **dos_in,
+                        const bool is_qha = false,
                         const int bubble = 0) const;
 
-    void write_scph_thermodynamics(double *heat_capacity,
-                                   double *heat_capacity_correction,
-                                   double *FE_QHA,
-                                   double *dFE_scph) const;
+    void writeThermodynamicFunc(double *heat_capacity,
+                                double *heat_capacity_correction,
+                                double *FE_QHA,
+                                double *dFE_scph,
+                                double *FE_total,
+                                const bool is_qha = false) const;
 
-    void write_scph_msd(double **, const int bubble = 0) const;
+    void writeMSD(double **msd_in,
+                  const bool is_qha = false,
+                  const int bubble = 0) const;
 
-    void write_scph_ucorr(double ***ucorr_scph, const int bubble = 0) const;
+    void writeDispCorrelation(double ***ucorr_in,
+                              const bool is_qha = false,
+                              const int bubble = 0) const;
 
-    void write_scph_dielec(double ****dielec_scph) const;
+    void writeDielecFunc(double ****dielec_in,
+                         const bool is_qha = false) const;
 
     unsigned int getVerbosity() const;
 
@@ -88,76 +100,76 @@ public:
 
 private:
 
-    void write_phonon_bands() const;
+    void writePhononBands() const;
 
-    void write_phonon_vel() const;
+    void writePhononVel() const;
 
-    void write_phonon_vel_all() const;
+    void writePhononVelAll() const;
 
-    void write_phonon_dos() const;
+    void writePhononDos() const;
 
-    void write_two_phonon_dos() const;
+    void writeTwoPhononDos() const;
 
-    void write_longitudinal_proj_dos() const;
+    void writeLongitudinalProjDos() const;
 
-    void write_scattering_phase_space() const;
+    void writeScatteringPhaseSpace() const;
 
-    void write_scattering_amplitude() const;
+    void writeScatteringAmplitude() const;
 
-    void write_normal_mode_direction() const;
+    void writeNormalModeDirection() const;
 
-    void write_normal_mode_direction_each(const std::string &fname_axsf,
-                                          const unsigned int nk_in,
-                                          const std::complex<double> *const *const *evec_in) const;
+    void writeNormalModeDirectionEach(const std::string &fname_axsf,
+                                      const unsigned int nk_in,
+                                      const std::complex<double> *const *const *evec_in) const;
 
-    void write_normal_mode_animation(const double [3],
-                                     const unsigned int [3]) const;
+    void writeNormalModeAnimation(const double [3],
+                                  const unsigned int [3]) const;
 
-    void write_eigenvectors() const;
+    void writeEigenvectors() const;
 
-    void write_eigenvectors_each(const std::string &fname_evec,
-                                 const unsigned int nk_in,
-                                 const double *const *xk_in,
-                                 const double *const *eval_in,
-                                 const std::complex<double> *const *const *evec_in) const;
+    void writeEigenvectorsEach(const std::string &fname_evec,
+                               const unsigned int nk_in,
+                               const double *const *xk_in,
+                               const double *const *eval_in,
+                               const std::complex<double> *const *const *evec_in) const;
 
-    void print_normalmode_borncharge() const;
+    void printNormalmodeBorncharge() const;
 
 #ifdef _HDF5
 
-    void write_eigenvectors_HDF5() const;
+    void writeEigenvectorsHdf5() const;
 
-    void write_eigenvectors_each_HDF5(const std::string &fname_evec,
-                                      const unsigned int nk_in,
-                                      const double *const *xk_in,
-                                      const double *const *eval_in,
-                                      const std::complex<double> *const *const *evec_in,
-                                      const unsigned int kpmode_in) const;
+    void writeEigenvectorsEachHdf5(const std::string &fname_evec,
+                                   const unsigned int nk_in,
+                                   const double *const *xk_in,
+                                   const double *const *eval_in,
+                                   const std::complex<double> *const *const *evec_in,
+                                   const unsigned int kpmode_in) const;
 
 #endif
 
-    void write_thermodynamics() const;
+    void writeThermodynamicFunc() const;
 
-    void write_msd() const;
+    void writeMSD() const;
 
-    void write_disp_correlation() const;
+    void writeDispCorrelation() const;
 
-    void write_participation_ratio() const;
+    void writeParticipationRatio() const;
 
-    void write_participation_ratio_each(const std::string &fname_pr,
-                                        const std::string &fname_apr,
-                                        const unsigned int nk_in,
-                                        const double *const *xk_in,
-                                        const double *const *eval_in,
-                                        const std::complex<double> *const *const *evec_in) const;
+    void writeParticipationRatioEach(const std::string &fname_pr,
+                                     const std::string &fname_apr,
+                                     const unsigned int nk_in,
+                                     const double *const *xk_in,
+                                     const double *const *eval_in,
+                                     const std::complex<double> *const *const *evec_in) const;
 
-    void write_participation_ratio_mesh(const std::string &fname_pr,
-                                        const std::string &fname_apr,
-                                        const KpointMeshUniform *kmesh_in,
-                                        const double *const *eval_in,
-                                        const std::complex<double> *const *const *evec_in) const;
+    void writeParticipationRatioMesh(const std::string &fname_pr,
+                                     const std::string &fname_apr,
+                                     const KpointMeshUniform *kmesh_in,
+                                     const double *const *eval_in,
+                                     const std::complex<double> *const *const *evec_in) const;
 
-    void write_dielectric_function() const;
+    void writeDielectricFunction() const;
 
     double Ry_to_kayser;
     unsigned int verbosity;

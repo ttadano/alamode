@@ -64,7 +64,7 @@ class XtappParser(object):
         self._header_part = str_header
         self._initial_structure_loaded = True
 
-    def generate_structures(self, prefix, header_list, disp_list):
+    def generate_structures(self, prefix, header_list, disp_list, updated_structure=None):
 
         self._set_number_of_zerofill(len(disp_list))
         self._prefix = prefix
@@ -238,11 +238,12 @@ class XtappParser(object):
         else:
             raise RuntimeError("This cannot happen.")
 
-        self._force_conversion_factor = self._energy_conversion_factor / self._disp_conversion_factor
+        self._force_conversion_factor = (self._energy_conversion_factor
+                                         / self._disp_conversion_factor)
 
     def _set_output_flags(self, output_flags):
         self._print_disp, self._print_force, \
-        self._print_energy, self._print_born = output_flags
+            self._print_energy, self._print_born = output_flags
 
     @property
     def nat(self):
@@ -489,7 +490,7 @@ class XtappParser(object):
 
         f.close()
 
-        return np.array(x, dtype=np.float)
+        return np.array(x, dtype=float)
 
     @staticmethod
     def _get_atomicforces_xtapp(str_file, nat):
@@ -513,7 +514,7 @@ class XtappParser(object):
 
         f.close()
 
-        return np.array(force, dtype=np.float)
+        return np.array(force, dtype=float)
 
     @staticmethod
     def _get_energies_xtapp(str_file):
@@ -532,7 +533,7 @@ class XtappParser(object):
         if not found_tag:
             raise RuntimeError("%s tag not found in %s" % (search_tag, str_file))
 
-        return np.array(etot, dtype=np.float)
+        return np.array(etot, dtype=float)
 
     @staticmethod
     def _refold(x):

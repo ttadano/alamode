@@ -39,6 +39,8 @@ public:
             scph(ptr->scph),
             ewald(ptr->ewald),
             dielec(ptr->dielec),
+            qha(ptr->qha),
+            relaxation(ptr->relaxation),
             timer(ptr->timer) {}
 
     virtual ~Pointers() {}
@@ -67,6 +69,8 @@ protected:
     Scph *&scph;
     Ewald *&ewald;
     Dielec *&dielec;
+    Qha *&qha;
+    Relaxation *&relaxation;
     Timer *&timer;
 };
 }

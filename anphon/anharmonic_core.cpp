@@ -22,9 +22,11 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "phonon_dos.h"
 #include "system.h"
 #include "thermodynamics.h"
+#include "timer.h"
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <vector>
+#include <execution>
 
 #ifdef _OPENMP
 
@@ -114,119 +116,58 @@ void AnharmonicCore::setup()
 }
 
 void AnharmonicCore::prepare_relative_vector(const std::vector<FcsArrayWithCell> &fcs_in,
-                                             const unsigned int N,
                                              const int number_of_groups,
                                              std::vector<double> *fcs_group,
-                                             std::vector<RelativeVector> *&vec_out) const
+                                             std::vector<RelativeVector> *&vec_out)
 {
-    int i, j, k;
-
     double vecs[3][3];
-    double **xshift_s;
-
-    std::vector<unsigned int> atm_super, atm_prim;
-    std::vector<unsigned int> cells;
-
-    double mat_convert[3][3];
-
-    for (i = 0; i < 3; ++i) {
-        for (j = 0; j < 3; ++j) {
-            mat_convert[i][j] = 0.0;
-            for (k = 0; k < 3; ++k) {
-                mat_convert[i][j] += system->rlavec_p[i][k] * system->lavec_s_anharm[k][j];
-            }
-        }
-    }
-
-    allocate(xshift_s, 27, 3);
-
-    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0.0;
-
-    unsigned int icell = 0;
-
-    for (int ix = -1; ix <= 1; ++ix) {
-        for (int iy = -1; iy <= 1; ++iy) {
-            for (int iz = -1; iz <= 1; ++iz) {
-                if (ix == 0 && iy == 0 && iz == 0) continue;
-
-                ++icell;
-
-                xshift_s[icell][0] = static_cast<double>(ix);
-                xshift_s[icell][1] = static_cast<double>(iy);
-                xshift_s[icell][2] = static_cast<double>(iz);
-            }
-        }
-    }
-
-    atm_prim.resize(N);
-    cells.resize(N);
-    atm_super.resize(N);
-
     unsigned int icount = 0;
+
+    const auto nsize = fcs_in.begin()->pairs.size();
 
     for (auto igroup = 0; igroup < number_of_groups; ++igroup) {
 
         unsigned int nsize_group = fcs_group[igroup].size();
 
-        for (j = 0; j < nsize_group; ++j) {
-
-            for (i = 0; i < N; ++i) {
-                atm_prim[i] = fcs_in[icount].pairs[i].index / 3;
-                const auto tran_tmp = fcs_in[icount].pairs[i].tran;
-                cells[i] = fcs_in[icount].pairs[i].cell_s;
-                atm_super[i] = system->map_p2s_anharm[atm_prim[i]][tran_tmp];
-            }
-
-            for (i = 0; i < N - 1; ++i) {
-                for (k = 0; k < 3; ++k) {
-                    vecs[i][k] = system->xr_s_anharm[atm_super[i + 1]][k] + xshift_s[cells[i + 1]][k]
-                                 - system->xr_s_anharm[system->map_p2s_anharm[atm_prim[i + 1]][0]][k];
+        for (auto j = 0; j < nsize_group; ++j) {
+            for (auto i = 0; i < nsize - 1; ++i) {
+                for (auto k = 0; k < 3; ++k) {
+                    // include tpi phase factor here
+                    vecs[i][k] = tpi * fcs_in[icount].relvecs[i][k];
                 }
-                rotvec(vecs[i], vecs[i], mat_convert);
             }
-
-            if (N == 3) {
+            if (nsize == 3) {
                 vec_out[igroup].emplace_back(vecs[0], vecs[1]);
-            } else if (N == 4) {
+            } else if (nsize == 4) {
                 vec_out[igroup].emplace_back(vecs[0], vecs[1], vecs[2]);
             }
             ++icount;
         }
     }
-
-    deallocate(xshift_s);
 }
 
 void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArrayWithCell> &fcs_in,
-                                                      const unsigned int N,
                                                       int &number_of_groups,
-                                                      std::vector<double> *&fcs_group_out) const
+                                                      std::vector<double> *&fcs_group_out)
 {
     // Find the number of groups which has different evecs.
 
     unsigned int i;
-    std::vector<int> arr_old, arr_tmp;
 
     number_of_groups = 0;
 
-    arr_old.clear();
-    for (i = 0; i < N; ++i) {
-        arr_old.push_back(-1);
-    }
+    const auto nsize_pair = fcs_in.begin()->pairs.size();
+    std::vector<int> arr_old(nsize_pair, -1);
+    std::vector<int> arr_tmp(nsize_pair);
 
     for (const auto &it: fcs_in) {
 
-        arr_tmp.clear();
-
-        for (i = 0; i < it.pairs.size(); ++i) {
-            arr_tmp.push_back(it.pairs[i].index);
+        for (i = 0; i < nsize_pair; ++i) {
+            arr_tmp[i] = it.pairs[i].index;
         }
-
         if (arr_tmp != arr_old) {
             ++number_of_groups;
-            arr_old.clear();
-            arr_old.reserve(arr_tmp.size());
-            std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
+            arr_old = arr_tmp;
         }
     }
 
@@ -234,26 +175,17 @@ void AnharmonicCore::prepare_group_of_force_constants(const std::vector<FcsArray
 
     int igroup = -1;
 
-    arr_old.clear();
-    for (i = 0; i < N; ++i) {
-        arr_old.push_back(-1);
-    }
+    arr_old.resize(nsize_pair, -1);
 
     for (const auto &it: fcs_in) {
 
-        arr_tmp.clear();
-
-        for (i = 0; i < it.pairs.size(); ++i) {
-            arr_tmp.push_back(it.pairs[i].index);
+        for (i = 0; i < nsize_pair; ++i) {
+            arr_tmp[i] = it.pairs[i].index;
         }
-
         if (arr_tmp != arr_old) {
             ++igroup;
-            arr_old.clear();
-            arr_old.reserve(arr_tmp.size());
-            std::copy(arr_tmp.begin(), arr_tmp.end(), std::back_inserter(arr_old));
+            arr_old = arr_tmp;
         }
-
         fcs_group_out[igroup].push_back(it.fcs_val);
     }
 }
@@ -337,24 +269,14 @@ std::complex<double> AnharmonicCore::V3(const unsigned int ks[3],
     // Return zero if any of the involving phonon has imaginary frequency
     if (omega[0] < eps8 || omega[1] < eps8 || omega[2] < eps8) return 0.0;
 
-//    for (i = 0; i < ngroup_v3; ++i) {
-//        std::cout << "invmass_v3[i] = " << invmass_v3[i] << std::endl;
-//    }
-//
-//    for (i = 0; i < ngroup_v3; ++i) {
-//        std::cout << "evec_index_v3 = " << evec_index_v3[i][0]
-//        << evec_index_v3[i][1] <<  evec_index_v3[i][2] << std::endl;
-//    }
-
     if (kn[1] != kindex_phi3_stored[0] || kn[2] != kindex_phi3_stored[1]) {
         calc_phi3_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
+                             ngroup_v3,
+                             fcs_group_v3,
+                             relvec_v3,
                              phase_storage_in,
                              phi3_reciprocal);
-
-//        for (i = 0; i < ngroup_v3; ++i) {
-//            std::cout << phi3_reciprocal[i] << std::endl;
-//        }
         kindex_phi3_stored[0] = kn[1];
         kindex_phi3_stored[1] = kn[2];
     }
@@ -398,8 +320,12 @@ std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
     if (kn[1] != kindex_phi3_stored[0] || kn[2] != kindex_phi3_stored[1]) {
         calc_phi3_reciprocal(xk_in[kn[1]],
                              xk_in[kn[2]],
+                             ngroup_v3,
+                             fcs_group_v3,
+                             relvec_v3,
                              phase_storage_in,
                              phi3_reciprocal);
+
         kindex_phi3_stored[0] = kn[1];
         kindex_phi3_stored[1] = kn[2];
     }
@@ -420,6 +346,9 @@ std::complex<double> AnharmonicCore::Phi3(const unsigned int ks[3],
 
 void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
                                           const double *xk2,
+                                          const int ngroup_v3_in,
+                                          std::vector<double, std::allocator<double>> *fcs_group_v3_in,
+                                          const std::vector<RelativeVector> *relvec_v3_in,
                                           const PhaseFactorStorage *phase_storage_in,
                                           std::complex<double> *ret)
 {
@@ -433,20 +362,22 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
     if (tune_type_now == 1) {
 
 #pragma omp parallel for private(ret_in, nsize_group, j, phase)
-        for (i = 0; i < ngroup_v3; ++i) {
+        for (i = 0; i < ngroup_v3_in; ++i) {
+
+            // std::cout << "i = " << i << '\n' << std::flush;
 
             ret_in = std::complex<double>(0.0, 0.0);
-            nsize_group = fcs_group_v3[i].size();
+            nsize_group = fcs_group_v3_in[i].size();
 
             for (j = 0; j < nsize_group; ++j) {
-                phase = relvec_v3[i][j].vecs[0][0] * xk1[0]
-                        + relvec_v3[i][j].vecs[0][1] * xk1[1]
-                        + relvec_v3[i][j].vecs[0][2] * xk1[2]
-                        + relvec_v3[i][j].vecs[1][0] * xk2[0]
-                        + relvec_v3[i][j].vecs[1][1] * xk2[1]
-                        + relvec_v3[i][j].vecs[1][2] * xk2[2];
+                phase = relvec_v3_in[i][j].vecs[0][0] * xk1[0]
+                        + relvec_v3_in[i][j].vecs[0][1] * xk1[1]
+                        + relvec_v3_in[i][j].vecs[0][2] * xk1[2]
+                        + relvec_v3_in[i][j].vecs[1][0] * xk2[0]
+                        + relvec_v3_in[i][j].vecs[1][1] * xk2[1]
+                        + relvec_v3_in[i][j].vecs[1][2] * xk2[2];
 
-                ret_in += fcs_group_v3[i][j] * phase_storage_in->get_exp_type1(phase);
+                ret_in += fcs_group_v3_in[i][j] * phase_storage_in->get_exp_type1(phase);
             }
             ret[i] = ret_in;
         }
@@ -458,37 +389,38 @@ void AnharmonicCore::calc_phi3_reciprocal(const double *xk1,
         double phase3[3];
 
 #pragma omp parallel for private(ret_in, nsize_group, j, phase3)
-        for (i = 0; i < ngroup_v3; ++i) {
+        for (i = 0; i < ngroup_v3_in; ++i) {
 
             ret_in = std::complex<double>(0.0, 0.0);
-            nsize_group = fcs_group_v3[i].size();
+            nsize_group = fcs_group_v3_in[i].size();
 
             for (j = 0; j < nsize_group; ++j) {
                 for (auto ii = 0; ii < 3; ++ii) {
                     phase3[ii]
-                            = relvec_v3[i][j].vecs[0][ii] * xk1[ii]
-                              + relvec_v3[i][j].vecs[1][ii] * xk2[ii];
+                            = relvec_v3_in[i][j].vecs[0][ii] * xk1[ii]
+                              + relvec_v3_in[i][j].vecs[1][ii] * xk2[ii];
                 }
-                ret_in += fcs_group_v3[i][j] * phase_storage_in->get_exp_type2(phase3);
+                ret_in += fcs_group_v3_in[i][j] * phase_storage_in->get_exp_type2(phase3);
             }
             ret[i] = ret_in;
         }
     } else {
         // Original version
 #pragma omp parallel for private(ret_in, nsize_group, phase, j)
-        for (i = 0; i < ngroup_v3; ++i) {
+        for (i = 0; i < ngroup_v3_in; ++i) {
 
             ret_in = std::complex<double>(0.0, 0.0);
-            nsize_group = fcs_group_v3[i].size();
+            nsize_group = fcs_group_v3_in[i].size();
 
             for (j = 0; j < nsize_group; ++j) {
-                phase = relvec_v3[i][j].vecs[0][0] * xk1[0]
-                        + relvec_v3[i][j].vecs[0][1] * xk1[1]
-                        + relvec_v3[i][j].vecs[0][2] * xk1[2]
-                        + relvec_v3[i][j].vecs[1][0] * xk2[0]
-                        + relvec_v3[i][j].vecs[1][1] * xk2[1]
-                        + relvec_v3[i][j].vecs[1][2] * xk2[2];
-                ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
+                phase
+                        = relvec_v3_in[i][j].vecs[0][0] * xk1[0]
+                          + relvec_v3_in[i][j].vecs[0][1] * xk1[1]
+                          + relvec_v3_in[i][j].vecs[0][2] * xk1[2]
+                          + relvec_v3_in[i][j].vecs[1][0] * xk2[0]
+                          + relvec_v3_in[i][j].vecs[1][1] * xk2[1]
+                          + relvec_v3_in[i][j].vecs[1][2] * xk2[2];
+                ret_in += fcs_group_v3_in[i][j] * std::exp(im * phase);
             }
             ret[i] = ret_in;
         }
@@ -561,7 +493,7 @@ std::complex<double> AnharmonicCore::Phi4(const unsigned int ks[4],
     double omega[4];
     double ret_re = 0.0;
     double ret_im = 0.0;
-    std::complex<double> ret = std::complex<double>(0.0, 0.0);
+    auto ret = std::complex<double>(0.0, 0.0);
 
     for (i = 0; i < 4; ++i) {
         kn[i] = ks[i] / ns;
@@ -612,13 +544,14 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
     unsigned int nsize_group;
 
     const auto tune_type_now = phase_storage_in->get_tune_type();
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     if (tune_type_now == 1) {
 
 #pragma omp parallel for private(ret_in, nsize_group, j, phase)
         for (i = 0; i < ngroup_v4; ++i) {
 
-            ret_in = std::complex<double>(0.0, 0.0);
+            ret_in = complex_zero;
             nsize_group = fcs_group_v4[i].size();
 
             for (j = 0; j < nsize_group; ++j) {
@@ -646,7 +579,7 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
 #pragma omp parallel for private(ret_in, nsize_group, j, phase3)
         for (i = 0; i < ngroup_v4; ++i) {
 
-            ret_in = std::complex<double>(0.0, 0.0);
+            ret_in = complex_zero;
             nsize_group = fcs_group_v4[i].size();
 
             for (j = 0; j < nsize_group; ++j) {
@@ -665,7 +598,7 @@ void AnharmonicCore::calc_phi4_reciprocal(const double *xk1,
 #pragma omp parallel for private(ret_in, nsize_group, phase)
         for (i = 0; i < ngroup_v4; ++i) {
 
-            ret_in = std::complex<double>(0.0, 0.0);
+            ret_in = complex_zero;
             nsize_group = fcs_group_v4[i].size();
 
             for (j = 0; j < nsize_group; ++j) {
@@ -699,8 +632,6 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
     // Return zero if any of the involving phonon has imaginary frequency
     if (eval[0][mode] < eps8 || eval[1][is] < eps8 || eval[2][js] < eps8) return 0.0;
 
-    unsigned int ielem = 0;
-
     for (int i = 0; i < ngroup_v3; ++i) {
 
         auto vec_tmp = evec[0][mode][evec_index_v3[i][0]]
@@ -722,8 +653,6 @@ std::complex<double> AnharmonicCore::V3_mode(int mode,
                          + relvec_v3[i][j].vecs[1][2] * xk3[2];
 
             ret_in += fcs_group_v3[i][j] * std::exp(im * phase);
-
-            ++ielem;
         }
         ctmp += ret_in * vec_tmp;
     }
@@ -1799,15 +1728,13 @@ void AnharmonicCore::reduce_pair_simple(const int ik_in,
 
 void AnharmonicCore::setup_cubic()
 {
-    int i;
-    double *invsqrt_mass_p;
-
     // Sort force_constant[1] using the operator defined in fcs_phonons.h
     // This sorting is necessary.
     std::sort(fcs_phonon->force_constant_with_cell[1].begin(),
               fcs_phonon->force_constant_with_cell[1].end());
+
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[1],
-                                     3, ngroup_v3, fcs_group_v3);
+                                     ngroup_v3, fcs_group_v3);
 
     allocate(invmass_v3, ngroup_v3);
     allocate(evec_index_v3, ngroup_v3, 3);
@@ -1815,19 +1742,14 @@ void AnharmonicCore::setup_cubic()
     allocate(phi3_reciprocal, ngroup_v3);
 
     prepare_relative_vector(fcs_phonon->force_constant_with_cell[1],
-                            3,
                             ngroup_v3,
                             fcs_group_v3,
                             relvec_v3);
 
-    allocate(invsqrt_mass_p, system->natmin);
-
-    for (i = 0; i < system->natmin; ++i) {
-        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
-    }
+    const auto invsqrt_mass_p = system->get_invsqrt_mass();
 
     int k = 0;
-    for (i = 0; i < ngroup_v3; ++i) {
+    for (auto i = 0; i < ngroup_v3; ++i) {
         for (int j = 0; j < 3; ++j) {
             evec_index_v3[i][j] = fcs_phonon->force_constant_with_cell[1][k].pairs[j].index;
         }
@@ -1837,18 +1759,14 @@ void AnharmonicCore::setup_cubic()
                   * invsqrt_mass_p[evec_index_v3[i][2] / 3];
         k += fcs_group_v3[i].size();
     }
-
-    deallocate(invsqrt_mass_p);
 }
 
 void AnharmonicCore::setup_quartic()
 {
-    int i;
-    double *invsqrt_mass_p;
     std::sort(fcs_phonon->force_constant_with_cell[2].begin(),
               fcs_phonon->force_constant_with_cell[2].end());
     prepare_group_of_force_constants(fcs_phonon->force_constant_with_cell[2],
-                                     4, ngroup_v4, fcs_group_v4);
+                                     ngroup_v4, fcs_group_v4);
 
     allocate(invmass_v4, ngroup_v4);
     allocate(evec_index_v4, ngroup_v4, 4);
@@ -1856,19 +1774,14 @@ void AnharmonicCore::setup_quartic()
     allocate(phi4_reciprocal, ngroup_v4);
 
     prepare_relative_vector(fcs_phonon->force_constant_with_cell[2],
-                            4,
                             ngroup_v4,
                             fcs_group_v4,
                             relvec_v4);
 
-    allocate(invsqrt_mass_p, system->natmin);
-
-    for (i = 0; i < system->natmin; ++i) {
-        invsqrt_mass_p[i] = std::sqrt(1.0 / system->mass[system->map_p2s[i][0]]);
-    }
+    const auto invsqrt_mass_p = system->get_invsqrt_mass();
 
     int k = 0;
-    for (i = 0; i < ngroup_v4; ++i) {
+    for (auto i = 0; i < ngroup_v4; ++i) {
         for (int j = 0; j < 4; ++j) {
             evec_index_v4[i][j] = fcs_phonon->force_constant_with_cell[2][k].pairs[j].index;
         }
@@ -1879,8 +1792,6 @@ void AnharmonicCore::setup_quartic()
                   * invsqrt_mass_p[evec_index_v4[i][3] / 3];
         k += fcs_group_v4[i].size();
     }
-
-    deallocate(invsqrt_mass_p);
 }
 
 void PhaseFactorStorage::create(const bool use_tuned_ver,
@@ -2237,3 +2148,76 @@ int **AnharmonicCore::get_evec_index(const unsigned int order) const
     if (order == 4) return evec_index_v4;
     return nullptr;
 }
+
+std::vector<RelativeVector> *AnharmonicCore::get_relvec(const unsigned int order) const
+{
+    if (order == 3) return relvec_v3;
+    if (order == 4) return relvec_v4;
+    return nullptr;
+}
+
+//void AnharmonicCore::calc_analytic_k_from_FcsArrayWithCell(const double *xk_in,
+//                                                           const std::vector<FcsArrayWithCell> &fc2_in,
+//                                                           std::complex<double> **dymat_out) const
+//{
+//    int i;
+//    const auto nmode = 3 * system->natmin;
+//    double vec[3];
+//
+//    // prepare supercell shift
+//    double **xshift_s;
+//    const auto ncell_s = 27;
+//
+//    allocate(xshift_s, ncell_s, 3);
+//
+//    unsigned int icell = 0;
+//    int ix, iy, iz;
+//    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0;
+//    icell = 1;
+//    for (ix = -1; ix <= 1; ++ix) {
+//        for (iy = -1; iy <= 1; ++iy) {
+//            for (iz = -1; iz <= 1; ++iz) {
+//                if (ix == 0 && iy == 0 && iz == 0) continue;
+//
+//                xshift_s[icell][0] = ix * 1.0;
+//                xshift_s[icell][1] = iy * 1.0;
+//                xshift_s[icell][2] = iz * 1.0;
+//
+//                ++icell;
+//            }
+//        }
+//    }
+//
+//    for (i = 0; i < nmode; ++i) {
+//        for (auto j = 0; j < nmode; ++j) {
+//            dymat_out[i][j] = std::complex<double>(0.0, 0.0);
+//        }
+//    }
+//
+//    for (const auto &it: fc2_in) {
+//
+//        const auto atm1_p = it.pairs[0].index / 3;
+//        const auto atm2_p = it.pairs[1].index / 3;
+//        const auto atm1_s = system->map_p2s_anharm[atm1_p][0];
+//        const auto atm2_s = system->map_p2s_anharm[atm2_p][it.pairs[1].tran];
+//        const auto xyz1 = it.pairs[0].index % 3;
+//        const auto xyz2 = it.pairs[1].index % 3;
+//        const auto icell = it.pairs[1].cell_s;
+//
+//        for (i = 0; i < 3; ++i) {
+//            vec[i] = system->xr_s_anharm[atm2_s][i] + xshift_s[icell][i]
+//                     - system->xr_s_anharm[system->map_p2s_anharm[atm2_p][0]][i];
+//        }
+//
+//        rotvec(vec, vec, system->lavec_s_anharm);
+//        rotvec(vec, vec, system->rlavec_p);
+//
+//        const auto phase = vec[0] * xk_in[0] + vec[1] * xk_in[1] + vec[2] * xk_in[2];
+//
+//        dymat_out[3 * atm1_p + xyz1][3 * atm2_p + xyz2]
+//                += it.fcs_val * std::exp(im * phase) /
+//                   std::sqrt(system->mass_anharm[atm1_s] * system->mass_anharm[atm2_s]);
+//    }
+//
+//    deallocate(xshift_s);
+//}

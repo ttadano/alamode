@@ -11,10 +11,10 @@
 #include "alm_cui.h"
 #include "alm.h"
 #include "input_parser.h"
-#include "timer.h"
 #include "version.h"
 #include <iostream>
 #include <iomanip>
+#include <memory>
 
 #ifdef _OPENMP
 
@@ -34,25 +34,23 @@ void ALMCUI::run(const int narg,
     auto alm = new ALM();
 
     // alm->mode is set herein.
-    auto input_parser = new InputParser();
+    auto input_parser = std::make_unique<InputParser>();
     input_parser->run(alm, narg, arg);
     auto run_mode = input_parser->get_run_mode();
-    delete input_parser;
 
     if (alm->get_verbosity() > 0) {
-        std::cout << " +-----------------------------------------------------------------+" << std::endl;
-        std::cout << " +                         Program ALM                             +" << std::endl;
+        std::cout << " +-----------------------------------------------------------------+\n";
+        std::cout << " +                         Program ALM                             +\n";
         std::cout << " +                             Ver.";
         std::cout << std::setw(7) << ALAMODE_VERSION;
-        std::cout << "                         +" << std::endl;
-        std::cout << " +-----------------------------------------------------------------+" << std::endl;
-        std::cout << std::endl;
+        std::cout << "                         +\n";
+        std::cout << " +-----------------------------------------------------------------+\n\n";
 #ifdef _OPENMP
         std::cout << " Number of OpenMP threads = "
-                  << omp_get_max_threads() << std::endl << std::endl;
+                  << omp_get_max_threads() << "\n\n";
 #endif
 
-        std::cout << " Job started at " << alm->timer->DateAndTime() << std::endl;
+        std::cout << " Job started at " << alm->timer->DateAndTime() << '\n';
     }
 
     if (alm->get_verbosity() > 0) {
@@ -85,15 +83,16 @@ void ALMCUI::run(const int narg,
         }
     } else if (run_mode == "suggest") {
         alm->run_suggest();
-        alm->writer->write_displacement_pattern(alm->cluster,
+        alm->writer->write_displacement_pattern(alm->system,
+                                                alm->cluster,
                                                 alm->displace,
                                                 alm->files->get_prefix(),
                                                 alm->get_verbosity());
     }
 
     if (alm->get_verbosity() > 0) {
-        std::cout << std::endl << " Job finished at "
-                  << alm->timer->DateAndTime() << std::endl;
+        std::cout << '\n' << " Job finished at "
+                  << alm->timer->DateAndTime() << '\n';
     }
 
     delete alm;

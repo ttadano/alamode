@@ -16,6 +16,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <string>
 #include <vector>
 #include <map>
+#include <Eigen/Core>
 
 namespace PHON_NS {
 class KpointList {
@@ -177,9 +178,16 @@ public:
     double **kvec_na = nullptr;
 };
 
+struct KpointSymmetry {
+public:
+    int symmetry_op;
+    unsigned int knum_irred_orig;
+    unsigned int knum_orig;
+};
+
 class KpointMeshUniform {
 public:
-    KpointMeshUniform() = default;;
+    KpointMeshUniform() = default;
 
     KpointMeshUniform(const unsigned int nk_in[3])
     {
@@ -215,16 +223,20 @@ public:
     std::vector<std::vector<KpointList>> kpoint_irred_all;
     std::vector<std::vector<int>> small_group_of_k;
     std::vector<unsigned int> kindex_minus_xk;
+    std::vector<std::vector<int>> symop_minus_at_k;
+    std::vector<KpointSymmetry> kpoint_map_symmetry;
+
     bool niggli_reduced = false;
 
     void setup(const std::vector<SymmetryOperation> &symmlist,
-               const double rlavec_p[3][3],
+               const Eigen::Matrix3d &rlavec_p,
                const bool time_reversal_symmetry = true,
                const bool niggli_reduce_in = false);
 
     int get_knum(const double xk[3]) const;
 
-    int knum_sym(const unsigned int ik, const int rot[3][3]) const;
+    int knum_sym(const unsigned int ik,
+                 const Eigen::Matrix3i &rot) const;
 
     void get_unique_triplet_k(const int ik,
                               const std::vector<SymmetryOperation> &symmlist,
@@ -240,15 +252,18 @@ public:
                               std::vector<KsListGroup> &quartet,
                               const int sign = -1) const;
 
+    void setup_kpoint_symmetry(const std::vector<SymmetryOperationWithMapping> &symmlist);
+
+
 private:
 
     void gen_kmesh(const std::vector<SymmetryOperation> &symmlist,
-                   const double rlavec_p[3][3],
+                   const Eigen::Matrix3d &rlavec_p,
                    const bool usesym,
                    const bool time_reversal_symmetry);
 
     void gen_kmesh_niggli(const std::vector<SymmetryOperation> &symmlist,
-                          const double rlavec_p[3][3],
+                          const Eigen::Matrix3d &rlavec_p,
                           const bool usesym,
                           const bool time_reversal_symmetry);
 
@@ -349,9 +364,13 @@ public:
                                         std::vector<int> &sym_list,
                                         double S_avg[3][3]) const;
 
-    void get_commensurate_kpoints(const double [3][3],
-                                  const double [3][3],
-                                  std::vector<std::vector<double>> &) const;
+    void get_commensurate_kpoints(const Eigen::Matrix3d &lavec_super,
+                                  const Eigen::Matrix3d &lavec_prim,
+                                  std::vector<std::vector<double>> &klist) const;
+
+    int get_kmap_coarse_to_dense(const KpointMeshUniform *kmesh_coarse,
+                                 const KpointMeshUniform *kmesh_dense,
+                                 std::vector<int> &kmap) const;
 
 private:
     void set_default_variables();
@@ -359,10 +378,10 @@ private:
     void deallocate_variables();
 
     void setup_kpoint_given(const std::vector<KpointInp> &kpinfo,
-                            const double rlavec_p[3][3]);
+                            const Eigen::Matrix3d &rlavec_p);
 
     void setup_kpoint_band(const std::vector<KpointInp> &kpinfo,
-                           const double rlavec_p[3][3]);
+                           const Eigen::Matrix3d &rlavec_p);
 
     void setup_kpoint_plane(const std::vector<KpointInp> &,
                             unsigned int &,

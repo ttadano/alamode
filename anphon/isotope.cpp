@@ -52,7 +52,7 @@ void Isotope::deallocate_variables()
 
 void Isotope::setup_isotope_scattering()
 {
-    const int nkd = system->nkd;
+    const int nkd = system->get_primcell().number_of_elems;
 
     MPI_Bcast(&include_isotope, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -62,7 +62,7 @@ void Isotope::setup_isotope_scattering()
             if (!isotope_factor) {
                 allocate(isotope_factor, nkd);
                 set_isotope_factor_from_database(nkd,
-                                                 system->symbol_kd,
+                                                 &system->symbol_kd[0],
                                                  isotope_factor);
             }
         }
@@ -73,14 +73,14 @@ void Isotope::setup_isotope_scattering()
         MPI_Bcast(&isotope_factor[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         if (mympi->my_rank == 0) {
-            std::cout << " ISOTOPE >= 1: Isotope scattering effects will be considered" << std::endl;
-            std::cout << "               with the following scattering factors." << std::endl;
+            std::cout << " ISOTOPE >= 1: Isotope scattering effects will be considered\n";
+            std::cout << "               with the following scattering factors.\n";
 
             for (int i = 0; i < nkd; ++i) {
                 std::cout << std::setw(5) << system->symbol_kd[i] << ":";
-                std::cout << std::scientific << std::setw(17) << isotope_factor[i] << std::endl;
+                std::cout << std::scientific << std::setw(17) << isotope_factor[i] << '\n';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
 
             allocate(gamma_isotope, dos->kmesh_dos->nk_irred, dynamical->neval);
         }
@@ -101,11 +101,12 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
 
     const auto nk = kmesh_in->nk;
     const auto ns = dynamical->neval;
-    const auto natmin = system->natmin;
+    const auto natmin = system->get_primcell().number_of_atoms;
     const auto epsilon = integration->epsilon;
 
     ret = 0.0;
 
+#pragma omp parallel for reduction(+: ret)
     for (auto ik = 0; ik < nk; ++ik) {
         for (auto is = 0; is < ns; ++is) {
 
@@ -118,7 +119,7 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
                              * evec_in[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
+                prod += isotope_factor[system->get_primcell().kind[iat]] * std::norm(dprod);
             }
 
             const auto omega1 = eval_in[ik][is];
@@ -155,7 +156,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
     int ik, is;
     const auto nk = kmesh_in->nk;
     const auto ns = dynamical->neval;
-    const auto natmin = system->natmin;
+    const auto natmin = system->get_primcell().number_of_atoms;
 
     ret = 0.0;
 
@@ -166,6 +167,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
     allocate(weight, nk);
 
     for (is = 0; is < ns; ++is) {
+#pragma omp parallel for
         for (ik = 0; ik < nk; ++ik) {
 
             auto prod = 0.0;
@@ -177,7 +179,7 @@ void Isotope::calc_isotope_selfenergy_tetra(const unsigned int knum,
                     dprod += std::conj(evec_in[ik][is][3 * iat + icrd])
                              * evec_in[knum][snum][3 * iat + icrd];
                 }
-                prod += isotope_factor[system->kd[system->map_p2s[iat][0]]] * std::norm(dprod);
+                prod += isotope_factor[system->get_primcell().kind[iat]] * std::norm(dprod);
             }
 
             weight[ik] = prod * eval_in[ik][is];
@@ -266,7 +268,7 @@ void Isotope::calc_isotope_selfenergy_all() const
         deallocate(gamma_loc);
 
         if (mympi->my_rank == 0) {
-            std::cout << "done!" << std::endl;
+            std::cout << "done!\n";
         }
     }
 }

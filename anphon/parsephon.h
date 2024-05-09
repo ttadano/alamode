@@ -46,6 +46,15 @@ private:
     void parse_scph_vars();
 
     void parse_kappa_vars(const bool);
+    void parse_qha_vars();
+
+    void parse_relax_vars();
+
+    void check_relax_vars();
+
+    void parse_initial_strain();
+
+    void parse_initial_displace();
 
     void parse_cell_parameter();
 
@@ -54,10 +63,10 @@ private:
     void get_var_dict(const std::vector<std::string> &,
                       std::map<std::string, std::string> &);
 
-    void split_str_by_space(const std::string &,
-                            std::vector<std::string> &) const;
+    static void split_str_by_space(const std::string &,
+                                   std::vector<std::string> &);
 
-    bool is_endof_entry(const std::string &str) const;
+    static bool is_endof_entry(const std::string &str);
 
     template<typename T_to, typename T_from>
     T_to my_cast(T_from const &);

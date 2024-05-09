@@ -18,7 +18,9 @@
 #include "memory.h"
 #include "phonon_dos.h"
 #include "pointers.h"
+#include "relaxation.h"
 #include "system.h"
+#include "scph.h"
 #include <iostream>
 #include <complex>
 
@@ -316,6 +318,7 @@ double Thermodynamics::free_energy_QHA(const double temp_in,
         }
     }
 
+
     if (std::abs(temp_in) < eps) return ret;
 
     return temp_in * T_to_Ryd * ret;
@@ -394,8 +397,8 @@ double Thermodynamics::disp_corrfunc(const double T_in,
     }
 
     ret *= 1.0 / (static_cast<double>(nk)
-                  * std::sqrt(system->mass[system->map_p2s[ncrd1 / 3][0]]
-                              * system->mass[system->map_p2s[ncrd2 / 3][0]]));
+                  * std::sqrt(system->get_mass_super()[system->get_map_p2s(0)[ncrd1 / 3][0]]
+                              * system->get_mass_super()[system->get_map_p2s(0)[ncrd2 / 3][0]]));
 
     return ret;
 }
@@ -417,10 +420,9 @@ void Thermodynamics::compute_free_energy_bubble()
     const auto NT = static_cast<unsigned int>((system->Tmax - system->Tmin) / system->dT) + 1;
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
-        std::cout << " -----------------------------------------------------------------"
-                  << std::endl;
-        std::cout << " Calculating the vibrational free energy from the Bubble diagram " << std::endl;
+        std::cout << '\n';
+        std::cout << " -----------------------------------------------------------------\n";
+        std::cout << " Calculating the vibrational free energy from the Bubble diagram \n" << std::flush;
     }
 
     allocate(FE_bubble, NT);
@@ -430,7 +432,7 @@ void Thermodynamics::compute_free_energy_bubble()
                       FE_bubble);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl << std::endl;
+        std::cout << " done!\n\n";
     }
 }
 
@@ -615,7 +617,7 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
     for (iT = 0; iT < NT; ++iT) FE_local[iT] = 0.0;
 
     if (mympi->my_rank == 0) {
-        std::cout << " Total number of modes per MPI process: " << nk_tmp << std::endl;
+        std::cout << " Total number of modes per MPI process: " << nk_tmp << '\n';
     }
 
     for (i0 = 0; i0 < nk_tmp; ++i0) {
@@ -707,15 +709,15 @@ void Thermodynamics::compute_FE_bubble_SCPH(double ***eval_in,
 
 double Thermodynamics::FE_scph_correction(unsigned int iT,
                                           double **eval,
-                                          std::complex<double> ***evec) const
+                                          std::complex<double> ***evec,
+                                          double **eval_harm_renormalized,
+                                          std::complex<double> ***evec_harm_renormalized) const
 {
+    using namespace Eigen;
     const auto nk = dos->kmesh_dos->nk;
     const auto ns = dynamical->neval;
     const auto temp = system->Tmin + static_cast<double>(iT) * system->dT;
     const auto N = nk * ns;
-
-    const auto eval_harm = dos->dymat_dos->get_eigenvalues();
-    const auto evec_harm = dos->dymat_dos->get_eigenvectors();
 
     double ret = 0.0;
 
@@ -724,26 +726,31 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
         int ik = i / ns;
         int is = i % ns;
         const auto omega = eval[ik][is];
-        if (std::abs(omega) < eps6) continue;
+        if (std::abs(omega) < eps8) continue;
 
-        auto tmp_c = std::complex<double>(0.0, 0.0);
+        MatrixXcd Cmat(ns, ns);
 
-        for (int js = 0; js < ns; ++js) {
-            auto omega2_harm = eval_harm[ik][js];
-            if (omega2_harm >= 0.0) {
-                omega2_harm = std::pow(omega2_harm, 2);
-            } else {
-                omega2_harm = -std::pow(omega2_harm, 2);
-            }
-
-            for (int ks = 0; ks < ns; ++ks) {
-                for (int ls = 0; ls < ns; ++ls) {
-                    tmp_c += omega2_harm
-                             * evec_harm[ik][js][ks]
-                             * std::conj(evec_harm[ik][js][ls])
-                             * std::conj(evec[ik][is][ks]) * evec[ik][is][ls];
+        // calculate Cmat
+        for (int js = 0; js < ns; js++) {
+            for (int ks = 0; ks < ns; ks++) {
+                Cmat(js, ks) = 0.0;
+                for (int ls = 0; ls < ns; ls++) {
+                    Cmat(js, ks) += std::conj(evec_harm_renormalized[ik][js][ls])
+                                    * evec[ik][ks][ls];
                 }
             }
+        }
+
+        auto tmp_c = std::complex<double>(0.0, 0.0);
+        double omega2_harm;
+
+        for (int js = 0; js < ns; js++) {
+            if (eval_harm_renormalized[ik][js] < 0.0) {
+                omega2_harm = -std::pow(eval_harm_renormalized[ik][js], 2);
+            } else {
+                omega2_harm = std::pow(eval_harm_renormalized[ik][js], 2);
+            }
+            tmp_c += std::conj(Cmat(js, is)) * omega2_harm * Cmat(js, is);
         }
 
         if (thermodynamics->classical) {
@@ -754,4 +761,23 @@ double Thermodynamics::FE_scph_correction(unsigned int iT,
     }
 
     return ret / static_cast<double>(nk);
+}
+
+double Thermodynamics::compute_FE_total(unsigned int iT,
+                                        double fe_qha,
+                                        double dfe_scph = 0.0)
+{
+    double fe_total = fe_qha;
+    // skip scph correction for QHA + structural optimization
+    if (phon->mode == "SCPH") {
+        fe_total += dfe_scph;
+    }
+    if (thermodynamics->calc_FE_bubble) {
+        fe_total += thermodynamics->FE_bubble[iT];
+    }
+    if (relaxation->relax_str != 0) {
+        fe_total += relaxation->V0[iT];
+    }
+
+    return fe_total;
 }

@@ -46,15 +46,15 @@ public:
 
     void set_prefix(const std::string);
 
-    std::string get_prefix() const;
+    [[nodiscard]] std::string get_prefix() const;
 
     void set_datfile_train(const DispForceFile &dat_in);
 
     void set_datfile_validation(const DispForceFile &dat_in);
 
-    DispForceFile get_datfile_train() const;
+    [[nodiscard]] DispForceFile get_datfile_train() const;
 
-    DispForceFile get_datfile_validation() const;
+    [[nodiscard]] DispForceFile get_datfile_validation() const;
 
 private:
 

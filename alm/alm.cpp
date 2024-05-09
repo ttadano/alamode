@@ -35,30 +35,20 @@ ALM::ALM()
 
 ALM::~ALM()
 {
-    delete files;
-    delete system;
-    delete cluster;
-    delete fcs;
-    delete symmetry;
-    delete optimize;
-    delete constraint;
-    delete displace;
-    delete timer;
-    delete writer;
 }
 
 void ALM::init_instances()
 {
-    files = new Files();
-    system = new System();
-    cluster = new Cluster();
-    fcs = new Fcs();
-    symmetry = new Symmetry();
-    optimize = new Optimize();
-    constraint = new Constraint();
-    displace = new Displace();
-    timer = new Timer();
-    writer = new Writer();
+    files = std::make_unique<Files>();
+    system = std::make_unique<System>();
+    cluster = std::make_unique<Cluster>();
+    fcs = std::make_unique<Fcs>();
+    symmetry = std::make_unique<Symmetry>();
+    optimize = std::make_unique<Optimize>();
+    constraint = std::make_unique<Constraint>();
+    displace = std::make_unique<Displace>();
+    timer = std::make_unique<Timer>();
+    writer = std::make_unique<Writer>();
 }
 
 void ALM::set_verbosity(const int verbosity_in)
@@ -94,6 +84,7 @@ void ALM::set_datfile_validation(const DispForceFile &dat_in) const
 void ALM::set_symmetry_tolerance(const double tolerance) const // TOLERANCE
 {
     symmetry->set_tolerance(tolerance);
+    system->set_tolerance(tolerance); // copy the same value to the system class
 }
 
 void ALM::set_displacement_param(const bool trim_dispsign_for_evenfunc) const // TRIMEVEN
@@ -114,11 +105,23 @@ void ALM::set_periodicity(const int is_periodic[3]) const // PERIODIC
 void ALM::set_cell(const size_t nat,
                    const double lavec[3][3],
                    const double xcoord[][3],
-                   const int kind[],
-                   const std::string kdname[]) const
+                   const int kind[]) const
 {
-    system->set_supercell(lavec, nat, kind, xcoord);
-    system->set_kdname(kdname);
+    system->set_basecell(lavec, nat, kind, xcoord);
+}
+
+void ALM::set_element_names(const std::vector<std::string> &kdname_in) const
+{
+    system->set_kdname(kdname_in);
+}
+
+void ALM::set_transformation_matrices(const double transmat_to_super[3][3],
+                                      const double transmat_to_prim[3][3],
+                                      const int autoset_primcell_in) const
+{
+    system->set_transformation_matrices(transmat_to_super,
+                                        transmat_to_prim,
+                                        autoset_primcell_in);
 }
 
 void ALM::set_magnetic_params(const size_t nat,
@@ -232,6 +235,16 @@ int ALM::get_nmaxsave() const
     return writer->get_output_maxorder();
 }
 
+void ALM::set_compression_level(const int level) const
+{
+    writer->set_compression_level(level);
+}
+
+int ALM::get_compression_level() const
+{
+    return writer->get_compression_level();
+}
+
 void ALM::define(const int maxorder,
                  const size_t nkd,
                  const int *nbody_include,
@@ -274,12 +287,17 @@ double ALM::get_cv_l1_alpha() const
     return optimize->get_cv_l1_alpha();
 }
 
+double ALM::get_symmetry_tolerance() const
+{
+    return symmetry->get_tolerance();
+}
+
 Cell ALM::get_supercell() const
 {
     return system->get_supercell();
 }
 
-std::string *ALM::get_kdname() const
+std::vector<std::string> ALM::get_kdname() const
 {
     return system->get_kdname();
 }
@@ -294,7 +312,7 @@ std::string ALM::get_str_magmom() const
     return system->get_str_magmom();
 }
 
-double ***ALM::get_x_image() const
+const std::vector<Eigen::MatrixXd> &ALM::get_x_image() const
 {
     return system->get_x_image();
 }
@@ -306,7 +324,7 @@ int *ALM::get_periodicity() const
 
 const std::vector<std::vector<int>> &ALM::get_atom_mapping_by_pure_translations() const
 {
-    return symmetry->get_map_p2s();
+    return symmetry->get_map_trueprim_to_super();
 }
 
 int ALM::get_maxorder() const
@@ -397,7 +415,7 @@ size_t ALM::get_number_of_irred_fc_elements(const int fc_order) // harmonic=1, .
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
-                          get_optimizer_control().mirror_image_conv,
+                          get_optimizer_control().periodic_image_conv,
                           verbosity,
                           timer);
         initialized_constraint_class = true;
@@ -408,7 +426,7 @@ size_t ALM::get_number_of_irred_fc_elements(const int fc_order) // harmonic=1, .
                                              cluster,
                                              fcs,
                                              verbosity,
-                                             get_optimizer_control().mirror_image_conv);
+                                             get_optimizer_control().periodic_image_conv);
     }
 
     return constraint->get_index_bimap(order).size();
@@ -418,18 +436,18 @@ size_t ALM::get_number_of_fc_origin(const int fc_order,
                                     const int permutation) const
 {
     if (fc_order <= 0) {
-        std::cout << "fc_order must be larger than 0." << std::endl;
+        std::cout << "fc_order must be larger than 0." << '\n';
         exit(EXIT_FAILURE);
     }
     const auto maxorder = cluster->get_maxorder();
     if (fc_order > maxorder) {
-        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        std::cout << "fc_order must not be larger than maxorder" << '\n';
         exit(EXIT_FAILURE);
     }
     auto nfc_cart = fcs->get_nfc_cart(1);
 
     if (nfc_cart.size() < fc_order) {
-        std::cout << "fc has not yet been computed or set." << std::endl;
+        std::cout << "fc has not yet been computed or set." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -450,11 +468,11 @@ void ALM::get_fc_origin(double *fc_values,
 
     const auto maxorder = cluster->get_maxorder();
     if (fc_order > maxorder) {
-        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        std::cout << "fc_order must not be larger than maxorder" << '\n';
         exit(EXIT_FAILURE);
     }
     if (!fcs->get_fc_cart()) {
-        std::cout << "fc has not yet been computed." << std::endl;
+        std::cout << "fc has not yet been computed." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -492,11 +510,11 @@ void ALM::get_fc_irreducible(double *fc_values,
 
     const auto maxorder = cluster->get_maxorder();
     if (fc_order > maxorder) {
-        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        std::cout << "fc_order must not be larger than maxorder" << '\n';
         exit(EXIT_FAILURE);
     }
     if (!optimize->get_params()) {
-        std::cout << "fc has not yet been computed." << std::endl;
+        std::cout << "fc has not yet been computed." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -506,7 +524,7 @@ void ALM::get_fc_irreducible(double *fc_values,
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
-                          get_optimizer_control().mirror_image_conv,
+                          get_optimizer_control().periodic_image_conv,
                           verbosity,
                           timer);
         initialized_constraint_class = true;
@@ -517,7 +535,7 @@ void ALM::get_fc_irreducible(double *fc_values,
                                              cluster,
                                              fcs,
                                              verbosity,
-                                             get_optimizer_control().mirror_image_conv);
+                                             get_optimizer_control().periodic_image_conv);
     }
 
     size_t ishift = 0;
@@ -555,11 +573,11 @@ void ALM::get_fc_all(double *fc_values,
     const auto maxorder = cluster->get_maxorder();
 
     if (fc_order > maxorder) {
-        std::cout << "fc_order must not be larger than maxorder" << std::endl;
+        std::cout << "fc_order must not be larger than maxorder" << '\n';
         exit(EXIT_FAILURE);
     }
     if (!fcs->get_fc_cart()) {
-        std::cout << "fc has not yet been computed." << std::endl;
+        std::cout << "fc has not yet been computed." << '\n';
         exit(EXIT_FAILURE);
     }
 
@@ -634,7 +652,7 @@ void ALM::get_matrix_elements(double *amat,
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
-                          get_optimizer_control().mirror_image_conv,
+                          get_optimizer_control().periodic_image_conv,
                           verbosity,
                           timer);
         initialized_constraint_class = true;
@@ -645,25 +663,33 @@ void ALM::get_matrix_elements(double *amat,
                                              cluster,
                                              fcs,
                                              verbosity,
-                                             get_optimizer_control().mirror_image_conv);
+                                             get_optimizer_control().periodic_image_conv);
     }
 
-    optimize->get_matrix_elements_algebraic_constraint(maxorder,
-                                                       amat_vec,
-                                                       bvec_vec,
-                                                       optimize->get_u_train(),
-                                                       optimize->get_f_train(),
-                                                       fnorm,
-                                                       symmetry,
-                                                       fcs,
-                                                       constraint);
+    std::unique_ptr<SensingMatrix> matrix_out = std::make_unique<SensingMatrix>();
+
+    optimize->get_matrix_elements_unified(maxorder,
+                                          matrix_out,
+                                          optimize->get_u_train(),
+                                          optimize->get_f_train(),
+                                          symmetry, fcs, constraint,
+                                          true, false, false, 0);
+//    optimize->get_matrix_elements_algebraic_constraint(maxorder,
+//                                                       amat_vec,
+//                                                       bvec_vec,
+//                                                       optimize->get_u_train(),
+//                                                       optimize->get_f_train(),
+//                                                       fnorm,
+//                                                       symmetry,
+//                                                       fcs,
+//                                                       constraint);
     // This may be inefficient.
     auto i = 0;
-    for (const auto it: amat_vec) {
+    for (const auto it: matrix_out->amat_dense) {
         amat[i++] = it;
     }
     i = 0;
-    for (const auto it: bvec_vec) {
+    for (const auto it: matrix_out->bvec) {
         bvec[i++] = it;
     }
     //amat = amat_vec.data();
@@ -673,17 +699,17 @@ void ALM::get_matrix_elements(double *amat,
 int ALM::run_optimize()
 {
     if (!structure_initialized) {
-        std::cout << "initialize_structure must be called beforehand." << std::endl;
+        std::cout << "initialize_structure must be called beforehand." << '\n';
         exit(EXIT_FAILURE);
     }
-    
+
     if (!initialized_constraint_class) {
         constraint->setup(system,
                           fcs,
                           cluster,
                           symmetry,
                           get_optimizer_control().linear_model,
-                          get_optimizer_control().mirror_image_conv,
+                          get_optimizer_control().periodic_image_conv,
                           verbosity,
                           timer);
         initialized_constraint_class = true;
@@ -694,7 +720,7 @@ int ALM::run_optimize()
                                              cluster,
                                              fcs,
                                              verbosity,
-                                             get_optimizer_control().mirror_image_conv);
+                                             get_optimizer_control().periodic_image_conv);
     }
 
     const auto maxorder = cluster->get_maxorder();
@@ -740,7 +766,7 @@ void ALM::init_fc_table()
     // Build cluster & force constant table
     cluster->init(system,
                   symmetry,
-                  get_optimizer_control().mirror_image_conv,
+                  get_optimizer_control().periodic_image_conv,
                   verbosity,
                   timer);
     fcs->init(cluster,
@@ -780,4 +806,24 @@ void ALM::set_fcs_save_flag(const std::string fcs_format, const int val) const
 int ALM::get_fcs_save_flag(const std::string fcs_format) const
 {
     return writer->get_fcs_save_flag(fcs_format);
+}
+
+void ALM::set_input_vars(const std::map<std::string, std::string> &input_var_dict) const
+{
+    writer->set_input_vars(input_var_dict);
+}
+
+std::string ALM::get_input_var(const std::string &key) const
+{
+    return writer->get_input_var(key);
+}
+
+void ALM::set_pattern_format(const std::string &format_name) const
+{
+    writer->set_format_patternfile(format_name);
+}
+
+std::string ALM::get_format_pattern() const
+{
+    return writer->get_format_patternfile();
 }

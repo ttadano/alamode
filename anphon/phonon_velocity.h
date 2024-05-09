@@ -15,6 +15,7 @@
 #include "kpoint.h"
 #include <vector>
 #include <complex>
+#include <Eigen/Core>
 
 namespace PHON_NS {
 class PhononVelocity : protected Pointers {
@@ -34,25 +35,25 @@ public:
                        double **) const;
 
     void get_phonon_group_velocity_mesh(const KpointMeshUniform &kmesh_in,
-                                        const double lavec_p[3][3],
+                                        const Eigen::Matrix3d &lavec_p,
                                         const bool irreducible_only,
                                         double ***phvel3_out) const;
 
     void get_phonon_group_velocity_mesh_mpi(const KpointMeshUniform &kmesh_in,
-                                            const double lavec_p[3][3],
+                                            const Eigen::Matrix3d &lavec_p,
                                             double ***phvel3_out) const;
 
     void calc_phonon_velmat_mesh(std::complex<double> ****velmat_out) const;
 
     void get_phonon_group_velocity_bandstructure(const KpointBandStructure *kpoint_bs_in,
-                                                 const double lavec_p[3][3],
-                                                 const double rlavec_p[3][3],
-                                                 const std::vector<FcsClassExtent> &fc2_ext_in,
-                                                 const std::vector<FcsClassExtent> &fc2_without_dipole,
+                                                 const Eigen::Matrix3d &lavec_p,
+                                                 const Eigen::Matrix3d &rlavec_p,
+                                                 const std::vector<FcsArrayWithCell> &fc2_in,
+                                                 const std::vector<FcsArrayWithCell> &fc2_without_dipole,
                                                  double **phvel_out) const;
 
     void velocity_matrix_analytic(const double *xk_in,
-                                  const std::vector<FcsClassExtent> &fc2_in,
+                                  const std::vector<FcsArrayWithCell> &fc2_in,
                                   const double *omega_in,
                                   std::complex<double> **evec_in,
                                   std::complex<double> ***velmat_out) const;
@@ -73,7 +74,7 @@ private:
     void deallocate_variables();
 
     void calc_derivative_dynmat_k(const double *,
-                                  const std::vector<FcsClassExtent> &,
+                                  const std::vector<FcsArrayWithCell> &,
                                   std::complex<double> ***) const;
 
     void diagonalize_hermite_mat(int,

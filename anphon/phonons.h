@@ -77,6 +77,10 @@ public:
 
     class Dielec *dielec;
 
+    class Qha *qha;
+
+    class Relaxation *relaxation;
+
     void create_pointers();
 
     void destroy_pointers() const;

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3") 
@@ -12,6 +12,14 @@ file(READ ${PROJECT_SOURCE_DIR}/../include/version.h version_file)
 string(REGEX MATCH "ALAMODE_VERSION = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"" alm_version ${version_file})
 set(alm_version ${CMAKE_MATCH_1})
 MESSAGE("Setting up for ANPHON code (ALAMODE version: ${CMAKE_MATCH_1})")
+
+if (SPGLIB_ROOT)
+    include_directories("${SPGLIB_ROOT}/include")
+    set(spglib "-L${SPGLIB_ROOT}/lib -L${SPGLIB_ROOT}/lib64 -lsymspg")
+else()
+    message("SPGLIB_ROOT is not given by -DSPGLIB_ROOT option. Just add -lsymspg.")
+    set(spglib "-lsymspg")
+endif()
 
 if (FFTW3_ROOT)
     include_directories("${FFTW3_ROOT}/include")
@@ -78,6 +86,8 @@ if (WITH_HDF5_SUPPORT)
     endif()
 endif()
 
+include_directories("${PROJECT_SOURCE_DIR}/../external")
+
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 foreach(dir ${dirs})
   message(STATUS "dir='${dir}'")
@@ -103,6 +113,8 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/phonon_dos.cpp
             ${PROJECT_SOURCE_DIR}/phonon_velocity.cpp
             ${PROJECT_SOURCE_DIR}/phonons.cpp
+            ${PROJECT_SOURCE_DIR}/qha.cpp
+            ${PROJECT_SOURCE_DIR}/relaxation.cpp
             ${PROJECT_SOURCE_DIR}/scph.cpp
             ${PROJECT_SOURCE_DIR}/selfenergy.cpp
             ${PROJECT_SOURCE_DIR}/symmetry_core.cpp
@@ -133,6 +145,8 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/phonon_velocity.h
             ${PROJECT_SOURCE_DIR}/phonons.h
             ${PROJECT_SOURCE_DIR}/pointers.h
+            ${PROJECT_SOURCE_DIR}/qha.h
+            ${PROJECT_SOURCE_DIR}/relaxation.h
             ${PROJECT_SOURCE_DIR}/scph.h
             ${PROJECT_SOURCE_DIR}/selfenergy.h
             ${PROJECT_SOURCE_DIR}/symmetry_core.h
@@ -145,7 +159,7 @@ message("MPI_C_LIBRARIES = ${MPI_C_LIBRARIES}")
 message("MPI_CXX_LIBRARIES = ${MPI_CXX_LIBRARIES}")
 # Executable
 add_executable(anphon ${SOURCES} ${HEADERS})
-target_link_libraries(anphon ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${MPI_CXX_LIBRARIES} ${openmplibrary})
+target_link_libraries(anphon ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${MPI_CXX_LIBRARIES} ${spglib} ${openmplibrary})
 if (WITH_HDF5_SUPPORT)
     target_link_libraries(anphon ${hdf5library})
 endif()

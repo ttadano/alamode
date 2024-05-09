@@ -301,13 +301,13 @@ if __name__ == '__main__':
         print(" Number of atoms                : %i" % codeobj.nat)
         print("")
 
-    header_list, disp_list = displace(displacement_mode, codeobj, args)
+    header_list, disp_list, updated_structure = displace(displacement_mode, codeobj, args)
 
     if not args.print_disp_stdout:
         print(" Number of displacements        : %i" % len(disp_list))
         print("-----------------------------------------------------------------")
         print("")
-        codeobj.generate_structures(args.prefix, header_list, disp_list)
+        codeobj.generate_structures(args.prefix, header_list, disp_list, updated_structure)
         print("All input files are created.")
     else:
         print_displacement_stdout(disp_list, codeobj)

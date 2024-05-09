@@ -16,6 +16,7 @@
 #include <set>
 #include <iterator>
 #include <algorithm>
+#include <numeric>
 #include "constants.h"
 #include "system.h"
 #include "symmetry.h"
@@ -84,7 +85,7 @@ public:
         }
     }
 
-    void make_fractional_from_cartesian(const double reciprocal_lat[3][3])
+    void make_fractional_from_cartesian(const Eigen::Matrix3d &reciprocal_lat)
     {
 
         int i, xyz, xyz2;
@@ -98,7 +99,7 @@ public:
             for (xyz = 0; xyz < 3; xyz++) {
                 vectmp.push_back(0.0);
                 for (xyz2 = 0; xyz2 < 3; xyz2++) {
-                    vectmp[xyz] += reciprocal_lat[xyz][xyz2] / (2.0 * pi) * relvecs_cartesian[i][xyz2];
+                    vectmp[xyz] += reciprocal_lat(xyz, xyz2) / (2.0 * pi) * relvecs_cartesian[i][xyz2];
                 }
             }
 
@@ -142,51 +143,48 @@ public:
     }
 };
 
-class DistInfo {
+class PairDistances {
 public:
-    int cell;
-    double dist;
-    double relvec[3]{};
+    std::vector<int> cells;
+    std::vector<double> distances;
+    std::vector<Eigen::Vector3d> relative_vectors; // Cartesian frame
+    int ncells_minimum_distance{0};
+    double tol_distance;
 
-    DistInfo() = default;
+    PairDistances() = default;
 
-    ~DistInfo() = default;
+    ~PairDistances() = default;
 
-    DistInfo(const DistInfo &obj) = default;
-
-    DistInfo(const int n,
-             const double d,
-             const double x[3])
+    PairDistances(const std::vector<int> &cells_,
+                  const std::vector<double> &distances_,
+                  const std::vector<Eigen::Vector3d> &relative_vectors_,
+                  const double tolerance = 1.0e-3)
     {
-        cell = n;
-        dist = d;
-        for (auto i = 0; i < 3; ++i) relvec[i] = x[i];
-    }
+        std::vector<size_t> indices(distances_.size());
+        std::iota(indices.begin(), indices.end(), 0);
+        std::sort(indices.begin(), indices.end(),
+                  [&distances_](int left, int right) -> bool {
+                      return distances_[left] < distances_[right];
+                  });
+        cells.resize(cells_.size());
+        distances.resize(distances_.size());
+        relative_vectors.resize(relative_vectors_.size());
 
-    bool operator<(const DistInfo &a) const
-    {
-        return dist < a.dist;
-    }
-};
-
-class DistList
-    // This class is used only in print_neighborlist. Can be replaced by a more generalic function.
-{
-public:
-    size_t atom;
-    double dist;
-
-    DistList() = default;
-
-    DistList(const size_t atom_,
-             const double dist_) : atom(atom_), dist(dist_) {};
-
-    bool operator<(const DistList &a) const
-    {
-        if (std::abs(dist - a.dist) > eps8) {
-            return dist < a.dist;
+        for (auto i = 0; i < cells_.size(); ++i) {
+            cells[i] = cells_[indices[i]];
+            distances[i] = distances_[indices[i]];
+            relative_vectors[i] = relative_vectors_[indices[i]];
         }
-        return atom < a.atom;
+        const auto dist_min = distances[0];
+        ncells_minimum_distance = 0;
+        for (const auto &it: distances) {
+            if (std::abs(it - dist_min) < tolerance) {
+                ++ncells_minimum_distance;
+            } else {
+                break;
+            }
+        }
+        tol_distance = tolerance;
     }
 };
 
@@ -220,11 +218,8 @@ public:
                                      const MinDistList &b)
     {
         // This function works properly when dvec_a.size() > 0 and dvec_b.size() > 0
-        std::vector<double> dvec_a, dvec_b;
-        std::copy(a.dist.begin(), a.dist.end(), std::back_inserter(dvec_a));
-        std::copy(b.dist.begin(), b.dist.end(), std::back_inserter(dvec_b));
-        const auto max_dist_a = *std::max_element(dvec_a.begin(), dvec_a.end());
-        const auto max_dist_b = *std::max_element(dvec_b.begin(), dvec_b.end());
+        const auto max_dist_a = *std::max_element(a.dist.begin(), a.dist.end());
+        const auto max_dist_b = *std::max_element(b.dist.begin(), b.dist.end());
 
         return max_dist_a < max_dist_b;
     }
@@ -261,11 +256,11 @@ public:
 
     ~Cluster();
 
-    void init(const System *system,
-              const Symmetry *symmetry,
-              const int mirror_image_conv,
+    void init(const std::unique_ptr<System> &system,
+              const std::unique_ptr<Symmetry> &symmetry,
+              const int periodic_image_conv,
               const int verbosity,
-              Timer *timer);
+              std::unique_ptr<Timer> &timer);
 
     bool satisfy_nbody_rule(const int nelem,
                             const int *arr,
@@ -281,110 +276,108 @@ public:
                 const int *nbody_include_in,
                 const double *cutoff_radii_in);
 
-    int get_maxorder() const;
+    [[nodiscard]] int get_maxorder() const;
 
-    int *get_nbody_include() const;
+    [[nodiscard]] int *get_nbody_include() const;
 
-    std::string get_ordername(const unsigned int order) const;
+    [[nodiscard]] std::string get_ordername(const unsigned int order) const;
 
-    const std::set<IntList> &get_cluster_list(const unsigned int order) const;
+    [[nodiscard]] const std::set<IntList> &get_unique_clusters(const unsigned int order) const;
 
-    const std::vector<int> &get_interaction_pair(const unsigned int order,
-                                                 const size_t atom_index) const;
+    [[nodiscard]] const std::vector<int> &get_atoms_in_cutoff(const unsigned int order,
+                                                              const size_t atom_index) const;
 
-    const std::set<InteractionCluster> &get_interaction_cluster(const unsigned int order,
-                                                                const size_t atom_index) const;
+    [[nodiscard]] const std::set<InteractionCluster> &get_interaction_cluster(const unsigned int order,
+                                                                              const size_t atom_index) const;
 
 private:
 
     int maxorder;
     int *nbody_include;
     double ***cutoff_radii;
-    std::set<IntList> *cluster_list;
-    std::vector<int> **interaction_pair; // List of atoms inside the cutoff radius for each order
-    std::set<InteractionCluster> **interaction_cluster;
-
-    std::vector<DistInfo> **distall;       // Distance of all pairs (i,j) under the PBC
-    std::vector<DistInfo> **mindist_pairs; // All pairs (i,j) with the minimum distance
-    // Interacting many-body clusters with mirrow image information
+    std::vector<std::set<IntList>> unique_clusters;
+    std::vector<std::vector<std::vector<int>>> atoms_in_cutoff; // List of atoms inside the cutoff radius for each order
+    std::vector<std::vector<std::set<InteractionCluster>>> interaction_cluster;
+    std::vector<std::vector<PairDistances>> distance_table; // Distance of all pairs (i,j) under the PBC.
+    // The distances and the corresponding cell indices are sorted in the ascending order in distance
 
     void set_default_variables();
 
     void deallocate_variables();
 
-    // can be made const function, but mindist_pairs is modified
-    // in this function.
     void get_pairs_of_minimum_distance(const size_t nat,
-                                       const double *const *const *xc_in,
-                                       const int *exist) const;
+                                       const std::vector<Eigen::MatrixXd> &xc_in,
+                                       const int *exist,
+                                       std::vector<std::vector<PairDistances>> &dist_test_out) const;
 
     void generate_interaction_information_by_cutoff(const size_t nat,
                                                     const size_t natmin,
                                                     const std::vector<int> &kd,
                                                     const std::vector<std::vector<int>> &map_p2s,
                                                     const double *const *rc,
-                                                    std::vector<int> *interaction_list) const;
+                                                    std::vector<std::vector<int>> &interaction_list) const;
 
     void set_interaction_by_cutoff(const size_t nat,
                                    const std::vector<int> &kd,
                                    const size_t nat_prim,
-                                   const std::vector<std::vector<int>> &map_p2s) const;
+                                   const std::vector<std::vector<int>> &map_p2s,
+                                   std::vector<std::vector<std::vector<int>>> &interaction_pair_out) const;
 
     void print_neighborlist(const size_t,
                             const size_t,
                             const std::vector<std::vector<int>> &,
                             const std::vector<int> &,
-                            const std::string *) const;
+                            const std::vector<std::string> &) const;
 
     void print_interaction_information(const size_t natmin,
                                        const std::vector<std::vector<int>> &map_p2s,
                                        const std::vector<int> &kd,
-                                       const std::string *kdname,
-                                       const std::vector<int> *const *interaction_list) const;
+                                       const std::vector<std::string> &kdname,
+                                       const std::vector<std::vector<std::vector<int>>> &interaction_list) const;
 
-    double distance(const double *,
-                    const double *) const;
+    [[nodiscard]] double distance(const Eigen::MatrixXd &x1,
+                                  const Eigen::MatrixXd &x2) const;
 
-    int nbody(const int,
-              const int *) const;
+    static int nbody(const int,
+                     const int *);
 
     void calc_interaction_clusters(const size_t natmin,
                                    const std::vector<int> &kd,
                                    const std::vector<std::vector<int>> &map_p2s,
-                                   const double *const *const *x_image,
+                                   const std::vector<Eigen::MatrixXd> &x_image,
                                    const int *exist,
-                                   const int mirror_image_conv) const;
+                                   const int periodic_image_conv);
 
     void set_interaction_cluster(const int order,
                                  const size_t natmin,
                                  const std::vector<int> &kd,
                                  const std::vector<std::vector<int>> &map_p2s,
-                                 const std::vector<int> *interaction_pair_in,
-                                 const double *const *const *x_image,
+                                 const std::vector<std::vector<int>> &interaction_pair_in,
+                                 const std::vector<Eigen::MatrixXd> &x_image,
                                  const int *exist,
-                                 const int mirror_image_conv,
-                                 std::set<InteractionCluster> *interaction_cluster_out) const;
+                                 const int periodic_image_conv,
+                                 std::vector<std::set<InteractionCluster>> &interaction_cluster_out) const;
 
     void cell_combination(const std::vector<std::vector<int>> &,
                           const size_t,
                           const std::vector<int> &,
                           std::vector<std::vector<int>> &) const;
 
-    void generate_pairs(const size_t natmin,
-                        const std::vector<std::vector<int>> &map_p2s,
-                        std::set<IntList> *pair_out) const;
+    void generate_unique_clusters(const size_t natmin,
+                                  const std::vector<std::vector<int>> &map_p2s,
+                                  std::vector<std::set<IntList>> &cluster_out) const;
 
-    void check_permutation_symmetry(const System *system,
-                                    const Symmetry *symmetry,
+    void check_permutation_symmetry(const std::unique_ptr<System> &system,
+                                    const std::unique_ptr<Symmetry> &symmetry,
                                     int order);
 
-    void make_symnum_tran_to_prim(const System *system,
-                                  const Symmetry *symmetry,
+    void make_symnum_tran_to_prim(const std::unique_ptr<System> &system,
+                                  const std::unique_ptr<Symmetry> &symmetry,
                                   std::vector<int> &symnum_tran_to_prim);
 
-    bool is_inprim(const int iat, // atom index in supercell
-                   const size_t natmin,
-                   const std::vector<std::vector<int>> &map_p2s) const;
+    [[nodiscard]] bool is_inprim(const int iat, // atom index in supercell
+                                 const size_t natmin,
+                                 const std::vector<std::vector<int>> &map_p2s) const;
 };
 }
 

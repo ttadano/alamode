@@ -11,50 +11,12 @@
 #pragma once
 
 #include "pointers.h"
+#include "mathfunctions.h"
 #include <string>
 #include <vector>
 #include <set>
 
 namespace PHON_NS {
-struct Triplet {
-    unsigned int atom, cell, xyz;
-};
-
-class FcsClass {
-public:
-    std::vector<Triplet> elems;
-    double fcs_val;
-
-    FcsClass() {};
-
-    FcsClass(const FcsClass &obj) : elems(obj.elems), fcs_val(obj.fcs_val) {};
-
-    FcsClass(const unsigned int n,
-             const double val,
-             const Triplet *arr)
-    {
-        fcs_val = val;
-        for (unsigned int i = 0; i < n; ++i) {
-            elems.push_back(arr[i]);
-        }
-    }
-
-    FcsClass(const double val,
-             const std::vector<Triplet> &vec)
-            : elems(vec), fcs_val(val) {};
-
-    bool operator<(const FcsClass &obj) const
-    {
-        std::vector<int> a_tmp, b_tmp;
-        a_tmp.clear();
-        b_tmp.clear();
-        for (int i = 0; i < obj.elems.size(); ++i) {
-            a_tmp.push_back(3 * elems[i].atom + elems[i].xyz);
-            b_tmp.push_back(3 * obj.elems[i].atom + obj.elems[i].xyz);
-        }
-        return lexicographical_compare(a_tmp.begin(), a_tmp.end(), b_tmp.begin(), b_tmp.end());
-    }
-};
 
 class FcsClassExtent {
 public:
@@ -77,17 +39,17 @@ public:
 
     bool operator==(const FcsClassExtent &a) const
     {
-        return (this->atm1 == a.atm1) & (this->atm2 == a.atm2)
-               & (this->xyz1 == a.xyz1) & (this->xyz2 == a.xyz2)
-               & (this->cell_s == a.cell_s);
+        return (this->atm1 == a.atm1) && (this->atm2 == a.atm2)
+               && (this->xyz1 == a.xyz1) && (this->xyz2 == a.xyz2)
+               && (this->cell_s == a.cell_s);
     }
 };
 
 struct AtomCellSuper {
-    unsigned int index;
+    unsigned int index;// flattened array
     unsigned int tran;
     unsigned int cell_s;
-};
+} __attribute__((aligned(16)));
 
 inline bool operator<(const AtomCellSuper &a,
                       const AtomCellSuper &b)
@@ -98,30 +60,132 @@ inline bool operator<(const AtomCellSuper &a,
 class FcsArrayWithCell {
 public:
     std::vector<AtomCellSuper> pairs;
+    //std::vector<unsigned int> atoms_p; // atom index in the primitive cell (not used?)
+    std::vector<unsigned int> atoms_s; // atom index in the supercell
+    std::vector<unsigned int> coords; // xyz components
     double fcs_val;
+    std::vector<Eigen::Vector3d> relvecs; // For computing phase factor in exp
+    std::vector<Eigen::Vector3d> relvecs_velocity; // For computing group velocity matrix
 
     FcsArrayWithCell() {};
 
     FcsArrayWithCell(const double fcs_in,
-                     const std::vector<AtomCellSuper> &pairs_in)
-            : pairs(pairs_in), fcs_val(fcs_in) {};
+                     const std::vector<AtomCellSuper> &pairs_in,
+                     const std::vector<unsigned int> &atoms_s_in) : pairs(pairs_in),
+                                                                    atoms_s(atoms_s_in),
+                                                                    fcs_val(fcs_in)
+    {
+        coords.clear();
+        for (const auto &it: pairs_in) {
+            coords.push_back(it.index % 3);
+        }
+    };
+
+    FcsArrayWithCell(const double fcs_in,
+                     const std::vector<AtomCellSuper> &pairs_in,
+                     const std::vector<unsigned int> &atoms_s_in,
+                     const std::vector<Eigen::Vector3d> &relvecs_vel_in) : pairs(pairs_in),
+                                                                           atoms_s(atoms_s_in),
+                                                                           fcs_val(fcs_in),
+                                                                           relvecs_velocity(relvecs_vel_in)
+    {
+        coords.clear();
+        for (const auto &it: pairs_in) {
+            coords.push_back(it.index % 3);
+        }
+    };
+
+    FcsArrayWithCell(const double fcs_in,
+                     const std::vector<AtomCellSuper> &pairs_in,
+                     const std::vector<unsigned int> &atoms_s_in,
+                     const std::vector<Eigen::Vector3d> &relvecs_in,
+                     const std::vector<Eigen::Vector3d> &relvecs_vel_in) : pairs(pairs_in),
+                                                                           atoms_s(atoms_s_in),
+                                                                           fcs_val(fcs_in),
+                                                                           relvecs(relvecs_in),
+                                                                           relvecs_velocity(relvecs_vel_in)
+    {
+        coords.clear();
+        for (const auto &it: pairs_in) {
+            coords.push_back(it.index % 3);
+        }
+    };
 
     bool operator<(const FcsArrayWithCell &obj) const
     {
-        std::vector<unsigned int> index_a, index_b;
-        index_a.clear();
-        index_b.clear();
-        for (int i = 0; i < pairs.size(); ++i) {
-            index_a.push_back(pairs[i].index);
-            index_b.push_back(obj.pairs[i].index);
+        const auto n = pairs.size();
+        for (int i = 0; i < n; ++i) {
+            if (pairs[i].index != obj.pairs[i].index) {
+                return pairs[i].index < obj.pairs[i].index;
+            }
         }
-        for (int i = 0; i < pairs.size(); ++i) {
-            index_a.push_back(pairs[i].tran);
-            index_a.push_back(pairs[i].cell_s);
-            index_b.push_back(obj.pairs[i].tran);
-            index_b.push_back(obj.pairs[i].cell_s);
+        for (int i = 0; i < n; ++i) {
+            if (pairs[i].tran != obj.pairs[i].tran) {
+                return pairs[i].tran < obj.pairs[i].tran;
+            }
         }
-        return lexicographical_compare(index_a.begin(), index_a.end(), index_b.begin(), index_b.end());
+        for (int i = 0; i < n; ++i) {
+            if (pairs[i].cell_s != obj.pairs[i].cell_s) {
+                return pairs[i].cell_s < obj.pairs[i].cell_s;
+            }
+        }
+        return false;
+    }
+
+    static bool sort_with_index(const FcsArrayWithCell &a, const FcsArrayWithCell &b)
+    {
+        const auto n = a.pairs.size();
+        std::vector<size_t> index_a(n), index_b(n);
+        for (auto i = 0; i < n; ++i) {
+            if (a.pairs[i].index != b.pairs[i].index) {
+                return a.pairs[i].index < b.pairs[i].index;
+            }
+        }
+        return false;
+    }
+};
+
+
+struct sort_by_heading_indices {
+    unsigned int number_of_tails; // number of indices at the tail of the array
+    // It should be 1 when renormalizing 2nd-order force constants by 3rd-order force constants,
+    // and should be 2 when renormalizing 2nd-order force cnstants by 4th-order force constants.
+
+    sort_by_heading_indices(const unsigned int n) : number_of_tails(n) {}
+
+    inline bool operator()(const FcsArrayWithCell &a, const FcsArrayWithCell &b) const
+    {
+        std::vector<int> array_a, array_b;
+        array_a.clear();
+        array_b.clear();
+        const auto len = a.pairs.size();
+
+        for (auto i = 0; i < len - number_of_tails; ++i) {
+            array_a.push_back(a.pairs[i].index);
+            array_b.push_back(b.pairs[i].index);
+        }
+        // The components of relvec should be integers,
+        // so let's convert their types into int for sort.
+        for (auto i = 0; i < len - number_of_tails - 1; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                array_a.push_back(nint(a.relvecs[i][j]));
+                array_b.push_back(nint(b.relvecs[i][j]));
+            }
+        }
+        // Register the last index
+        for (auto i = len - number_of_tails; i < len; ++i) {
+            array_a.push_back(a.pairs[i].index);
+            array_b.push_back(b.pairs[i].index);
+        }
+        for (auto i = len - number_of_tails - 1; i < len - 1; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                array_a.push_back(nint(a.relvecs[i][j]));
+                array_b.push_back(nint(b.relvecs[i][j]));
+            }
+        }
+
+        return std::lexicographical_compare(array_a.begin(), array_a.end(),
+                                            array_b.begin(), array_b.end());
     }
 };
 
@@ -134,12 +198,15 @@ public:
     void setup(std::string);
 
     unsigned int maxorder;
-    std::string file_fcs, file_fc2;
+    std::string file_fcs, file_fc2, file_fc3, file_fc4;
 
     std::vector<FcsArrayWithCell> *force_constant_with_cell;
-    std::vector<FcsClassExtent> fc2_ext;
 
     bool update_fc2;
+
+    void get_fcs_from_file(const std::string fname_fcs,
+                           const int order,
+                           std::vector<FcsArrayWithCell> &fcs_out) const;
 
 private:
     bool require_cubic;
@@ -151,14 +218,24 @@ private:
 
     void load_fc2_xml();
 
-    void load_fcs_xml() const;
+    void load_fcs_xml(const std::string fname_fcs,
+                      const int order,
+                      std::vector<FcsArrayWithCell> &fcs_out) const;
 
-    void examine_translational_invariance(int,
-                                          unsigned int,
-                                          unsigned int,
-                                          double *,
-                                          std::vector<FcsClassExtent> &,
-                                          std::vector<FcsArrayWithCell> *) const;
+    void parse_fcs_from_h5(const std::string fname_fcs,
+                           const int order,
+                           std::vector<FcsArrayWithCell> &fcs_out) const;
+
+    void load_fcs_from_file(const int maxorder_in) const;
+
+
+    double examine_translational_invariance(const int order,
+                                            const unsigned int nat,
+                                            const unsigned int natmin,
+                                            const std::vector<std::vector<unsigned int>> &map_p2s_in,
+                                            const std::vector<FcsArrayWithCell> &fc_in) const;
+
+    void replicate_force_constants(const int maxorder_in);
 
     void MPI_Bcast_fc_class(unsigned int) const;
 

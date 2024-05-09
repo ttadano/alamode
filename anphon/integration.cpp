@@ -11,7 +11,6 @@
 #include "mpi_common.h"
 #include "integration.h"
 #include "error.h"
-#include "kpoint.h"
 #include "mathfunctions.h"
 #include "memory.h"
 #include "system.h"
@@ -21,7 +20,6 @@
 #include "anharmonic_core.h"
 #include "fcs_phonon.h"
 #include <iomanip>
-#include <vector>
 #include <algorithm>
 #include <cmath>
 
@@ -60,21 +58,21 @@ void Integration::setup_integration()
     MPI_Bcast(&ismear_4ph, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
+        std::cout << '\n';
         if (ismear == -1) {
-            std::cout << " ISMEAR = -1: Tetrahedron method will be used." << std::endl;
+            std::cout << " ISMEAR = -1: Tetrahedron method will be used.\n";
         } else if (ismear == 0) {
             std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = "
-                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
         } else if (ismear == 1) {
             std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
-                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                      << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
         } else if (ismear == 2) {
             std::cout << " ISMEAR = 2: adaptive method will be used." << std::endl;
         } else {
             exit("setup_relaxation", "Invalid ismear");
         }
-        std::cout << std::endl;
+        std::cout << '\n';
 
         if (anharmonic_core->quartic_mode) {
 
@@ -114,9 +112,8 @@ void Integration::prepare_adaptivesmearing()
                                                    adaptive_factor);
         adaptive_sigma->setup(phonon_velocity,
                               dos->kmesh_dos,
-                              system->lavec_p,
-                              system->rlavec_p,
-                              fcs_phonon->fc2_ext);
+                              system->get_primcell().lattice_vector,
+                              system->get_primcell().reciprocal_lattice_vector);
     }
 }
 
@@ -418,19 +415,17 @@ void Integration::insertion_sort(double *a,
 
 void AdaptiveSmearingSigma::setup(const PhononVelocity *phvel_class,
                                   const KpointMeshUniform *kmesh_in,
-                                  const double lavec_p_in[3][3],
-                                  const double rlavec_p_in[3][3],
-                                  const std::vector<FcsClassExtent> &fc2_ext_in)
+                                  const Eigen::Matrix3d &lavec_p_in,
+                                  const Eigen::Matrix3d &rlavec_p_in)
 {
     phvel_class->get_phonon_group_velocity_mesh(*kmesh_in,
                                                 lavec_p_in,
-            // fc2_ext_in,
                                                 false,
                                                 vel);
 
     for (auto u = 0; u < 3; u++) {
         for (auto a = 0; a < 3; a++) {
-            dq[u][a] = rlavec_p_in[u][a] / static_cast<double>(kmesh_in->nk_i[u]);
+            dq[u][a] = rlavec_p_in(u,a) / static_cast<double>(kmesh_in->nk_i[u]);
         }
     }
 }

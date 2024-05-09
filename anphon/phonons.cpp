@@ -14,7 +14,6 @@
 #include "phonons.h"
 #include "timer.h"
 #include "parsephon.h"
-#include "memory.h"
 #include "error.h"
 #include "gruneisen.h"
 #include "system.h"
@@ -37,6 +36,8 @@
 #include "scph.h"
 #include "ewald.h"
 #include "dielec.h"
+#include "qha.h"
+#include "relaxation.h"
 
 #ifdef _OPENMP
 
@@ -56,24 +57,22 @@ PHON::PHON(int narg,
     create_pointers();
 
     if (mympi->my_rank == 0) {
-        std::cout << " +-----------------------------------------------------------------+" << std::endl;
-        std::cout << " +                         Program ANPHON                          +" << std::endl;
+        std::cout << " +-----------------------------------------------------------------+\n";
+        std::cout << " +                         Program ANPHON                          +\n";
         std::cout << " +                             Ver.";
         std::cout << std::setw(7) << ALAMODE_VERSION;
-        std::cout << "                         +" << std::endl;
-        std::cout << " +-----------------------------------------------------------------+" << std::endl;
-
-        std::cout << std::endl;
-        std::cout << " Job started at " << timer->DateAndTime() << std::endl;
-        std::cout << " The number of MPI processes: " << mympi->nprocs << std::endl;
+        std::cout << "                         +\n";
+        std::cout << " +-----------------------------------------------------------------+\n\n";
+        std::cout << " Job started at " << timer->DateAndTime() << '\n';
+        std::cout << " The number of MPI processes: " << mympi->nprocs << '\n';
 #ifdef _OPENMP
         std::cout << " The number of OpenMP threads: "
-                  << omp_get_max_threads() << std::endl;
+                  << omp_get_max_threads() << '\n';
 #endif
-        std::cout << std::endl;
+        std::cout << '\n';
 
         input->parce_input(narg, arg);
-        writes->write_input_vars();
+        writes->writeInputVars();
     }
 
     mympi->MPI_Bcast_string(input->job_title, 0, MPI_COMM_WORLD);
@@ -87,7 +86,7 @@ PHON::PHON(int narg,
 
         execute_RTA();
 
-    } else if (mode == "SCPH") {
+    } else if (mode == "SCPH" || mode == "QHA") {
 
         execute_self_consistent_phonon();
 
@@ -96,8 +95,8 @@ PHON::PHON(int narg,
     }
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl << " Job finished at "
-                  << timer->DateAndTime() << std::endl;
+        std::cout << "\n Job finished at "
+                  << timer->DateAndTime() << '\n';
     }
     destroy_pointers();
 }
@@ -130,7 +129,9 @@ void PHON::create_pointers()
     scph = new Scph(this);
     ewald = new Ewald(this);
     dielec = new Dielec(this);
+    qha = new Qha(this);
     iterativebte = new Iterativebte(this);
+    relaxation = new Relaxation(this);
 }
 
 void PHON::destroy_pointers() const
@@ -156,6 +157,8 @@ void PHON::destroy_pointers() const
     delete ewald;
     delete dielec;
     delete iterativebte;
+    delete qha;
+    delete relaxation;
 }
 
 void PHON::setup_base() const
@@ -163,23 +166,21 @@ void PHON::setup_base() const
     system->setup();
     symmetry->setup_symmetry();
     kpoint->kpoint_setups(mode);
-    fcs_phonon->setup(mode);
     dynamical->setup_dynamical();
+    fcs_phonon->setup(mode);
     phonon_velocity->setup_velocity();
-    dos->setup();
     integration->setup_integration();
+    dos->setup();
     thermodynamics->setup();
-    ewald->init();
     anharmonic_core->setup();
     dielec->init();
+    ewald->init();
 
     if (mympi->my_rank == 0) {
-        std::cout << " Now, move on to phonon calculations." << std::endl;
+        std::cout << " Now, move on to phonon calculations.\n";
         if (thermodynamics->classical) {
-            std::cout << std::endl;
-            std::cout << " CLASSICAL = 1: Classical approximations will be used" << std::endl;
-            std::cout << "                for all thermodynamic functions." << std::endl;
-            std::cout << std::endl;
+            std::cout << "\n CLASSICAL = 1: Classical approximations will be used\n";
+            std::cout << "                for all thermodynamic functions.\n\n";
         }
     }
 }
@@ -187,16 +188,15 @@ void PHON::setup_base() const
 void PHON::execute_phonons() const
 {
     if (mympi->my_rank == 0) {
-        std::cout << "                      MODE = phonons                         " << std::endl;
-        std::cout << "                                                             " << std::endl;
-        std::cout << "      Phonon calculation within harmonic approximation       " << std::endl;
-        std::cout << "      Harmonic force constants will be used.                 " << std::endl;
+        std::cout << "                      MODE = phonons                         \n";
+        std::cout << "                                                             \n";
+        std::cout << "      Phonon calculation within harmonic approximation       \n";
+        std::cout << "      Harmonic force constants will be used.                 \n";
 
         if (gruneisen->print_gruneisen) {
-            std::cout << std::endl;
-            std::cout << "      GRUNEISEN = 1 : Cubic force constants are necessary." << std::endl;
+            std::cout << "\n      GRUNEISEN = 1 : Cubic force constants are necessary.\n";
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 
     setup_base();
@@ -220,8 +220,8 @@ void PHON::execute_phonons() const
     }
 
     if (mympi->my_rank == 0) {
-        writes->print_phonon_energy();
-        writes->write_phonon_info();
+        writes->printPhononEnergies();
+        writes->writePhononInfo();
         if (gruneisen->print_newfcs) {
             gruneisen->write_new_fcsxml_all();
         }
@@ -231,13 +231,12 @@ void PHON::execute_phonons() const
 void PHON::execute_RTA() const
 {
     if (mympi->my_rank == 0) {
-        std::cout << "                        MODE = RTA                           " << std::endl;
-        std::cout << "                                                             " << std::endl;
-        std::cout << "      Calculation of phonon line width (lifetime) and        " << std::endl;
-        std::cout << "      lattice thermal conductivity within the RTA            " << std::endl;
-        std::cout << "      (relaxation time approximation).                       " << std::endl;
-        std::cout << "      Harmonic and anharmonic force constants will be used.  " << std::endl;
-        std::cout << std::endl;
+        std::cout << "                        MODE = RTA                           \n";
+        std::cout << "                                                             \n";
+        std::cout << "      Calculation of phonon line width (lifetime) and        \n";
+        std::cout << "      lattice thermal conductivity within the RTA            \n";
+        std::cout << "      (relaxation time approximation).                       \n";
+        std::cout << "      Harmonic and anharmonic force constants will be used.  \n\n";
 //
 //        if (restart_flag) {
 //            std::cout << std::endl;
@@ -245,7 +244,6 @@ void PHON::execute_RTA() const
 //            std::cout << "      The calculation will be restart from the existing result file." << std::endl;
 //            std::cout << "      If you want to start a calculation from scratch,              " << std::endl;
 //            std::cout << "      please set RESTART = 0 in the input file                      " << std::endl;
-//            std::cout << std::endl;
 //        }
     }
 
@@ -273,12 +271,13 @@ void PHON::execute_RTA() const
         iterativebte->do_iterativebte();
 
     } else {
-        //writes->setup_result_io();
+        //writes->setupResultIo();
         conductivity->setup_kappa();
+        // conductivity->prepare_restart();
         conductivity->calc_anharmonic_imagself();
         // if (conductivity->fph_rta < 2) {
         conductivity->compute_kappa();
-        writes->write_kappa();
+        writes->writeKappa();
         // this can be deleted
         //} else {
         //    if (mympi->my_rank == 0) {
@@ -286,25 +285,46 @@ void PHON::execute_RTA() const
         //                  << std::endl;
         //    }
         //}
-        writes->write_selfenergy_isotope();
+        //writes->write_selfenergy_isotope();
+		writes->writeSelfenergyIsotope();
     }
 }
 
 void PHON::execute_self_consistent_phonon() const
 {
     if (mympi->my_rank == 0) {
-        std::cout << "                        MODE = SCPH                           " << std::endl;
-        std::cout << "                                                             " << std::endl;
-        std::cout << "      Self-consistent phonon calculation to estimate         " << std::endl;
-        std::cout << "      anharmonic phonon frequencies.                         " << std::endl;
-        std::cout << "      Harmonic and quartic force constants will be used.  " << std::endl;
-        std::cout << std::endl;
+        if (mode == "SCPH" && relaxation->relax_str == 0) {
+            std::cout << "                        MODE = SCPH                          \n";
+            std::cout << "                                                             \n";
+            std::cout << "      Self-consistent phonon calculation to estimate         \n";
+            std::cout << "      anharmonic phonon frequencies.                         \n";
+            std::cout << "      Harmonic and quartic force constants will be used.     \n\n";
+        } else if (mode == "SCPH" && relaxation->relax_str != 0) {
+            std::cout << "                        MODE = SCPH                          \n";
+            std::cout << "                                                             \n";
+            std::cout << "      Self-consistent phonon calculation to compute          \n";
+            std::cout << "      anharmonic phonon frequencies and crystal structure    \n";
+            std::cout << "      at finite temperatures.                                \n";
+            std::cout << "      Harmonic to quartic force constants will be used.      \n\n";
+        } else if (mode == "QHA") {
+            std::cout << "                        MODE = QHA                           \n";
+            std::cout << "                                                             \n";
+            std::cout << "      QHA calculation to compute crystal structure           \n";
+            std::cout << "      at finite temperatures.                                \n";
+            std::cout << "      Harmonic to quartic force constants will be used.      \n\n";
+        }
     }
 
     setup_base();
 
     dynamical->diagonalize_dynamical_all();
+    relaxation->setup_relaxation();
 
-    scph->setup_scph();
-    scph->exec_scph();
+    if (mode == "SCPH") {
+        scph->setup_scph();
+        scph->exec_scph();
+    } else if (mode == "QHA") {
+        qha->setup_qha();
+        qha->exec_qha_optimization();
+    }
 }

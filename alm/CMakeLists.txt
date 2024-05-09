@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.1)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -O0 -D_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -O2 -D_DEBUG")
 
 project(alm)
 
@@ -72,6 +72,9 @@ if (WITH_HDF5_SUPPORT)
             via -DHDF5_ROOT option.")
         endif()
     endif()
+
+    include_directories("${PROJECT_SOURCE_DIR}/../external")
+
 endif()
 
 find_package(LAPACK REQUIRED)
@@ -80,7 +83,8 @@ include_directories(${Lapack_INCLUDE_DIRS})
 # Source code
 include_directories("${PROJECT_SOURCE_DIR}/../include")
 set(SOURCES ${PROJECT_SOURCE_DIR}/alm.cpp
-            ${PROJECT_SOURCE_DIR}/cluster.cpp ${PROJECT_SOURCE_DIR}/constraint.cpp
+            ${PROJECT_SOURCE_DIR}/cluster.cpp
+            ${PROJECT_SOURCE_DIR}/constraint.cpp
             ${PROJECT_SOURCE_DIR}/fcs.cpp
             ${PROJECT_SOURCE_DIR}/files.cpp
             ${PROJECT_SOURCE_DIR}/input_parser.cpp
@@ -91,7 +95,8 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/alm.cpp
             ${PROJECT_SOURCE_DIR}/symmetry.cpp
             ${PROJECT_SOURCE_DIR}/system.cpp
             ${PROJECT_SOURCE_DIR}/timer.cpp
-            ${PROJECT_SOURCE_DIR}/writer.cpp)
+            ${PROJECT_SOURCE_DIR}/writer.cpp
+            ${PROJECT_SOURCE_DIR}/smith.cpp)
 
 set(HEADERS ${PROJECT_SOURCE_DIR}/alm.h
             ${PROJECT_SOURCE_DIR}/cluster.h
@@ -106,7 +111,8 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/alm.h
             ${PROJECT_SOURCE_DIR}/symmetry.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/timer.h
-            ${PROJECT_SOURCE_DIR}/writer.h)
+            ${PROJECT_SOURCE_DIR}/writer.h
+            ${PROJECT_SOURCE_DIR}/smith.h)
 
 # # Trick to use gcc to compile *.cpp: This doesn't work because of boost
 # SET_SOURCE_FILES_PROPERTIES(${SOURCES} PROPERTIES LANGUAGE C)

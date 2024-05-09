@@ -11,40 +11,44 @@
 #pragma once
 
 #include "pointers.h"
+#include "system.h"
 #include <string>
 #include <vector>
+#include <set>
+#include <Eigen/Core>
 
 namespace PHON_NS {
 class SymmetryOperation {
 public:
-    int rot[3][3];
-    double tran[3];
+    Eigen::Matrix3i rotation;         // in lattice basis
+    Eigen::Vector3d tran;             // in lattice basis
+    Eigen::Matrix3d rotation_cart;  // in Cartesian basis
+    bool is_translation;
 
     SymmetryOperation();
 
-    SymmetryOperation(const int rot_in[3][3],
-                      const double tran_in[3])
+    SymmetryOperation(const Eigen::Matrix3i &rot_in,
+                      const Eigen::Vector3d &tran_in,
+                      const Eigen::Matrix3d &rot_cart_in,
+                      const bool is_trans_in)
     {
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                rot[i][j] = rot_in[i][j];
-            }
-        }
-        for (int i = 0; i < 3; ++i) {
-            tran[i] = tran_in[i];
-        }
+        rotation = rot_in;
+        rotation_cart = rot_cart_in;
+        tran = tran_in;
+        is_translation = is_trans_in;
     }
 
+    // Operator definition to sort
     bool operator<(const SymmetryOperation &a) const
     {
         std::vector<double> v1, v2;
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                v1.push_back(static_cast<double>(rot[i][j]));
-                v2.push_back(static_cast<double>(a.rot[i][j]));
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                v1.push_back(static_cast<double>(rotation(i, j)));
+                v2.push_back(static_cast<double>(a.rotation(i, j)));
             }
         }
-        for (int i = 0; i < 3; ++i) {
+        for (auto i = 0; i < 3; ++i) {
             if (tran[i] < 0.0) {
                 v1.push_back(1.0 + tran[i]);
             } else {
@@ -63,17 +67,22 @@ public:
 
 class RotationMatrix {
 public:
-    int mat[3][3];
+    Eigen::Matrix3i mat;
 
     RotationMatrix();
 
     RotationMatrix(const int rot[3][3])
     {
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                mat[i][j] = rot[i][j];
+        for (auto i = 0; i < 3; ++i) {
+            for (auto j = 0; j < 3; ++j) {
+                mat(i, j) = rot[i][j];
             }
         }
+    }
+
+    RotationMatrix(const Eigen::Matrix3i &rot_in)
+    {
+        mat = rot_in;
     }
 };
 
@@ -110,7 +119,32 @@ public:
             shift[i] = shift_in[i];
         }
     }
+
+    SymmetryOperationWithMapping(const Eigen::Matrix3d &S,
+                                 const Eigen::Matrix3d &T,
+                                 const Eigen::Matrix3d &R,
+                                 unsigned int *mapping_info,
+                                 const unsigned int n,
+                                 const Eigen::Vector3d &shift_in)
+    {
+        unsigned int i, j;
+
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                rot.push_back(S(i, j));
+                rot_real.push_back(T(i, j));
+                rot_reciprocal.push_back(R(i, j));
+            }
+        }
+        for (i = 0; i < n; ++i) {
+            mapping.push_back(mapping_info[i]);
+        }
+        for (i = 0; i < 3; ++i) {
+            shift[i] = shift_in[i];
+        }
+    }
 };
+
 
 class Symmetry : protected Pointers {
 public:
@@ -118,13 +152,15 @@ public:
 
     ~Symmetry();
 
-    unsigned int nsym;
+    unsigned int nsym, nsym_ref;
     bool time_reversal_sym;
-    int time_reversal_sym_from_alm;
     bool printsymmetry;
     double tolerance;
     std::vector<SymmetryOperation> SymmList;
     std::vector<SymmetryOperationWithMapping> SymmListWithMap;
+
+    std::vector<SymmetryOperation> SymmList_ref;
+    std::vector<SymmetryOperationWithMapping> SymmListWithMap_ref;
 
     void setup_symmetry();
 
@@ -134,32 +170,47 @@ private:
 
     void set_default_variables();
 
-    void setup_symmetry_operation(int,
-                                  unsigned int &,
-                                  double [3][3],
-                                  double [3][3],
-                                  double **,
-                                  unsigned int *);
+    void setup_symmetry_operation(const Cell &cell_in,
+                                  const Spin &spin_in,
+                                  const std::vector<std::vector<unsigned int>> &atomtype_in,
+                                  std::vector<SymmetryOperation> &symlist,
+                                  const int verbosity = 1);
 
-    void findsym(int,
-                 double [3][3],
-                 double **,
-                 std::vector<SymmetryOperation> &) const;
+    void gensym_withmap(const Eigen::Matrix3d &aa,
+                        const Eigen::MatrixXd &x,
+                        const std::vector<int> &kd,
+                        const std::vector<SymmetryOperation> &symmlist_in,
+                        std::vector<SymmetryOperationWithMapping> &symmlist_withmap_out) const;
 
-    void gensym_withmap(double **,
-                        const unsigned int *);
+    bool is_proper(const Eigen::Matrix3d &rot) const;
 
-    bool is_proper(double [3][3]) const;
+    bool is_translation(const Eigen::Matrix3i &rot) const;
 
-    void find_lattice_symmetry(double [3][3],
+    void find_lattice_symmetry(const Eigen::Matrix3d &aa,
                                std::vector<RotationMatrix> &) const;
 
-    void find_crystal_symmetry(
-            int,
-            std::vector<unsigned int> *,
-            double **x,
-            const std::vector<RotationMatrix> &,
-            std::vector<SymmetryOperation> &) const;
+    void find_crystal_symmetry(const Cell &cell,
+                               const std::vector<std::vector<unsigned int>> &atomtype_group,
+                               const Spin &spin,
+                               const std::vector<RotationMatrix> &LatticeSymmList,
+                               std::vector<SymmetryOperation> &symm_out) const;
+
+    void findsym_alm(const Cell &,
+                     const std::vector<std::vector<unsigned int>> &,
+                     const Spin &,
+                     std::vector<SymmetryOperation> &symm_out) const;
+
+    int findsym_spglib(const Cell &,
+                       const std::vector<std::vector<unsigned int>> &,
+                       const Spin &,
+                       std::string &,
+                       std::vector<SymmetryOperation> &symm_out) const;
+
+    void symop_in_cart(Eigen::Matrix3d &rot_cart,
+                       const Eigen::Matrix3i &rot_lattice,
+                       const Eigen::Matrix3d &lavec,
+                       const Eigen::Matrix3d &rlavec) const;
+
 
     void broadcast_symmlist(std::vector<SymmetryOperation> &) const;
 };

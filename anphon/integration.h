@@ -99,9 +99,8 @@ public:
 
     void setup(const PhononVelocity *phvel_class,
                const KpointMeshUniform *kmesh_in,
-               const double lavec_p_in[3][3],
-               const double rlavec_p_in[3][3],
-               const std::vector<FcsClassExtent> &fc2_ext_in);
+               const Eigen::Matrix3d &lavec_p_in,
+               const Eigen::Matrix3d &rlavec_p_in);
 
     // overload for 3ph or 4ph
     void get_sigma(const unsigned int k1,

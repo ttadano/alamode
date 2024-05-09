@@ -67,11 +67,11 @@ class LammpsParser(object):
         ncols = len(atoms[0, :])
 
         if ncols == 5:
-            kd = np.array(atoms[:, 1], dtype=np.int)
+            kd = np.array(atoms[:, 1], dtype=int)
             x = np.array(atoms[:, 2:5], dtype=np.float64)
             charges = None
         elif ncols == 6:
-            kd = np.array(atoms[:, 1], dtype=np.int)
+            kd = np.array(atoms[:, 1], dtype=int)
             x = np.array(atoms[:, 3:6], dtype=np.float64)
             charges = np.array(atoms[:, 2], dtype=np.float64)
 
@@ -85,7 +85,7 @@ class LammpsParser(object):
         self._charges = charges
         self._initial_structure_loaded = True
 
-    def generate_structures(self, prefix, header_list, disp_list):
+    def generate_structures(self, prefix, header_list, disp_list, updated_structure=None):
 
         self._set_number_of_zerofill(len(disp_list))
         self._prefix = prefix
@@ -191,7 +191,8 @@ class LammpsParser(object):
                                                                                 f[i, 1],
                                                                                 f[i, 2]))
         else:
-            raise RuntimeError("Could not find ITEM: TIMESTEP keyword in the dump file %s" % lammps_files[0])
+            raise RuntimeError("Could not find ITEM: "
+                               "TIMESTEP keyword in the dump file %s" % lammps_files[0])
 
     @staticmethod
     def _compute_lattice_vector_from_boxparams(box_params):
@@ -292,7 +293,8 @@ class LammpsParser(object):
                                                            disp[i, 2]))
 
         else:
-            raise RuntimeError("Could not find ITEM: TIMESTEP keyword in the dump file %s" % lammps_files[0])
+            raise RuntimeError("Could not find ITEM: "
+                               "TIMESTEP keyword in the dump file %s" % lammps_files[0])
 
     def _print_atomicforces(self, lammps_files, file_offset):
 
@@ -344,7 +346,7 @@ class LammpsParser(object):
 
     def _set_output_flags(self, output_flags):
         self._print_disp, self._print_force, \
-        self._print_energy, self._print_born = output_flags
+            self._print_energy, self._print_born = output_flags
 
     def _set_number_of_zerofill(self, npattern):
 

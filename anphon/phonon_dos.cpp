@@ -45,7 +45,6 @@ void Dos::set_default_variables()
     two_phonon_dos = false;
     longitudinal_projected_dos = false;
     scattering_phase_space = 0;
-    energy_dos = nullptr;
     dos_phonon = nullptr;
     pdos_phonon = nullptr;
     dos2_phonon = nullptr;
@@ -63,9 +62,6 @@ void Dos::set_default_variables()
 
 void Dos::deallocate_variables()
 {
-    if (energy_dos) {
-        deallocate(energy_dos);
-    }
     if (dos_phonon) {
         deallocate(dos_phonon);
     }
@@ -85,18 +81,9 @@ void Dos::deallocate_variables()
         deallocate(sps3_with_bose);
     }
 
-    if (tetra_nodes_dos) {
-        delete tetra_nodes_dos;
-        tetra_nodes_dos = nullptr;
-    }
-    if (kmesh_dos) {
-        delete kmesh_dos;
-        kmesh_dos = nullptr;
-    }
-    if (dymat_dos) {
-        delete dymat_dos;
-        dymat_dos = nullptr;
-    }
+    delete tetra_nodes_dos;
+    delete kmesh_dos;
+    delete dymat_dos;
 }
 
 void Dos::setup()
@@ -125,7 +112,7 @@ void Dos::setup()
 
     if (flag_dos) {
 
-        set_dos_energy_grid();
+        update_dos_energy_grid(emin, emax, true);
 
         dymat_dos = new DymatEigenValue(dynamical->eigenvectors,
                                         false,
@@ -143,17 +130,27 @@ void Dos::setup()
     }
 }
 
-void Dos::set_dos_energy_grid()
+void Dos::update_dos_energy_grid(const double emin_in,
+                                 const double emax_in,
+                                 const bool force_update)
 {
-    n_energy = static_cast<int>((emax - emin) / delta_e) + 1;
-    if (energy_dos) deallocate(energy_dos);
+    if (auto_set_emin || force_update) {
+        if (emin_in < 0.0) {
+            emin = emin_in;
+        } else {
+            emin = 0.0;
+        }
+    }
+    if (auto_set_emax || force_update) emax = emax_in;
 
-    allocate(energy_dos, n_energy);
-
+    n_energy = static_cast<int>((emax_in - emin_in) / delta_e) + 1;
+    energy_dos.clear();
+    energy_dos.resize(n_energy);
     for (auto i = 0; i < n_energy; ++i) {
-        energy_dos[i] = emin + delta_e * static_cast<double>(i);
+        energy_dos[i] = emin_in + delta_e * static_cast<double>(i);
     }
 }
+
 
 void Dos::calc_dos_all()
 {
@@ -169,32 +166,24 @@ void Dos::calc_dos_all()
         }
     }
 
-    if (auto_set_emin || auto_set_emax) {
-        auto emin_now = std::numeric_limits<double>::max();
-        auto emax_now = std::numeric_limits<double>::min();
+    auto emin_now = std::numeric_limits<double>::max();
+    auto emax_now = std::numeric_limits<double>::min();
 
-        for (size_t j = 0; j < kmesh_dos->nk_irred; ++j) {
-            const auto jj = kmesh_dos->kpoint_irred_all[j][0].knum;
-            for (size_t k = 0; k < neval; ++k) {
-                emin_now = std::min(emin_now, eval[k][j]);
-                emax_now = std::max(emax_now, eval[k][j]);
-            }
+    for (size_t j = 0; j < kmesh_dos->nk_irred; ++j) {
+        const auto jj = kmesh_dos->kpoint_irred_all[j][0].knum;
+        for (size_t k = 0; k < neval; ++k) {
+            emin_now = std::min(emin_now, eval[k][jj]);
+            emax_now = std::max(emax_now, eval[k][jj]);
         }
-        if (auto_set_emin) {
-            if (emin_now < 0.0) {
-                emin = emin_now;
-            } else {
-                emin = 0.0;
-            }
-        }
-        if (auto_set_emax) emax = emax_now + delta_e;
-        set_dos_energy_grid();
     }
+
+    emax_now += delta_e;
+    update_dos_energy_grid(emin_now, emax_now);
 
     if (compute_dos) {
         allocate(dos_phonon, n_energy);
         calc_dos(nk, kmesh_dos->nk_irred,
-                 &kmesh_dos->kmap_to_irreducible[0],
+                 kmesh_dos->kmap_to_irreducible.data(),
                  eval, n_energy, energy_dos,
                  neval, integration->ismear,
                  tetra_nodes_dos->get_ntetra(),
@@ -203,9 +192,9 @@ void Dos::calc_dos_all()
     }
 
     if (projected_dos) {
-        allocate(pdos_phonon, system->natmin, n_energy);
+        allocate(pdos_phonon, system->get_primcell().number_of_atoms, n_energy);
         calc_atom_projected_dos(nk, eval, n_energy, energy_dos,
-                                pdos_phonon, neval, system->natmin,
+                                pdos_phonon, neval, system->get_primcell().number_of_atoms,
                                 integration->ismear,
                                 dymat_dos->get_eigenvectors());
     }
@@ -213,9 +202,9 @@ void Dos::calc_dos_all()
     if (longitudinal_projected_dos) {
         allocate(longitude_dos, n_energy);
         calc_longitudinal_projected_dos(nk, kmesh_dos->xk,
-                                        system->rlavec_p,
+                                        system->get_primcell().reciprocal_lattice_vector,
                                         eval, n_energy, energy_dos,
-                                        longitude_dos, neval, system->natmin,
+                                        longitude_dos, neval, system->get_primcell().number_of_atoms,
                                         integration->ismear,
                                         dymat_dos->get_eigenvectors());
     }
@@ -257,7 +246,7 @@ void Dos::calc_dos(const unsigned int nk,
                    const unsigned int *map_k,
                    const double *const *eval,
                    const unsigned int n,
-                   const double *energy,
+                   const std::vector<double> &energy,
                    const unsigned int neval,
                    const int smearing_method,
                    const unsigned int ntetra,
@@ -266,7 +255,6 @@ void Dos::calc_dos(const unsigned int nk,
 {
     double *weight;
 
-    //    if (mympi->my_rank == 0) std::cout << " Calculating phonon DOS ...";
 #ifdef _OPENMP
 #pragma omp parallel private (weight)
 #endif
@@ -299,13 +287,13 @@ void Dos::calc_dos(const unsigned int nk,
         deallocate(weight);
     }
 
-    //    if (mympi->my_rank == 0) std::cout << " done." << std::endl;
+    //    if (mympi->my_rank == 0) std::cout << " done." << '\n';
 }
 
 void Dos::calc_atom_projected_dos(const unsigned int nk,
                                   double *const *eval,
                                   const unsigned int n,
-                                  const double *energy,
+                                  const std::vector<double> &energy,
                                   double **ret,
                                   const unsigned int neval,
                                   const unsigned int natmin,
@@ -376,16 +364,16 @@ void Dos::calc_atom_projected_dos(const unsigned int nk,
     deallocate(proj);
     deallocate(kmap_identity);
 
-    if (mympi->my_rank == 0) std::cout << " done!" << std::endl;
+    if (mympi->my_rank == 0) std::cout << " done!\n";
 }
 
 
 void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
                                           const double *const *xk_in,
-                                          const double rlavec_p[3][3],
+                                          const Eigen::Matrix3d &rlavec_p,
                                           double *const *eval,
                                           const unsigned int n,
-                                          const double *energy,
+                                          const std::vector<double> &energy,
                                           double *ret,
                                           const unsigned int neval,
                                           const unsigned int natmin,
@@ -489,13 +477,13 @@ void Dos::calc_longitudinal_projected_dos(const unsigned int nk,
     deallocate(proj);
     deallocate(kmap_identity);
 
-    if (mympi->my_rank == 0) std::cout << " done!" << std::endl;
+    if (mympi->my_rank == 0) std::cout << " done!\n";
 }
 
 
 void Dos::calc_two_phonon_dos(double *const *eval_in,
                               const unsigned int n,
-                              const double *energy,
+                              const std::vector<double> &energy,
                               const int smearing_method,
                               double ***ret) const
 {
@@ -520,7 +508,7 @@ void Dos::calc_two_phonon_dos(double *const *eval_in,
     int *k_pair;
 
     if (mympi->my_rank == 0) {
-        std::cout << " TDOS = 1 : Calculating two-phonon DOS for all irreducible k points." << std::endl;
+        std::cout << " TDOS = 1 : Calculating two-phonon DOS for all irreducible k points.\n";
         std::cout << "            This may take a while ... ";
     }
 
@@ -605,7 +593,7 @@ void Dos::calc_two_phonon_dos(double *const *eval_in,
     deallocate(k_pair);
 
     if (mympi->my_rank == 0) {
-        std::cout << "done!" << std::endl;
+        std::cout << "done!\n";
     }
 }
 
@@ -725,7 +713,7 @@ void Dos::calc_total_scattering_phase_space(double *const *eval_in,
           / (3.0 * static_cast<double>(std::pow(ns, 3.0)));
 
     if (mympi->my_rank == 0) {
-        std::cout << "done!" << std::endl;
+        std::cout << "done!\n";
     }
 }
 
@@ -746,8 +734,9 @@ void Dos::calc_dos_from_given_frequency(const KpointMeshUniform *kmesh_in,
         }
     }
 
+
     calc_dos(nk, kmesh_in->nk_irred,
-             &kmesh_in->kmap_to_irreducible[0],
+             kmesh_in->kmap_to_irreducible.data(),
              eval, n_energy, energy_dos,
              neval, integration->ismear,
              ntetra_in, tetras_in,
@@ -782,7 +771,7 @@ void Dos::calc_scattering_phase_space_with_Bose(const double *const *eval_in,
     std::vector<int> ks_g, ks_l;
 
     if (mympi->my_rank == 0) {
-        std::cout << " SPS = 2 : Calculating three-phonon scattering phase space" << std::endl;
+        std::cout << " SPS = 2 : Calculating three-phonon scattering phase space\n";
         std::cout << "           with the Bose distribution function ...";
     }
 
@@ -899,7 +888,7 @@ void Dos::calc_scattering_phase_space_with_Bose(const double *const *eval_in,
     deallocate(temperature);
 
     if (mympi->my_rank == 0) {
-        std::cout << " done!" << std::endl;
+        std::cout << " done!\n";
     }
 }
 

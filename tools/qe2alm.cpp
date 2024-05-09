@@ -638,7 +638,7 @@ void calc_lattice_vector(const int ibrav, double celldm[6], double aa[3][3])
     }
 
 
-    // Transpose lavec for later use
+    // Transpose lavec_base for later use
 
     double tmp[3][3];
 
@@ -773,7 +773,7 @@ void get_pairs_of_minimum_distance(const int natmin, const int nat, int **map_p2
             std::sort(distall[i][j].begin(), distall[i][j].end());
         }
         /*
-                for (j = 0; j < nat; ++j) {
+                for (j = 0; j < nat_base; ++j) {
                     for (k = 0; k < distall[i][j].size(); ++k) {
                         std::cout << std::setw(5) << i + 1;
                         std::cout << std::setw(5) << j + 1;
@@ -804,12 +804,3 @@ void get_pairs_of_minimum_distance(const int natmin, const int nat, int **map_p2
     deallocate(xcrd);
 }
 
-
-double distance(double *x1, double *x2)
-{
-    double dist;
-    dist = std::pow(x1[0] - x2[0], 2) + std::pow(x1[1] - x2[1], 2) + std::pow(x1[2] - x2[2], 2);
-    dist = std::sqrt(dist);
-
-    return dist;
-}

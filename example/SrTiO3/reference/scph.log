@@ -1,0 +1,1511 @@
+ +-----------------------------------------------------------------+
+ +                         Program ANPHON                          +
+ +                             Ver.  1.5.0                         +
+ +-----------------------------------------------------------------+
+
+ Job started at Sun Apr  2 04:07:25 2023
+
+ The number of MPI processes: 4
+ The number of OpenMP threads: 1
+
+
+ Input variables:
+ -----------------------------------------------------------------
+ General:
+  PREFIX = STO_scph2-2
+  MODE = SCPH
+  FCSXML = STO_anharm.xml
+
+  NKD = 3; KD =   Sr  Ti   O
+  MASS = 
+  NSYM = 0; TOLERANCE = 0.001; PRINTSYM = 0
+
+  NONANALYTIC = 3
+  BORNINFO = BORN; NA_SIGMA = 0.1
+
+  TMIN = 0; TMAX = 1000; DT = 50
+  EMIN = 0; EMAX = 1000; DELTA_E = 10
+
+  ISMEAR = -1; EPSILON = 10
+
+  CLASSICAL = 0
+  BCONNECT = 0
+
+ Scph:
+  KMESH_INTERPOLATE =     2    2    2
+  KMESH_SCPH        =     2    2    2
+  SELF_OFFDIAG = 0
+  IALGO = 0
+
+  RESTART_SCPH = 0
+  LOWER_TEMP = 1
+  WARMSTART = 1
+
+  TOL_SCPH = 1e-10
+  MAXITER = 500
+  MIXALPHA = 0.2
+
+  RELAX_STR = 0
+
+ Kpoint:
+  KPMODE (1st entry for &kpoint) = 1
+
+
+ Analysis:
+
+
+ -----------------------------------------------------------------
+
+                        MODE = SCPH                           
+                                                             
+      Self-consistent phonon calculation to estimate         
+      anharmonic phonon frequencies.                         
+      Harmonic and quartic force constants will be used.  
+
+ -----------------------------------------------------------------
+
+ Crystal structure
+ =================
+
+ Lattice Vectors:
+
+ * Supercell (from STO_anharm.xml )
+
+    1.472600e+01   0.000000e+00   0.000000e+00 : a1
+    0.000000e+00   1.472600e+01   0.000000e+00 : a2
+    0.000000e+00   0.000000e+00   1.472600e+01 : a3
+
+    4.266729e-01   0.000000e+00   0.000000e+00 : b1
+    0.000000e+00   4.266729e-01   0.000000e+00 : b2
+    0.000000e+00   0.000000e+00   4.266729e-01 : b3
+
+ * Primitive cell 
+
+    7.363000e+00   0.000000e+00   0.000000e+00 : a1
+    0.000000e+00   7.363000e+00   0.000000e+00 : a2
+    0.000000e+00   0.000000e+00   7.363000e+00 : a3
+
+    8.533458e-01   0.000000e+00   0.000000e+00 : b1
+    0.000000e+00   8.533458e-01   0.000000e+00 : b2
+    0.000000e+00   0.000000e+00   8.533458e-01 : b3
+
+
+  Volume of the primitive cell : 3.991760e+02 (a.u.)^3
+
+  Number of atoms in the supercell     : 40
+  Number of atoms in the primitive cell: 5
+
+  Atomic positions in the primitive cell (fractional):
+   1:   0.000000e+00   0.000000e+00   0.000000e+00  Sr
+   2:   5.000000e-01   5.000000e-01   5.000000e-01  Ti
+   3:   0.000000e+00   5.000000e-01   5.000000e-01   O
+   4:   5.000000e-01   0.000000e+00   5.000000e-01   O
+   5:   5.000000e-01   5.000000e-01   0.000000e+00   O
+
+  Mass of atomic species (u):
+  Sr:   87.620000
+  Ti:   47.867000
+   O:   15.999400
+
+
+ Symmetry
+ ========
+
+  NSYM = 0 is given: Trying to find symmetry operations.
+  NSYM = 0 is given: Trying to find symmetry operations.
+
+  Number of symmetry operations : 48
+  Number of symmetry operations in reference structure : 48
+
+ k points
+ ========
+
+  KPMODE = 1: Band structure calculation
+  Number of paths : 5
+
+  List of k paths : 
+   1:  G (  0.0000  0.0000  0.0000)  X (  0.5000  0.0000  0.0000)  51
+   2:  X (  0.5000  0.0000  0.0000)  M (  0.5000  0.5000  0.0000)  51
+   3:  M (  0.5000  0.5000  0.0000)  G (  0.0000  0.0000  0.0000)  51
+   4:  G (  0.0000  0.0000  0.0000)  R (  0.5000  0.5000  0.5000)  51
+   5:  R (  0.5000  0.5000  0.5000)  M (  0.5000  0.5000  0.0000)  51
+
+  Number of k points : 255
+
+ Force constant
+ ==============
+
+  Reading force constants from the XML file ... done !
+  Number of non-zero IFCs for 2 order: 1593
+  Number of non-zero IFCs for 3 order: 298068
+  Number of non-zero IFCs for 4 order: 5171883
+
+  Maximum deviation from the translational invariance: 
+   Order 2 :   2.7583e-16
+   Order 3 :   6.8944e-16
+   Order 4 :   2.8172e-15
+
+
+ Dynamical matrix
+ ================
+
+  NONANALYTIC = 3 : Non-analytic part of the dynamical matrix will be included 
+                    by the Ewald method.
+
+  Dielectric constants and Born effective charges are read from BORN.
+
+  Dielectric constant tensor in Cartesian coordinate : 
+     6.3514e+00     0.0000e+00    -0.0000e+00
+     0.0000e+00     6.3514e+00     0.0000e+00
+    -0.0000e+00     0.0000e+00     6.3514e+00
+
+  Born effective charge tensor in Cartesian coordinate
+  Atom    1( Sr) :
+       2.552785       0.000000      -0.000000
+       0.000000       2.552785      -0.000000
+      -0.000000       0.000000       2.552785
+  Atom    2( Ti) :
+       7.348792       0.000000       0.000000
+       0.000000       7.348792      -0.000000
+      -0.000000       0.000000       7.348792
+  Atom    3(  O) :
+      -5.821233      -0.000000       0.000000
+       0.000000      -2.040172       0.000000
+       0.000000       0.000000      -2.040172
+  Atom    4(  O) :
+      -2.040172       0.000000       0.000000
+      -0.000000      -5.821233       0.000000
+      -0.000000       0.000000      -2.040172
+  Atom    5(  O) :
+      -2.040172      -0.000000       0.000000
+       0.000000      -2.040172       0.000000
+       0.000000      -0.000000      -5.821233
+
+ -----------------------------------------------------------------
+
+
+ ISMEAR = -1: Tetrahedron method will be used.
+
+
+  Preparing for the Ewald summation ...
+
+  Inverse dielectric tensor : 
+   1.574459e-01  -0.000000e+00   0.000000e+00
+  -0.000000e+00   1.574459e-01  -0.000000e+00
+   0.000000e+00  -0.000000e+00   1.574459e-01
+
+  Determinant of epsilon:    2.562160e+02
+
+  Parameters for the Ewald summation :
+  - Force constant
+    Lambda :    3.378766e-01
+    Lmax   :    3.920801e+01
+    Gmax   :    1.409458e+00
+    Maximum number of real-space cells :   3x  3x  3
+    Maximum number of reciprocal cells :   4x  4x  4
+
+  - Dynamical matrix
+    Lambda :    6.757532e-01
+    Lmax   :    1.960400e+01
+    Gmax   :    2.818916e+00
+    Maximum number of real-space cells :   3x  3x  3
+    Maximum number of reciprocal cells :   4x  4x  4
+
+ Calculating long-range (dipole-dipole) FCs in the supercell ... done.
+ Now, move on to phonon calculations.
+
+ Diagonalizing dynamical matrices for all k points ... done!
+ Setting up the SCPH calculations ...
+
+  Gamma-centered uniform grid with the following mesh density:
+  nk1:    2
+  nk2:    2
+  nk3:    2
+
+  Number of k points : 8
+  Number of irreducible k points : 4
+
+  Fourier interpolation from reciprocal to real space
+  will be performed with the following mesh density:
+  nk1:    2
+  nk2:    2
+  nk3:    2
+
+  Number of k points : 8
+  Number of irreducible k points : 4
+
+ Diagonalizing dynamical matrices for all k points ... done !
+ Preparing for calculating V4  ... done!
+ SELF_OFFDIAG = 0: Calculating diagonal components of v4_array ...  done !
+
+ Time Elapsed: 8.984976e+01 sec.
+
+ Temperature = 1.000000e+03 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    2.135377e-04
+  SCPH ITER     3 :  DIFF =    1.946791e-04
+  SCPH ITER     4 :  DIFF =    1.700027e-04
+  SCPH ITER     5 :  DIFF =    1.440676e-04
+  SCPH ITER     6 :  DIFF =    1.213753e-04
+  SCPH ITER     7 :  DIFF =    1.006089e-04
+  SCPH ITER     8 :  DIFF =    8.339638e-05
+  SCPH ITER     9 :  DIFF =    6.780991e-05
+  SCPH ITER    10 :  DIFF =    5.434949e-05
+  SCPH ITER    11 :  DIFF =    4.137406e-05
+  SCPH ITER    12 :  DIFF =    3.328487e-05
+  SCPH ITER    13 :  DIFF =    2.519484e-05
+  SCPH ITER    14 :  DIFF =    1.855642e-05
+  SCPH ITER    15 :  DIFF =    1.330847e-05
+  SCPH ITER    16 :  DIFF =    9.287778e-06
+  SCPH ITER    17 :  DIFF =    5.930507e-06
+  SCPH ITER    18 :  DIFF =    4.254486e-06
+  SCPH ITER    19 :  DIFF =    2.829259e-06
+  SCPH ITER    20 :  DIFF =    1.876995e-06
+  SCPH ITER    21 :  DIFF =    1.250646e-06
+  SCPH ITER    22 :  DIFF =    8.421296e-07
+  SCPH ITER    23 :  DIFF =    5.761327e-07
+  SCPH ITER    24 :  DIFF =    4.020537e-07
+  SCPH ITER    25 :  DIFF =    2.867596e-07
+  SCPH ITER    26 :  DIFF =    2.089821e-07
+  SCPH ITER    27 :  DIFF =    1.552822e-07
+  SCPH ITER    28 :  DIFF =    1.172570e-07
+  SCPH ITER    29 :  DIFF =    8.966581e-08
+  SCPH ITER    30 :  DIFF =    6.921375e-08
+  SCPH ITER    31 :  DIFF =    5.378987e-08
+  SCPH ITER    32 :  DIFF =    4.200401e-08
+  SCPH ITER    33 :  DIFF =    3.291094e-08
+  SCPH ITER    34 :  DIFF =    2.584705e-08
+  SCPH ITER    35 :  DIFF =    2.033295e-08
+  SCPH ITER    36 :  DIFF =    1.601405e-08
+  SCPH ITER    37 :  DIFF =    1.262327e-08
+  SCPH ITER    38 :  DIFF =    9.956694e-09
+  SCPH ITER    39 :  DIFF =    7.857143e-09
+  SCPH ITER    40 :  DIFF =    6.202600e-09
+  SCPH ITER    41 :  DIFF =    4.897899e-09
+  SCPH ITER    42 :  DIFF =    3.868561e-09
+  SCPH ITER    43 :  DIFF =    3.056160e-09
+  SCPH ITER    44 :  DIFF =    2.414778e-09
+  SCPH ITER    45 :  DIFF =    1.908285e-09
+  SCPH ITER    46 :  DIFF =    1.508233e-09
+  SCPH ITER    47 :  DIFF =    1.192190e-09
+  SCPH ITER    48 :  DIFF =    9.424759e-10
+  SCPH ITER    49 :  DIFF =    7.451447e-10
+  SCPH ITER    50 :  DIFF =    5.891886e-10
+  SCPH ITER    51 :  DIFF =    4.659147e-10
+  SCPH ITER    52 :  DIFF =    3.684700e-10
+  SCPH ITER    53 :  DIFF =    2.914283e-10
+  SCPH ITER    54 :  DIFF =    2.305125e-10
+  SCPH ITER    55 :  DIFF =    1.823475e-10
+  SCPH ITER    56 :  DIFF =    1.442602e-10
+  SCPH ITER    57 :  DIFF =    1.141755e-10
+  SCPH ITER    58 :  DIFF =    9.031208e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 1.000000e+03 : convergence achieved in    58 iterations.
+ Temperature = 9.500000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    2.443243e-06
+  SCPH ITER     3 :  DIFF =    1.588630e-06
+  SCPH ITER     4 :  DIFF =    1.045057e-06
+  SCPH ITER     5 :  DIFF =    6.939875e-07
+  SCPH ITER     6 :  DIFF =    4.645747e-07
+  SCPH ITER     7 :  DIFF =    3.132006e-07
+  SCPH ITER     8 :  DIFF =    2.124731e-07
+  SCPH ITER     9 :  DIFF =    1.449400e-07
+  SCPH ITER    10 :  DIFF =    9.935404e-08
+  SCPH ITER    11 :  DIFF =    6.839491e-08
+  SCPH ITER    12 :  DIFF =    4.725536e-08
+  SCPH ITER    13 :  DIFF =    3.275207e-08
+  SCPH ITER    14 :  DIFF =    2.276064e-08
+  SCPH ITER    15 :  DIFF =    1.585308e-08
+  SCPH ITER    16 :  DIFF =    1.106317e-08
+  SCPH ITER    17 :  DIFF =    7.733259e-09
+  SCPH ITER    18 :  DIFF =    5.413365e-09
+  SCPH ITER    19 :  DIFF =    3.794226e-09
+  SCPH ITER    20 :  DIFF =    2.662448e-09
+  SCPH ITER    21 :  DIFF =    1.870304e-09
+  SCPH ITER    22 :  DIFF =    1.315246e-09
+  SCPH ITER    23 :  DIFF =    9.259233e-10
+  SCPH ITER    24 :  DIFF =    6.525973e-10
+  SCPH ITER    25 :  DIFF =    4.605368e-10
+  SCPH ITER    26 :  DIFF =    3.254644e-10
+  SCPH ITER    27 :  DIFF =    2.303784e-10
+  SCPH ITER    28 :  DIFF =    1.633682e-10
+  SCPH ITER    29 :  DIFF =    1.161457e-10
+  SCPH ITER    30 :  DIFF =    8.273654e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 9.500000e+02 : convergence achieved in    30 iterations.
+ Temperature = 9.000000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    2.537182e-06
+  SCPH ITER     3 :  DIFF =    1.642558e-06
+  SCPH ITER     4 :  DIFF =    1.077070e-06
+  SCPH ITER     5 :  DIFF =    7.135611e-07
+  SCPH ITER     6 :  DIFF =    4.768823e-07
+  SCPH ITER     7 :  DIFF =    3.211488e-07
+  SCPH ITER     8 :  DIFF =    2.177344e-07
+  SCPH ITER     9 :  DIFF =    1.484993e-07
+  SCPH ITER    10 :  DIFF =    1.018058e-07
+  SCPH ITER    11 :  DIFF =    7.010796e-08
+  SCPH ITER    12 :  DIFF =    4.846488e-08
+  SCPH ITER    13 :  DIFF =    3.361237e-08
+  SCPH ITER    14 :  DIFF =    2.337551e-08
+  SCPH ITER    15 :  DIFF =    1.629381e-08
+  SCPH ITER    16 :  DIFF =    1.137956e-08
+  SCPH ITER    17 :  DIFF =    7.960521e-09
+  SCPH ITER    18 :  DIFF =    5.576600e-09
+  SCPH ITER    19 :  DIFF =    3.911420e-09
+  SCPH ITER    20 :  DIFF =    2.746528e-09
+  SCPH ITER    21 :  DIFF =    1.930579e-09
+  SCPH ITER    22 :  DIFF =    1.358420e-09
+  SCPH ITER    23 :  DIFF =    9.568184e-10
+  SCPH ITER    24 :  DIFF =    6.746864e-10
+  SCPH ITER    25 :  DIFF =    4.763232e-10
+  SCPH ITER    26 :  DIFF =    3.367246e-10
+  SCPH ITER    27 :  DIFF =    2.384078e-10
+  SCPH ITER    28 :  DIFF =    1.690933e-10
+  SCPH ITER    29 :  DIFF =    1.202130e-10
+  SCPH ITER    30 :  DIFF =    8.562238e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 9.000000e+02 : convergence achieved in    30 iterations.
+ Temperature = 8.500000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    2.642994e-06
+  SCPH ITER     3 :  DIFF =    1.702295e-06
+  SCPH ITER     4 :  DIFF =    1.111290e-06
+  SCPH ITER     5 :  DIFF =    7.346966e-07
+  SCPH ITER     6 :  DIFF =    4.900556e-07
+  SCPH ITER     7 :  DIFF =    3.296059e-07
+  SCPH ITER     8 :  DIFF =    2.233152e-07
+  SCPH ITER     9 :  DIFF =    1.522719e-07
+  SCPH ITER    10 :  DIFF =    1.044074e-07
+  SCPH ITER    11 :  DIFF =    7.192957e-08
+  SCPH ITER    12 :  DIFF =    4.975460e-08
+  SCPH ITER    13 :  DIFF =    3.453237e-08
+  SCPH ITER    14 :  DIFF =    2.403488e-08
+  SCPH ITER    15 :  DIFF =    1.676765e-08
+  SCPH ITER    16 :  DIFF =    1.172050e-08
+  SCPH ITER    17 :  DIFF =    8.205896e-09
+  SCPH ITER    18 :  DIFF =    5.753142e-09
+  SCPH ITER    19 :  DIFF =    4.038351e-09
+  SCPH ITER    20 :  DIFF =    2.837710e-09
+  SCPH ITER    21 :  DIFF =    1.996016e-09
+  SCPH ITER    22 :  DIFF =    1.405334e-09
+  SCPH ITER    23 :  DIFF =    9.904219e-10
+  SCPH ITER    24 :  DIFF =    6.987312e-10
+  SCPH ITER    25 :  DIFF =    4.935087e-10
+  SCPH ITER    26 :  DIFF =    3.490033e-10
+  SCPH ITER    27 :  DIFF =    2.471718e-10
+  SCPH ITER    28 :  DIFF =    1.753416e-10
+  SCPH ITER    29 :  DIFF =    1.246439e-10
+  SCPH ITER    30 :  DIFF =    8.879134e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 8.500000e+02 : convergence achieved in    30 iterations.
+ Temperature = 8.000000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    2.727506e-06
+  SCPH ITER     3 :  DIFF =    1.768922e-06
+  SCPH ITER     4 :  DIFF =    1.150401e-06
+  SCPH ITER     5 :  DIFF =    7.575731e-07
+  SCPH ITER     6 :  DIFF =    5.041671e-07
+  SCPH ITER     7 :  DIFF =    3.386036e-07
+  SCPH ITER     8 :  DIFF =    2.292323e-07
+  SCPH ITER     9 :  DIFF =    1.562699e-07
+  SCPH ITER    10 :  DIFF =    1.071686e-07
+  SCPH ITER    11 :  DIFF =    7.386849e-08
+  SCPH ITER    12 :  DIFF =    5.113204e-08
+  SCPH ITER    13 :  DIFF =    3.551839e-08
+  SCPH ITER    14 :  DIFF =    2.474389e-08
+  SCPH ITER    15 :  DIFF =    1.727866e-08
+  SCPH ITER    16 :  DIFF =    1.208911e-08
+  SCPH ITER    17 :  DIFF =    8.471773e-09
+  SCPH ITER    18 :  DIFF =    5.944793e-09
+  SCPH ITER    19 :  DIFF =    4.176367e-09
+  SCPH ITER    20 :  DIFF =    2.936992e-09
+  SCPH ITER    21 :  DIFF =    2.067353e-09
+  SCPH ITER    22 :  DIFF =    1.456533e-09
+  SCPH ITER    23 :  DIFF =    1.027136e-09
+  SCPH ITER    24 :  DIFF =    7.250209e-10
+  SCPH ITER    25 :  DIFF =    5.123116e-10
+  SCPH ITER    26 :  DIFF =    3.624420e-10
+  SCPH ITER    27 :  DIFF =    2.567660e-10
+  SCPH ITER    28 :  DIFF =    1.821892e-10
+  SCPH ITER    29 :  DIFF =    1.295185e-10
+  SCPH ITER    30 :  DIFF =    9.226891e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 8.000000e+02 : convergence achieved in    30 iterations.
+ Temperature = 7.500000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    2.901798e-06
+  SCPH ITER     3 :  DIFF =    1.843836e-06
+  SCPH ITER     4 :  DIFF =    1.192707e-06
+  SCPH ITER     5 :  DIFF =    7.823970e-07
+  SCPH ITER     6 :  DIFF =    5.155038e-07
+  SCPH ITER     7 :  DIFF =    3.481719e-07
+  SCPH ITER     8 :  DIFF =    2.355016e-07
+  SCPH ITER     9 :  DIFF =    1.605053e-07
+  SCPH ITER    10 :  DIFF =    1.101007e-07
+  SCPH ITER    11 :  DIFF =    7.593516e-08
+  SCPH ITER    12 :  DIFF =    5.260653e-08
+  SCPH ITER    13 :  DIFF =    3.657832e-08
+  SCPH ITER    14 :  DIFF =    2.550898e-08
+  SCPH ITER    15 :  DIFF =    1.783194e-08
+  SCPH ITER    16 :  DIFF =    1.248937e-08
+  SCPH ITER    17 :  DIFF =    8.761175e-09
+  SCPH ITER    18 :  DIFF =    6.153829e-09
+  SCPH ITER    19 :  DIFF =    4.327165e-09
+  SCPH ITER    20 :  DIFF =    3.045632e-09
+  SCPH ITER    21 :  DIFF =    2.145517e-09
+  SCPH ITER    22 :  DIFF =    1.512698e-09
+  SCPH ITER    23 :  DIFF =    1.067436e-09
+  SCPH ITER    24 :  DIFF =    7.539176e-10
+  SCPH ITER    25 :  DIFF =    5.330109e-10
+  SCPH ITER    26 :  DIFF =    3.772455e-10
+  SCPH ITER    27 :  DIFF =    2.673540e-10
+  SCPH ITER    28 :  DIFF =    1.897562e-10
+  SCPH ITER    29 :  DIFF =    1.349710e-10
+  SCPH ITER    30 :  DIFF =    9.612781e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 7.500000e+02 : convergence achieved in    30 iterations.
+ Temperature = 7.000000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    3.063262e-06
+  SCPH ITER     3 :  DIFF =    1.922038e-06
+  SCPH ITER     4 :  DIFF =    1.239609e-06
+  SCPH ITER     5 :  DIFF =    8.093893e-07
+  SCPH ITER     6 :  DIFF =    5.355006e-07
+  SCPH ITER     7 :  DIFF =    3.583294e-07
+  SCPH ITER     8 :  DIFF =    2.421313e-07
+  SCPH ITER     9 :  DIFF =    1.649868e-07
+  SCPH ITER    10 :  DIFF =    1.132142e-07
+  SCPH ITER    11 :  DIFF =    7.814076e-08
+  SCPH ITER    12 :  DIFF =    5.418866e-08
+  SCPH ITER    13 :  DIFF =    3.772147e-08
+  SCPH ITER    14 :  DIFF =    2.633788e-08
+  SCPH ITER    15 :  DIFF =    1.843368e-08
+  SCPH ITER    16 :  DIFF =    1.292609e-08
+  SCPH ITER    17 :  DIFF =    9.077783e-09
+  SCPH ITER    18 :  DIFF =    6.383030e-09
+  SCPH ITER    19 :  DIFF =    4.492827e-09
+  SCPH ITER    20 :  DIFF =    3.165178e-09
+  SCPH ITER    21 :  DIFF =    2.231654e-09
+  SCPH ITER    22 :  DIFF =    1.574675e-09
+  SCPH ITER    23 :  DIFF =    1.111972e-09
+  SCPH ITER    24 :  DIFF =    7.858819e-10
+  SCPH ITER    25 :  DIFF =    5.559233e-10
+  SCPH ITER    26 :  DIFF =    3.936583e-10
+  SCPH ITER    27 :  DIFF =    2.790900e-10
+  SCPH ITER    28 :  DIFF =    1.981345e-10
+  SCPH ITER    29 :  DIFF =    1.409003e-10
+  SCPH ITER    30 :  DIFF =    1.004192e-10
+  SCPH ITER    31 :  DIFF =    7.170669e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 7.000000e+02 : convergence achieved in    31 iterations.
+ Temperature = 6.500000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    3.254604e-06
+  SCPH ITER     3 :  DIFF =    2.026301e-06
+  SCPH ITER     4 :  DIFF =    1.291892e-06
+  SCPH ITER     5 :  DIFF =    8.387740e-07
+  SCPH ITER     6 :  DIFF =    5.528308e-07
+  SCPH ITER     7 :  DIFF =    3.690729e-07
+  SCPH ITER     8 :  DIFF =    2.491167e-07
+  SCPH ITER     9 :  DIFF =    1.697173e-07
+  SCPH ITER    10 :  DIFF =    1.165184e-07
+  SCPH ITER    11 :  DIFF =    8.049742e-08
+  SCPH ITER    12 :  DIFF =    5.589086e-08
+  SCPH ITER    13 :  DIFF =    3.895908e-08
+  SCPH ITER    14 :  DIFF =    2.724007e-08
+  SCPH ITER    15 :  DIFF =    1.909151e-08
+  SCPH ITER    16 :  DIFF =    1.340522e-08
+  SCPH ITER    17 :  DIFF =    9.426169e-09
+  SCPH ITER    18 :  DIFF =    6.635854e-09
+  SCPH ITER    19 :  DIFF =    4.675944e-09
+  SCPH ITER    20 :  DIFF =    3.297563e-09
+  SCPH ITER    21 :  DIFF =    2.327199e-09
+  SCPH ITER    22 :  DIFF =    1.643527e-09
+  SCPH ITER    23 :  DIFF =    1.161522e-09
+  SCPH ITER    24 :  DIFF =    8.214940e-10
+  SCPH ITER    25 :  DIFF =    5.814823e-10
+  SCPH ITER    26 :  DIFF =    4.119905e-10
+  SCPH ITER    27 :  DIFF =    2.922148e-10
+  SCPH ITER    28 :  DIFF =    2.075296e-10
+  SCPH ITER    29 :  DIFF =    1.476184e-10
+  SCPH ITER    30 :  DIFF =    1.051706e-10
+  SCPH ITER    31 :  DIFF =    7.509726e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 6.500000e+02 : convergence achieved in    31 iterations.
+ Temperature = 6.000000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    3.485752e-06
+  SCPH ITER     3 :  DIFF =    2.139358e-06
+  SCPH ITER     4 :  DIFF =    1.350465e-06
+  SCPH ITER     5 :  DIFF =    8.707334e-07
+  SCPH ITER     6 :  DIFF =    5.712628e-07
+  SCPH ITER     7 :  DIFF =    3.803523e-07
+  SCPH ITER     8 :  DIFF =    2.564256e-07
+  SCPH ITER     9 :  DIFF =    1.746868e-07
+  SCPH ITER    10 :  DIFF =    1.200175e-07
+  SCPH ITER    11 :  DIFF =    8.301661e-08
+  SCPH ITER    12 :  DIFF =    5.772670e-08
+  SCPH ITER    13 :  DIFF =    4.030410e-08
+  SCPH ITER    14 :  DIFF =    2.822671e-08
+  SCPH ITER    15 :  DIFF =    1.981452e-08
+  SCPH ITER    16 :  DIFF =    1.393394e-08
+  SCPH ITER    17 :  DIFF =    9.811855e-09
+  SCPH ITER    18 :  DIFF =    6.916502e-09
+  SCPH ITER    19 :  DIFF =    4.879682e-09
+  SCPH ITER    20 :  DIFF =    3.445158e-09
+  SCPH ITER    21 :  DIFF =    2.433923e-09
+  SCPH ITER    22 :  DIFF =    1.720571e-09
+  SCPH ITER    23 :  DIFF =    1.217057e-09
+  SCPH ITER    24 :  DIFF =    8.614686e-10
+  SCPH ITER    25 :  DIFF =    6.102318e-10
+  SCPH ITER    26 :  DIFF =    4.326357e-10
+  SCPH ITER    27 :  DIFF =    3.070430e-10
+  SCPH ITER    28 :  DIFF =    2.181594e-10
+  SCPH ITER    29 :  DIFF =    1.552090e-10
+  SCPH ITER    30 :  DIFF =    1.106011e-10
+  SCPH ITER    31 :  DIFF =    7.901308e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 6.000000e+02 : convergence achieved in    31 iterations.
+ Temperature = 5.500000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    3.771613e-06
+  SCPH ITER     3 :  DIFF =    2.272239e-06
+  SCPH ITER     4 :  DIFF =    1.416352e-06
+  SCPH ITER     5 :  DIFF =    9.053442e-07
+  SCPH ITER     6 :  DIFF =    5.906623e-07
+  SCPH ITER     7 :  DIFF =    3.920427e-07
+  SCPH ITER     8 :  DIFF =    2.639866e-07
+  SCPH ITER     9 :  DIFF =    1.798682e-07
+  SCPH ITER    10 :  DIFF =    1.237117e-07
+  SCPH ITER    11 :  DIFF =    8.571106e-08
+  SCPH ITER    12 :  DIFF =    5.971295e-08
+  SCPH ITER    13 :  DIFF =    4.177294e-08
+  SCPH ITER    14 :  DIFF =    2.931203e-08
+  SCPH ITER    15 :  DIFF =    2.061433e-08
+  SCPH ITER    16 :  DIFF =    1.452140e-08
+  SCPH ITER    17 :  DIFF =    1.024191e-08
+  SCPH ITER    18 :  DIFF =    7.230359e-09
+  SCPH ITER    19 :  DIFF =    5.108121e-09
+  SCPH ITER    20 :  DIFF =    3.611036e-09
+  SCPH ITER    21 :  DIFF =    2.554132e-09
+  SCPH ITER    22 :  DIFF =    1.807535e-09
+  SCPH ITER    23 :  DIFF =    1.279874e-09
+  SCPH ITER    24 :  DIFF =    9.067853e-10
+  SCPH ITER    25 :  DIFF =    6.428793e-10
+  SCPH ITER    26 :  DIFF =    4.561531e-10
+  SCPH ITER    27 :  DIFF =    3.239317e-10
+  SCPH ITER    28 :  DIFF =    2.302685e-10
+  SCPH ITER    29 :  DIFF =    1.638994e-10
+  SCPH ITER    30 :  DIFF =    1.168589e-10
+  SCPH ITER    31 :  DIFF =    8.344026e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 5.500000e+02 : convergence achieved in    31 iterations.
+ Temperature = 5.000000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    4.135508e-06
+  SCPH ITER     3 :  DIFF =    2.430643e-06
+  SCPH ITER     4 :  DIFF =    1.490537e-06
+  SCPH ITER     5 :  DIFF =    9.423979e-07
+  SCPH ITER     6 :  DIFF =    6.106609e-07
+  SCPH ITER     7 :  DIFF =    4.038773e-07
+  SCPH ITER     8 :  DIFF =    2.716566e-07
+  SCPH ITER     9 :  DIFF =    1.852049e-07
+  SCPH ITER    10 :  DIFF =    1.275919e-07
+  SCPH ITER    11 :  DIFF =    8.859341e-08
+  SCPH ITER    12 :  DIFF =    6.186943e-08
+  SCPH ITER    13 :  DIFF =    4.338569e-08
+  SCPH ITER    14 :  DIFF =    3.051366e-08
+  SCPH ITER    15 :  DIFF =    2.150537e-08
+  SCPH ITER    16 :  DIFF =    1.517900e-08
+  SCPH ITER    17 :  DIFF =    1.072517e-08
+  SCPH ITER    18 :  DIFF =    7.584210e-09
+  SCPH ITER    19 :  DIFF =    5.366429e-09
+  SCPH ITER    20 :  DIFF =    3.799125e-09
+  SCPH ITER    21 :  DIFF =    2.690804e-09
+  SCPH ITER    22 :  DIFF =    1.906668e-09
+  SCPH ITER    23 :  DIFF =    1.351668e-09
+  SCPH ITER    24 :  DIFF =    9.587113e-10
+  SCPH ITER    25 :  DIFF =    6.803869e-10
+  SCPH ITER    26 :  DIFF =    4.831890e-10
+  SCPH ITER    27 :  DIFF =    3.434199e-10
+  SCPH ITER    28 :  DIFF =    2.443295e-10
+  SCPH ITER    29 :  DIFF =    1.739938e-10
+  SCPH ITER    30 :  DIFF =    1.240880e-10
+  SCPH ITER    31 :  DIFF =    8.869722e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 5.000000e+02 : convergence achieved in    31 iterations.
+ Temperature = 4.500000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    4.615852e-06
+  SCPH ITER     3 :  DIFF =    2.622107e-06
+  SCPH ITER     4 :  DIFF =    1.573542e-06
+  SCPH ITER     5 :  DIFF =    9.810265e-07
+  SCPH ITER     6 :  DIFF =    6.304356e-07
+  SCPH ITER     7 :  DIFF =    4.153421e-07
+  SCPH ITER     8 :  DIFF =    2.791786e-07
+  SCPH ITER     9 :  DIFF =    1.905966e-07
+  SCPH ITER    10 :  DIFF =    1.316375e-07
+  SCPH ITER    11 :  DIFF =    9.167720e-08
+  SCPH ITER    12 :  DIFF =    6.422057e-08
+  SCPH ITER    13 :  DIFF =    4.516744e-08
+  SCPH ITER    14 :  DIFF =    3.185357e-08
+  SCPH ITER    15 :  DIFF =    2.250565e-08
+  SCPH ITER    16 :  DIFF =    1.592104e-08
+  SCPH ITER    17 :  DIFF =    1.127281e-08
+  SCPH ITER    18 :  DIFF =    7.986717e-09
+  SCPH ITER    19 :  DIFF =    5.661292e-09
+  SCPH ITER    20 :  DIFF =    4.014565e-09
+  SCPH ITER    21 :  DIFF =    2.847879e-09
+  SCPH ITER    22 :  DIFF =    2.020986e-09
+  SCPH ITER    23 :  DIFF =    1.434743e-09
+  SCPH ITER    24 :  DIFF =    1.018999e-09
+  SCPH ITER    25 :  DIFF =    7.240858e-10
+  SCPH ITER    26 :  DIFF =    5.148252e-10
+  SCPH ITER    27 :  DIFF =    3.663081e-10
+  SCPH ITER    28 :  DIFF =    2.608348e-10
+  SCPH ITER    29 :  DIFF =    1.859104e-10
+  SCPH ITER    30 :  DIFF =    1.326655e-10
+  SCPH ITER    31 :  DIFF =    9.483235e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 4.500000e+02 : convergence achieved in    31 iterations.
+ Temperature = 4.000000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    5.280101e-06
+  SCPH ITER     3 :  DIFF =    2.855764e-06
+  SCPH ITER     4 :  DIFF =    1.664174e-06
+  SCPH ITER     5 :  DIFF =    1.018860e-06
+  SCPH ITER     6 :  DIFF =    6.482817e-07
+  SCPH ITER     7 :  DIFF =    4.254969e-07
+  SCPH ITER     8 :  DIFF =    2.861220e-07
+  SCPH ITER     9 :  DIFF =    1.958860e-07
+  SCPH ITER    10 :  DIFF =    1.358167e-07
+  SCPH ITER    11 :  DIFF =    9.497912e-08
+  SCPH ITER    12 :  DIFF =    6.679703e-08
+  SCPH ITER    13 :  DIFF =    4.714913e-08
+  SCPH ITER    14 :  DIFF =    3.335863e-08
+  SCPH ITER    15 :  DIFF =    2.363721e-08
+  SCPH ITER    16 :  DIFF =    1.676521e-08
+  SCPH ITER    17 :  DIFF =    1.189888e-08
+  SCPH ITER    18 :  DIFF =    8.448980e-09
+  SCPH ITER    19 :  DIFF =    6.001450e-09
+  SCPH ITER    20 :  DIFF =    4.264212e-09
+  SCPH ITER    21 :  DIFF =    3.030709e-09
+  SCPH ITER    22 :  DIFF =    2.154650e-09
+  SCPH ITER    23 :  DIFF =    1.532314e-09
+  SCPH ITER    24 :  DIFF =    1.090128e-09
+  SCPH ITER    25 :  DIFF =    7.758719e-10
+  SCPH ITER    26 :  DIFF =    5.524878e-10
+  SCPH ITER    27 :  DIFF =    3.936476e-10
+  SCPH ITER    28 :  DIFF =    2.806706e-10
+  SCPH ITER    29 :  DIFF =    2.002856e-10
+  SCPH ITER    30 :  DIFF =    1.430677e-10
+  SCPH ITER    31 :  DIFF =    1.023417e-10
+  SCPH ITER    32 :  DIFF =    7.328748e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 4.000000e+02 : convergence achieved in    32 iterations.
+ Temperature = 3.500000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    6.256811e-06
+  SCPH ITER     3 :  DIFF =    3.138801e-06
+  SCPH ITER     4 :  DIFF =    1.755897e-06
+  SCPH ITER     5 :  DIFF =    1.050107e-06
+  SCPH ITER     6 :  DIFF =    6.608135e-07
+  SCPH ITER     7 :  DIFF =    4.327183e-07
+  SCPH ITER     8 :  DIFF =    2.918306e-07
+  SCPH ITER     9 :  DIFF =    2.008624e-07
+  SCPH ITER    10 :  DIFF =    1.400950e-07
+  SCPH ITER    11 :  DIFF =    9.852308e-08
+  SCPH ITER    12 :  DIFF =    6.963587e-08
+  SCPH ITER    13 :  DIFF =    4.936641e-08
+  SCPH ITER    14 :  DIFF =    3.505957e-08
+  SCPH ITER    15 :  DIFF =    2.492572e-08
+  SCPH ITER    16 :  DIFF =    1.773274e-08
+  SCPH ITER    17 :  DIFF =    1.262087e-08
+  SCPH ITER    18 :  DIFF =    8.985325e-09
+  SCPH ITER    19 :  DIFF =    6.398550e-09
+  SCPH ITER    20 :  DIFF =    4.557452e-09
+  SCPH ITER    21 :  DIFF =    3.246801e-09
+  SCPH ITER    22 :  DIFF =    2.313605e-09
+  SCPH ITER    23 :  DIFF =    1.649059e-09
+  SCPH ITER    24 :  DIFF =    1.175752e-09
+  SCPH ITER    25 :  DIFF =    8.385863e-10
+  SCPH ITER    26 :  DIFF =    5.983616e-10
+  SCPH ITER    27 :  DIFF =    4.271633e-10
+  SCPH ITER    28 :  DIFF =    3.051250e-10
+  SCPH ITER    29 :  DIFF =    2.181130e-10
+  SCPH ITER    30 :  DIFF =    1.560766e-10
+  SCPH ITER    31 :  DIFF =    1.118216e-10
+  SCPH ITER    32 :  DIFF =    8.014784e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 3.500000e+02 : convergence achieved in    32 iterations.
+ Temperature = 3.000000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    7.819473e-06
+  SCPH ITER     3 :  DIFF =    3.457214e-06
+  SCPH ITER     4 :  DIFF =    1.826048e-06
+  SCPH ITER     5 :  DIFF =    1.061228e-06
+  SCPH ITER     6 :  DIFF =    6.616603e-07
+  SCPH ITER     7 :  DIFF =    4.344939e-07
+  SCPH ITER     8 :  DIFF =    2.954796e-07
+  SCPH ITER     9 :  DIFF =    2.053200e-07
+  SCPH ITER    10 :  DIFF =    1.444555e-07
+  SCPH ITER    11 :  DIFF =    1.023360e-07
+  SCPH ITER    12 :  DIFF =    7.276910e-08
+  SCPH ITER    13 :  DIFF =    5.184913e-08
+  SCPH ITER    14 :  DIFF =    3.698387e-08
+  SCPH ITER    15 :  DIFF =    2.639668e-08
+  SCPH ITER    16 :  DIFF =    1.884706e-08
+  SCPH ITER    17 :  DIFF =    1.345987e-08
+  SCPH ITER    18 :  DIFF =    9.614248e-09
+  SCPH ITER    19 :  DIFF =    6.868428e-09
+  SCPH ITER    20 :  DIFF =    4.907567e-09
+  SCPH ITER    21 :  DIFF =    3.507091e-09
+  SCPH ITER    22 :  DIFF =    2.506737e-09
+  SCPH ITER    23 :  DIFF =    1.792107e-09
+  SCPH ITER    24 :  DIFF =    1.281528e-09
+  SCPH ITER    25 :  DIFF =    9.166935e-10
+  SCPH ITER    26 :  DIFF =    6.559411e-10
+  SCPH ITER    27 :  DIFF =    4.695550e-10
+  SCPH ITER    28 :  DIFF =    3.362941e-10
+  SCPH ITER    29 :  DIFF =    2.409918e-10
+  SCPH ITER    30 :  DIFF =    1.728165e-10
+  SCPH ITER    31 :  DIFF =    1.240339e-10
+  SCPH ITER    32 :  DIFF =    8.909659e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 3.000000e+02 : convergence achieved in    32 iterations.
+ Temperature = 2.500000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    1.064992e-05
+  SCPH ITER     3 :  DIFF =    3.677183e-06
+  SCPH ITER     4 :  DIFF =    1.802735e-06
+  SCPH ITER     5 :  DIFF =    1.022365e-06
+  SCPH ITER     6 :  DIFF =    6.406488e-07
+  SCPH ITER     7 :  DIFF =    4.281032e-07
+  SCPH ITER     8 :  DIFF =    2.965658e-07
+  SCPH ITER     9 :  DIFF =    2.092229e-07
+  SCPH ITER    10 :  DIFF =    1.488977e-07
+  SCPH ITER    11 :  DIFF =    1.064002e-07
+  SCPH ITER    12 :  DIFF =    7.617816e-08
+  SCPH ITER    13 :  DIFF =    5.459066e-08
+  SCPH ITER    14 :  DIFF =    3.913889e-08
+  SCPH ITER    15 :  DIFF =    2.806798e-08
+  SCPH ITER    16 :  DIFF =    2.013197e-08
+  SCPH ITER    17 :  DIFF =    1.444166e-08
+  SCPH ITER    18 :  DIFF =    1.036091e-08
+  SCPH ITER    19 :  DIFF =    7.434103e-09
+  SCPH ITER    20 :  DIFF =    5.334741e-09
+  SCPH ITER    21 :  DIFF =    3.828759e-09
+  SCPH ITER    22 :  DIFF =    2.748341e-09
+  SCPH ITER    23 :  DIFF =    1.973162e-09
+  SCPH ITER    24 :  DIFF =    1.416925e-09
+  SCPH ITER    25 :  DIFF =    1.017744e-09
+  SCPH ITER    26 :  DIFF =    7.312355e-10
+  SCPH ITER    27 :  DIFF =    5.255621e-10
+  SCPH ITER    28 :  DIFF =    3.778928e-10
+  SCPH ITER    29 :  DIFF =    2.718442e-10
+  SCPH ITER    30 :  DIFF =    1.956660e-10
+  SCPH ITER    31 :  DIFF =    1.409272e-10
+  SCPH ITER    32 :  DIFF =    1.015865e-10
+  SCPH ITER    33 :  DIFF =    7.328991e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 2.500000e+02 : convergence achieved in    33 iterations.
+ Temperature = 2.000000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    1.693677e-05
+  SCPH ITER     3 :  DIFF =    3.000441e-06
+  SCPH ITER     4 :  DIFF =    1.467588e-06
+  SCPH ITER     5 :  DIFF =    8.828860e-07
+  SCPH ITER     6 :  DIFF =    5.913330e-07
+  SCPH ITER     7 :  DIFF =    4.147599e-07
+  SCPH ITER     8 :  DIFF =    2.960849e-07
+  SCPH ITER     9 :  DIFF =    2.127477e-07
+  SCPH ITER    10 :  DIFF =    1.532437e-07
+  SCPH ITER    11 :  DIFF =    1.104929e-07
+  SCPH ITER    12 :  DIFF =    7.970501e-08
+  SCPH ITER    13 :  DIFF =    5.751037e-08
+  SCPH ITER    14 :  DIFF =    4.150290e-08
+  SCPH ITER    15 :  DIFF =    2.995475e-08
+  SCPH ITER    16 :  DIFF =    2.162222e-08
+  SCPH ITER    17 :  DIFF =    1.560915e-08
+  SCPH ITER    18 :  DIFF =    1.126946e-08
+  SCPH ITER    19 :  DIFF =    8.137172e-09
+  SCPH ITER    20 :  DIFF =    5.876181e-09
+  SCPH ITER    21 :  DIFF =    4.243987e-09
+  SCPH ITER    22 :  DIFF =    3.065615e-09
+  SCPH ITER    23 :  DIFF =    2.214806e-09
+  SCPH ITER    24 :  DIFF =    1.600444e-09
+  SCPH ITER    25 :  DIFF =    1.156767e-09
+  SCPH ITER    26 :  DIFF =    8.363137e-10
+  SCPH ITER    27 :  DIFF =    6.048255e-10
+  SCPH ITER    28 :  DIFF =    4.375748e-10
+  SCPH ITER    29 :  DIFF =    3.167118e-10
+  SCPH ITER    30 :  DIFF =    2.293484e-10
+  SCPH ITER    31 :  DIFF =    1.662003e-10
+  SCPH ITER    32 :  DIFF =    1.205164e-10
+  SCPH ITER    33 :  DIFF =    8.745176e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 2.000000e+02 : convergence achieved in    33 iterations.
+ Temperature = 1.500000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    3.815887e-05
+  SCPH ITER     3 :  DIFF =    5.090381e-06
+  SCPH ITER     4 :  DIFF =    2.406820e-06
+  SCPH ITER     5 :  DIFF =    1.124347e-06
+  SCPH ITER     6 :  DIFF =    6.312007e-07
+  SCPH ITER     7 :  DIFF =    4.221834e-07
+  SCPH ITER     8 :  DIFF =    3.014103e-07
+  SCPH ITER     9 :  DIFF =    2.186067e-07
+  SCPH ITER    10 :  DIFF =    1.590931e-07
+  SCPH ITER    11 :  DIFF =    1.158765e-07
+  SCPH ITER    12 :  DIFF =    8.442460e-08
+  SCPH ITER    13 :  DIFF =    6.152109e-08
+  SCPH ITER    14 :  DIFF =    4.483824e-08
+  SCPH ITER    15 :  DIFF =    3.268428e-08
+  SCPH ITER    16 :  DIFF =    2.382839e-08
+  SCPH ITER    17 :  DIFF =    1.737472e-08
+  SCPH ITER    18 :  DIFF =    1.267107e-08
+  SCPH ITER    19 :  DIFF =    9.242456e-09
+  SCPH ITER    20 :  DIFF =    6.742947e-09
+  SCPH ITER    21 :  DIFF =    4.920529e-09
+  SCPH ITER    22 :  DIFF =    3.591599e-09
+  SCPH ITER    23 :  DIFF =    2.622376e-09
+  SCPH ITER    24 :  DIFF =    1.915376e-09
+  SCPH ITER    25 :  DIFF =    1.399545e-09
+  SCPH ITER    26 :  DIFF =    1.023103e-09
+  SCPH ITER    27 :  DIFF =    7.483207e-10
+  SCPH ITER    28 :  DIFF =    5.476781e-10
+  SCPH ITER    29 :  DIFF =    4.011194e-10
+  SCPH ITER    30 :  DIFF =    2.940325e-10
+  SCPH ITER    31 :  DIFF =    2.157400e-10
+  SCPH ITER    32 :  DIFF =    1.584602e-10
+  SCPH ITER    33 :  DIFF =    1.166113e-10
+  SCPH ITER    34 :  DIFF =    8.586882e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 1.500000e+02 : convergence achieved in    34 iterations.
+ Temperature = 1.000000e+02 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    2.569464e-06
+  SCPH ITER     3 :  DIFF =    5.995073e-05
+  SCPH ITER     4 :  DIFF =    4.148287e-04
+  SCPH ITER     5 :  DIFF =    8.305030e-05
+  SCPH ITER     6 :  DIFF =    6.944208e-05
+  SCPH ITER     7 :  DIFF =    5.657847e-05
+  SCPH ITER     8 :  DIFF =    4.687282e-05
+  SCPH ITER     9 :  DIFF =    4.109277e-05
+  SCPH ITER    10 :  DIFF =    3.390523e-05
+  SCPH ITER    11 :  DIFF =    2.896564e-05
+  SCPH ITER    12 :  DIFF =    2.516438e-05
+  SCPH ITER    13 :  DIFF =    2.055432e-05
+  SCPH ITER    14 :  DIFF =    1.569429e-05
+  SCPH ITER    15 :  DIFF =    1.017351e-05
+  SCPH ITER    16 :  DIFF =    4.711626e-06
+  SCPH ITER    17 :  DIFF =    1.338321e-06
+  SCPH ITER    18 :  DIFF =    3.860029e-07
+  SCPH ITER    19 :  DIFF =    2.495213e-07
+  SCPH ITER    20 :  DIFF =    1.870108e-07
+  SCPH ITER    21 :  DIFF =    1.402943e-07
+  SCPH ITER    22 :  DIFF =    1.052783e-07
+  SCPH ITER    23 :  DIFF =    7.911528e-08
+  SCPH ITER    24 :  DIFF =    5.955962e-08
+  SCPH ITER    25 :  DIFF =    4.492405e-08
+  SCPH ITER    26 :  DIFF =    3.395395e-08
+  SCPH ITER    27 :  DIFF =    2.571761e-08
+  SCPH ITER    28 :  DIFF =    1.952271e-08
+  SCPH ITER    29 :  DIFF =    1.485437e-08
+  SCPH ITER    30 :  DIFF =    1.132924e-08
+  SCPH ITER    31 :  DIFF =    8.661644e-09
+  SCPH ITER    32 :  DIFF =    6.638406e-09
+  SCPH ITER    33 :  DIFF =    5.100265e-09
+  SCPH ITER    34 :  DIFF =    3.928067e-09
+  SCPH ITER    35 :  DIFF =    3.032525e-09
+  SCPH ITER    36 :  DIFF =    2.346616e-09
+  SCPH ITER    37 :  DIFF =    1.819939e-09
+  SCPH ITER    38 :  DIFF =    1.414512e-09
+  SCPH ITER    39 :  DIFF =    1.101653e-09
+  SCPH ITER    40 :  DIFF =    8.596467e-10
+  SCPH ITER    41 :  DIFF =    6.720105e-10
+  SCPH ITER    42 :  DIFF =    5.262094e-10
+  SCPH ITER    43 :  DIFF =    4.126773e-10
+  SCPH ITER    44 :  DIFF =    3.241001e-10
+  SCPH ITER    45 :  DIFF =    2.548784e-10
+  SCPH ITER    46 :  DIFF =    2.006544e-10
+  SCPH ITER    47 :  DIFF =    1.581660e-10
+  SCPH ITER    48 :  DIFF =    1.247666e-10
+  SCPH ITER    49 :  DIFF =    9.850307e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 1.000000e+02 : convergence achieved in    49 iterations.
+ Temperature = 5.000000e+01 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    1.887931e-06
+  SCPH ITER     3 :  DIFF =    1.640392e-06
+  SCPH ITER     4 :  DIFF =    1.474815e-06
+  SCPH ITER     5 :  DIFF =    1.366157e-06
+  SCPH ITER     6 :  DIFF =    1.296292e-06
+  SCPH ITER     7 :  DIFF =    1.252570e-06
+  SCPH ITER     8 :  DIFF =    1.226470e-06
+  SCPH ITER     9 :  DIFF =    1.212392e-06
+  SCPH ITER    10 :  DIFF =    1.206709e-06
+  SCPH ITER    11 :  DIFF =    1.207080e-06
+  SCPH ITER    12 :  DIFF =    1.211983e-06
+  SCPH ITER    13 :  DIFF =    1.220415e-06
+  SCPH ITER    14 :  DIFF =    1.231708e-06
+  SCPH ITER    15 :  DIFF =    1.245408e-06
+  SCPH ITER    16 :  DIFF =    1.261199e-06
+  SCPH ITER    17 :  DIFF =    1.278859e-06
+  SCPH ITER    18 :  DIFF =    1.298231e-06
+  SCPH ITER    19 :  DIFF =    3.432809e-05
+  SCPH ITER    20 :  DIFF =    2.202812e-04
+  SCPH ITER    21 :  DIFF =    4.245281e-05
+  SCPH ITER    22 :  DIFF =    3.526073e-05
+  SCPH ITER    23 :  DIFF =    3.089399e-05
+  SCPH ITER    24 :  DIFF =    2.750695e-05
+  SCPH ITER    25 :  DIFF =    2.388027e-05
+  SCPH ITER    26 :  DIFF =    2.027602e-05
+  SCPH ITER    27 :  DIFF =    1.524249e-05
+  SCPH ITER    28 :  DIFF =    6.092034e-06
+  SCPH ITER    29 :  DIFF =    1.051423e-06
+  SCPH ITER    30 :  DIFF =    3.984047e-07
+  SCPH ITER    31 :  DIFF =    1.828920e-07
+  SCPH ITER    32 :  DIFF =    9.658062e-08
+  SCPH ITER    33 :  DIFF =    7.101341e-08
+  SCPH ITER    34 :  DIFF =    5.128099e-08
+  SCPH ITER    35 :  DIFF =    3.956277e-08
+  SCPH ITER    36 :  DIFF =    2.994410e-08
+  SCPH ITER    37 :  DIFF =    2.296254e-08
+  SCPH ITER    38 :  DIFF =    1.752793e-08
+  SCPH ITER    39 :  DIFF =    1.342671e-08
+  SCPH ITER    40 :  DIFF =    1.028072e-08
+  SCPH ITER    41 :  DIFF =    7.883754e-09
+  SCPH ITER    42 :  DIFF =    6.049522e-09
+  SCPH ITER    43 :  DIFF =    4.647240e-09
+  SCPH ITER    44 :  DIFF =    3.573408e-09
+  SCPH ITER    45 :  DIFF =    2.750705e-09
+  SCPH ITER    46 :  DIFF =    2.119700e-09
+  SCPH ITER    47 :  DIFF =    1.635304e-09
+  SCPH ITER    48 :  DIFF =    1.263061e-09
+  SCPH ITER    49 :  DIFF =    9.767077e-10
+  SCPH ITER    50 :  DIFF =    7.561869e-10
+  SCPH ITER    51 :  DIFF =    5.861615e-10
+  SCPH ITER    52 :  DIFF =    4.549308e-10
+  SCPH ITER    53 :  DIFF =    3.535148e-10
+  SCPH ITER    54 :  DIFF =    2.750684e-10
+  SCPH ITER    55 :  DIFF =    2.142617e-10
+  SCPH ITER    56 :  DIFF =    1.670953e-10
+  SCPH ITER    57 :  DIFF =    1.304800e-10
+  SCPH ITER    58 :  DIFF =    1.020004e-10
+  SCPH ITER    59 :  DIFF =    7.984846e-11
+  DIFF < SCPH_TOL : break SCPH loop
+ Temp = 5.000000e+01 : convergence achieved in    59 iterations.
+ Temperature = 0.000000e+00 K
+  SCPH ITER     1 :  DIFF = N/A
+  SCPH ITER     2 :  DIFF =    1.146218e-06
+  SCPH ITER     3 :  DIFF =    1.015513e-06
+  SCPH ITER     4 :  DIFF =    9.215867e-07
+  SCPH ITER     5 :  DIFF =    8.536977e-07
+  SCPH ITER     6 :  DIFF =    8.041009e-07
+  SCPH ITER     7 :  DIFF =    7.673245e-07
+  SCPH ITER     8 :  DIFF =    7.395677e-07
+  SCPH ITER     9 :  DIFF =    7.182181e-07
+  SCPH ITER    10 :  DIFF =    7.014858e-07
+  SCPH ITER    11 :  DIFF =    6.881401e-07
+  SCPH ITER    12 :  DIFF =    6.765606e-07
+  SCPH ITER    13 :  DIFF =    6.684490e-07
+  SCPH ITER    14 :  DIFF =    6.610776e-07
+  SCPH ITER    15 :  DIFF =    6.549050e-07
+  SCPH ITER    16 :  DIFF =    6.497050e-07
+  SCPH ITER    17 :  DIFF =    6.453096e-07
+  SCPH ITER    18 :  DIFF =    6.415923e-07
+  SCPH ITER    19 :  DIFF =    6.384573e-07
+  SCPH ITER    20 :  DIFF =    6.358311e-07
+  SCPH ITER    21 :  DIFF =    6.336568e-07
+  SCPH ITER    22 :  DIFF =    6.318906e-07
+  SCPH ITER    23 :  DIFF =    6.304980e-07
+  SCPH ITER    24 :  DIFF =    6.294519e-07
+  SCPH ITER    25 :  DIFF =    6.287310e-07
+  SCPH ITER    26 :  DIFF =    6.283183e-07
+  SCPH ITER    27 :  DIFF =    6.282001e-07
+  SCPH ITER    28 :  DIFF =    6.283653e-07
+  SCPH ITER    29 :  DIFF =    6.288050e-07
+  SCPH ITER    30 :  DIFF =    6.295117e-07
+  SCPH ITER    31 :  DIFF =    6.304790e-07
+  SCPH ITER    32 :  DIFF =    6.317017e-07
+  SCPH ITER    33 :  DIFF =    6.331751e-07
+  SCPH ITER    34 :  DIFF =    6.348950e-07
+  SCPH ITER    35 :  DIFF =    6.368577e-07
+  SCPH ITER    36 :  DIFF =    6.390600e-07
+  SCPH ITER    37 :  DIFF =    6.414985e-07
+  SCPH ITER    38 :  DIFF =    6.441705e-07
+  SCPH ITER    39 :  DIFF =    6.470729e-07
+  SCPH ITER    40 :  DIFF =    6.502032e-07
+  SCPH ITER    41 :  DIFF =    6.535586e-07
+  SCPH ITER    42 :  DIFF =    6.571367e-07
+  SCPH ITER    43 :  DIFF =    6.609348e-07
+  SCPH ITER    44 :  DIFF =    6.649506e-07
+  SCPH ITER    45 :  DIFF =    6.691817e-07
+  SCPH ITER    46 :  DIFF =    6.736256e-07
+  SCPH ITER    47 :  DIFF =    6.782801e-07
+  SCPH ITER    48 :  DIFF =    6.831429e-07
+  SCPH ITER    49 :  DIFF =    6.882118e-07
+  SCPH ITER    50 :  DIFF =    6.934845e-07
+  SCPH ITER    51 :  DIFF =    6.989590e-07
+  SCPH ITER    52 :  DIFF =    7.046332e-07
+  SCPH ITER    53 :  DIFF =    7.105051e-07
+  SCPH ITER    54 :  DIFF =    7.165728e-07
+  SCPH ITER    55 :  DIFF =    7.228343e-07
+  SCPH ITER    56 :  DIFF =    7.292880e-07
+  SCPH ITER    57 :  DIFF =    8.587679e-06
+  SCPH ITER    58 :  DIFF =    3.565866e-05
+  SCPH ITER    59 :  DIFF =    2.281938e-05
+  SCPH ITER    60 :  DIFF =    1.036344e-05
+  SCPH ITER    61 :  DIFF =    2.301970e-05
+  SCPH ITER    62 :  DIFF =    2.346602e-05
+  SCPH ITER    63 :  DIFF =    2.498477e-05
+  SCPH ITER    64 :  DIFF =    2.342516e-05
+  SCPH ITER    65 :  DIFF =    1.836028e-05
+  SCPH ITER    66 :  DIFF =    2.306344e-05
+  SCPH ITER    67 :  DIFF =    4.152109e-05
+  SCPH ITER    68 :  DIFF =    2.254590e-05
+  SCPH ITER    69 :  DIFF =    2.028425e-05
+  SCPH ITER    70 :  DIFF =    4.917440e-05
+  SCPH ITER    71 :  DIFF =    2.237335e-05
+  SCPH ITER    72 :  DIFF =    2.344984e-05
+  SCPH ITER    73 :  DIFF =    2.788628e-05
+  SCPH ITER    74 :  DIFF =    2.328040e-05
+  SCPH ITER    75 :  DIFF =    9.385355e-06
+  SCPH ITER    76 :  DIFF =    1.603752e-05
+  SCPH ITER    77 :  DIFF =    3.851773e-05
+  SCPH ITER    78 :  DIFF =    2.266818e-05
+  SCPH ITER    79 :  DIFF =    1.595515e-05
+  SCPH ITER    80 :  DIFF =    3.827972e-05
+  SCPH ITER    81 :  DIFF =    2.267893e-05
+  SCPH ITER    82 :  DIFF =    1.553500e-05
+  SCPH ITER    83 :  DIFF =    3.707506e-05
+  SCPH ITER    84 :  DIFF =    2.273764e-05
+  SCPH ITER    85 :  DIFF =    1.327257e-05
+  SCPH ITER    86 :  DIFF =    3.070881e-05
+  SCPH ITER    87 :  DIFF =    2.310918e-05
+  SCPH ITER    88 :  DIFF =    1.528851e-06
+  SCPH ITER    89 :  DIFF =    2.930344e-06
+  SCPH ITER    90 :  DIFF =    5.923906e-06
+  SCPH ITER    91 :  DIFF =    1.073923e-05
+  SCPH ITER    92 :  DIFF =    2.397685e-05
+  SCPH ITER    93 :  DIFF =    2.345206e-05
+  SCPH ITER    94 :  DIFF =    2.170034e-05
+  SCPH ITER    95 :  DIFF =    2.344140e-05
+  SCPH ITER    96 :  DIFF =    2.964082e-05
+  SCPH ITER    97 :  DIFF =    2.317718e-05
+  SCPH ITER    98 :  DIFF =    4.407305e-06
+  SCPH ITER    99 :  DIFF =    8.157595e-06
+  SCPH ITER   100 :  DIFF =    1.758801e-05
+  SCPH ITER   101 :  DIFF =    2.286860e-05
+  SCPH ITER   102 :  DIFF =    4.398077e-05
+  SCPH ITER   103 :  DIFF =    2.246805e-05
+  SCPH ITER   104 :  DIFF =    2.229548e-05
+  SCPH ITER   105 :  DIFF =    4.791261e-05
+  SCPH ITER   106 :  DIFF =    2.238721e-05
+  SCPH ITER   107 :  DIFF =    2.338270e-05
+  SCPH ITER   108 :  DIFF =    3.316973e-05
+  SCPH ITER   109 :  DIFF =    2.295555e-05
+  SCPH ITER   110 :  DIFF =    4.682847e-06
+  SCPH ITER   111 :  DIFF =    9.665630e-06
+  SCPH ITER   112 :  DIFF =    1.642141e-05
+  SCPH ITER   113 :  DIFF =    3.961922e-05
+  SCPH ITER   114 :  DIFF =    2.261955e-05
+  SCPH ITER   115 :  DIFF =    1.776337e-05
+  SCPH ITER   116 :  DIFF =    4.340057e-05
+  SCPH ITER   117 :  DIFF =    2.248329e-05
+  SCPH ITER   118 :  DIFF =    2.193894e-05
+  SCPH ITER   119 :  DIFF =    4.907519e-05
+  SCPH ITER   120 :  DIFF =    2.237344e-05
+  SCPH ITER   121 :  DIFF =    2.344612e-05
+  SCPH ITER   122 :  DIFF =    2.829331e-05
+  SCPH ITER   123 :  DIFF =    2.325615e-05
+  SCPH ITER   124 :  DIFF =    8.201529e-06
+  SCPH ITER   125 :  DIFF =    1.433360e-05
+  SCPH ITER   126 :  DIFF =    3.366240e-05
+  SCPH ITER   127 :  DIFF =    2.292732e-05
+  SCPH ITER   128 :  DIFF =    5.856792e-06
+  SCPH ITER   129 :  DIFF =    1.226288e-05
+  SCPH ITER   130 :  DIFF =    1.952542e-05
+  SCPH ITER   131 :  DIFF =    4.781045e-05
+  SCPH ITER   132 :  DIFF =    2.238943e-05
+  SCPH ITER   133 :  DIFF =    2.337483e-05
+  SCPH ITER   134 :  DIFF =    3.360636e-05
+  SCPH ITER   135 :  DIFF =    2.292979e-05
+  SCPH ITER   136 :  DIFF =    5.724091e-06
+  SCPH ITER   137 :  DIFF =    1.196544e-05
+  SCPH ITER   138 :  DIFF =    1.921493e-05
+  SCPH ITER   139 :  DIFF =    4.712356e-05
+  SCPH ITER   140 :  DIFF =    2.239948e-05
+  SCPH ITER   141 :  DIFF =    2.329462e-05
+  SCPH ITER   142 :  DIFF =    3.651574e-05
+  SCPH ITER   143 :  DIFF =    2.276595e-05
+  SCPH ITER   144 :  DIFF =    1.215076e-05
+  SCPH ITER   145 :  DIFF =    2.766899e-05
+  SCPH ITER   146 :  DIFF =    2.329368e-05
+  SCPH ITER   147 :  DIFF =    1.002515e-05
+  SCPH ITER   148 :  DIFF =    1.690081e-05
+  SCPH ITER   149 :  DIFF =    4.098797e-05
+  SCPH ITER   150 :  DIFF =    2.256469e-05
+  SCPH ITER   151 :  DIFF =    1.966030e-05
+  SCPH ITER   152 :  DIFF =    4.807593e-05
+  SCPH ITER   153 :  DIFF =    2.238505e-05
+  SCPH ITER   154 :  DIFF =    2.339600e-05
+  SCPH ITER   155 :  DIFF =    3.247841e-05
+  SCPH ITER   156 :  DIFF =    2.299772e-05
+  SCPH ITER   157 :  DIFF =    2.996719e-06
+  SCPH ITER   158 :  DIFF =    6.063363e-06
+  SCPH ITER   159 :  DIFF =    1.096808e-05
+  SCPH ITER   160 :  DIFF =    2.456515e-05
+  SCPH ITER   161 :  DIFF =    2.343638e-05
+  SCPH ITER   162 :  DIFF =    1.973421e-05
+  SCPH ITER   163 :  DIFF =    2.329207e-05
+  SCPH ITER   164 :  DIFF =    3.673276e-05
+  SCPH ITER   165 :  DIFF =    2.275610e-05
+  SCPH ITER   166 :  DIFF =    1.259245e-05
+  SCPH ITER   167 :  DIFF =    2.885648e-05
+  SCPH ITER   168 :  DIFF =    2.322468e-05
+  SCPH ITER   169 :  DIFF =    6.593717e-06
+  SCPH ITER   170 :  DIFF =    1.183429e-05
+  SCPH ITER   171 :  DIFF =    2.683029e-05
+  SCPH ITER   172 :  DIFF =    2.334098e-05
+  SCPH ITER   173 :  DIFF =    1.254205e-05
+  SCPH ITER   174 :  DIFF =    1.980495e-05
+  SCPH ITER   175 :  DIFF =    4.837558e-05
+  SCPH ITER   176 :  DIFF =    2.238240e-05
+  SCPH ITER   177 :  DIFF =    2.341801e-05
+  SCPH ITER   178 :  DIFF =    3.121796e-05
+  SCPH ITER   179 :  DIFF =    2.307671e-05
+  SCPH ITER   180 :  DIFF =    1.971119e-07
+  SCPH ITER   181 :  DIFF =    3.791199e-07
+  SCPH ITER   182 :  DIFF =    7.452289e-07
+  SCPH ITER   183 :  DIFF =    1.441056e-06
+  SCPH ITER   184 :  DIFF =    2.863509e-06
+  SCPH ITER   185 :  DIFF =    5.405183e-06
+  SCPH ITER   186 :  DIFF =    1.125431e-05
+  SCPH ITER   187 :  DIFF =    1.842797e-05
+  SCPH ITER   188 :  DIFF =    4.519815e-05
+  SCPH ITER   189 :  DIFF =    2.243805e-05
+  SCPH ITER   190 :  DIFF =    2.284124e-05
+  SCPH ITER   191 :  DIFF =    4.420539e-05
+  SCPH ITER   192 :  DIFF =    2.246096e-05
+  SCPH ITER   193 :  DIFF =    2.241303e-05
+  SCPH ITER   194 :  DIFF =    4.733008e-05
+  SCPH ITER   195 :  DIFF =    2.239507e-05
+  SCPH ITER   196 :  DIFF =    2.332038e-05
+  SCPH ITER   197 :  DIFF =    3.563656e-05
+  SCPH ITER   198 :  DIFF =    2.281249e-05
+  SCPH ITER   199 :  DIFF =    1.030775e-05
+  SCPH ITER   200 :  DIFF =    2.287423e-05
+  SCPH ITER   201 :  DIFF =    2.345993e-05
+  SCPH ITER   202 :  DIFF =    2.547900e-05
+  SCPH ITER   203 :  DIFF =    2.340297e-05
+  SCPH ITER   204 :  DIFF =    1.676008e-05
+  SCPH ITER   205 :  DIFF =    2.259418e-05
+  SCPH ITER   206 :  DIFF =    4.629343e-05
+  SCPH ITER   207 :  DIFF =    2.241403e-05
+  SCPH ITER   208 :  DIFF =    2.314690e-05
+  SCPH ITER   209 :  DIFF =    3.997090e-05
+  SCPH ITER   210 :  DIFF =    2.260370e-05
+  SCPH ITER   211 :  DIFF =    1.828796e-05
+  SCPH ITER   212 :  DIFF =    4.480933e-05
+  SCPH ITER   213 :  DIFF =    2.244506e-05
+  SCPH ITER   214 :  DIFF =    2.268949e-05
+  SCPH ITER   215 :  DIFF =    4.551962e-05
+  SCPH ITER   216 :  DIFF =    2.242832e-05
+  SCPH ITER   217 :  DIFF =    2.294245e-05
+  SCPH ITER   218 :  DIFF =    4.300576e-05
+  SCPH ITER   219 :  DIFF =    2.249385e-05
+  SCPH ITER   220 :  DIFF =    2.165525e-05
+  SCPH ITER   221 :  DIFF =    4.957708e-05
+  SCPH ITER   222 :  DIFF =    2.236855e-05
+  SCPH ITER   223 :  DIFF =    2.345443e-05
+  SCPH ITER   224 :  DIFF =    2.623563e-05
+  SCPH ITER   225 :  DIFF =    2.336707e-05
+  SCPH ITER   226 :  DIFF =    1.436947e-05
+  SCPH ITER   227 :  DIFF =    2.133101e-05
+  SCPH ITER   228 :  DIFF =    4.986783e-05
+  SCPH ITER   229 :  DIFF =    2.236749e-05
+  SCPH ITER   230 :  DIFF =    2.345706e-05
+  SCPH ITER   231 :  DIFF =    2.506416e-05
+  SCPH ITER   232 :  DIFF =    2.341725e-05
+  SCPH ITER   233 :  DIFF =    1.809509e-05
+  SCPH ITER   234 :  DIFF =    2.299805e-05
+  SCPH ITER   235 :  DIFF =    4.237231e-05
+  SCPH ITER   236 :  DIFF =    2.251527e-05
+  SCPH ITER   237 :  DIFF =    2.113400e-05
+  SCPH ITER   238 :  DIFF =    4.988098e-05
+  SCPH ITER   239 :  DIFF =    2.236702e-05
+  SCPH ITER   240 :  DIFF =    2.345654e-05
+  SCPH ITER   241 :  DIFF =    2.501039e-05
+  SCPH ITER   242 :  DIFF =    2.341887e-05
+  SCPH ITER   243 :  DIFF =    1.826944e-05
+  SCPH ITER   244 :  DIFF =    2.303838e-05
+  SCPH ITER   245 :  DIFF =    4.180157e-05
+  SCPH ITER   246 :  DIFF =    2.253452e-05
+  SCPH ITER   247 :  DIFF =    2.058139e-05
+  SCPH ITER   248 :  DIFF =    4.953736e-05
+  SCPH ITER   249 :  DIFF =    2.236955e-05
+  SCPH ITER   250 :  DIFF =    2.345498e-05
+  SCPH ITER   251 :  DIFF =    2.639875e-05
+  SCPH ITER   252 :  DIFF =    2.335968e-05
+  SCPH ITER   253 :  DIFF =    1.386380e-05
+  SCPH ITER   254 :  DIFF =    2.095968e-05
+  SCPH ITER   255 :  DIFF =    4.984337e-05
+  SCPH ITER   256 :  DIFF =    2.236781e-05
+  SCPH ITER   257 :  DIFF =    2.345726e-05
+  SCPH ITER   258 :  DIFF =    2.516273e-05
+  SCPH ITER   259 :  DIFF =    2.341376e-05
+  SCPH ITER   260 :  DIFF =    1.777572e-05
+  SCPH ITER   261 :  DIFF =    2.291693e-05
+  SCPH ITER   262 :  DIFF =    4.338719e-05
+  SCPH ITER   263 :  DIFF =    2.248376e-05
+  SCPH ITER   264 :  DIFF =    2.193010e-05
+  SCPH ITER   265 :  DIFF =    4.909752e-05
+  SCPH ITER   266 :  DIFF =    2.237326e-05
+  SCPH ITER   267 :  DIFF =    2.344678e-05
+  SCPH ITER   268 :  DIFF =    2.820119e-05
+  SCPH ITER   269 :  DIFF =    2.326159e-05
+  SCPH ITER   270 :  DIFF =    8.467856e-06
+  SCPH ITER   271 :  DIFF =    1.472806e-05
+  SCPH ITER   272 :  DIFF =    3.477668e-05
+  SCPH ITER   273 :  DIFF =    2.286223e-05
+  SCPH ITER   274 :  DIFF =    8.420678e-06
+  SCPH ITER   275 :  DIFF =    1.821769e-05
+  SCPH ITER   276 :  DIFF =    2.302867e-05
+  SCPH ITER   277 :  DIFF =    4.198045e-05
+  SCPH ITER   278 :  DIFF =    2.252894e-05
+  SCPH ITER   279 :  DIFF =    2.076411e-05
+  SCPH ITER   280 :  DIFF =    4.971403e-05
+  SCPH ITER   281 :  DIFF =    2.236848e-05
+  SCPH ITER   282 :  DIFF =    2.345663e-05
+  SCPH ITER   283 :  DIFF =    2.568330e-05
+  SCPH ITER   284 :  DIFF =    2.339275e-05
+  SCPH ITER   285 :  DIFF =    1.610666e-05
+  SCPH ITER   286 :  DIFF =    2.232326e-05
+  SCPH ITER   287 :  DIFF =    4.779511e-05
+  SCPH ITER   288 :  DIFF =    2.238895e-05
+  SCPH ITER   289 :  DIFF =    2.337234e-05
+  SCPH ITER   290 :  DIFF =    3.366842e-05
+  SCPH ITER   291 :  DIFF =    2.292570e-05
+  SCPH ITER   292 :  DIFF =    5.870280e-06
+  SCPH ITER   293 :  DIFF =    1.229322e-05
+  SCPH ITER   294 :  DIFF =    1.955486e-05
+  SCPH ITER   295 :  DIFF =    4.786737e-05
+  SCPH ITER   296 :  DIFF =    2.238832e-05
+  SCPH ITER   297 :  DIFF =    2.337949e-05
+  SCPH ITER   298 :  DIFF =    3.336365e-05
+  SCPH ITER   299 :  DIFF =    2.294414e-05
+  SCPH ITER   300 :  DIFF =    5.147604e-06
+  SCPH ITER   301 :  DIFF =    1.068475e-05
+  SCPH ITER   302 :  DIFF =    1.774133e-05
+  SCPH ITER   303 :  DIFF =    4.334480e-05
+  SCPH ITER   304 :  DIFF =    2.248548e-05
+  SCPH ITER   305 :  DIFF =    2.190235e-05
+  SCPH ITER   306 :  DIFF =    4.916883e-05
+  SCPH ITER   307 :  DIFF =    2.237283e-05
+  SCPH ITER   308 :  DIFF =    2.344892e-05
+  SCPH ITER   309 :  DIFF =    2.790777e-05
+  SCPH ITER   310 :  DIFF =    2.327879e-05
+  SCPH ITER   311 :  DIFF =    9.322228e-06
+  SCPH ITER   312 :  DIFF =    1.594967e-05
+  SCPH ITER   313 :  DIFF =    3.826522e-05
+  SCPH ITER   314 :  DIFF =    2.267982e-05
+  SCPH ITER   315 :  DIFF =    1.550943e-05
+  SCPH ITER   316 :  DIFF =    3.700241e-05
+  SCPH ITER   317 :  DIFF =    2.274145e-05
+  SCPH ITER   318 :  DIFF =    1.312944e-05
+  SCPH ITER   319 :  DIFF =    3.031625e-05
+  SCPH ITER   320 :  DIFF =    2.313387e-05
+  SCPH ITER   321 :  DIFF =    2.573715e-06
+  SCPH ITER   322 :  DIFF =    4.873492e-06
+  SCPH ITER   323 :  DIFF =    1.008197e-05
+  SCPH ITER   324 :  DIFF =    1.697732e-05
+  SCPH ITER   325 :  DIFF =    4.120924e-05
+  SCPH ITER   326 :  DIFF =    2.255699e-05
+  SCPH ITER   327 :  DIFF =    1.992790e-05
+  SCPH ITER   328 :  DIFF =    4.859105e-05
+  SCPH ITER   329 :  DIFF =    2.237914e-05
+  SCPH ITER   330 :  DIFF =    2.342863e-05
+  SCPH ITER   331 :  DIFF =    3.031029e-05
+  SCPH ITER   332 :  DIFF =    2.313311e-05
+  SCPH ITER   333 :  DIFF =    2.589591e-06
+  SCPH ITER   334 :  DIFF =    4.901795e-06
+  SCPH ITER   335 :  DIFF =    1.014411e-05
+  SCPH ITER   336 :  DIFF =    1.705744e-05
+  SCPH ITER   337 :  DIFF =    4.143480e-05
+  SCPH ITER   338 :  DIFF =    2.254851e-05
+  SCPH ITER   339 :  DIFF =    2.018711e-05
+  SCPH ITER   340 :  DIFF =    4.902466e-05
+  SCPH ITER   341 :  DIFF =    2.237452e-05
+  SCPH ITER   342 :  DIFF =    2.344551e-05
+  SCPH ITER   343 :  DIFF =    2.850405e-05
+  SCPH ITER   344 :  DIFF =    2.324405e-05
+  SCPH ITER   345 :  DIFF =    7.595840e-06
+  SCPH ITER   346 :  DIFF =    1.341485e-05
+  SCPH ITER   347 :  DIFF =    3.110181e-05
+  SCPH ITER   348 :  DIFF =    2.308501e-05
+  SCPH ITER   349 :  DIFF =    4.979272e-07
+  SCPH ITER   350 :  DIFF =    9.641587e-07
+  SCPH ITER   351 :  DIFF =    1.905973e-06
+  SCPH ITER   352 :  DIFF =    3.638909e-06
+  SCPH ITER   353 :  DIFF =    7.417325e-06
+  SCPH ITER   354 :  DIFF =    1.314246e-05
+  SCPH ITER   355 :  DIFF =    3.035641e-05
+  SCPH ITER   356 :  DIFF =    2.313335e-05
+  SCPH ITER   357 :  DIFF =    2.466260e-06
+  SCPH ITER   358 :  DIFF =    4.677438e-06
+  SCPH ITER   359 :  DIFF =    9.653230e-06
+  SCPH ITER   360 :  DIFF =    1.640839e-05
+  SCPH ITER   361 :  DIFF =    3.958823e-05
+  SCPH ITER   362 :  DIFF =    2.262193e-05
+  SCPH ITER   363 :  DIFF =    1.771762e-05
+  SCPH ITER   364 :  DIFF =    4.327905e-05
+  SCPH ITER   365 :  DIFF =    2.248739e-05
+  SCPH ITER   366 :  DIFF =    2.185702e-05
+  SCPH ITER   367 :  DIFF =    4.926556e-05
+  SCPH ITER   368 :  DIFF =    2.237196e-05
+  SCPH ITER   369 :  DIFF =    2.345104e-05
+  SCPH ITER   370 :  DIFF =    2.750983e-05
+  SCPH ITER   371 :  DIFF =    2.330134e-05
+  SCPH ITER   372 :  DIFF =    1.049559e-05
+  SCPH ITER   373 :  DIFF =    1.750416e-05
+  SCPH ITER   374 :  DIFF =    4.268490e-05
+  SCPH ITER   375 :  DIFF =    2.250530e-05
+  SCPH ITER   376 :  DIFF =    2.140430e-05
+  SCPH ITER   377 :  DIFF =    4.982599e-05
+  SCPH ITER   378 :  DIFF =    2.236744e-05
+  SCPH ITER   379 :  DIFF =    2.345660e-05
+  SCPH ITER   380 :  DIFF =    2.523143e-05
+  SCPH ITER   381 :  DIFF =    2.341082e-05
+  SCPH ITER   382 :  DIFF =    1.755319e-05
+  SCPH ITER   383 :  DIFF =    2.285444e-05
+  SCPH ITER   384 :  DIFF =    4.406714e-05
+  SCPH ITER   385 :  DIFF =    2.246458e-05
+  SCPH ITER   386 :  DIFF =    2.234037e-05
+  SCPH ITER   387 :  DIFF =    4.768852e-05
+  SCPH ITER   388 :  DIFF =    2.238974e-05
+  SCPH ITER   389 :  DIFF =    2.336089e-05
+  SCPH ITER   390 :  DIFF =    3.411728e-05
+  SCPH ITER   391 :  DIFF =    2.289878e-05
+  SCPH ITER   392 :  DIFF =    6.917688e-06
+  SCPH ITER   393 :  DIFF =    1.467783e-05
+  SCPH ITER   394 :  DIFF =    2.154003e-05
+  SCPH ITER   395 :  DIFF =    4.974449e-05
+  SCPH ITER   396 :  DIFF =    2.236866e-05
+  SCPH ITER   397 :  DIFF =    2.345730e-05
+  SCPH ITER   398 :  DIFF =    2.556137e-05
+  SCPH ITER   399 :  DIFF =    2.339819e-05
+  SCPH ITER   400 :  DIFF =    1.649510e-05
+  SCPH ITER   401 :  DIFF =    2.248977e-05
+  SCPH ITER   402 :  DIFF =    4.693807e-05
+  SCPH ITER   403 :  DIFF =    2.240213e-05
+  SCPH ITER   404 :  DIFF =    2.326628e-05
+  SCPH ITER   405 :  DIFF =    3.729500e-05
+  SCPH ITER   406 :  DIFF =    2.272582e-05
+  SCPH ITER   407 :  DIFF =    1.370077e-05
+  SCPH ITER   408 :  DIFF =    3.189075e-05
+  SCPH ITER   409 :  DIFF =    2.303478e-05
+  SCPH ITER   410 :  DIFF =    1.527427e-06
+  SCPH ITER   411 :  DIFF =    3.038982e-06
+  SCPH ITER   412 :  DIFF =    5.722535e-06
+  SCPH ITER   413 :  DIFF =    1.196185e-05
+  SCPH ITER   414 :  DIFF =    1.921350e-05
+  SCPH ITER   415 :  DIFF =    4.712789e-05
+  SCPH ITER   416 :  DIFF =    2.239999e-05
+  SCPH ITER   417 :  DIFF =    2.329616e-05
+  SCPH ITER   418 :  DIFF =    3.650044e-05
+  SCPH ITER   419 :  DIFF =    2.276707e-05
+  SCPH ITER   420 :  DIFF =    1.211990e-05
+  SCPH ITER   421 :  DIFF =    2.758694e-05
+  SCPH ITER   422 :  DIFF =    2.329851e-05
+  SCPH ITER   423 :  DIFF =    1.026796e-05
+  SCPH ITER   424 :  DIFF =    1.721642e-05
+  SCPH ITER   425 :  DIFF =    4.188190e-05
+  SCPH ITER   426 :  DIFF =    2.253240e-05
+  SCPH ITER   427 :  DIFF =    2.066519e-05
+  SCPH ITER   428 :  DIFF =    4.962829e-05
+  SCPH ITER   429 :  DIFF =    2.236915e-05
+  SCPH ITER   430 :  DIFF =    2.345619e-05
+  SCPH ITER   431 :  DIFF =    2.603032e-05
+  SCPH ITER   432 :  DIFF =    2.337739e-05
+  SCPH ITER   433 :  DIFF =    1.501160e-05
+  SCPH ITER   434 :  DIFF =    2.174839e-05
+  SCPH ITER   435 :  DIFF =    4.947759e-05
+  SCPH ITER   436 :  DIFF =    2.237058e-05
+  SCPH ITER   437 :  DIFF =    2.345505e-05
+  SCPH ITER   438 :  DIFF =    2.664359e-05
+  SCPH ITER   439 :  DIFF =    2.334787e-05
+  SCPH ITER   440 :  DIFF =    1.311008e-05
+  SCPH ITER   441 :  DIFF =    2.033254e-05
+  SCPH ITER   442 :  DIFF =    4.924208e-05
+  SCPH ITER   443 :  DIFF =    2.237266e-05
+  SCPH ITER   444 :  DIFF =    2.345125e-05
+  SCPH ITER   445 :  DIFF =    2.760785e-05
+  SCPH ITER   446 :  DIFF =    2.329619e-05
+  SCPH ITER   447 :  DIFF =    1.020522e-05
+  SCPH ITER   448 :  DIFF =    1.713432e-05
+  SCPH ITER   449 :  DIFF =    4.164777e-05
+  SCPH ITER   450 :  DIFF =    2.254026e-05
+  SCPH ITER   451 :  DIFF =    2.041985e-05
+  SCPH ITER   452 :  DIFF =    4.935008e-05
+  SCPH ITER   453 :  DIFF =    2.237125e-05
+  SCPH ITER   454 :  DIFF =    2.345266e-05
+  SCPH ITER   455 :  DIFF =    2.716343e-05
+  SCPH ITER   456 :  DIFF =    2.332037e-05
+  SCPH ITER   457 :  DIFF =    1.153105e-05
+  SCPH ITER   458 :  DIFF =    1.873846e-05
+  SCPH ITER   459 :  DIFF =    4.597537e-05
+  SCPH ITER   460 :  DIFF =    2.241991e-05
+  SCPH ITER   461 :  DIFF =    2.307174e-05
+  SCPH ITER   462 :  DIFF =    4.124927e-05
+  SCPH ITER   463 :  DIFF =    2.255363e-05
+  SCPH ITER   464 :  DIFF =    1.997114e-05
+  SCPH ITER   465 :  DIFF =    4.865345e-05
+  SCPH ITER   466 :  DIFF =    2.237755e-05
+  SCPH ITER   467 :  DIFF =    2.343032e-05
+  SCPH ITER   468 :  DIFF =    3.004615e-05
+  SCPH ITER   469 :  DIFF =    2.314906e-05
+  SCPH ITER   470 :  DIFF =    3.301214e-06
+  SCPH ITER   471 :  DIFF =    6.194708e-06
+  SCPH ITER   472 :  DIFF =    1.302495e-05
+  SCPH ITER   473 :  DIFF =    2.025820e-05
+  SCPH ITER   474 :  DIFF =    4.914408e-05
+  SCPH ITER   475 :  DIFF =    2.237403e-05
+  SCPH ITER   476 :  DIFF =    2.344968e-05
+  SCPH ITER   477 :  DIFF =    2.801268e-05
+  SCPH ITER   478 :  DIFF =    2.327338e-05
+  SCPH ITER   479 :  DIFF =    9.016115e-06
+  SCPH ITER   480 :  DIFF =    1.552075e-05
+  SCPH ITER   481 :  DIFF =    3.703700e-05
+  SCPH ITER   482 :  DIFF =    2.274015e-05
+  SCPH ITER   483 :  DIFF =    1.319833e-05
+  SCPH ITER   484 :  DIFF =    3.050570e-05
+  SCPH ITER   485 :  DIFF =    2.312225e-05
+  SCPH ITER   486 :  DIFF =    2.067575e-06
+  SCPH ITER   487 :  DIFF =    3.938758e-06
+  SCPH ITER   488 :  DIFF =    8.057422e-06
+  SCPH ITER   489 :  DIFF =    1.412115e-05
+  SCPH ITER   490 :  DIFF =    3.306936e-05
+  SCPH ITER   491 :  DIFF =    2.296421e-05
+  SCPH ITER   492 :  DIFF =    4.442038e-06
+  SCPH ITER   493 :  DIFF =    9.141689e-06
+  SCPH ITER   494 :  DIFF =    1.570103e-05
+  SCPH ITER   495 :  DIFF =    3.755759e-05
+  SCPH ITER   496 :  DIFF =    2.271496e-05
+  SCPH ITER   497 :  DIFF =    1.420705e-05
+  SCPH ITER   498 :  DIFF =    3.330784e-05
+  SCPH ITER   499 :  DIFF =    2.294898e-05
+  SCPH ITER   500 :  DIFF =    5.015008e-06
+Temp = 0.000000e+00 : not converged.
+  STO_scph2-2.scph_dymat  : Anharmonic dynamical matrix (restart file)
+  STO_scph2-2.scph_dfc2   : Anharmonic corrections to the second-order IFCs (SCPH)
+
+ Running postprocess of SCPH (calculation of free energy, MSD, DOS)
+ The number of temperature points: 21  
+     STO_scph2-2.scph_bands  : SCPH band structure
+
+ Job finished at Sun Apr  2 04:09:05 2023
+

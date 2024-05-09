@@ -32,7 +32,7 @@ public:
         ndim = n;
 
         // remove redundunt elements
-        std::set<TYPE> set_tmp;
+        std::set < TYPE > set_tmp;
         for (InputIter iter = begin; iter != end; ++iter) set_tmp.insert(*iter);
 
         vec.clear();
