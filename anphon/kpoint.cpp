@@ -66,8 +66,10 @@ void Kpoint::kpoint_setups(const std::string mode)
     MPI_Bcast(&kpoint_mode, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
-        std::cout << " k points\n";
-        std::cout << " ========\n\n";
+        std::cout << '\n';
+        std::cout << " ==========\n";
+        std::cout << "  K points \n";
+        std::cout << " ==========\n\n";
     }
 
     switch (kpoint_mode) {

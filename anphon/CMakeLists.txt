@@ -153,7 +153,8 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/thermodynamics.h
             ${PROJECT_SOURCE_DIR}/timer.h
-            ${PROJECT_SOURCE_DIR}/write_phonons.h)
+            ${PROJECT_SOURCE_DIR}/write_phonons.h
+            ${PROJECT_SOURCE_DIR}/../include/progress_bar.h)
 
 message("MPI_C_LIBRARIES = ${MPI_C_LIBRARIES}")
 message("MPI_CXX_LIBRARIES = ${MPI_CXX_LIBRARIES}")

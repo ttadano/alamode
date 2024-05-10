@@ -27,6 +27,7 @@
 #include "anharmonic_core.h"
 #include "system.h"
 #include "write_phonons.h"
+#include "progress_bar.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -145,7 +146,7 @@ void Conductivity::setup_kappa()
 
     if (len_boundary > eps) {
         if (mympi->my_rank == 0) {
-            std::cout << "\n Bounday scattering length > 0, will be included.\n\n";
+            std::cout << "\n    Bounday scattering effect will be considered with len_boundary = " << len_boundary << "\n\n";
         }
     }
 
@@ -229,6 +230,7 @@ void Conductivity::setup_kappa_4ph()
     }
 
     if (mympi->my_rank == 0) {
+        std::cout << "\n";
         std::cout << " Four-phonon scattering rate will be calculated additionally.\n";
         std::cout << " KMESH for 4-ph:\n";
         std::cout << "   nk1 : " << std::setw(5) << nkc_tmp[0] << '\n';
@@ -516,7 +518,7 @@ void Conductivity::setup_result_io(const int mode)
         if (mode == 1) {
             // 3ph
             if (conductivity->restart_flag_3ph) {
-
+                std::cout << "\n";
                 std::cout << " RESTART = 1 : Restart from the interrupted run.\n";
                 std::cout << "               Phonon lifetimes will be load from file " << file_result3 << '\n';
                 std::cout << "               and check the consistency of the computational settings.\n";
@@ -554,7 +556,7 @@ void Conductivity::setup_result_io(const int mode)
         } else if (mode == -1) {
 
             if (conductivity->restart_flag_4ph) {
-
+                std::cout << "\n";
                 std::cout << " RESTART_4PH = 1 : Restart from the interrupted run.\n";
                 std::cout << "                   Phonon lifetimes will be load from file " << file_result4 << '\n';
                 std::cout << "                   and check the consistency of the computational settings.\n";
@@ -629,13 +631,8 @@ void Conductivity::calc_anharmonic_imagself3()
         std::cout << '\n';
         std::cout << " Start computing 3-phonon (bubble) self-energies ... \n";
         std::cout << " Total Number of phonon modes to be calculated : " << nks_g << '\n';
-        std::cout << " All modes are distributed to MPI threads as the following :\n";
-        for (i = 0; i < mympi->nprocs; ++i) {
-            std::cout << " RANK: " << std::setw(5) << i + 1;
-            std::cout << std::setw(8) << "MODES: " << std::setw(5) << nks_thread[i] << '\n';
-        }
+        std::cout << " They are distributed to " << std::setw(6) << mympi->nprocs << " MPI processes\n";
         std::cout << '\n' << std::flush;
-
         deallocate(nks_thread);
     }
 
@@ -652,6 +649,10 @@ void Conductivity::calc_anharmonic_imagself3()
     }
 
     allocate(damping3_loc, ntemp);
+
+    auto startTime = std::chrono::system_clock::now();
+    auto lastUpdate = startTime;
+    bool isConsole = isOutputToConsole();
 
     for (i = 0; i < nk_tmp; ++i) {
 
@@ -697,11 +698,17 @@ void Conductivity::calc_anharmonic_imagself3()
 
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart, vel, damping3, 1);
-            std::cout << " MODE " << std::setw(5) << i + 1 << " done.\n" << std::flush;
+
+            auto currentTime = std::chrono::system_clock::now();
+            long long totalElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
+            long long avgTimePerStep = (i == 0) ? 0 : totalElapsedTime / i;
+            long long timeRemaining = (i == 0) ? 0 : avgTimePerStep * (nks_tmp - i - 1);
+            displayProgressBar(i, nks_tmp-1, std::cout, timeRemaining, isConsole, "3-phonon");
+            lastUpdate = currentTime;
+            if (i == nk_tmp - 1) std::cout << "\n done. \n\n" << std::flush;
         }
     }
     deallocate(damping3_loc);
-
 }
 
 
@@ -739,13 +746,8 @@ void Conductivity::calc_anharmonic_imagself4()
         std::cout << " Start computing 4-phonon self-energies ... \n";
         std::cout << " WARNING: This is very very expensive!! Please be patient.\n";
         std::cout << " Total Number of phonon modes to be calculated : " << nks_g << '\n';
-        std::cout << " All modes are distributed to MPI thread/s as the following :\n";
-        for (i = 0; i < mympi->nprocs; ++i) {
-            std::cout << " RANK: " << std::setw(5) << i + 1;
-            std::cout << std::setw(8) << "MODES: " << std::setw(5) << nks_thread[i] << '\n';
-        }
+        std::cout << " They are distributed to " << std::setw(6) << mympi->nprocs << " MPI processes\n";
         std::cout << '\n' << std::flush;
-
         deallocate(nks_thread);
     }
 
@@ -762,6 +764,10 @@ void Conductivity::calc_anharmonic_imagself4()
     }
 
     allocate(damping4_loc, ntemp);
+
+    auto startTime = std::chrono::system_clock::now();
+    auto lastUpdate = startTime;
+    bool isConsole = isOutputToConsole();
 
     for (i = 0; i < nk_tmp; ++i) {
 
@@ -808,7 +814,13 @@ void Conductivity::calc_anharmonic_imagself4()
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart4, vel_4ph, damping4, -1);
 
-            std::cout << " MODE " << std::setw(5) << i + 1 << " done.\n" << std::flush;
+            auto currentTime = std::chrono::system_clock::now();
+            long long totalElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count();
+            long long avgTimePerStep = (i == 0) ? 0 : totalElapsedTime / i;
+            long long timeRemaining = (i == 0) ? 0 : avgTimePerStep * (nks_tmp - i - 1);
+            displayProgressBar(i, nks_tmp-1, std::cout, timeRemaining, isConsole, "4-phonon");
+            lastUpdate = currentTime;
+            if (i == nk_tmp - 1) std::cout << "\n done. \n\n" << std::flush;
         }
 
     }
@@ -1477,8 +1489,8 @@ void Conductivity::check_consistency_restart(std::fstream &fs_result,
         }
     }
     if (!found_tag) {
-        std::cout << " Could not find the #CLASSICAL tag in the restart file." << std::endl;
-        std::cout << " CLASSIACAL = 0 is assumed." << std::endl;
+        std::cout << " Could not find the #CLASSICAL tag in the restart file.\n";
+        std::cout << " CLASSIACAL = 0 is assumed.\n";
         is_classical = 0;
     } else {
         fs_result >> is_classical;
@@ -1525,9 +1537,9 @@ void Conductivity::check_consistency_restart(std::fstream &fs_result,
     }
     if (ismear != -1 && std::abs(epsilon_tmp - epsilon_in * Ry_to_kayser) >= eps4) {
         std::cout << "epsilon from file : " << std::setw(15)
-                  << std::setprecision(10) << epsilon_tmp * Ry_to_kayser << std::endl;
+                  << std::setprecision(10) << epsilon_tmp * Ry_to_kayser << '\n';
         std::cout << "epsilon from input: " << std::setw(15)
-                  << std::setprecision(10) << epsilon_in * Ry_to_kayser << std::endl;
+                  << std::setprecision(10) << epsilon_in * Ry_to_kayser << '\n';
         warn("check_consistency_restart",
              "Smearing width is not consistent");
     }
@@ -1575,17 +1587,17 @@ void Conductivity::write_header_result(std::fstream &fs_result,
              "Could not open file_result3");
     }
 
-    fs_result << "## General information" << std::endl;
-    fs_result << "#SYSTEM" << std::endl;
-    fs_result << natmin_in << " " << nkd_in << std::endl;
-    fs_result << volume_prim_in << std::endl;
-    fs_result << "#END SYSTEM" << std::endl;
+    fs_result << "## General information\n";
+    fs_result << "#SYSTEM\n";
+    fs_result << natmin_in << " " << nkd_in << '\n';
+    fs_result << volume_prim_in << '\n';
+    fs_result << "#END SYSTEM\n";
 
-    fs_result << "#KPOINT" << std::endl;
+    fs_result << "#KPOINT\n";
     fs_result << kmesh_in->nk_i[0] << " "
               << kmesh_in->nk_i[1] << " "
-              << kmesh_in->nk_i[2] << std::endl;
-    fs_result << kmesh_in->nk_irred << std::endl;
+              << kmesh_in->nk_i[2] << '\n';
+    fs_result << kmesh_in->nk_irred << '\n';
 
     for (int i = 0; i < kmesh_in->nk_irred; ++i) {
         fs_result << std::setw(6) << i + 1 << ":";
@@ -1594,31 +1606,31 @@ void Conductivity::write_header_result(std::fstream &fs_result,
                       << std::scientific << kmesh_in->kpoint_irred_all[i][0].kval[j];
         }
         fs_result << std::setw(12)
-                  << std::fixed << kmesh_in->weight_k[i] << std::endl;
+                  << std::fixed << kmesh_in->weight_k[i] << '\n';
     }
 
     fs_result.unsetf(std::ios::fixed);
 
-    fs_result << "#END KPOINT" << std::endl;
+    fs_result << "#END KPOINT\n";
 
-    fs_result << "#CLASSICAL" << std::endl;
-    fs_result << classical_in << std::endl;
-    fs_result << "#END CLASSICAL" << std::endl;
+    fs_result << "#CLASSICAL\n";
+    fs_result << classical_in << '\n';
+    fs_result << "#END CLASSICAL\n";
 
-    fs_result << "#FCSXML" << std::endl;
-    fs_result << file_fcs_in << std::endl;
-    fs_result << "#END  FCSXML" << std::endl;
+    fs_result << "#FCSXML\n";
+    fs_result << file_fcs_in << '\n';
+    fs_result << "#END  FCSXML\n";
 
-    fs_result << "#SMEARING" << std::endl;
-    fs_result << ismear_in << std::endl;
-    fs_result << epsilon_in * Ry_to_kayser << std::endl;
-    fs_result << "#END SMEARING" << std::endl;
+    fs_result << "#SMEARING\n";
+    fs_result << ismear_in << '\n';
+    fs_result << epsilon_in * Ry_to_kayser << '\n';
+    fs_result << "#END SMEARING\n";
 
-    fs_result << "#TEMPERATURE" << std::endl;
-    fs_result << tmin_in << " " << tmax_in << " " << delta_t_in << std::endl;
-    fs_result << "#END TEMPERATURE" << std::endl;
+    fs_result << "#TEMPERATURE\n";
+    fs_result << tmin_in << " " << tmax_in << " " << delta_t_in << '\n';
+    fs_result << "#END TEMPERATURE\n";
 
-    fs_result << "##END General information" << std::endl;
+    fs_result << "##END General information\n";
 }
 
 void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
@@ -1748,7 +1760,6 @@ void Conductivity::lifetime_from_gamma(double **&gamma, double **&lifetime)
             }
         } else {
             for (i = 0; i < ntemp; ++i) {
-                //damp_tmp = damping3[iks][i];
                 damp_tmp = gamma[iks][i];
                 if (damp_tmp > 1.0e-100) {
                     lifetime[iks][i] = 1.0e+12 * time_ry * 0.5 / damp_tmp;
