@@ -31,10 +31,6 @@
 #include <iomanip>
 #include <vector>
 
-// DONE: check the number of unique pairs 
-// DONE: implement the restriction of energy in pair generation with a default cutoff,
-// TODO: implement adaptive smearing in integration module.
-
 using namespace PHON_NS;
 
 Conductivity::Conductivity(PHON *phon) : Pointers(phon)
@@ -73,7 +69,7 @@ void Conductivity::set_default_variables()
     restart_flag_4ph = false;
     file_result3 = "";
     file_result4 = "";
-    interpolator = "linear";
+    interpolator = "log-linear";
     len_boundary = 0.0;
     write_interpolation = 0;
 }
@@ -149,7 +145,7 @@ void Conductivity::setup_kappa()
 
     if (len_boundary > eps) {
         if (mympi->my_rank == 0) {
-            std::cout << "\n Bounday scattering length > 0, will be included.\n" << std::endl;
+            std::cout << "\n Bounday scattering length > 0, will be included.\n\n";
         }
     }
 
@@ -214,7 +210,7 @@ void Conductivity::setup_kappa_4ph()
         }
     }
 
-    ns = dynamical->neval;         // it reassign values to ns and nk_3ph
+    ns = dynamical->neval;
     nk_3ph = dos->kmesh_dos->nk;
     MPI_Bcast(&nk_coarse[0], 3, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     MPI_Bcast(&restart_flag_4ph, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
@@ -223,6 +219,8 @@ void Conductivity::setup_kappa_4ph()
     const auto nks_each_thread = nks_total / mympi->nprocs;
     const auto nrem = nks_total - nks_each_thread * mympi->nprocs;
 
+    // Set KMESH_COARSE for 4-ph calculation.
+    // If nk_coarse is not set, use the same k-mesh as the 3-ph calculation.
     unsigned int nkc_tmp[3] = {};
     if (nk_coarse[0] * nk_coarse[1] * nk_coarse[2] > 0) {
         for (auto i = 0; i < 3; i++) nkc_tmp[i] = nk_coarse[i];
@@ -349,8 +347,8 @@ void Conductivity::prepare_restart(const int mode)
         if (mympi->my_rank == 0) {
             if (!restart_flag_3ph) {
 
-                fs_result3 << "##Phonon Frequency" << std::endl;
-                fs_result3 << "#K-point (irreducible), Branch, Omega (cm^-1)" << std::endl;
+                fs_result3 << "##Phonon Frequency\n";
+                fs_result3 << "#K-point (irreducible), Branch, Omega (cm^-1)\n";
 
                 for (i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
                     const auto ik = dos->kmesh_dos->kpoint_irred_all[i][0].knum;
@@ -358,12 +356,11 @@ void Conductivity::prepare_restart(const int mode)
                         fs_result3 << std::setw(6) << i + 1 << std::setw(6) << is + 1;
                         fs_result3 << std::setw(15)
                                    << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is])
-                                   << std::
-                                   endl;
+                                   << '\n';
                     }
                 }
-                fs_result3 << "##END Phonon Frequency" << std::endl << std::endl;
-                fs_result3 << "##Phonon Relaxation Time" << std::endl;
+                fs_result3 << "##END Phonon Frequency\n\n";
+                fs_result3 << "##Phonon Relaxation Time\n";
             } else {
                 while (fs_result3 >> line_tmp) {
 
@@ -415,7 +412,7 @@ void Conductivity::prepare_restart(const int mode)
 
                 if (it_set == vks_job.end()) {
                     std::cout << " rank = " << mympi->my_rank
-                              << " arr_done = " << arr_done[i] << std::endl;
+                              << " arr_done = " << arr_done[i] << '\n';
                     exit("prepare_restart", "This cannot happen");
                 } else {
                     vks_job.erase(it_set);
@@ -431,21 +428,20 @@ void Conductivity::prepare_restart(const int mode)
         vks_done4.clear();
         if (mympi->my_rank == 0) {
             if (!restart_flag_4ph) {
-                fs_result4 << "##Phonon Frequency" << std::endl;
-                fs_result4 << "#K-point (irreducible), Branch, Omega (cm^-1)" << std::endl;
+                fs_result4 << "##Phonon Frequency\n";
+                fs_result4 << "#K-point (irreducible), Branch, Omega (cm^-1)\n";
 
                 for (i = 0; i < kmesh_4ph->nk_irred; ++i) {
                     const int ik = kmesh_4ph->kpoint_irred_all[i][0].knum;
                     for (auto is = 0; is < dynamical->neval; ++is) {
                         fs_result4 << std::setw(6) << i + 1 << std::setw(6) << is + 1;
                         fs_result4 << std::setw(15)
-                                   << writes->in_kayser(dymat_4ph->get_eigenvalues()[ik][is]) << std::
-                                   endl;
+                                   << writes->in_kayser(dymat_4ph->get_eigenvalues()[ik][is]) << '\n';
                     }
                 }
 
-                fs_result4 << "##END Phonon Frequency" << std::endl << std::endl;
-                fs_result4 << "##Phonon Relaxation Time" << std::endl;
+                fs_result4 << "##END Phonon Frequency\n\n";
+                fs_result4 << "##Phonon Relaxation Time\n";
             } else {
                 while (fs_result4 >> line_tmp) {
 
@@ -496,7 +492,7 @@ void Conductivity::prepare_restart(const int mode)
 
                 if (it_set == vks_job4.end()) {
                     std::cout << " rank = " << mympi->my_rank
-                              << " arr_done = " << arr_done[i] << std::endl;
+                              << " arr_done = " << arr_done[i] << '\n';
                     exit("prepare_restart", "This cannot happen");
                 } else {
                     vks_job4.erase(it_set);
@@ -521,9 +517,9 @@ void Conductivity::setup_result_io(const int mode)
             // 3ph
             if (conductivity->restart_flag_3ph) {
 
-                std::cout << " RESTART = 1 : Restart from the interrupted run." << std::endl;
-                std::cout << "               Phonon lifetimes will be load from file " << file_result3 << std::endl;
-                std::cout << "               and check the consistency of the computational settings." << std::endl;
+                std::cout << " RESTART = 1 : Restart from the interrupted run.\n";
+                std::cout << "               Phonon lifetimes will be load from file " << file_result3 << '\n';
+                std::cout << "               and check the consistency of the computational settings.\n";
 
                 check_consistency_restart(fs_result3,
                                           file_result3,
@@ -559,9 +555,9 @@ void Conductivity::setup_result_io(const int mode)
 
             if (conductivity->restart_flag_4ph) {
 
-                std::cout << " RESTART_4PH = 1 : Restart from the interrupted run." << std::endl;
-                std::cout << "                   Phonon lifetimes will be load from file " << file_result4 << std::endl;
-                std::cout << "                   and check the consistency of the computational settings." << std::endl;
+                std::cout << " RESTART_4PH = 1 : Restart from the interrupted run.\n";
+                std::cout << "                   Phonon lifetimes will be load from file " << file_result4 << '\n';
+                std::cout << "                   and check the consistency of the computational settings.\n";
 
                 check_consistency_restart(fs_result4,
                                           file_result4,
@@ -631,7 +627,7 @@ void Conductivity::calc_anharmonic_imagself3()
 
     if (mympi->my_rank == 0) {
         std::cout << '\n';
-        std::cout << " Start calculating anharmonic phonon self-energies ... \n";
+        std::cout << " Start computing 3-phonon (bubble) self-energies ... \n";
         std::cout << " Total Number of phonon modes to be calculated : " << nks_g << '\n';
         std::cout << " All modes are distributed to MPI threads as the following :\n";
         for (i = 0; i < mympi->nprocs; ++i) {
@@ -701,7 +697,7 @@ void Conductivity::calc_anharmonic_imagself3()
 
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart, vel, damping3, 1);
-            std::cout << " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
+            std::cout << " MODE " << std::setw(5) << i + 1 << " done.\n" << std::flush;
         }
     }
     deallocate(damping3_loc);
@@ -739,16 +735,16 @@ void Conductivity::calc_anharmonic_imagself4()
                1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
-        std::cout << std::endl;
-        std::cout << " Computing 4-phonon scattering amplitude ... " << std::endl;
-        std::cout << " WARNING: This is very very expensive!! Please be patient." << std::endl;
-        std::cout << " Total Number of phonon modes to be calculated : " << nks_g << std::endl;
-        std::cout << " All modes are distributed to MPI thread/s as the following :" << std::endl;
+        std::cout << '\n';
+        std::cout << " Start computing 4-phonon self-energies ... \n";
+        std::cout << " WARNING: This is very very expensive!! Please be patient.\n";
+        std::cout << " Total Number of phonon modes to be calculated : " << nks_g << '\n';
+        std::cout << " All modes are distributed to MPI thread/s as the following :\n";
         for (i = 0; i < mympi->nprocs; ++i) {
             std::cout << " RANK: " << std::setw(5) << i + 1;
-            std::cout << std::setw(8) << "MODES: " << std::setw(5) << nks_thread[i] << std::endl;
+            std::cout << std::setw(8) << "MODES: " << std::setw(5) << nks_thread[i] << '\n';
         }
-        std::cout << std::endl << std::flush;
+        std::cout << '\n' << std::flush;
 
         deallocate(nks_thread);
     }
@@ -812,7 +808,7 @@ void Conductivity::calc_anharmonic_imagself4()
         if (mympi->my_rank == 0) {
             write_result_gamma(i, nshift_restart4, vel_4ph, damping4, -1);
 
-            std::cout << " MODE " << std::setw(5) << i + 1 << " done." << std::endl << std::flush;
+            std::cout << " MODE " << std::setw(5) << i + 1 << " done.\n" << std::flush;
         }
 
     }
@@ -851,19 +847,19 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 
             const auto nk_equiv = dos->kmesh_dos->kpoint_irred_all[iks_g / ns].size();
 
-            fs_result3 << nk_equiv << std::endl;
+            fs_result3 << nk_equiv << '\n';
             for (k = 0; k < nk_equiv; ++k) {
                 const auto ktmp = dos->kmesh_dos->kpoint_irred_all[iks_g / ns][k].knum;
                 fs_result3 << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
                 fs_result3 << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
-                fs_result3 << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
+                fs_result3 << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << '\n';
             }
 
             for (k = 0; k < ntemp; ++k) {
                 fs_result3 << std::setw(15)
-                           << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
+                           << damp_in[iks_g][k] * Hz_to_kayser / time_ry << '\n';
             }
-            fs_result3 << "#END GAMMA_EACH" << std::endl;
+            fs_result3 << "#END GAMMA_EACH\n";
         }
 
     } else if (mode == -1) {
@@ -874,24 +870,24 @@ void Conductivity::write_result_gamma(const unsigned int ik,
 
             if (iks_g >= kmesh_4ph->nk_irred * ns) break;
 
-            fs_result4 << "#GAMMA_EACH" << std::endl;
-            fs_result4 << iks_g / ns + 1 << " " << iks_g % ns + 1 << std::endl;
+            fs_result4 << "#GAMMA_EACH\n";
+            fs_result4 << iks_g / ns + 1 << " " << iks_g % ns + 1 << '\n';
 
             const auto nk_equiv = kmesh_4ph->kpoint_irred_all[iks_g / ns].size();
 
-            fs_result4 << nk_equiv << std::endl;
+            fs_result4 << nk_equiv << '\n';
             for (k = 0; k < nk_equiv; ++k) {
                 const auto ktmp = kmesh_4ph->kpoint_irred_all[iks_g / ns][k].knum;
                 fs_result4 << std::setw(15) << vel_in[ktmp][iks_g % ns][0];
                 fs_result4 << std::setw(15) << vel_in[ktmp][iks_g % ns][1];
-                fs_result4 << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << std::endl;
+                fs_result4 << std::setw(15) << vel_in[ktmp][iks_g % ns][2] << '\n';
             }
 
             for (k = 0; k < ntemp; ++k) {
                 fs_result4 << std::setw(15)
-                           << damp_in[iks_g][k] * Hz_to_kayser / time_ry << std::endl;
+                           << damp_in[iks_g][k] * Hz_to_kayser / time_ry << '\n';
             }
-            fs_result4 << "#END GAMMA_EACH" << std::endl;
+            fs_result4 << "#END GAMMA_EACH\n";
         }
     }
 
@@ -1119,7 +1115,6 @@ void Conductivity::compute_kappa_intraband(const KpointMeshUniform *kmesh_in,
                         for (ik = 0; ik < nk_irred; ++ik) {
                             const auto knum = kmesh_in->kpoint_irred_all[ik][0].knum;
                             const auto omega = eval_in[knum][is];
-                            //std::cout << omega << std::endl;
                             auto vv_tmp = 0.0;
                             const auto nk_equiv = kmesh_in->kpoint_irred_all[ik].size();
 
@@ -1712,8 +1707,8 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
 
         if (!ofs_itp) exit("interpolation", "Could not open file_interpolate");
 
-        ofs_itp << "# Result of interpolated gamma." << std::endl;
-        ofs_itp << "# Frequency (cm^-1), Gamma at each temperature " << std::endl;
+        ofs_itp << "# Result of interpolated gamma.\n";
+        ofs_itp << "# Frequency (cm^-1), Gamma at each temperature \n";
 
         for (auto is = 0; is < ns; ++is) {
             for (auto ik = 0; ik < kmesh_dense_in->nk_irred; ++ik) {
@@ -1726,7 +1721,7 @@ void Conductivity::interpolate_data(const KpointMeshUniform *kmesh_coarse_in,
                             << val_dense_out[ik * ns + is][itemp] * Hz_to_kayser / time_ry;
                 }
 
-                ofs_itp << std::endl;
+                ofs_itp << '\n';
             }
         }
 

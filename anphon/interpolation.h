@@ -198,7 +198,7 @@ private:
 
     static void set_grid(const unsigned int ngrid_in[3], double **x_out)
     {
-        // gamma point will always be index 1
+        // gamma point will always be index 0
         size_t ik;
         double invn[3];
         for (auto i = 0; i < 3; ++i) {

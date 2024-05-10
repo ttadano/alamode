@@ -68,31 +68,29 @@ void Integration::setup_integration()
             std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
                       << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
         } else if (ismear == 2) {
-            std::cout << " ISMEAR = 2: adaptive method will be used." << std::endl;
+            std::cout << " ISMEAR = 2: adaptive method will be used.\n";
         } else {
             exit("setup_relaxation", "Invalid ismear");
         }
         std::cout << '\n';
 
         if (anharmonic_core->quartic_mode) {
-
-            std::cout << " -- QUARTIC > 0: 4ph scattering will calculated with flag ISMEAR_4PH --" << std::endl;
+            std::cout << " -- QUARTIC > 0: 4ph scattering will calculated with flag ISMEAR_4PH --\n";
             if (ismear_4ph == -1) {
-                std::cout << "Tetrahedron method is not implemented, changed to adaptive smearing !" << std::endl;
+                std::cout << "Tetrahedron method is not implemented, changed to adaptive smearing !\n";
                 ismear_4ph = 2;
             } else if (ismear_4ph == 0) {
                 std::cout << " ISMEAR_4PH = 0: Lorentzian broadening with epsilon = "
-                          << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                          << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
             } else if (ismear_4ph == 1) {
                 std::cout << " ISMEAR_4PH = 1: Gaussian broadening with epsilon = "
-                          << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)" << std::endl;
+                          << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
             } else if (ismear_4ph == 2) {
-                std::cout << " ISMEAR_4PH = 2: Adaptive smearing method will be used " << std::endl;
+                std::cout << " ISMEAR_4PH = 2: Adaptive smearing method will be used \n";
             } else {
                 exit("setup_relaxation", "Invalid ismear_4ph");
             }
-
-            std::cout << std::endl;
+            std::cout << '\n';
         }
     }
 
@@ -386,14 +384,14 @@ void Integration::calc_weight_smearing(const unsigned int nk,
 
 double Integration::fij(const double ei,
                         const double ej,
-                        const double e) const
+                        const double e)
 {
     return (e - ej) / (ei - ej);
 }
 
 void Integration::insertion_sort(double *a,
                                  int *ind,
-                                 int n) const
+                                 int n)
 {
     int i;
 
@@ -434,16 +432,14 @@ void AdaptiveSmearingSigma::get_sigma(const unsigned int k1,
                                       const unsigned int s1,
                                       double &sigma_out)
 {
-    double parts;
     double tmp;
+    double parts = 0;
 
-    parts = 0;
-
-    for (auto u = 0; u < 3; ++u) {
+    for (auto & u : dq) {
 
         tmp = 0;
         for (auto a = 0; a < 3; ++a) {
-            tmp += vel[k1][s1][a] * dq[u][a];
+            tmp += vel[k1][s1][a] * u[a];
         }
 
         parts += std::pow(tmp, 2);
@@ -464,13 +460,13 @@ void AdaptiveSmearingSigma::get_sigma(const unsigned int k1,
 
     for (i = 0; i < 2; ++i) parts[i] = 0;
 
-    for (auto u = 0; u < 3; ++u) {
+    for (auto & u : dq) {
 
         for (i = 0; i < 2; ++i) tmp[i] = 0;
 
         for (auto a = 0; a < 3; ++a) {
-            tmp[0] += (vel[k1][s1][a] - vel[k2][s2][a]) * dq[u][a];
-            tmp[1] += (vel[k1][s1][a] + vel[k2][s2][a]) * dq[u][a];
+            tmp[0] += (vel[k1][s1][a] - vel[k2][s2][a]) * u[a];
+            tmp[1] += (vel[k1][s1][a] + vel[k2][s2][a]) * u[a];
         }
 
         for (i = 0; i < 2; ++i) parts[i] += std::pow(tmp[i], 2);
@@ -489,20 +485,19 @@ void AdaptiveSmearingSigma::get_sigma(const unsigned int k2,
                                       const unsigned int s4,
                                       double sigma_out[2])
 {
-    double vel_diff;
     double parts[3];
     double tmp[3];
     int i;
     for (i = 0; i < 3; ++i) parts[i] = 0;
 
-    for (auto u = 0; u < 3; ++u) {
+    for (auto & u : dq) {
 
         for (i = 0; i < 3; ++i) tmp[i] = 0;
 
         for (auto a = 0; a < 3; ++a) {
-            tmp[0] += (vel[k2][s2][a] - vel[k4][s4][a]) * dq[u][a];
-            tmp[1] += (vel[k3][s3][a] - vel[k4][s4][a]) * dq[u][a];
-            tmp[2] += (vel[k2][s2][a] + vel[k4][s4][a]) * dq[u][a];
+            tmp[0] += (vel[k2][s2][a] - vel[k4][s4][a]) * u[a];
+            tmp[1] += (vel[k3][s3][a] - vel[k4][s4][a]) * u[a];
+            tmp[2] += (vel[k2][s2][a] + vel[k4][s4][a]) * u[a];
         }
 
         for (i = 0; i < 3; ++i) parts[i] += std::pow(tmp[i], 2);

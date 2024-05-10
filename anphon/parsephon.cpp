@@ -151,12 +151,7 @@ void Input::parse_general_vars()
             "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART",  // "TREVSYM",
             "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
             "VERBOSITY", "FC2FILE", "FC3FILE", "FC4FILE", "FCSFILE", "RESTART_4PH"
-            //"KMESH_COARSE", "EPSILON_4PH", "ISMEAR_4PH", // TODO: move to &kappa field
-            //"INTERPOLATOR", "LEN_BOUNDARY" // this should be moved to &kappa
-            // field in near
-            // future
     };
-    // added ismear_4ph to include separate choose of 3ph and 4ph
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE"};
     std::vector<std::string> kdname_v, masskd_v;
@@ -303,9 +298,7 @@ void Input::parse_general_vars()
     assign_val(borninfo, "BORNINFO", general_var_dict);
 
     assign_val(ismear, "ISMEAR", general_var_dict);
-    //assign_val(ismear_4ph, "ISMEAR_4PH", general_var_dict);
     assign_val(epsilon, "EPSILON", general_var_dict);
-    //assign_val(epsilon_4ph, "EPSILON_4PH", general_var_dict);
     assign_val(na_sigma, "NA_SIGMA", general_var_dict);
     assign_val(classical, "CLASSICAL", general_var_dict);
     assign_val(band_connection, "BCONNECT", general_var_dict);
@@ -313,8 +306,6 @@ void Input::parse_general_vars()
     assign_val(bornsym, "BORNSYM", general_var_dict);
     assign_val(verbosity, "VERBOSITY", general_var_dict);
 
-    //assign_val(interpolator, "INTERPOLATOR", general_var_dict);
-    //assign_val(len_boundary, "LEN_BOUNDARY", general_var_dict);
 
     if (band_connection > 2) {
         exit("parse_general_vars", "BCONNECT-tag can take 0, 1, or 2.");
@@ -344,45 +335,6 @@ void Input::parse_general_vars()
              "BORNINFO must be specified when NONANALYTIC > 0.");
     }
 
-    //str_tmp = general_var_dict["KMESH_COARSE"];
-    //std::vector<unsigned int> kmesh_v;
-
-    //kmesh_v.clear();
-    //if (!str_tmp.empty()) {
-
-    //    std::istringstream is(str_tmp);
-
-    //    while (true) {
-    //        str_tmp.clear();
-    //        is >> str_tmp;
-    //        if (str_tmp.empty()) {
-    //            break;
-    //        }
-    //        kmesh_v.push_back(my_cast<unsigned int>(str_tmp));
-    //    }
-
-    //    if (kmesh_v.size() != 3) {
-    //        exit("parse_general_vars",
-    //             "The number of entries for KMESH_COARSE has to be 3.");
-    //    }
-    //} else {
-    //    kmesh_v.resize(3);
-    //    for (auto i = 0; i < 3; ++i) kmesh_v[i] = 0;
-    //}
-
-    //boost::to_lower(interpolator);
-    //if (interpolator != "linear" and interpolator != "log-linear") {
-    //    exit("parse_general_vars",
-    //         "INTERPOLATOR should be either linear or log-linear.");
-    //}
-
-    // if (nonanalytic == 3) {
-    //     if (mode == "SCPH") {
-    //         exit("parse_general_vars",
-    //                     "Sorry. NONANALYTIC=3 is not supported for MODE = SCPH.");
-    //     }
-    // }
-
     // Copy the values to appropriate classes.
 
     job_title = prefix;
@@ -392,9 +344,6 @@ void Input::parse_general_vars()
                                           file_result4,
                                           restart,
                                           restart_4ph);
-    //conductivity->set_interpolator(interpolator);
-
-    //conductivity->len_boundary = len_boundary; // m
 
     symmetry->nsym = nsym;
     symmetry->tolerance = tolerance;
@@ -433,15 +382,12 @@ void Input::parse_general_vars()
     dielec->file_born = borninfo;
     dynamical->band_connection = band_connection;
     integration->epsilon = epsilon;
-    //integration->epsilon_4ph = epsilon_4ph;
     fcs_phonon->file_fcs = fcsfile;
     fcs_phonon->file_fc2 = fc2file;
     fcs_phonon->update_fc2 = !fc2file.empty();
     thermodynamics->classical = classical;
     integration->ismear = ismear;
-    //integration->ismear_4ph = ismear_4ph;
     anharmonic_core->use_triplet_symmetry = use_triplet_symmetry;
-    //conductivity->set_kmesh_coarse(&kmesh_v[0]);
     general_var_dict.clear();
 }
 
@@ -1289,7 +1235,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
             "ANIME_FORMAT", "ANIME_FRAMES", "SPS", "PRINTV3", "PRINTPR",
             "FC2_EWALD", "SELF_W", "UCORR", "SHIFT_UCORR",
             "DIELEC", "SELF_ENERGY", "PRINTV4", "ZMODE", "PROJECTION_AXES",
-            //"ISOTOPE", "ISOFACT", "KAPPA_COHERENT", "KAPPA_SPEC"
     };
 
 #ifdef _FE_BUBBLE
@@ -1333,25 +1278,19 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
     auto quartic_mode = 0;
     auto calc_realpart = false;
-    //auto include_isotope = 0;
     auto fstate_omega = false;
     auto fstate_k = false;
     auto bubble_omega = false;
 
-    //auto calculate_kappa_spec = 0;
-
     auto print_fc2_ewald = false;
     auto print_self_consistent_fc2 = false;
     auto calc_FE_bubble = false;
-    //auto calc_coherent = 0;
 
     auto calculate_dielectric_constant = 0;
     auto calc_selfenergy = 0;
     auto print_zmode = false;
 
     auto do_projection = false;
-
-    //auto fph_rta = 0;
 
     // Assign values to variables
 
@@ -1375,16 +1314,11 @@ void Input::parse_analysis_vars(const bool use_default_values)
 
         assign_val(quartic_mode, "QUARTIC", analysis_var_dict);
         assign_val(calc_realpart, "REALPART", analysis_var_dict);
-        //assign_val(include_isotope, "ISOTOPE", analysis_var_dict);
         assign_val(fstate_omega, "FSTATE_W", analysis_var_dict);
         assign_val(fstate_k, "FSTATE_K", analysis_var_dict);
         assign_val(ks_input, "KS_INPUT", analysis_var_dict);
-        //assign_val(calculate_kappa_spec, "KAPPA_SPEC", analysis_var_dict);
-        //assign_val(calc_coherent, "KAPPA_COHERENT", analysis_var_dict);
         assign_val(bubble_omega, "SELF_W", analysis_var_dict);
         assign_val(calc_selfenergy, "SELF_ENERGY", analysis_var_dict);
-
-        //assign_val(fph_rta, "FPH_RTA", analysis_var_dict); // four phonon
 
         assign_val(print_xsf, "PRINTXSF", analysis_var_dict);
         assign_val(print_V3, "PRINTV3", analysis_var_dict);
@@ -1407,24 +1341,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
             do_projection = true;
         }
     }
-
-    //if (include_isotope) {
-    //
-    //    if (!analysis_var_dict["ISOFACT"].empty()) {
-    //        split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
-
-    //        if (isofact_v.size() != system->nkd) {
-    //            exit("parse_analysis_vars",
-    //                 "The number of entries for ISOFACT is inconsistent with NKD");
-    //        } else {
-    //            allocate(isotope_factor, system->nkd);
-    //            for (i = 0; i < system->nkd; ++i) {
-    //                isotope_factor[i] = my_cast<double>(isofact_v[i]);
-    //            }
-    //        }
-    //    }
-
-    //}
 
     if (print_anime) {
         split_str_by_space(analysis_var_dict["ANIME"], anime_kpoint);
@@ -1539,9 +1455,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     phonon_velocity->print_velocity = print_vel;
     dynamical->print_eigenvectors = print_evec;
     dynamical->participation_ratio = participation_ratio;
-    //    writes->print_xsf = print_xsf;
-    //    writes->print_anime = print_anime;
-    //    writes->print_ucorr = print_ucorr;
 
     writes->setWriteOptions(print_msd,
                             print_xsf,
@@ -1554,15 +1467,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
                             shift_ucorr,
                             print_zmode);
 
-    //    if (print_anime) {
-    //        for (i = 0; i < 3; ++i) {
-    //            writes->anime_kpoint[i] = my_cast<double>(anime_kpoint[i]);
-    //            writes->anime_cellsize[i] = cellsize[i];
-    //        }
-    //        writes->anime_format = anime_format;
-    //    }
-    //
-    //    writes->print_msd = print_msd;
 
     dos->compute_dos = compute_dos;
     dos->projected_dos = projected_dos;
@@ -1570,12 +1474,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     dos->scattering_phase_space = scattering_phase_space;
     dos->longitudinal_projected_dos = longitudinal_dos;
 
-
-    //conductivity->fph_rta = fph_rta; // 4ph
-    //if (fph_rta > 0) quartic_mode = 1;
-
-    //conductivity->calc_kappa_spec = calculate_kappa_spec;
-    //conductivity->calc_coherent = calc_coherent;
     anharmonic_core->quartic_mode = quartic_mode;
     dielec->calc_dielectric_constant = calculate_dielectric_constant;
 
@@ -1587,7 +1485,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     mode_analysis->print_V4 = print_V4;
     mode_analysis->spectral_func = bubble_omega;
     mode_analysis->calc_selfenergy = calc_selfenergy;
-    //isotope->include_isotope = include_isotope;
 
     gruneisen->print_gruneisen = print_gruneisen;
     gruneisen->print_newfcs = print_newfcs;
@@ -1595,18 +1492,6 @@ void Input::parse_analysis_vars(const bool use_default_values)
     thermodynamics->calc_FE_bubble = calc_FE_bubble;
 
     ewald->print_fc2_ewald = print_fc2_ewald;
-
-    //if (include_isotope) {
-    //    if (!analysis_var_dict["ISOFACT"].empty()) {
-    //        allocate(isotope->isotope_factor, system->nkd);
-    //        for (i = 0; i < system->nkd; ++i) {
-    //            isotope->isotope_factor[i] = isotope_factor[i];
-    //        }
-    //    }
-    //}
-    //if (isotope_factor) {
-    //    deallocate(isotope_factor);
-    //}
 
     if (phon->mode == "SCPH") {
         scph->print_self_consistent_fc2 = print_self_consistent_fc2;

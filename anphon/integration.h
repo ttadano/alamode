@@ -166,39 +166,22 @@ public:
                               const int smearing_method,
                               double *weight) const;
 
-    // overload for 3ph or 4ph
-    //void adaptive_smearing(int, int, double &);
-
-//    void adaptive_smearing(int, int, int, int,
-//                           double *);
-
-//    void adaptive_smearing(int, int, int, int,
-//                           int, int, double *);
-
 private:
     void set_default_variables();
 
     void deallocate_variables();
 
-    // for adaptive smearing
-//    double ***vel;
-//    double **dq;
-
     void prepare_adaptivesmearing();
 
-    inline double fij(double,
+    static inline double fij(double,
                       double,
-                      double) const;
-
-    // inline double volume(const int *) const;
+                      double) ;
 
     std::vector<tetra_pair> tetra_data;
 
-    // inline double refold(double) const;
-
-    void insertion_sort(double *,
+    static void insertion_sort(double *,
                         int *,
-                        int) const;
+                        int) ;
 };
 
 inline double delta_lorentz(const double omega,
