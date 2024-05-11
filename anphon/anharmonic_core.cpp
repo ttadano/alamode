@@ -26,7 +26,6 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <vector>
-#include <execution>
 
 #ifdef _OPENMP
 
