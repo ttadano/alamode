@@ -527,8 +527,7 @@ void Conductivity::setup_result_io(const int mode)
                                           file_result3,
                                           dos->kmesh_dos->nk_i,
                                           dos->kmesh_dos->nk_irred,
-                                          system->get_primcell().number_of_atoms,
-                                          system->get_primcell().number_of_elems,
+                                          system->get_primcell(),
                                           thermodynamics->classical,
                                           integration->ismear,
                                           integration->epsilon,
@@ -542,9 +541,7 @@ void Conductivity::setup_result_io(const int mode)
                 write_header_result(fs_result3,
                                     file_result3,
                                     dos->kmesh_dos,
-                                    system->get_primcell().number_of_atoms,
-                                    system->get_primcell().number_of_elems,
-                                    system->get_primcell().volume,
+                                    system->get_primcell(),
                                     thermodynamics->classical,
                                     integration->ismear,
                                     integration->epsilon,
@@ -565,8 +562,7 @@ void Conductivity::setup_result_io(const int mode)
                                           file_result4,
                                           kmesh_4ph->nk_i,
                                           kmesh_4ph->nk_irred,
-                                          system->get_primcell().number_of_atoms,
-                                          system->get_primcell().number_of_elems,
+                                          system->get_primcell(),
                                           thermodynamics->classical,
                                           integration->ismear,
                                           integration->epsilon,
@@ -580,9 +576,7 @@ void Conductivity::setup_result_io(const int mode)
                 write_header_result(fs_result4,
                                     file_result4,
                                     kmesh_4ph,
-                                    system->get_primcell().number_of_atoms,
-                                    system->get_primcell().number_of_elems,
-                                    system->get_primcell().volume,
+                                    system->get_primcell(),
                                     thermodynamics->classical,
                                     integration->ismear,
                                     integration->epsilon,
@@ -1415,8 +1409,7 @@ void Conductivity::check_consistency_restart(std::fstream &fs_result,
                                              const std::string &file_result_in,
                                              const unsigned int nk_in[3],
                                              const unsigned int nk_irred_in,
-                                             const unsigned int natmin_in,
-                                             const unsigned int nkd_in,
+                                             const Cell &primcell,
                                              const bool classical_in,
                                              const int ismear_in,
                                              const double epsilon_in,
@@ -1454,7 +1447,7 @@ void Conductivity::check_consistency_restart(std::fstream &fs_result,
 
     fs_result >> natmin_tmp >> nkd_tmp;
 
-    if (!(natmin_tmp == natmin_in && nkd_tmp == nkd_in)) {
+    if (!(natmin_tmp == primcell.number_of_atoms && nkd_tmp == primcell.number_of_elems)) {
         exit("check_consistency_restart",
              "SYSTEM information is not consistent");
     }
@@ -1568,9 +1561,7 @@ void Conductivity::check_consistency_restart(std::fstream &fs_result,
 void Conductivity::write_header_result(std::fstream &fs_result,
                                        const std::string &file_result,
                                        const KpointMeshUniform *kmesh_in,
-                                       const unsigned int natmin_in,
-                                       const unsigned int nkd_in,
-                                       const double volume_prim_in,
+                                       const Cell &primcell,
                                        const bool classical_in,
                                        const int ismear_in,
                                        const double epsilon_in,
@@ -1589,8 +1580,20 @@ void Conductivity::write_header_result(std::fstream &fs_result,
 
     fs_result << "## General information\n";
     fs_result << "#SYSTEM\n";
-    fs_result << natmin_in << " " << nkd_in << '\n';
-    fs_result << volume_prim_in << '\n';
+    fs_result << primcell.number_of_atoms << " " << primcell.number_of_elems << '\n';
+    fs_result << primcell.volume << '\n';
+    for (auto i = 0; i < 3; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            fs_result << std::setw(20) << std::scientific << primcell.lattice_vector(i, j);
+        }
+        fs_result << '\n';
+    }
+    for (auto i = 0; i < primcell.number_of_atoms; ++i) {
+        for (auto j = 0; j < 3; ++j) {
+            fs_result << std::setw(20) << std::scientific << primcell.x_fractional(i, j);
+        }
+        fs_result << '\n';
+    }
     fs_result << "#END SYSTEM\n";
 
     fs_result << "#KPOINT\n";
