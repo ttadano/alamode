@@ -222,7 +222,7 @@ class Result:
                 c6 = v011 - v010 - v001 + v000
                 c7 = v111 - v110 - v011 - v101 + v001 + v010 + v100 - v000
                 
-                v =   c0 + c1*delta[2] + c2 * delta[0] + c3 * delta[1] \
+                v = c0 + c1*delta[2] + c2 * delta[0] + c3 * delta[1] \
                     + c4 * delta[0] * delta[2] + c5 * delta[0] * delta[1] \
                     + c6 * delta[1] * delta[2] + c7 * delta[0] * delta[1] * delta[2]
                 
