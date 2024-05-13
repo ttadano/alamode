@@ -9,8 +9,13 @@ class ParseResult:
         self.omega = None
         self.multiplicity = None
         self.volume = None
-        self.read_result(filename)
         self.vel = None
+        self.lattice_vector = None
+        self.atomic_kinds = None
+        self.x_fractional = None
+        self.classical = None
+
+        self.read_result(filename)
 
     def read_result(self, filename):
         total_irq = 0
@@ -23,6 +28,18 @@ class ParseResult:
                     self.nat = int(line[0])  # number of atoms
                     line = f.readline().rstrip()
                     self.volume = float(line)
+                    try:
+                        self.lattice_vector = np.zeros((3, 3), dtype=float)
+                        for i in range(3):
+                            self.lattice_vector[i, :] = np.array([float(t) for t in f.readline().strip().split()])
+                        self.atomic_kinds = np.zeros(self.nat, dtype=int)
+                        self.x_fractional = np.zeros((self.nat, 3), dtype=float)
+                        for i in range(self.nat):
+                            line = f.readline().strip().split()
+                            self.atomic_kinds[i] = int(line[0])
+                            self.x_fractional[i, :] = np.array([float(t) for t in line[1:]])
+                    except:
+                        pass
 
                 elif '#KPOINT' in line:
                     line = f.readline().rstrip().split()
@@ -36,6 +53,10 @@ class ParseResult:
                         line = f.readline().rstrip().split()
                         self.q_coord[i, :] = np.array(line[1:4], dtype=float)
                         weight[i] = float(line[4])
+
+                elif "#CLASSICAL" in line:
+                    line = f.readline().rstrip().split()
+                    self.classical = int(line[0])
 
                 elif '#TEMPERATURE' in line:
                     line = f.readline().rstrip().split()
