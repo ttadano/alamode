@@ -1,7 +1,9 @@
 import numpy as np
 import spglib
+
 from analyzer.anphonio import ParseResult
 from analyzer.interpolate import Interpolator
+
 
 class Calculator:
     def __init__(self, file_result_3ph,
@@ -14,11 +16,11 @@ class Calculator:
         self.file_isotope = file_isotope
         self.omega = None  # Frequency array
         self.omega4 = None
-        self.gamma3 = None    # linewidth due to 3-phonon scattering
-        self.gamma4 = None    # linewidth due to 4-phonon scattering
+        self.gamma3 = None  # linewidth due to 3-phonon scattering
+        self.gamma4 = None  # linewidth due to 4-phonon scattering
         self.gamma4_interpolated = None
         self.gamma_iso = None  # linediwth due to isotope scattering
-        self.vel = None    # Velocity array
+        self.vel = None  # Velocity array
         self.vel4 = None
         self.qpoint_weight = None  # Weight array
         self.qpoint_weight4 = None
@@ -37,9 +39,9 @@ class Calculator:
 
         self._BOHR = 0.52917721092
         self._k_Boltzmann = 1.3806488e-23
-        self._Hz_to_kayser = 1.0e-2 / (2.0*np.pi*299792458)
+        self._Hz_to_kayser = 1.0e-2 / (2.0 * np.pi * 299792458)
         self._Ryd = 4.35974394e-18 / 2.0
-        self._time_ry = 6.62606896e-34 / (2.0*np.pi*self._Ryd)
+        self._time_ry = 6.62606896e-34 / (2.0 * np.pi * self._Ryd)
         self._factor_gamma_to_tau = 1.0e12 * self._Hz_to_kayser * 0.5
         self._kayser_to_Ryd = self._time_ry / self._Hz_to_kayser
         self._T_to_Ryd = self._k_Boltzmann / self._Ryd
@@ -89,14 +91,14 @@ class Calculator:
 
     def set_variables_iso(self):
         result = np.loadtxt(self.file_isotope)
-        nk = round(np.max(result[:,0]))
-        ns = round(np.max(result[:,1]))
-        omega = result[:,2].reshape((nk, ns))
-        gamma = result[:,3].reshape((nk, ns, 1))
+        nk = round(np.max(result[:, 0]))
+        ns = round(np.max(result[:, 1]))
+        omega = result[:, 2].reshape((nk, ns))
+        gamma = result[:, 3].reshape((nk, ns, 1))
         if self.average_gamma:
-            self.gamma_iso = self.average_gamma_at_degenerate_point(omega, gamma)[:,:,0]
+            self.gamma_iso = self.average_gamma_at_degenerate_point(omega, gamma)[:, :, 0]
         else:
-            self.gamma_iso = gamma[:,:,0]
+            self.gamma_iso = gamma[:, :, 0]
 
     def interpol_gamma4(self):
         interpol = Interpolator(self.qgrid4, self.qpoints4,
@@ -175,9 +177,9 @@ class Calculator:
             raise RuntimeWarning("The data at exactly at {} K not found. "
                                  "Return the values at {} K instead".format(temperature,
                                                                             self.temperatures[index[0]]))
-        out = self.gamma3[:,:,index[0]]
+        out = self.gamma3[:, :, index[0]]
         if four_phonon:
-            out += self.gamma4_interpolated[:,:,index[0]]
+            out += self.gamma4_interpolated[:, :, index[0]]
         if isotope:
             out += self.gamma_iso
 
@@ -192,14 +194,14 @@ class Calculator:
             raise RuntimeWarning("The data at exactly at {} K not found. "
                                  "Return the values at {} K instead".format(temperature,
                                                                             self.temperatures[index[0]]))
-        gamma3 = self.gamma3[:,:,index[0]]
+        gamma3 = self.gamma3[:, :, index[0]]
         if four_phonon:
-            gamma4 = self.gamma4_interpolated[:,:,index[0]]
+            gamma4 = self.gamma4_interpolated[:, :, index[0]]
         else:
             gamma4 = None
 
         if isotope:
-            gamma_iso = self.gamma_iso[:,:]
+            gamma_iso = self.gamma_iso[:, :]
         else:
             gamma_iso = None
 
@@ -244,7 +246,7 @@ class Calculator:
 
         gamma3, gamma4, gamma_iso = self.get_linewidth_mode(index_k, index_mode, four_phonon, isotope)
 
-        print("# Phonon linewidth of mode {:d} at k-point {:d}".format(index_mode+1, index_k+1))
+        print("# Phonon linewidth of mode {:d} at k-point {:d}".format(index_mode + 1, index_k + 1))
         print("# Phonon frequency: {:12.6f}".format(self.omega[index_k, index_mode]))
         print("# temperature, 3-phonon linewidth", end="")
         if four_phonon:
@@ -363,7 +365,7 @@ class Calculator:
 
                 for i in range(3):
                     for j in range(3):
-                        product = cv * tau * vvprod[:,:,i,j]
+                        product = cv * tau * vvprod[:, :, i, j]
                         kappa[it, i, j] = np.sum(product, axis=(0, 1))
 
         else:
@@ -403,15 +405,15 @@ class Calculator:
 
                     for i in range(velnorm.shape[2]):
                         for j in range(3):
-                            mfp[:,:,i,j] = tau * velnorm[:,:,i,j] * 0.001
+                            mfp[:, :, i, j] = tau * velnorm[:, :, i, j] * 0.001
 
                     for i in range(3):
                         for j in range(3):
-                            product = cv * tau * np.sum(self.vel[:, :, :, i] * self.vel[:,:,:,j] * len_boundary[i]
-                                                        / (len_boundary[i] + 2.0 * mfp[:,:,:,i]), axis=(2))
+                            product = cv * tau * np.sum(self.vel[:, :, :, i] * self.vel[:, :, :, j] * len_boundary[i]
+                                                        / (len_boundary[i] + 2.0 * mfp[:, :, :, i]), axis=(2))
                             kappa[it, i, j] = np.sum(product, axis=(0, 1))
 
-        factor_toSI = 1.0e+18 / (self._BOHR**3 * self.volume) / (self.qgrid[0]*self.qgrid[1]*self.qgrid[2])
+        factor_toSI = 1.0e+18 / (self._BOHR ** 3 * self.volume) / (self.qgrid[0] * self.qgrid[1] * self.qgrid[2])
 
         kappa *= factor_toSI
 
@@ -457,7 +459,7 @@ class Calculator:
                     for l in range(3):
                         vvprod[i, j, k, l] = np.dot(self.vel[i, j, :, k], self.vel[i, j, :, l])
 
-        velnorm = np.linalg.norm(self.vel[:,:,0,:], axis=2)
+        velnorm = np.linalg.norm(self.vel[:, :, 0, :], axis=2)
 
         mfp = velnorm * tau * 0.001
 
@@ -475,10 +477,10 @@ class Calculator:
             tau_mod = np.where(mfp <= len_boundary, tau, 0.0)
             for i in range(3):
                 for j in range(3):
-                    product = cv * tau_mod * vvprod[:,:,i,j]
+                    product = cv * tau_mod * vvprod[:, :, i, j]
                     kappa[ilen, i, j] = np.sum(product)
 
-        factor_toSI = 1.0e+18 / (self._BOHR**3 * self.volume) / (self.qgrid[0]*self.qgrid[1]*self.qgrid[2])
+        factor_toSI = 1.0e+18 / (self._BOHR ** 3 * self.volume) / (self.qgrid[0] * self.qgrid[1] * self.qgrid[2])
 
         kappa *= factor_toSI
 
@@ -503,7 +505,6 @@ class Calculator:
                 print("{:15.3f}".format(kappa[ilen, i, i]), end="")
             print()
 
-
     def heat_capacity(self, omegas, temp):
         if self.classical:
             return self._k_Boltzmann * np.ones_like(omegas)
@@ -512,7 +513,7 @@ class Calculator:
                 return np.zeros_like(omegas)
             else:
                 x = omegas * self._kayser_to_Ryd / (self._T_to_Ryd * temp)
-                ret = self._k_Boltzmann * (x / (2.0 * np.sinh(0.5 * x)))**2
+                ret = self._k_Boltzmann * (x / (2.0 * np.sinh(0.5 * x))) ** 2
 
                 for i in range(omegas.shape[0]):
                     for j in range(omegas.shape[1]):

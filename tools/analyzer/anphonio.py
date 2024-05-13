@@ -1,4 +1,6 @@
 import numpy as np
+
+
 class ParseResult:
     def __init__(self, filename):
         self.kgrid = np.zeros(3, dtype=int)

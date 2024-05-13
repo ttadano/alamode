@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Interpolator:
     def __init__(self, qgrid_coarse, q_coords_irred, weight_q=None, rotations=None):
         self.kgrid = qgrid_coarse
@@ -13,20 +14,20 @@ class Interpolator:
 
     def make_fullgrid(self):
         totk = self.kgrid[0] * self.kgrid[1] * self.kgrid[2]
-        xk = np.zeros((totk,3))
+        xk = np.zeros((totk, 3))
         for i in range(self.kgrid[0]):
             for j in range(self.kgrid[1]):
                 for k in range(self.kgrid[2]):
                     ik = k + j * self.kgrid[2] + i * self.kgrid[1] * self.kgrid[2]
-                    xk[ik,0] = i / self.kgrid[0]
-                    xk[ik,1] = j / self.kgrid[1]
-                    xk[ik,2] = k / self.kgrid[2]
+                    xk[ik, 0] = i / self.kgrid[0]
+                    xk[ik, 1] = j / self.kgrid[1]
+                    xk[ik, 2] = k / self.kgrid[2]
         return xk
 
     def get_knum(self, xk):
-        i = (xk[0]*self.kgrid[0] + 2 * self.kgrid[0]) % self.kgrid[0]
-        j = (xk[1]*self.kgrid[1] + 2 * self.kgrid[1]) % self.kgrid[1]
-        k = (xk[2]*self.kgrid[2] + 2 * self.kgrid[2]) % self.kgrid[2]
+        i = (xk[0] * self.kgrid[0] + 2 * self.kgrid[0]) % self.kgrid[0]
+        j = (xk[1] * self.kgrid[1] + 2 * self.kgrid[1]) % self.kgrid[1]
+        k = (xk[2] * self.kgrid[2] + 2 * self.kgrid[2]) % self.kgrid[2]
         return round(k + j * self.kgrid[2] + i * self.kgrid[1] * self.kgrid[2])
 
     def unfold(self, rotations):
@@ -155,7 +156,7 @@ class Interpolator:
                                    delta[0] * delta[2],
                                    delta[0] * delta[1],
                                    delta[1] * delta[2],
-                                   delta[0] * delta[1] * delta[2]]).reshape(8,1,1)
+                                   delta[0] * delta[1] * delta[2]]).reshape(8, 1, 1)
 
         corner_indices = np.array([self.get_knum(corner) for corner in corners])
         corner_values = data_coarse[self.bz2irb[corner_indices]]
