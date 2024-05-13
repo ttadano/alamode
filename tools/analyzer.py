@@ -88,7 +88,6 @@ def main():
                           file_isotope=options.iso)
 
     if calc == "gamma":
-
         if options.temp is not None:
             postproc.print_linewidth(options.temp,
                                      four_phonon=(options.file_4ph is not None),

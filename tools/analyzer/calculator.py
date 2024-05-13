@@ -11,6 +11,16 @@ class Calculator:
                  file_isotope=None,
                  average_gamma=True,
                  tolerance=1.0e-3):
+        """
+        The constructor of the Calculator class.
+
+        Parameters:
+            file_result_3ph (str): File path to the 3-phonon results.
+            file_result_4ph (str): File path to the 4-phonon results.
+            file_isotope (str): File path to the isotope self-energy.
+            average_gamma (bool): If True, averages the gamma values at degenerate phonon modes (default: True).
+            tolerance (float): Tolerance for symmetry detection (default: 1.0e-3).
+        """
         self.file_result_3ph = file_result_3ph
         self.file_result_4ph = file_result_4ph
         self.file_isotope = file_isotope
@@ -57,6 +67,9 @@ class Calculator:
             self.set_variables_iso()
 
     def set_variables_3ph(self):
+        """
+         Sets the variables related to 3-phonon scattering amplitudes.
+         """
         result = ParseResult(self.file_result_3ph)
         self.omega = result.omega
         if self.average_gamma:
@@ -72,6 +85,9 @@ class Calculator:
         self.classical = result.classical
 
     def set_variables_4ph(self):
+        """
+        Sets the variables related to 4-phonon scattering.
+        """
         result = ParseResult(self.file_result_4ph)
         self.omega4 = result.omega
         if self.average_gamma:
@@ -90,6 +106,9 @@ class Calculator:
             self.rotations = spglib.get_symmetry_dataset(cell, symprec=self.tolerance)['rotations']
 
     def set_variables_iso(self):
+        """
+        Sets the variables related to isotope scattering.
+        """
         result = np.loadtxt(self.file_isotope)
         nk = round(np.max(result[:, 0]))
         ns = round(np.max(result[:, 1]))
@@ -101,6 +120,9 @@ class Calculator:
             self.gamma_iso = gamma[:, :, 0]
 
     def interpol_gamma4(self):
+        """
+          Interpolates the 4-phonon scattering gamma values.
+        """
         interpol = Interpolator(self.qgrid4, self.qpoints4,
                                 weight_q=self.qpoint_weight4,
                                 rotations=self.rotations)
@@ -109,6 +131,13 @@ class Calculator:
             self.gamma4_interpolated[i, :, :] = interpol.run2(self.gamma4, xq)
 
     def check_data_load(self, four_phonon, isotope):
+        """
+        Checks if the necessary data is loaded for the given calculation.
+
+        Parameters:
+            four_phonon (bool): If True, checks for 4-phonon scattering data.
+            isotope (bool): If True, checks for isotope scattering data.
+        """
         if self.gamma3 is None:
             self.set_variables_3ph()
 
@@ -127,7 +156,11 @@ class Calculator:
     def average_gamma_at_degenerate_point(self, frequencies, gamma, tol_omega=1e-3):
         """
         Averages the gamma values at degenerate points across the phonon band structure.
-        :param tol_omega: Tolerance for considering frequencies as degenerate.
+
+        Parameters:
+            frequencies (numpy.ndarray): Array of frequencies.
+            gamma (numpy.ndarray): Array of gamma values.
+            tol_omega (float): Tolerance for considering frequencies as degenerate.
         """
         nk, ns = frequencies.shape
         nt = gamma.shape[-1]
@@ -167,7 +200,17 @@ class Calculator:
         return gamma_avg
 
     def get_linewidth(self, temperature, four_phonon=False, isotope=False):
+        """
+        Gets the linewidth for a given temperature.
 
+        Parameters:
+            temperature (float): The temperature to get the linewidth for.
+            four_phonon (bool): If True, includes 4-phonon scattering linewidth.
+            isotope (bool): If True, includes isotope scattering linewidth.
+
+        Returns:
+            numpy.ndarray: The linewidth.
+        """
         self.check_data_load(four_phonon, isotope)
 
         tempdiff = np.abs(self.temperatures - temperature)
@@ -186,7 +229,14 @@ class Calculator:
         return out
 
     def print_linewidth(self, temperature, four_phonon=False, isotope=False):
+        """
+        Prints the linewidth for a given temperature.
 
+        Parameters:
+            temperature (float): The temperature to print the linewidth for.
+            four_phonon (bool): If True, includes 4-phonon scattering.
+            isotope (bool): If True, includes isotope scattering.
+        """
         tempdiff = np.abs(self.temperatures - temperature)
         index = np.argsort(tempdiff)
 
@@ -229,6 +279,18 @@ class Calculator:
                 print("{:12.6f}".format(total))
 
     def get_linewidth_mode(self, index_k, index_mode, four_phonon=False, isotope=False):
+        """
+           Gets the linewidth for a specific mode at a specific k-point.
+
+           Parameters:
+               index_k (int): The index of the k-point to analyze (starts from 0).
+               index_mode (int): The index of the mode to analyze (starts from 0).
+               four_phonon (bool): If True, includes 4-phonon scattering.
+               isotope (bool): If True, includes isotope scattering.
+
+           Returns:
+               tuple: The linewidths for 3-phonon, 4-phonon, and isotope scatterings.
+           """
         gamma3 = self.gamma3[index_k, index_mode, :]
         if four_phonon:
             gamma4 = self.gamma4_interpolated[index_k, index_mode, :]
@@ -243,7 +305,15 @@ class Calculator:
         return gamma3, gamma4, gamma_iso
 
     def print_linewidth_mode(self, index_k, index_mode, four_phonon=False, isotope=False):
+        """
+        Prints the linewidth for a specific mode at a specific k-point.
 
+        Parameters:
+            index_k (int): The index of the k-point to analyze (starts from 0).
+            index_mode (int): The index of the mode to analyze (starts from 0).
+            four_phonon (bool): If True, includes 4-phonon scattering.
+            isotope (bool): If True, includes isotope scattering.
+        """
         gamma3, gamma4, gamma_iso = self.get_linewidth_mode(index_k, index_mode, four_phonon, isotope)
 
         print("# Phonon linewidth of mode {:d} at k-point {:d}".format(index_mode + 1, index_k + 1))
@@ -269,6 +339,17 @@ class Calculator:
             print("{:12.6f}".format(total))
 
     def get_lifetime(self, temperature, four_phonon=False, isotope=False):
+        """
+        Gets the phonon lifetime for a given temperature.
+
+        Parameters:
+            temperature (float): The temperature to get the phonon lifetime for.
+            four_phonon (bool): If True, includes 4-phonon scattering.
+            isotope (bool): If True, includes isotope scattering.
+
+        Returns:
+            numpy.ndarray: phonon lifetime.
+        """
         gamma = self.get_linewidth(temperature, four_phonon, isotope)
 
         with np.errstate(divide='ignore'):
@@ -280,6 +361,14 @@ class Calculator:
         return tau
 
     def print_lifetime(self, temperature, four_phonon=False, isotope=False):
+        """
+        Prints the phonon lifetime for a given temperature.
+
+        Parameters:
+            temperature (float): The temperature to print the phonon lifetime for.
+            four_phonon (bool): If True, includes 4-phonon scattering.
+            isotope (bool): If True, includes isotope scattering.
+        """
         tau_3ph = self.get_lifetime(temperature)
         if four_phonon and isotope:
             tau_total = self.get_lifetime(temperature, four_phonon=True, isotope=True)
@@ -306,6 +395,15 @@ class Calculator:
                 print()
 
     def print_lifetime_mode(self, index_k, index_mode, four_phonon=False, isotope=False):
+        """
+        Prints the phonon lifetime for a specific mode at a specific k-point.
+
+        Parameters:
+            index_k (int): The index of the k-point to analyze (starts from 0).
+            index_mode (int): The index of the mode to analyze (starts from 0).
+            four_phonon (bool): If True, includes 4-phonon scattering.
+            isotope (bool): If True, includes isotope scattering.
+        """
 
         gamma3, gamma4, gamma_iso = self.get_linewidth_mode(index_k, index_mode, four_phonon, isotope)
 
@@ -343,7 +441,18 @@ class Calculator:
                                  isotope=False,
                                  len_boundary=None,
                                  gb_shape='sphere'):
+        """
+        Gets the thermal conductivity.
 
+        Parameters:
+            four_phonon (bool): If True, includes 4-phonon scattering.
+            isotope (bool): If True, includes isotope scattering.
+            len_boundary (float): The length of the boundary in nanometer (nm).
+            gb_shape (str): The shape of the grain boundary (either sphere or cube).
+
+        Returns:
+            numpy.ndarray: Thermal conductivity tensor.
+        """
         nt = len(self.temperatures)
         kappa = np.zeros((nt, 3, 3), dtype=float)
 
@@ -421,7 +530,14 @@ class Calculator:
 
     def print_thermal_conductivity(self, four_phonon=False,
                                    isotope=False, len_boundary=None):
+        """
+        Prints the thermal conductivity.
 
+        Parameters:
+            four_phonon (bool): If True, includes 4-phonon scattering data.
+            isotope (bool): If True, includes isotope scattering data.
+            len_boundary (float): The length of the boundary in nanometer (nm).
+        """
         kappa = self.get_thermal_conductivity(four_phonon, isotope,
                                               len_boundary=len_boundary)
 
@@ -445,6 +561,19 @@ class Calculator:
                              isotope=False,
                              nsamples=200,
                              gridtype='log'):
+        """
+        Gets the cumulative thermal conductivity.
+
+        Parameters:
+            temperature (float): The temperature to get the cumulative thermal conductivity for.
+            four_phonon (bool): If True, includes 4-phonon scattering.
+            isotope (bool): If True, includes isotope scattering.
+            nsamples (int): The number of sampling points for the mean-free-path.
+            gridtype (str): The type of grid ('linear' or 'log') for sampling the mean-free-path.
+
+        Returns:
+            tuple: The cumulative thermal conductivity and the mean-free-path.
+        """
 
         tau = self.get_lifetime(temperature=temperature,
                                 four_phonon=four_phonon,
@@ -488,7 +617,16 @@ class Calculator:
 
     def print_cumulative_kappa(self, temperature, four_phonon=False,
                                isotope=False, nsamples=200, gridtype='log'):
+        """
+        Prints the cumulative thermal conductivity.
 
+        Parameters:
+            temperature (float): The temperature to print the cumulative thermal conductivity for.
+            four_phonon (bool): If True, includes 4-phonon scattering.
+            isotope (bool): If True, includes isotope scattering.
+            nsamples (int): The number of sampling points for the mean-free-path.
+            gridtype (str): The type of grid ('linear' or 'log') for sampling the mean-free-path.
+        """
         kappa, length_vec = self.get_cumulative_kappa(temperature, four_phonon, isotope,
                                                       nsamples=nsamples, gridtype=gridtype)
 
@@ -506,6 +644,16 @@ class Calculator:
             print()
 
     def heat_capacity(self, omegas, temp):
+        """
+        Calculates the volumetric heat capacity.
+
+        Parameters:
+            omegas (numpy.ndarray): The frequencies.
+            temp (float): The temperature.
+
+        Returns:
+            numpy.ndarray: The heat capacity at constant volume.
+        """
         if self.classical:
             return self._k_Boltzmann * np.ones_like(omegas)
         else:
