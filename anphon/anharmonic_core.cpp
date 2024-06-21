@@ -736,6 +736,7 @@ void AnharmonicCore::calc_damping_smearing(const unsigned int ntemp,
                             = delta_lorentz(omega_in - omega_inner[0] + omega_inner[1], epsilon)
                               - delta_lorentz(omega_in + omega_inner[0] - omega_inner[1], epsilon);
                 } else if (integration->ismear == 1) {
+
                     delta_arr[ik][ns * is + js][0]
                             = delta_gauss(omega_in - omega_inner[0] - omega_inner[1], epsilon)
                               - delta_gauss(omega_in + omega_inner[0] + omega_inner[1], epsilon);

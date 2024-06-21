@@ -177,8 +177,7 @@ void Conductivity::prepare_restart()
                 for (auto is = 0; is < dynamical->neval; ++is) {
                     writes->fs_result << std::setw(6) << i + 1 << std::setw(6) << is + 1;
                     writes->fs_result << std::setw(15) << writes->in_kayser(dos->dymat_dos->get_eigenvalues()[ik][is])
-                                      << std::
-                                      endl;
+                                      << '\n';
                 }
             }
 
