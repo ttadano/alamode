@@ -56,26 +56,24 @@ else()
     endif()
 endif()
 
-if (WITH_HDF5_SUPPORT)
-    add_definitions(-D_HDF5)
-    find_package(HDF5 COMPONENTS CXX)
-    if (HDF5_FOUND)
-        include_directories(${HDF5_INCLUDE_DIRS})
-        set(hdf5library ${HDF5_LIBRARIES})
+add_definitions(-D_HDF5)
+find_package(HDF5 COMPONENTS CXX)
+if (HDF5_FOUND)
+    include_directories(${HDF5_INCLUDE_DIRS})
+    set(hdf5library ${HDF5_LIBRARIES})
+else()
+    if (HDF5_ROOT)
+        include_directories("${HDF5_ROOT}/include")
+        set(hdf5library "-L${HDF5_ROOT}/lib -lhdf5_cpp -lhdf5")
     else()
-        if (HDF5_ROOT)
-            include_directories("${HDF5_ROOT}/include")
-            set(hdf5library "-L${HDF5_ROOT}/lib -lhdf5_cpp -lhdf5")
-        else()
-            message(FATAL_ERROR "HDF5 was not found.
-            Please specify the HDF5 install directory
-            via -DHDF5_ROOT option.")
-        endif()
+        message(FATAL_ERROR "HDF5 was not found.
+        Please specify the HDF5 install directory
+        via -DHDF5_ROOT option.")
     endif()
-
-    include_directories("${PROJECT_SOURCE_DIR}/../external")
-
 endif()
+
+include_directories("${PROJECT_SOURCE_DIR}/../external")
+
 
 find_package(LAPACK REQUIRED)
 include_directories(${Lapack_INCLUDE_DIRS})
@@ -122,20 +120,14 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/alm.h
 add_executable(alm ${PROJECT_SOURCE_DIR}/main.cpp
                    ${PROJECT_SOURCE_DIR}/alm_cui.cpp
                    ${SOURCES} ${HEADERS})
-target_link_libraries(alm ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${spglib} ${openmplibrary})
-if (WITH_HDF5_SUPPORT)
-    target_link_libraries(alm ${hdf5library})
-endif()
+target_link_libraries(alm ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${spglib} ${openmplibrary} ${hdf5library})
 
 if (BUILD_LIBRARIES)
     set(serial "${alm_version}")
     set(soserial "1")
     # Shared library
     add_library(almcxx SHARED ${SOURCES})
-    target_link_libraries(almcxx ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${spglib})
-    if (WITH_HDF5_SUPPORT)
-        target_link_libraries(almcxx ${hdf5library})
-    endif()
+    target_link_libraries(almcxx ${Boost_LIBRARIES} ${LAPACK_LIBRARIES} ${spglib} ${hdf5library})
     set_property(TARGET almcxx PROPERTY VERSION ${serial})
     set_property(TARGET almcxx PROPERTY SOVERSION ${soserial})
     install(TARGETS almcxx DESTINATION ${PROJECT_SOURCE_DIR}/lib)
@@ -146,7 +138,6 @@ if (BUILD_LIBRARIES)
     set_property(TARGET almcxx_static PROPERTY SOVERSION ${soserial})
     set_property(TARGET almcxx_static PROPERTY OUTPUT_NAME almcxx)
     install(TARGETS almcxx_static ARCHIVE DESTINATION ${PROJECT_SOURCE_DIR}/lib)
-
     # Header file
     install(FILES ${PROJECT_SOURCE_DIR}/alm.h DESTINATION ${PROJECT_SOURCE_DIR}/include)
 endif()

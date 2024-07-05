@@ -102,6 +102,7 @@ void InputSetter::set_general_vars(ALM *alm,
                                    const int print_hessian,
                                    const int print_fcs_alamode,
                                    const int print_fc3_shengbte,
+                                   const int print_fc4_shengbte,
                                    const int print_fc2_qefc,
                                    const double tolerance,
                                    const double tolerance_constraint,
@@ -125,6 +126,7 @@ void InputSetter::set_general_vars(ALM *alm,
     alm->set_fcs_save_flag("hessian", print_hessian);
     alm->set_fcs_save_flag("alamode", print_fcs_alamode);
     alm->set_fcs_save_flag("shengbte", print_fc3_shengbte);
+    alm->set_fcs_save_flag("shengbte4", print_fc4_shengbte);
     alm->set_fcs_save_flag("qefc", print_fc2_qefc);
     alm->set_fc_zero_threshold(fc_zero_threshold);
     alm->set_tolerance_constraint(tolerance_constraint);

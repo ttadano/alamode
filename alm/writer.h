@@ -217,13 +217,21 @@ private:
                               const std::string fname_out,
                               const int verbosity) const;
 
-    void save_fc3_thirdorderpy_format(const std::unique_ptr<System> &system,
-                                      const std::unique_ptr<Symmetry> &symmetry,
-                                      const std::unique_ptr<Cluster> &cluster,
-                                      const std::unique_ptr<Constraint> &constraint,
-                                      const std::unique_ptr<Fcs> &fcs,
-                                      const std::string fname_out,
-                                      const int verbosity) const;
+    void save_fc3_shengbte_format(const std::unique_ptr<System> &system,
+                                  const std::unique_ptr<Symmetry> &symmetry,
+                                  const std::unique_ptr<Cluster> &cluster,
+                                  const std::unique_ptr<Constraint> &constraint,
+                                  const std::unique_ptr<Fcs> &fcs,
+                                  const std::string fname_out,
+                                  const int verbosity) const;
+
+    void save_fc4_shengbte_format(const std::unique_ptr<System> &system,
+                                  const std::unique_ptr<Symmetry> &symmetry,
+                                  const std::unique_ptr<Cluster> &cluster,
+                                  const std::unique_ptr<Constraint> &constraint,
+                                  const std::unique_ptr<Fcs> &fcs,
+                                  const std::string fname_out,
+                                  const int verbosity) const;
 
     [[nodiscard]] std::string easyvizint(int) const;
 

@@ -254,7 +254,10 @@ void InputParser::parse_general_vars(ALM *alm)
     std::string str_tmp, str_disp_basis, basis_force_constant;
     int printsymmetry, is_periodic[3];
     auto trim_dispsign_for_evenfunc = true;
-    int print_hessian, print_fcs_alamode, print_fc2_qefc, print_fc3_shengbte;
+    int print_hessian, print_fcs_alamode, print_fc2_qefc;
+    int print_fc3_shengbte, print_fc4_shengbte;
+    int noncollinear, trevsym;
+    double **magmom, magmag{0.0};
     double tolerance;
     double tolerance_constraint;
     double fc_zero_threshold;
@@ -269,8 +272,8 @@ void InputParser::parse_general_vars(ALM *alm)
             "PREFIX", "MODE", "NAT", "NKD", "KD", "PERIODIC", "PRINTSYM", "TOLERANCE",
             "DBASIS", "TRIMEVEN", "VERBOSITY",
             "MAGMOM", "NONCOLLINEAR", "TREVSYM", "HESSIAN", "TOL_CONST", "FCSYM_BASIS",
-            "NMAXSAVE", "FC3_SHENGBTE", "FC2_QEFC", "FCS_ALAMODE", "FC_ZERO_THR",
-            "SUPERCELL", "PRIMCELL", "STRUCTURE_FILE", "COMPRESSION",
+            "NMAXSAVE", "FC3_SHENGBTE", "FC4_SHENGBTE", "FC2_QEFC", "FCS_ALAMODE",
+            "FC_ZERO_THR", "SUPERCELL", "PRIMCELL", "STRUCTURE_FILE", "COMPRESSION",
             "FORMAT_PATTERN"
     };
     std::vector<std::string> no_defaults{"PREFIX", "MODE"};
@@ -448,6 +451,11 @@ void InputParser::parse_general_vars(ALM *alm)
     } else {
         assign_val(print_fc3_shengbte, "FC3_SHENGBTE", general_var_dict);
     }
+    if (general_var_dict["FC4_SHENGBTE"].empty()) {
+        print_fc4_shengbte = 0;
+    } else {
+        assign_val(print_fc4_shengbte, "FC4_SHENGBTE", general_var_dict);
+    }
     if (general_var_dict["FC2_QEFC"].empty()) {
         print_fc2_qefc = 0;
     } else {
@@ -493,6 +501,7 @@ void InputParser::parse_general_vars(ALM *alm)
                                    print_hessian,
                                    print_fcs_alamode,
                                    print_fc3_shengbte,
+                                   print_fc4_shengbte,
                                    print_fc2_qefc,
                                    tolerance,
                                    tolerance_constraint,
