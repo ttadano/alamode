@@ -219,6 +219,9 @@ void Symmetry::setup_symmetry_operation(const Cell &pcell,
     // because one can give PRIMCELL value which does not necessary transform the
     // input cell into a true primitive cell.
     if (spin_prim.lspin && spin_prim.noncollinear) {
+//        if (spg_get_major_version() < 2) {
+//            std::cout << "  Please update spglib to version 2 or above to .\n";
+//        }
         if (verbosity > 0) {
             std::cout << "  Switch to the internal symmetry finder from spglib when NONCOLLINEAR = 1.\n";
         }
