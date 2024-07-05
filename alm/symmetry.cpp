@@ -662,20 +662,24 @@ int Symmetry::findsym_spglib(const Cell &cell,
         }
     }
 
-    // First find the number of symmetry operations
-    auto nsym_out = spg_get_multiplicity(aa_tmp, position, types_tmp, nat, tolerance);
-
-    if (nsym_out == 0) exit("findsym_spglib", "Error occurred in spg_get_multiplicity");
+    auto spgdataset = spg_get_dataset(aa_tmp, position, types_tmp, nat, tolerance);
+    auto nsym_out = spgdataset->n_operations;
+    if (nsym_out == 0) exit("findsym_spglib", "Error occurred in spg_get_dataset");
 
     allocate(translation, nsym_out);
     allocate(rotation, nsym_out);
+    for (auto isym = 0; isym < nsym_out; ++isym) {
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                rotation[isym][i][j] = spgdataset->rotations[isym][i][j];
+            }
+            translation[isym][i] = spgdataset->translations[isym][i];
+        }
+    }
 
-    // Store symmetry operations
-    nsym_out = spg_get_symmetry(rotation, translation, nsym_out,
-                                aa_tmp, position, types_tmp, nat, tolerance);
-
-    const auto spgnum = spg_get_international(symbol, aa_tmp, position, types_tmp, nat, tolerance);
-    spgsymbol = std::string(symbol);
+    const auto spgnum = spgdataset->spacegroup_number;
+    spgsymbol = spgdataset->international_symbol;
+    spg_free_dataset(spgdataset);
 
     // Copy symmetry information
     symm_out.clear();
