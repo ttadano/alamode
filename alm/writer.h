@@ -140,13 +140,21 @@ private:
                               const std::string fname_out,
                               const int verbosity) const;
 
-    void save_fc3_thirdorderpy_format(const System *system,
-                                      const Symmetry *symmetry,
-                                      const Cluster *cluster,
-                                      const Constraint *constraint,
-                                      const Fcs *fcs,
-                                      const std::string fname_out,
-                                      const int verbosity) const;
+    void save_fc3_shengbte_format(const System *system,
+                                  const Symmetry *symmetry,
+                                  const Cluster *cluster,
+                                  const Constraint *constraint,
+                                  const Fcs *fcs,
+                                  const std::string fname_out,
+                                  const int verbosity) const;
+
+    void save_fc4_shengbte_format(const System *system,
+                                  const Symmetry *symmetry,
+                                  const Cluster *cluster,
+                                  const Constraint *constraint,
+                                  const Fcs *fcs,
+                                  const std::string fname_out,
+                                  const int verbosity) const;
 
     std::string easyvizint(int) const;
 

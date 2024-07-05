@@ -53,6 +53,7 @@ public:
                           int print_hessian,
                           int print_fcs_alamode,
                           int print_fc3_shengbte,
+                          int print_fc4_shengbte,
                           int print_fc2_qefc,
                           int noncollinear_in,
                           int trevsym_in,
