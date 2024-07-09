@@ -4,6 +4,7 @@ import numpy as np
 import spglib
 from ase.data import atomic_numbers
 from lxml import etree
+import h5py
 
 
 class ForceConstantParser:
@@ -33,16 +34,23 @@ class ForceConstantParser:
         _get_forceconstants_xml(self, maxorder=4): Parses force constants from an XML file.
     """
 
-    def __init__(self, filename, format='xml'):
+    def __init__(self, filename, format=None):
         """
         Initializes the ForceConstantParser with the specified file and format.
 
         Parameters:
             filename (str): The path to the file containing the force constants.
-            format (str): The format of the file, defaults to 'xml'.
+            format (str): The format of the file, defaults to None,
+                          where the formation is inferred from the file suffix.
         """
         self.filename = filename
-        self.format = format
+        if format is None:
+            if filename.endswith('.xml') or filename.endswith('.XML'):
+                self.format = 'xml'
+            elif filename.endswith('.h5') or filename.endswith('.hdf5'):
+                self.format = 'hdf5'
+            else:
+                raise ValueError("The format of the file is not supported.")
         self.supercell = None
         self.primitive_cell = None
 
@@ -67,6 +75,8 @@ class ForceConstantParser:
         """
         if self.format == 'xml':
             return self._get_forceconstants_xml(maxorder=maxorder)
+        elif self.format == 'hdf5':
+            return self._get_forceconstants_h5(maxorder=maxorder)
 
     def _parse_structure(self):
         """
@@ -74,10 +84,12 @@ class ForceConstantParser:
         """
         if self.format == 'xml':
             self._parse_structure_xml()
+        elif self.format == 'hdf5':
+            self._parse_structure_h5()
 
         lavec_super = self.supercell[0]
         lavec_prim = self.primitive_cell[0]
-        self.transformation_matrix = np.dot(np.linalg.inv(lavec_prim), lavec_super)
+        self.transformation_matrix = np.dot(lavec_super, np.linalg.inv(lavec_prim))
         self.transformation_matrix_int = np.round(self.transformation_matrix).astype(int)
 
         if np.abs(self.transformation_matrix - self.transformation_matrix_int).max() > 1.0e-3:
@@ -142,6 +154,33 @@ class ForceConstantParser:
             iatom = int(elems.get('atom')) - 1
             self.map_p2s[itran, iatom] = int(elems.text) - 1
             self.map_s2p[self.map_p2s[itran, iatom]] = iatom
+
+    def _parse_structure_h5(self):
+        """
+        Parses structural information specific to the HDF5 format.
+        """
+        with h5py.File(self.filename, 'r') as f:
+            lavec_tmp = f['/SuperCell/lattice_vector'][:].T
+            xf_tmp = f['/SuperCell/fractional_coordinate'][:]
+            kinds = f['/SuperCell/atomic_kinds'][:].astype(int)
+            elems = f['/SuperCell/elements'][:].astype(str)
+            numbers = np.array([atomic_numbers[elems[i]] for i in kinds])
+            self.supercell = (lavec_tmp, xf_tmp, numbers)
+            natom_super = int(f['/SuperCell/number_of_atoms'][()])
+            lavec_tmp = f['/PrimitiveCell/lattice_vector'][:].T
+            xf_tmp = f['/PrimitiveCell/fractional_coordinate'][:]
+            kinds = f['/PrimitiveCell/atomic_kinds'][:].astype(int)
+            elems = f['/PrimitiveCell/elements'][:].astype(str)
+            numbers = np.array([atomic_numbers[elems[i]] for i in kinds])
+            cell_tmp = (lavec_tmp, xf_tmp, numbers)
+            self.primitive_cell = spglib.standardize_cell(cell_tmp,
+                                                          to_primitive=True,
+                                                          no_idealize=False,
+                                                          symprec=1.0e-3)
+            self.map_p2s = f['/SuperCell/mapping_table'][:].astype(int).T
+            self.map_s2p = np.zeros(natom_super, dtype=int)
+            for i, j in enumerate(self.map_p2s):
+                self.map_s2p[j] = i
 
     def _get_shift_vector_supercell(self):
         """
@@ -231,5 +270,47 @@ class ForceConstantParser:
             atom_indices_mod[:, 0] = atom_indices[:, 0]
             atom_indices_mod[:, 1:] = self.map_s2p[atom_indices[:, 1:]]
             fcs_dic['fc{:d}'.format(order)] = [atom_indices_mod, xyz_indices, shift_merged, fcs_entries]
+
+        return fcs_dic
+
+    def _get_forceconstants_h5(self, maxorder=4):
+        """
+        Parses force constants from an HDF5 file.
+
+        Parameters:
+            maxorder (int): The maximum order of force constants to read.
+
+        Returns:
+            dict: A dictionary containing the parsed force constants.
+        """
+        fcs_dic = {}
+
+        xc_super = np.dot(self.supercell[1], self.supercell[0])
+        lavec_prim = self.primitive_cell[0]
+        inv_lavec = np.linalg.inv(lavec_prim)
+
+        with h5py.File(self.filename, 'r') as f:
+            for order in range(2, maxorder + 1):
+                search_tag = '/ForceConstants/Order{:d}'.format(order)
+
+                if search_tag in f:
+                    atom_indices = f[search_tag + '/atom_indices'][:].astype(int)
+                    atom_indices_super = f[search_tag + '/atom_indices_supercell'][:].astype(int)
+                    xyz_indices = f[search_tag + '/coord_indices'][:].astype(int)
+                    shift_vectors_vel = f[search_tag + '/shift_vectors'][:].astype(float)
+                    fcs_entries = f[search_tag + '/force_constant_values'][:].astype(float)
+
+                    nrows = atom_indices.shape[0]
+                    shift_vectors_vel = shift_vectors_vel.reshape((nrows, order - 1, 3))
+                    shift_vectors = np.zeros((nrows, order - 1, 3), dtype=int)
+
+                    for i in range(1, order):
+                        xshift = xc_super[atom_indices_super[:, 0], :] - xc_super[self.map_p2s[0, atom_indices[:, i]], :]
+                        shift_vector_tmp = shift_vectors_vel[:, i - 1, :] + xshift
+                        shift_vector_tmp = np.dot(shift_vector_tmp, inv_lavec)
+                        shift_vector_int = np.round(shift_vector_tmp).astype(int)
+                        shift_vectors[:, i - 1, :] = shift_vector_int
+
+                    fcs_dic['fc{:d}'.format(order)] = [atom_indices, xyz_indices, shift_vectors, fcs_entries]
 
         return fcs_dic
