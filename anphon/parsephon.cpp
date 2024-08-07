@@ -77,9 +77,6 @@ void Input::parce_input(int narg,
              "&general entry not found in the input file");
     parse_general_vars();
 
-    //if (!locate_tag("&cell"))
-    //    exit("parse_input",
-    //         "&cell entry not found in the input file");
     if (locate_tag("&cell")) parse_cell_parameter();
 
     const auto use_defaults_for_analysis = !locate_tag("&analysis");
@@ -129,23 +126,21 @@ void Input::parse_general_vars()
     // Read input parameters in the &general-field.
 
     int i;
-    int nkd;
     struct stat st{};
     std::string str_tmp;
     const std::vector<std::string> input_list{
             "PREFIX", "MODE", "NSYM", "TOLERANCE", "PRINTSYM",
             "TMIN", "TMAX", "DT", "NBANDS", "NONANALYTIC", "BORNINFO", "NA_SIGMA",
             "ISMEAR", "EPSILON", "EMIN", "EMAX", "DELTA_E", "RESTART",  // "TREVSYM",
-            "NKD", "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
+            "KD", "MASS", "TRISYM", "PREC_EWALD", "CLASSICAL", "BCONNECT", "BORNSYM",
             "VERBOSITY", "FC2FILE", "FC3FILE", "FC4FILE", "FCSFILE"
     };
 
     std::vector<std::string> no_defaults{"PREFIX", "MODE"};
-    std::vector<std::string> kdname_v, masskd_v;
+    std::vector<std::string> kdname_input, masskd_v;
     std::map<std::string, std::string> general_var_dict;
 
-    double *masskd = nullptr;
-    std::vector<std::string> kdname;
+    std::vector<double> masskd_input;
 
     if (from_stdin) {
         std::cin.ignore();
@@ -179,34 +174,15 @@ void Input::parse_general_vars()
              "Either FCSFILE or FC2FILE must be given to start a phonon calculation.");
     }
 
-    if (!general_var_dict["NKD"].empty()) {
-        assign_val(nkd, "NKD", general_var_dict);
-    }
-
     if (!general_var_dict["KD"].empty()) {
-        split_str_by_space(general_var_dict["KD"], kdname_v);
-        if (kdname_v.size() != nkd) {
-            exit("parse_general_vars",
-                 "The number of entries for KD is inconsistent with NKD");
-        } else {
-            kdname.resize(nkd);
-            for (i = 0; i < nkd; ++i) {
-                kdname[i] = kdname_v[i];
-            }
-        }
+        split_str_by_space(general_var_dict["KD"], kdname_input);
     }
 
     if (!general_var_dict["MASS"].empty()) {
         split_str_by_space(general_var_dict["MASS"], masskd_v);
-
-        if (masskd_v.size() != nkd) {
-            exit("parse_general_vars",
-                 "The number of entries for MASS is inconsistent with NKD");
-        } else {
-            allocate(masskd, nkd);
-            for (i = 0; i < nkd; ++i) {
-                masskd[i] = my_cast<double>(masskd_v[i]);
-            }
+        masskd_input.resize(masskd_v.size());
+        for (i = 0; i < masskd_v.size(); ++i) {
+            masskd_input[i] = my_cast<double>(masskd_v[i]);
         }
     }
 
@@ -326,25 +302,13 @@ void Input::parse_general_vars()
     system->Tmin = Tmin;
     system->Tmax = Tmax;
     system->dT = dT;
-    system->nkd = nkd;
 
-    if (!kdname.empty()) {
-        system->symbol_kd.resize(kdname.size());
-        for (i = 0; i < kdname.size(); ++i) {
-            system->symbol_kd[i] = kdname[i];
-        }
+    if (!kdname_input.empty()) {
+        system->symbol_kd = kdname_input;
     }
-
-    if (!general_var_dict["MASS"].empty()) {
-        allocate(system->mass_kd, nkd);
-        for (i = 0; i < nkd; ++i) {
-            system->mass_kd[i] = masskd[i];
-        }
+    if (!masskd_input.empty()) {
+        system->mass_kd = masskd_input;
     }
-    if (masskd) {
-        deallocate(masskd);
-    }
-
 
     dos->delta_e = delta_e;
 
@@ -1075,7 +1039,7 @@ void Input::parse_analysis_vars(const bool use_default_values)
     int shift_ucorr[3] = {0, 0, 0};
     double anime_kpoint_double[3] = {0., 0., 0.};
 
-    double *isotope_factor = nullptr;
+    std::vector<double> isotope_factor;
     std::string ks_input, anime_format;
     std::map<std::string, std::string> analysis_var_dict;
     std::vector<std::string> isofact_v, anime_kpoint, anime_cellsize;
@@ -1179,21 +1143,13 @@ void Input::parse_analysis_vars(const bool use_default_values)
     }
 
     if (include_isotope) {
-
         if (!analysis_var_dict["ISOFACT"].empty()) {
             split_str_by_space(analysis_var_dict["ISOFACT"], isofact_v);
-
-            if (isofact_v.size() != system->nkd) {
-                exit("parse_analysis_vars",
-                     "The number of entries for ISOFACT is inconsistent with NKD");
-            } else {
-                allocate(isotope_factor, system->nkd);
-                for (i = 0; i < system->nkd; ++i) {
-                    isotope_factor[i] = my_cast<double>(isofact_v[i]);
-                }
+            isotope_factor.resize(isofact_v.size());
+            for (i = 0; i < isofact_v.size(); ++i) {
+                isotope_factor[i] = my_cast<double>(isofact_v[i]);
             }
         }
-
     }
 
     if (print_anime) {
@@ -1350,15 +1306,9 @@ void Input::parse_analysis_vars(const bool use_default_values)
     ewald->print_fc2_ewald = print_fc2_ewald;
 
     if (include_isotope) {
-        if (!analysis_var_dict["ISOFACT"].empty()) {
-            allocate(isotope->isotope_factor, system->get_primcell().number_of_elems);
-            for (i = 0; i < system->get_primcell().number_of_elems; ++i) {
-                isotope->isotope_factor[i] = isotope_factor[i];
-            }
+        if (!isotope_factor.empty()) {
+            isotope->isotope_factor = isotope_factor;
         }
-    }
-    if (isotope_factor) {
-        deallocate(isotope_factor);
     }
 
     if (phon->mode == "SCPH") {

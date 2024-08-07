@@ -88,14 +88,9 @@ void Writes::writeInputVars()
     }
     std::cout << '\n';
 
-    //std::cout << "  NKD = " << system->nkd << "; KD = ";
-    //for (i = 0; i < system->nkd; ++i) {
-    //    std::cout << std::setw(4) << system->symbol_kd[i];
-    // }
-    // std::cout << '\n';
     std::cout << "  MASS = ";
-    if (system->mass_kd) {
-        for (i = 0; i < system->nkd; ++i) {
+    if (!system->mass_kd.empty()) {
+        for (i = 0; i < system->mass_kd.size(); ++i) {
             std::cout << std::setw(10) << system->mass_kd[i];
         }
     }
@@ -252,8 +247,8 @@ void Writes::writeInputVars()
         std::cout << "  ISOTOPE = " << isotope->include_isotope << '\n';
         if (isotope->include_isotope) {
             std::cout << "  ISOFACT = ";
-            if (isotope->isotope_factor) {
-                for (i = 0; i < system->nkd; ++i) {
+            if (!isotope->isotope_factor.empty()) {
+                for (i = 0; i < isotope->isotope_factor.size(); ++i) {
                     std::cout << std::scientific
                               << std::setw(13) << isotope->isotope_factor[i];
                 }

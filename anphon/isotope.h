@@ -22,7 +22,7 @@ public:
     ~Isotope();
 
     int include_isotope;
-    double *isotope_factor;
+    std::vector<double> isotope_factor;
     double **gamma_isotope;
 
     void setup_isotope_scattering();
@@ -52,7 +52,7 @@ private:
 
     void set_isotope_factor_from_database(const int,
                                           const std::string *,
-                                          double *);
+                                          std::vector<double> &);
 
     std::vector<double> isotope_factors{
             0.00011460742534756168, 1.2150768298148375e-07, 0.0014588200485501472, 0.0, 0.0013539149846334955,

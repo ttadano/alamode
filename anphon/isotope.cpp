@@ -36,15 +36,12 @@ Isotope::~Isotope()
 void Isotope::set_default_variables()
 {
     include_isotope = false;
-    isotope_factor = nullptr;
     gamma_isotope = nullptr;
 }
 
 void Isotope::deallocate_variables()
 {
-    if (isotope_factor) {
-        deallocate(isotope_factor);
-    }
+    isotope_factor.clear();
     if (gamma_isotope) {
         deallocate(gamma_isotope);
     }
@@ -59,17 +56,21 @@ void Isotope::setup_isotope_scattering()
     if (include_isotope) {
 
         if (mympi->my_rank == 0) {
-            if (!isotope_factor) {
-                allocate(isotope_factor, nkd);
+            if (isotope_factor.empty()) {
+                isotope_factor.resize(nkd);
                 set_isotope_factor_from_database(nkd,
                                                  &system->symbol_kd[0],
                                                  isotope_factor);
+            } else {
+                if (isotope_factor.size() != nkd) {
+                    exit("setup_isotope_scattering",
+                         "The number of elements in ISOFACT is inconsistent with the number of elements in KD.");
+                }
             }
+        } else {
+            isotope_factor.resize(nkd);
         }
 
-        if (mympi->my_rank > 0) {
-            allocate(isotope_factor, nkd);
-        }
         MPI_Bcast(&isotope_factor[0], nkd, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         if (mympi->my_rank == 0) {
@@ -261,7 +262,7 @@ void Isotope::calc_isotope_selfenergy_all() const
 
 void Isotope::set_isotope_factor_from_database(const int nkd,
                                                const std::string *symbol_in,
-                                               double *isofact_out)
+                                               std::vector<double> &isofact_out)
 {
     for (int i = 0; i < nkd; ++i) {
         const auto atom_number = system->get_atomic_number_by_name(symbol_in[i]);

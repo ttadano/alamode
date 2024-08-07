@@ -107,10 +107,9 @@ public:
     Eigen::Matrix3d lavec_p_input;
 
     int load_primitive_from_file;
-    unsigned int nkd;
 
     std::vector<std::string> symbol_kd;
-    double *mass_kd;
+    std::vector<double> mass_kd;
 
     double Tmin, Tmax, dT;
 
@@ -155,7 +154,7 @@ private:
 
     void set_mass_elem_from_database(const unsigned int,
                                      const std::vector<std::string> &,
-                                     double *);
+                                     std::vector<double> &);
 
     static void set_atomtype_group(const Cell &cell_in,
                                    const Spin &spin_in,

@@ -48,17 +48,14 @@ System::~System()
 
 void System::set_default_variables()
 {
-    mass_kd = nullptr;
     load_primitive_from_file = 0;
     symbol_kd.clear();
+    mass_kd.clear();
     tolerance_for_coordinates = 1.0e-5;
 }
 
 void System::deallocate_variables()
 {
-    if (mass_kd) {
-        deallocate(mass_kd);
-    }
 }
 
 void System::setup()
@@ -73,13 +70,18 @@ void System::setup()
     update_primitive_lattice();
 
     if (mympi->my_rank == 0) {
-        if (!mass_kd) {
+        if (mass_kd.empty()) {
             const auto nkd_tmp = symbol_kd.size();
-            allocate(mass_kd, nkd_tmp);
+            mass_kd.resize(nkd_tmp);
             set_mass_elem_from_database(nkd_tmp, symbol_kd, mass_kd);
+        } else {
+            if (mass_kd.size() != symbol_kd.size()) {
+                exit("System::setup",
+                     "The number of elements in mass_kd and symbol_kd.");
+            }
         }
     } else {
-        allocate(mass_kd, symbol_kd.size());
+        mass_kd.resize(symbol_kd.size());
     }
     MPI_Bcast(&mass_kd[0], symbol_kd.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -359,6 +361,11 @@ void System::load_system_info_from_file()
         std::copy(elements_base.begin(),
                   elements_base.end(),
                   std::back_inserter(symbol_kd));
+    } else {
+        if (symbol_kd.size() != elements_base.size()) {
+            exit("load_system_info_from_file",
+                 "The number of elements in the input file (KD) and that from the FCSXML file are different.");
+        }
     }
 
 }
@@ -1210,7 +1217,7 @@ int System::get_atomic_number_by_name(const std::string &kdname_in)
 
 void System::set_mass_elem_from_database(const unsigned int nkd,
                                          const std::vector<std::string> &symbol_in,
-                                         double *mass_kd_out)
+                                         std::vector<double> &mass_kd_out)
 {
     for (int i = 0; i < nkd; ++i) {
         const auto atom_number = get_atomic_number_by_name(symbol_in[i]);
