@@ -151,8 +151,9 @@ void Dynamical::setup_dynamical()
 
     if (mympi->my_rank == 0) {
         std::cout << '\n';
-        std::cout << " Dynamical matrix\n";
-        std::cout << " ================\n";
+        std::cout << " ==================\n";
+        std::cout << "  Dynamical matrix \n";
+        std::cout << " ==================\n";
         if (nonanalytic == 0) {
             std::cout << '\n';
             std::cout << "  NONANALYTIC = 0 : No non-analytic correction. \n\n";
@@ -257,7 +258,6 @@ void Dynamical::setup_dynamical()
 
     if (mympi->my_rank == 0) {
         std::cout << '\n';
-        std::cout << " -----------------------------------------------------------------\n\n";
     }
 }
 

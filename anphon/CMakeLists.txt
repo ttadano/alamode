@@ -102,6 +102,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/gruneisen.cpp
             ${PROJECT_SOURCE_DIR}/integration.cpp
             ${PROJECT_SOURCE_DIR}/isotope.cpp
+            ${PROJECT_SOURCE_DIR}/iterativebte.cpp
             ${PROJECT_SOURCE_DIR}/kpoint.cpp
             ${PROJECT_SOURCE_DIR}/main.cpp
             ${PROJECT_SOURCE_DIR}/mode_analysis.cpp
@@ -130,7 +131,9 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/fcs_phonon.h
             ${PROJECT_SOURCE_DIR}/gruneisen.h
             ${PROJECT_SOURCE_DIR}/integration.h
+            ${PROJECT_SOURCE_DIR}/interpolation.h
             ${PROJECT_SOURCE_DIR}/isotope.h
+            ${PROJECT_SOURCE_DIR}/iterativebte.h
             ${PROJECT_SOURCE_DIR}/kpoint.h
             ${PROJECT_SOURCE_DIR}/memory.h
             ${PROJECT_SOURCE_DIR}/mode_analysis.h
@@ -148,7 +151,8 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/thermodynamics.h
             ${PROJECT_SOURCE_DIR}/timer.h
-            ${PROJECT_SOURCE_DIR}/write_phonons.h)
+            ${PROJECT_SOURCE_DIR}/write_phonons.h
+            ${PROJECT_SOURCE_DIR}/../include/progress_bar.h)
 
 message("MPI_C_LIBRARIES = ${MPI_C_LIBRARIES}")
 message("MPI_CXX_LIBRARIES = ${MPI_CXX_LIBRARIES}")

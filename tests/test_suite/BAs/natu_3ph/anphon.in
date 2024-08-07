@@ -1,0 +1,41 @@
+&general
+prefix = BAs
+mode = RTA
+nkd = 2
+kd = As B
+mass = 74.9216 10.81
+fcsxml = BAs.xml
+nonanalytic = 2
+borninfo = BAs.born
+restart = 0
+tmin = 100
+tmax = 1000
+dt   = 50 
+ismear = 2
+/
+
+&cell
+1.88973  #from A to Bohr
+   0.00000000   2.37148152   2.37148152
+   2.37148152   0.00000000   2.37148152
+   2.37148152   2.37148152   0.00000000
+/
+
+&kpoint
+  2      # KPMODE = 1: line mode
+  20 20 20 
+/
+
+&kappa
+ismear_4ph = 2
+isotope = 1
+iterative = 1
+interpolator = log-linear
+kmesh_coarse = 8 8 8
+iter_threshold = 0.005
+/
+
+&analysis
+quartic = 0 
+/
+

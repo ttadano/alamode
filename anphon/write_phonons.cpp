@@ -10,6 +10,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 
 #include "mpi_common.h"
 #include <iomanip>
+#include <sys/stat.h>
 #include "constants.h"
 #include "conductivity.h"
 #include "dielec.h"
@@ -62,8 +63,6 @@ Writes::Writes(PHON *phon) : Pointers(phon)
     anime_kpoint[1] = 0.0;
     anime_kpoint[2] = 0.0;
     anime_frames = 20;
-
-    file_result = "";
     anime_format = "xyz";
     verbosity = 1;
 };
@@ -126,9 +125,8 @@ void Writes::writeInputVars()
     std::cout << '\n';
 
     if (phon->mode == "RTA") {
-        std::cout << "  RESTART = " << phon->restart_flag << '\n';
-        std::cout << "  TRISYM = " << anharmonic_core->use_triplet_symmetry << '\n';
-        std::cout << '\n';
+        std::cout << "  RESTART = " << conductivity->get_restart_conductivity(3) << '\n';
+        std::cout << "  TRISYM = " << anharmonic_core->use_triplet_symmetry << "\n\n";
     } else if (phon->mode == "SCPH") {
         std::cout << " Scph:" << '\n';
         std::cout << "  KMESH_INTERPOLATE = ";
@@ -210,6 +208,32 @@ void Writes::writeInputVars()
     std::cout << '\n';
     std::cout << '\n';
 
+    if (phon->mode == "RTA") {
+        std::cout << " Kappa:" << std::endl;
+        std::cout << "  ISOTOPE = " << isotope->include_isotope << '\n';
+        if (isotope->include_isotope) {
+            std::cout << "  ISOFACT = ";
+            if (!isotope->isotope_factor.empty()) {
+                for (i = 0; i < isotope->isotope_factor.size(); ++i) {
+                    std::cout << std::scientific
+                              << std::setw(13) << isotope->isotope_factor[i];
+                }
+            }
+            std::cout << '\n';
+        }
+
+        std::cout << "  KAPPA_SPEC = " << conductivity->calc_kappa_spec << std::endl;
+        std::cout << "  KAPPA_COHERENT = " << conductivity->calc_coherent << std::endl;
+        std::cout << "  LEN_BOUNDARY = " << conductivity->len_boundary << std::endl;
+        std::cout << "  ISMEAR_4PH = " << integration->ismear_4ph << std::endl;
+        std::cout << "  EPSILON_4PH = " << integration->epsilon_4ph << std::endl;
+        //std::cout << "  KMESH_COARSE = " ;
+        //for (i = 0; i < 3; ++i) std::cout << conductivity->nk_coarse[i] << " ";
+        //std::cout << std::endl;
+        //std::cout << "  INTERPOLATION = " << conductivity->interpolator << std::endl;
+        std::cout << std::endl;
+    }
+
     std::cout << " Analysis:" << '\n';
     if (phon->mode == "PHONONS") {
         std::cout << "  PRINTVEL = " << phonon_velocity->print_velocity << '\n';
@@ -244,19 +268,8 @@ void Writes::writeInputVars()
         std::cout << '\n';
 
     } else if (phon->mode == "RTA") {
-        std::cout << "  ISOTOPE = " << isotope->include_isotope << '\n';
-        if (isotope->include_isotope) {
-            std::cout << "  ISOFACT = ";
-            if (!isotope->isotope_factor.empty()) {
-                for (i = 0; i < isotope->isotope_factor.size(); ++i) {
-                    std::cout << std::scientific
-                              << std::setw(13) << isotope->isotope_factor[i];
-                }
-            }
-            std::cout << '\n';
-        }
 
-        std::cout << "  KAPPA_SPEC = " << conductivity->calc_kappa_spec << '\n';
+        //    std::cout << "  KAPPA_SPEC = " << conductivity->calc_kappa_spec << std::endl;
 
         //        std::cout << "  KS_INPUT = " << anharmonic_core->ks_input << '\n';
         //        std::cout << "  QUARTIC = " << anharmonic_core->quartic_mode << '\n';
@@ -277,210 +290,6 @@ void Writes::writeInputVars()
     std::cout << " -----------------------------------------------------------------\n\n";
 }
 
-void Writes::setupResultIo()
-{
-    if (mympi->my_rank == 0) {
-
-        if (phon->restart_flag) {
-
-            std::cout << " RESTART = 1 : Restart from the interrupted run.\n";
-            std::cout << "               Phonon lifetimes will be load from file " << file_result << '\n';
-            std::cout << "               and check the consistency of the computational settings.\n";
-
-            // Restart
-            fs_result.open(file_result.c_str(), std::ios::in | std::ios::out);
-            if (!fs_result) {
-                exit("setupResultIo",
-                     "Could not open file_result");
-            }
-
-            // Check the consistency
-
-            std::string line_tmp, str_tmp;
-            int natmin_tmp, nkd_tmp;
-            int nk_tmp[3], nksym_tmp;
-            int ismear, is_classical;
-            double epsilon_tmp, T1, T2, delta_T;
-
-            bool found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#SYSTEM") {
-                    found_tag = true;
-                    break;
-                }
-            }
-            if (!found_tag)
-                exit("setupResultIo",
-                     "Could not find #SYSTEM tag");
-
-            fs_result >> natmin_tmp >> nkd_tmp;
-
-            if (!(natmin_tmp == system->get_primcell().number_of_atoms &&
-                  nkd_tmp == system->get_primcell().number_of_elems)) {
-                exit("setupResultIo",
-                     "SYSTEM information is not consistent");
-            }
-
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#KPOINT") {
-                    found_tag = true;
-                    break;
-                }
-            }
-            if (!found_tag)
-                exit("setupResultIo",
-                     "Could not find #KPOINT tag");
-
-            fs_result >> nk_tmp[0] >> nk_tmp[1] >> nk_tmp[2];
-            fs_result >> nksym_tmp;
-
-            if (!(dos->kmesh_dos->nk_i[0] == nk_tmp[0] &&
-                  dos->kmesh_dos->nk_i[1] == nk_tmp[1] &&
-                  dos->kmesh_dos->nk_i[2] == nk_tmp[2] &&
-                  dos->kmesh_dos->nk_irred == nksym_tmp)) {
-                exit("setupResultIo",
-                     "KPOINT information is not consistent");
-            }
-
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#CLASSICAL") {
-                    found_tag = true;
-                    break;
-                }
-            }
-            if (!found_tag) {
-                std::cout << " Could not find the #CLASSICAL tag in the restart file.\n";
-                std::cout << " CLASSIACAL = 0 is assumed.\n";
-                is_classical = 0;
-            } else {
-                fs_result >> is_classical;
-            }
-            if (static_cast<bool>(is_classical) != thermodynamics->classical) {
-                warn("setupResultIo",
-                     "CLASSICAL val is not consistent");
-            }
-
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#FCSXML") {
-                    found_tag = true;
-                    break;
-                }
-            }
-            if (!found_tag)
-                exit("setupResultIo",
-                     "Could not find #FCSXML tag");
-
-            fs_result >> str_tmp;
-            if (str_tmp != fcs_phonon->file_fcs) {
-                warn("setupResultIo",
-                     "FCSXML is not consistent");
-            }
-
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#SMEARING") {
-                    found_tag = true;
-                    break;
-                }
-            }
-            if (!found_tag)
-                exit("setupResultIo",
-                     "Could not find #SMEARING tag");
-
-            fs_result >> ismear;
-            fs_result >> epsilon_tmp;
-
-            if (ismear != integration->ismear) {
-                warn("setupResultIo",
-                     "Smearing method is not consistent");
-            }
-            if (ismear != -1 && std::abs(epsilon_tmp - integration->epsilon * Ry_to_kayser) >= eps4) {
-                std::cout << "epsilon from file : " << std::setw(15)
-                          << std::setprecision(10) << epsilon_tmp * Ry_to_kayser << '\n';
-                std::cout << "epsilon from input: " << std::setw(15)
-                          << std::setprecision(10) << integration->epsilon * Ry_to_kayser << '\n';
-                warn("setupResultIo",
-                     "Smearing width is not consistent");
-            }
-
-            found_tag = false;
-            while (fs_result >> line_tmp) {
-                if (line_tmp == "#TEMPERATURE") {
-                    found_tag = true;
-                    break;
-                }
-            }
-            if (!found_tag)
-                exit("setupResultIo",
-                     "Could not find #TEMPERATURE tag");
-
-            fs_result >> T1 >> T2 >> delta_T;
-
-            if (!(T1 == system->Tmin &&
-                  T2 == system->Tmax &&
-                  delta_T == system->dT)) {
-                exit("setupResultIo",
-                     "Temperature information is not consistent");
-            }
-
-        } else {
-            // From scratch
-            fs_result.open(file_result.c_str(), std::ios::out);
-            if (!fs_result) {
-                exit("setupResultIo",
-                     "Could not open file_result");
-            }
-
-            fs_result << "## General information\n";
-            fs_result << "#SYSTEM\n";
-            fs_result << system->get_primcell().number_of_atoms << " " << system->get_primcell().number_of_elems
-                      << '\n';
-            fs_result << system->get_primcell().volume << '\n';
-            fs_result << "#END SYSTEM\n";
-
-            fs_result << "#KPOINT\n";
-            fs_result << dos->kmesh_dos->nk_i[0] << " "
-                      << dos->kmesh_dos->nk_i[1] << " "
-                      << dos->kmesh_dos->nk_i[2] << '\n';
-            fs_result << dos->kmesh_dos->nk_irred << '\n';
-
-            for (int i = 0; i < dos->kmesh_dos->nk_irred; ++i) {
-                fs_result << std::setw(6) << i + 1 << ":";
-                for (int j = 0; j < 3; ++j) {
-                    fs_result << std::setw(15)
-                              << std::scientific << dos->kmesh_dos->kpoint_irred_all[i][0].kval[j];
-                }
-                fs_result << std::setw(12)
-                          << std::fixed << dos->kmesh_dos->weight_k[i] << '\n';
-            }
-            fs_result.unsetf(std::ios::fixed);
-
-            fs_result << "#END KPOINT\n";
-
-            fs_result << "#CLASSICAL\n";
-            fs_result << thermodynamics->classical << '\n';
-            fs_result << "#END CLASSICAL\n";
-
-            fs_result << "#FCSXML\n";
-            fs_result << fcs_phonon->file_fcs << '\n';
-            fs_result << "#END  FCSXML\n";
-
-            fs_result << "#SMEARING\n";
-            fs_result << integration->ismear << '\n';
-            fs_result << integration->epsilon * Ry_to_kayser << '\n';
-            fs_result << "#END SMEARING\n";
-
-            fs_result << "#TEMPERATURE\n";
-            fs_result << system->Tmin << " " << system->Tmax << " " << system->dT << '\n';
-            fs_result << "#END TEMPERATURE\n";
-
-            fs_result << "##END General information\n";
-        }
-    }
-}
 
 void Writes::setWriteOptions(const bool print_msd_,
                              const bool print_xsf_,
@@ -2088,11 +1897,51 @@ void Writes::writeKappa() const
     if (mympi->my_rank == 0) {
         int i, j, k;
 
-        auto file_kappa = input->job_title + ".kl";
+        std::string file_kappa;
+        std::string file_kappa_3only;
+
+        if (conductivity->fph_rta > 0) {
+            file_kappa_3only = input->job_title + ".kl3";
+            file_kappa = input->job_title + ".kl4";
+        } else {
+            file_kappa = input->job_title + ".kl";
+        }
+
         auto file_kappa2 = input->job_title + ".kl_spec";
         auto file_kappa_coherent = input->job_title + ".kl_coherent";
 
         std::ofstream ofs_kl;
+
+        if (conductivity->fph_rta > 0) {
+            ofs_kl.open(file_kappa_3only.c_str(), std::ios::out);
+            if (!ofs_kl) exit("write_kappa", "Could not open file_kappa");
+
+            ofs_kl << "# Temperature [K], Thermal Conductivity (xx, xy, xz, yx, yy, yz, zx, zy, zz) [W/mK]"
+                   << std::endl;
+            ofs_kl << "# three phonon part";
+
+            if (isotope->include_isotope) {
+                ofs_kl << "# Isotope effects are included." << std::endl;
+            }
+
+            if (conductivity->len_boundary > eps) {
+                ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2)
+                       << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
+            }
+
+            for (i = 0; i < conductivity->ntemp; ++i) {
+                ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
+                       << conductivity->temperature[i];
+                for (j = 0; j < 3; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        ofs_kl << std::setw(15) << std::fixed
+                               << std::setprecision(4) << conductivity->kappa_3only[i][j][k];
+                    }
+                }
+                ofs_kl << std::endl;
+            }
+            ofs_kl.close();
+        }
 
         ofs_kl.open(file_kappa.c_str(), std::ios::out);
         if (!ofs_kl) exit("writeKappa", "Could not open file_kappa");
@@ -2101,6 +1950,11 @@ void Writes::writeKappa() const
 
         if (isotope->include_isotope) {
             ofs_kl << "# Isotope effects are included.\n";
+        }
+
+        if (conductivity->len_boundary > eps) {
+            ofs_kl << "# Size of boundary " << std::scientific << std::setprecision(2)
+                   << conductivity->len_boundary * 1e9 << " [nm]" << std::endl;
         }
 
         for (i = 0; i < conductivity->ntemp; ++i) {

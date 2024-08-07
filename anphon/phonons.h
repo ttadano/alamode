@@ -63,6 +63,8 @@ public:
 
     class Dos *dos;
 
+    class Iterativebte *iterativebte;
+
     class Gruneisen *gruneisen;
 
     class MyMPI *mympi;
@@ -84,7 +86,7 @@ public:
     void destroy_pointers() const;
 
     std::string mode;
-    bool restart_flag;
+    //bool restart_flag;
 
     void execute_phonons() const;
 

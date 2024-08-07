@@ -127,8 +127,14 @@ void Isotope::calc_isotope_selfenergy(const unsigned int knum,
 
             if (integration->ismear == 0) {
                 ret += omega1 * delta_lorentz(omega - omega1, epsilon) * prod;
-            } else {
+            } else if (integration->ismear == 1) {
                 ret += omega1 * delta_gauss(omega - omega1, epsilon) * prod;
+            } else if (integration->ismear == 2) {
+                double eps;
+                integration->adaptive_sigma->get_sigma(ik, is, eps);
+                //integration->adaptive_smearing(ik, is, eps);
+                //std::cout << eps << std::endl;
+                ret += omega1 * delta_gauss(omega - omega1, eps) * prod;
             }
         }
     }
@@ -204,7 +210,15 @@ void Isotope::calc_isotope_selfenergy_all() const
     if (include_isotope) {
 
         if (mympi->my_rank == 0) {
-            std::cout << " Calculating self-energies from isotope scatterings ... ";
+            if (integration->ismear == -1) {
+                std::cout << " Calculating self-energies from isotope scatterings (tetra)... ";
+            } else if (integration->ismear == 0) {
+                std::cout << " Calculating self-energies from isotope scatterings (lorentz)... ";
+            } else if (integration->ismear == 1) {
+                std::cout << " Calculating self-energies from isotope scatterings (gaussian)... ";
+            } else if (integration->ismear == 2) {
+                std::cout << " Calculating self-energies from isotope scatterings (adaptive)... ";
+            }
         }
 
         if (mympi->my_rank == 0) {

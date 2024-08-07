@@ -65,6 +65,16 @@ public:
                       const std::complex<double> *const *const *evec_in,
                       std::complex<double> *ret) const;
 
+    void selfenergy_c_mod(const unsigned int N,
+                          const double *T,
+                          const double omega,
+                          const unsigned int knum,
+                          const unsigned int snum,
+                          const KpointMeshUniform *kmesh_in,
+                          const double *const *eval_in,
+                          const std::complex<double> *const *const *evec_in,
+                          std::complex<double> *ret) const;
+
     void selfenergy_d(const unsigned int N,
                       const double *T,
                       const double omega,

@@ -899,7 +899,7 @@ void ModeAnalysis::calc_frequency_resolved_final_state_tetrahedron(const unsigne
             }
 
             for (i = 0; i < 3; ++i) {
-//                integration->calc_weight_tetrahedron(nk,
+//                integration->calc_weight_tetrahedron(nk_3ph,
 //                                                     kmap_identity,
 //                                                     weight_tetra[i],
 //                                                     energy_tmp[i],

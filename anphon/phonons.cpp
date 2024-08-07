@@ -29,6 +29,7 @@
 #include "anharmonic_core.h"
 #include "mode_analysis.h"
 #include "conductivity.h"
+#include "iterativebte.h"
 #include "isotope.h"
 #include "selfenergy.h"
 #include "version.h"
@@ -129,6 +130,7 @@ void PHON::create_pointers()
     ewald = new Ewald(this);
     dielec = new Dielec(this);
     qha = new Qha(this);
+    iterativebte = new Iterativebte(this);
     relaxation = new Relaxation(this);
 }
 
@@ -154,6 +156,7 @@ void PHON::destroy_pointers() const
     delete scph;
     delete ewald;
     delete dielec;
+    delete iterativebte;
     delete qha;
     delete relaxation;
 }
@@ -174,7 +177,7 @@ void PHON::setup_base() const
     ewald->init();
 
     if (mympi->my_rank == 0) {
-        std::cout << " Now, move on to phonon calculations.\n";
+        std::cout << " \n -----------------------------------------------------------------\n\n";
         if (thermodynamics->classical) {
             std::cout << "\n CLASSICAL = 1: Classical approximations will be used\n";
             std::cout << "                for all thermodynamic functions.\n\n";
@@ -234,14 +237,6 @@ void PHON::execute_RTA() const
         std::cout << "      lattice thermal conductivity within the RTA            \n";
         std::cout << "      (relaxation time approximation).                       \n";
         std::cout << "      Harmonic and anharmonic force constants will be used.  \n\n";
-
-        if (restart_flag) {
-            std::cout << '\n';
-            std::cout << "      Restart mode is switched on!                                  \n";
-            std::cout << "      The calculation will be restart from the existing result file.\n";
-            std::cout << "      If you want to start a calculation from scratch,              \n";
-            std::cout << "      please set RESTART = 0 in the input file                      \n\n";
-        }
     }
 
     setup_base();
@@ -256,16 +251,26 @@ void PHON::execute_RTA() const
     mode_analysis->setup_mode_analysis();
     selfenergy->setup_selfenergy();
 
+    MPI_Bcast(&iterativebte->do_iterative, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&conductivity->fph_rta, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     if (mode_analysis->ks_analyze_mode) {
+
         mode_analysis->run_mode_analysis();
+
+    } else if (iterativebte->do_iterative) {
+
+        iterativebte->setup_iterative();
+        iterativebte->do_iterativebte();
+
     } else {
-        writes->setupResultIo();
+
         conductivity->setup_kappa();
-        conductivity->prepare_restart();
         conductivity->calc_anharmonic_imagself();
         conductivity->compute_kappa();
         writes->writeKappa();
-        writes->writeSelfenergyIsotope();
+		writes->writeSelfenergyIsotope();
+
     }
 }
 
