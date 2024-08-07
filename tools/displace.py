@@ -152,6 +152,7 @@ def displace(displacement_mode, codeobj, args):
         verbosity = 0
 
     dispobj = AlamodeDisplace(displacement_mode, codeobj,
+                              random_seed=args.random_seed,
                               file_primitive=args.prim,
                               file_evec=args.evec,
                               verbosity=verbosity)
@@ -277,6 +278,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--Qrange', type=str, default=None, metavar='"Qmin Qmax"',
                         help='Range of normal coordinate amplitude Q in units of amu^{1/2}*Angstrom')
+    
+    parser.add_argument('--random_seed', type=int, default=None, metavar='"random seed"',
+                        help='Seed for random number generator')
 
     args = parser.parse_args()
 

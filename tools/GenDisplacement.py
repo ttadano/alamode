@@ -24,6 +24,7 @@ class AlamodeDisplace(object):
     def __init__(self,
                  displacement_mode,
                  codeobj_base,
+                 random_seed=None,
                  file_evec=None,
                  file_primitive=None,
                  verbosity=1):
@@ -52,6 +53,7 @@ class AlamodeDisplace(object):
 
         self._displacement_mode = displacement_mode.lower()
         self._supercell = codeobj_base
+        self._random_seed = random_seed
 
         self._BOHR_TO_ANGSTROM = 0.5291772108
         self._K_BOLTZMANN = 1.3806488e-23
@@ -478,6 +480,9 @@ class AlamodeDisplace(object):
         disp_xyz = np.zeros(3)
         disp_random = np.zeros((ndata, self._supercell.nat, 3))
 
+        if self._random_seed:
+            random.seed(self._random_seed)
+
         if mode == "gauss":
             for idata in range(ndata):
                 for i in range(self._supercell.nat):
@@ -521,6 +526,9 @@ class AlamodeDisplace(object):
 
         # get sigma in units of bohr*amu_ry^(1/2)
         sigma = self._get_gaussian_sigma(temperature, ignore_imag)
+
+        if self._random_seed:
+            random.seed(self._random_seed)
 
         for iq in range(nq):
             for imode in range(self._nmode):
