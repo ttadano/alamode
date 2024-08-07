@@ -152,7 +152,7 @@ void Selfenergy::selfenergy_a(const unsigned int N,
 {
     /*
 
-    Diagram (a)
+    Diagram (a)  
     Matrix elements that appear : V3^2
     Computational cost          : O(N_k * N^2)
 
@@ -303,7 +303,7 @@ void Selfenergy::selfenergy_c(const unsigned int N,
                               const std::complex<double> *const *const *evec_in,
                               std::complex<double> *ret) const
 {
-    /*
+    /* 
 
     Diagram (c)
     Matrix elements that appear : V4^2
@@ -399,6 +399,121 @@ void Selfenergy::selfenergy_c(const unsigned int N,
     deallocate(ret_mpi);
 }
 
+void Selfenergy::selfenergy_c_mod(const unsigned int N,
+                                  const double *T,
+                                  const double omega,
+                                  const unsigned int knum,
+                                  const unsigned int snum,
+                                  const KpointMeshUniform *kmesh_in,
+                                  const double *const *eval_in,
+                                  const std::complex<double> *const *const *evec_in,
+                                  std::complex<double> *ret) const
+{
+    /*
+
+    Diagram (c)
+    Matrix elements that appear : V4^2
+    Computational cost          : O(N_k^2 * N^3) <-- about N_k * N times that of Diagram (a)
+
+    */
+
+    unsigned int i;
+    unsigned int arr_quartic[4];
+
+    std::complex<double> omega_sum[4];
+    std::complex<double> *ret_mpi;
+
+    allocate(ret_mpi, N);
+
+    std::complex<double> omega_shift = omega + im * epsilon;
+
+    for (i = 0; i < N; ++i) ret_mpi[i] = std::complex<double>(0.0, 0.0);
+
+    std::vector<KsListGroup> quartet;
+
+    auto ik_irred = kmesh_in->kmap_to_irreducible[knum];
+
+    kmesh_in->get_unique_quartet_k(ik_irred,
+                                   symmetry->SymmList,
+                                   true,
+                                   true,
+                                   quartet);
+
+    const size_t npair_uniq = quartet.size();
+
+    auto knum_sym = kmesh_in->kpoint_irred_all[ik_irred][0].knum;
+    arr_quartic[0] = ns * kmesh_in->kindex_minus_xk[knum_sym] + snum;
+
+    std::cout << "knum = " << knum << " knum_sym = " << knum_sym << '\n';
+
+    for (unsigned int ik = mympi->my_rank; ik < npair_uniq; ik += mympi->nprocs) {
+
+        unsigned int ik1 = quartet[ik].group[0].ks[0];
+        unsigned int ik2 = quartet[ik].group[0].ks[1];
+        unsigned int ik3 = quartet[ik].group[0].ks[2];
+
+        double multi = static_cast<double>(quartet[ik].group.size());
+
+        for (unsigned int is1 = 0; is1 < ns; ++is1) {
+
+            arr_quartic[1] = ns * ik1 + is1;
+            double omega1 = eval_in[ik1][is1];
+
+            for (unsigned int is2 = 0; is2 < ns; ++is2) {
+
+                arr_quartic[2] = ns * ik2 + is2;
+                double omega2 = eval_in[ik2][is2];
+
+                for (unsigned int is3 = 0; is3 < ns; ++is3) {
+
+                    arr_quartic[3] = ns * ik3 + is3;
+                    double omega3 = eval_in[ik3][is3];
+
+                    double v4_tmp = std::norm(anharmonic_core->V4(arr_quartic)) * multi;
+
+                    omega_sum[0]
+                            = 1.0 / (omega_shift - omega1 - omega2 - omega3)
+                              - 1.0 / (omega_shift + omega1 + omega2 + omega3);
+                    omega_sum[1]
+                            = 1.0 / (omega_shift - omega1 - omega2 + omega3)
+                              - 1.0 / (omega_shift + omega1 + omega2 - omega3);
+                    omega_sum[2]
+                            = 1.0 / (omega_shift + omega1 - omega2 - omega3)
+                              - 1.0 / (omega_shift - omega1 + omega2 + omega3);
+                    omega_sum[3]
+                            = 1.0 / (omega_shift - omega1 + omega2 - omega3)
+                              - 1.0 / (omega_shift + omega1 - omega2 + omega3);
+
+                    for (i = 0; i < N; ++i) {
+                        double T_tmp = T[i];
+
+                        double n1 = thermodynamics->fB(omega1, T_tmp);
+                        double n2 = thermodynamics->fB(omega2, T_tmp);
+                        double n3 = thermodynamics->fB(omega3, T_tmp);
+
+                        double n12 = n1 * n2;
+                        double n23 = n2 * n3;
+                        double n31 = n3 * n1;
+
+                        ret_mpi[i] += v4_tmp
+                                      * ((n12 + n23 + n31 + n1 + n2 + n3 + 1.0) * omega_sum[0]
+                                         + (n31 + n23 + n3 - n12) * omega_sum[1]
+                                         + (n12 + n31 + n1 - n23) * omega_sum[2]
+                                         + (n23 + n12 + n2 - n31) * omega_sum[3]);
+                    }
+                }
+            }
+        }
+    }
+
+    double factor = -1.0 / (std::pow(static_cast<double>(kmesh_in->nk), 2) * std::pow(2.0, 5) * 3.0);
+    for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
+
+    mpi_reduce_complex(N, ret_mpi, ret);
+
+    deallocate(ret_mpi);
+}
+
 void Selfenergy::selfenergy_d(const unsigned int N,
                               const double *T,
                               const double omega,
@@ -443,7 +558,6 @@ void Selfenergy::selfenergy_d(const unsigned int N,
         xk_tmp[0] = xk[knum][0] - xk[ik1][0];
         xk_tmp[1] = xk[knum][1] - xk[ik1][1];
         xk_tmp[2] = xk[knum][2] - xk[ik1][2];
-
         const auto ik2 = kmesh_in->get_knum(xk_tmp);
 
         for (unsigned int ik3 = 0; ik3 < nk; ++ik3) {
@@ -586,7 +700,6 @@ void Selfenergy::selfenergy_e(const unsigned int N,
         xk_tmp[0] = xk[knum][0] - xk[ik1][0];
         xk_tmp[1] = xk[knum][1] - xk[ik1][1];
         xk_tmp[2] = xk[knum][2] - xk[ik1][2];
-
         const auto ik4 = kmesh_in->get_knum(xk_tmp);
 
         for (unsigned int ik3 = 0; ik3 < nk; ++ik3) {
@@ -730,7 +843,7 @@ void Selfenergy::selfenergy_e(const unsigned int N,
 
                                     /*
                                     ret[i] *= v3_tmp1 * v3_tmp2 * v4_tmp * (2.0 * n3 + 1.0) * (2.0 * omega2) / (omega1 * omega1 - omega2 * omega2)
-                                    * ((1.0 + n1 + n4) * (1.0 / (omega - omega1 - omega4 + im * epsilon) - 1.0 / (omega + omega1 + omega4 + im * epsilon))
+                                    * ((1.0 + n1 + n4) * (1.0 / (omega - omega1 - omega4 + im * epsilon) - 1.0 / (omega + omega1 + omega4 + im * epsilon)) 
                                     + (n4 - n1) * (1.0 / (omega - omega1 + omega4 + im * epsilon) - 1.0 / (omega + omega1 - omega4 + im * epsilon)));
                                     */
                                 }
@@ -744,7 +857,7 @@ void Selfenergy::selfenergy_e(const unsigned int N,
     }
 
     double factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 6));
-    //	factor = -1.0 / (std::pow(static_cast<double>(nk), 2) * std::pow(2.0, 7));
+    //	factor = -1.0 / (std::pow(static_cast<double>(nk_3ph), 2) * std::pow(2.0, 7));
     for (i = 0; i < N; ++i) ret_mpi[i] *= factor;
 
     mpi_reduce_complex(N, ret_mpi, ret);
@@ -803,7 +916,6 @@ void Selfenergy::selfenergy_f(const unsigned int N,
         xk_tmp[0] = xk[knum][0] - xk[ik1][0];
         xk_tmp[1] = xk[knum][1] - xk[ik1][1];
         xk_tmp[2] = xk[knum][2] - xk[ik1][2];
-
         const auto ik2 = kmesh_in->get_knum(xk_tmp);
 
         for (unsigned int ik3 = 0; ik3 < nk; ++ik3) {
@@ -994,7 +1106,7 @@ void Selfenergy::selfenergy_g(const unsigned int N,
                               const std::complex<double> *const *const *evec_in,
                               std::complex<double> *ret) const
 {
-    /*
+    /* 
     Diagram (g)
     Matrix elements that appear : V3^2 V4
     Computational cost          : O(N_k^2 * N^4)
@@ -1309,12 +1421,12 @@ void Selfenergy::selfenergy_i(const unsigned int N,
                               const std::complex<double> *const *const *evec_in,
                               std::complex<double> *ret) const
 {
-    /*
+    /* 
 
     Diagram (i)
     Matrix elements that appear : V3^2 V4
     Computational cost          : O(N_k^2 * N^4)
-    Note                        : Double pole when omega2 = omega4.
+    Note                        : Double pole when omega2 = omega4. 
     : No frequency dependence.
 
     */

@@ -8,7 +8,7 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -23,8 +23,8 @@ int main(int argc,
 {
     string str;
 
-    cout << "# Result analyzer ver. 1.0.5" << endl;
-    cout << "# Input file : " << argv[1] << endl;
+    cout << "# Result analyzer ver. 1.0.6\n";
+    cout << "# Input file : " << argv[1] << '\n';
     calc = argv[2];
     average_gamma = atoi(argv[3]);
 
@@ -33,12 +33,12 @@ int main(int argc,
     ifs.open(argv[1], std::ios::in);
 
     if (!ifs) {
-        cout << "ERROR: Cannot open file " << argv[1] << endl;
+        cout << "ERROR: Cannot open file " << argv[1] << '\n';
         exit(1);
     }
 
     if (!locate_tag("#SYSTEM")) {
-        cout << "ERROR: Cannot find #SYSTEM tag" << endl;
+        cout << "ERROR: Cannot find #SYSTEM tag\n";
         exit(1);
     }
 
@@ -48,7 +48,7 @@ int main(int argc,
     ns = nat * 3;
 
     if (!locate_tag("#TEMPERATURE")) {
-        cout << "ERROR: Cannot find #TEMPERATURE tag" << endl;
+        cout << "ERROR: Cannot find #TEMPERATURE tag\n";
         exit(1);
     }
 
@@ -65,7 +65,7 @@ int main(int argc,
     }
 
     if (!locate_tag("#KPOINT")) {
-        cout << "ERROR: Cannot find #KPOINT tag" << endl;
+        cout << "ERROR: Cannot find #KPOINT tag\n";
         exit(1);
     }
 
@@ -73,7 +73,7 @@ int main(int argc,
     ifs >> nk;
 
     if (!locate_tag("##Phonon Frequency")) {
-        cout << "ERROR: Cannot find ##Phonon Frequency tag" << endl;
+        cout << "ERROR: Cannot find ##Phonon Frequency tag\n";
         exit(1);
     }
     getline(ifs, str);
@@ -92,7 +92,7 @@ int main(int argc,
     }
 
     if (!locate_tag("##Phonon Relaxation Time")) {
-        cout << "ERROR: Cannot find ##Phonon Relaxation Time tag" << endl;
+        cout << "ERROR: Cannot find ##Phonon Relaxation Time tag\n";
         exit(1);
     }
 
@@ -141,7 +141,7 @@ int main(int argc,
         if (beg_k < 0 || beg_k >= nk || end_k < 0 || end_k > nk) {
             cout << "ERROR: kpoint index out-of-range ["
                  << 1 << ":" << nk << "] : "
-                 << setw(5) << beg_k + 1 << setw(5) << end_k << endl;
+                 << setw(5) << beg_k + 1 << setw(5) << end_k << '\n';
             exit(1);
         }
 
@@ -153,7 +153,7 @@ int main(int argc,
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
                  << 1 << ":" << ns << "] : "
-                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << '\n';
             exit(1);
         }
 
@@ -162,7 +162,7 @@ int main(int argc,
 
         target_temp = atof(argv[8]);
         if (fmod(target_temp - tmin, dt) > eps12) {
-            cout << "ERROR: No information is found at the given temperature." << endl;
+            cout << "ERROR: No information is found at the given temperature." << '\n';
             exit(1);
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
@@ -185,13 +185,13 @@ int main(int argc,
         if (target_k < 0 || target_k >= nk) {
             cout << "ERROR: kpoint index out-of-range ["
                  << 1 << ":" << nk << "] : "
-                 << setw(5) << target_k + 1 << endl;
+                 << setw(5) << target_k + 1 << '\n';
             exit(1);
         }
         if (target_s < 0 || target_s >= ns) {
             cout << "ERROR: mode index out-of-range ["
                  << 1 << ":" << ns << "] : "
-                 << setw(5) << target_s + 1 << endl;
+                 << setw(5) << target_s + 1 << '\n';
             exit(1);
         }
 
@@ -213,7 +213,7 @@ int main(int argc,
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
                  << 1 << ":" << ns << "] : "
-                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << '\n';
             exit(1);
         }
 
@@ -240,7 +240,7 @@ int main(int argc,
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
                  << 1 << ":" << ns << "] : "
-                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << '\n';
             exit(1);
         }
         isotope = atoi(argv[6]);
@@ -253,7 +253,7 @@ int main(int argc,
 
         target_temp = atof(argv[10]);
         if (fmod(target_temp - tmin, dt) > eps12) {
-            cout << "ERROR: No information is found at the given temperature." << endl;
+            cout << "ERROR: No information is found at the given temperature." << '\n';
             exit(1);
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
@@ -281,7 +281,7 @@ int main(int argc,
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
                  << 1 << ":" << ns << "] : "
-                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << '\n';
             exit(1);
         }
 
@@ -295,7 +295,7 @@ int main(int argc,
 
         target_temp = atof(argv[10]);
         if (fmod(target_temp - tmin, dt) > eps12) {
-            cout << "ERROR: No information is found at the given temperature." << endl;
+            cout << "ERROR: No information is found at the given temperature.\n";
             exit(1);
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
@@ -327,7 +327,7 @@ int main(int argc,
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
                  << 1 << ":" << ns << "] : "
-                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << '\n';
             exit(1);
         }
 
@@ -341,7 +341,7 @@ int main(int argc,
 
         target_temp = atof(argv[10]);
         if (fmod(target_temp - tmin, dt) > eps12) {
-            cout << "ERROR: No information is found at the given temperature." << endl;
+            cout << "ERROR: No information is found at the given temperature.\n";
             exit(1);
         }
         itemp = static_cast<int>((target_temp - tmin) / dt);
@@ -367,7 +367,7 @@ int main(int argc,
         if (beg_s < 0 || beg_s >= ns || end_s < 0 || end_s > ns) {
             cout << "ERROR: mode index out-of-range ["
                  << 1 << ":" << ns << "] : "
-                 << setw(5) << beg_s + 1 << setw(5) << end_s << endl;
+                 << setw(5) << beg_s + 1 << setw(5) << end_s << '\n';
             exit(1);
         }
         isotope = atoi(argv[6]);
@@ -393,12 +393,12 @@ void calc_tau(int itemp)
     double kappa[3][3];
     double tau_tmp, c_tmp;
 
-    cout << "# Phonon lifetime at temperature " << temp[itemp] << " K." << endl;
-    cout << "# kpoint range " << beg_k + 1 << " " << end_k << endl;
-    cout << "# mode   range " << beg_s + 1 << " " << end_s << endl;
-    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
+    cout << "# Phonon lifetime at temperature " << temp[itemp] << " K.\n";
+    cout << "# kpoint range " << beg_k + 1 << " " << end_k << '\n';
+    cout << "# mode   range " << beg_s + 1 << " " << end_s << '\n';
+    if (isotope) cout << "# With phonon-isotope scatterings.\n";
     cout << "#  ik,  is, Frequency [cm^{-1}], Lifetime [ps], |Velocity| [m/s], MFP [nm], ";
-    cout << "Multiplicity, Thermal conductivity par mode (xx, xy, ...) [W/mK]" << endl;
+    cout << "Multiplicity, Thermal conductivity par mode (xx, xy, ...) [W/mK]\n";
 
     for (ik = beg_k; ik < end_k; ++ik) {
         for (is = beg_s; is < end_s; ++is) {
@@ -440,7 +440,7 @@ void calc_tau(int itemp)
                     cout << setw(15) << kappa[i][j] * factor / static_cast<double>(n_weight[ik]);
                 }
             }
-            cout << endl;
+            cout << '\n';
         }
     }
 }
@@ -454,17 +454,17 @@ void calc_tau_temp(int target_k,
                     + vel[target_k][target_s][0][1] * vel[target_k][target_s][0][1]
                     + vel[target_k][target_s][0][2] * vel[target_k][target_s][0][2]);
 
-    cout << "# Temperature dependence of the damping function will be printed" << endl;
-    cout << "# for phonon specified by kpoint " << target_k + 1 << " and mode " << target_s + 1 << endl;
-    cout << "# Frequency = " << omega[target_k][target_s] << " [cm^-1]" << endl;
-    cout << "# Velocity  = " << vel_norm << " [m/s]" << endl;
-    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
-    cout << "# Temperature [k], Lifetime [ps], MFP [nm]" << endl;
+    cout << "# Temperature dependence of the damping function will be printed\n";
+    cout << "# for phonon specified by kpoint " << target_k + 1 << " and mode " << target_s + 1 << '\n';
+    cout << "# Frequency = " << omega[target_k][target_s] << " [cm^-1]\n";
+    cout << "# Velocity  = " << vel_norm << " [m/s]\n";
+    if (isotope) cout << "# With phonon-isotope scatterings.\n";
+    cout << "# Temperature [k], Lifetime [ps], MFP [nm]\n";
 
     for (i = 0; i < nt; ++i) {
         cout << setw(9) << temp[i];
         cout << setw(15) << tau[i][target_k][target_s];
-        cout << setw(15) << tau[i][target_k][target_s] * vel_norm * 0.001 << endl;
+        cout << setw(15) << tau[i][target_k][target_s] * vel_norm * 0.001 << '\n';
     }
 }
 
@@ -478,10 +478,10 @@ void calc_kappa()
 
     double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
-    cout << "# Temperature dependence of thermal conductivity will be printed." << endl;
-    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
-    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
-    cout << "# Temperature [K], kappa [W/mK] (xx, xy, xz, yx, yy, yz, zx, zy, zz)" << endl;
+    cout << "# Temperature dependence of thermal conductivity will be printed.\n";
+    cout << "# mode range " << beg_s + 1 << " " << end_s << '\n';
+    if (isotope) cout << "# With phonon-isotope scatterings.\n";
+    cout << "# Temperature [K], kappa [W/mK] (xx, xy, xz, yx, yy, yz, zx, zy, zz)\n";
 
     for (i = 0; i < nt; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -523,7 +523,7 @@ void calc_kappa()
                 cout << setw(15) << kappa[it][i][j] * factor;
             }
         }
-        cout << endl;
+        cout << '\n';
 
     }
 
@@ -546,12 +546,12 @@ void calc_kappa_cumulative(double max_length,
     double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
 
-    cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K." << endl;
-    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
-    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
-    cout << "# Each phonon contribute to the total thermal conductivity if" << endl;
-    cout << "# (v_x)^2+(v_y)^2+(v_z)^2 < L^2 is satisfied." << endl;
-    cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
+    cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K.\n";
+    cout << "# mode range " << beg_s + 1 << " " << end_s << '\n';
+    if (isotope) cout << "# With phonon-isotope scatterings." << '\n';
+    cout << "# Each phonon contribute to the total thermal conductivity if\n";
+    cout << "# (v_x)^2+(v_y)^2+(v_z)^2 < L^2 is satisfied.\n";
+    cout << "# L [nm], kappa [W/mK] (xx, xy, ...)\n";
 
     std::vector<double> length_vec;
     int nlength;
@@ -663,7 +663,7 @@ void calc_kappa_cumulative(double max_length,
                 cout << setw(15) << kappa[i][j] * factor;
             }
         }
-        cout << endl;
+        cout << '\n';
     }
 }
 
@@ -685,13 +685,13 @@ void calc_kappa_cumulative2(double max_length,
     double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
 
-    cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K." << endl;
-    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
-    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
-    cout << "# Each phonon contribute to the total thermal conductivity if" << endl;
-    cout << "# |v_{x,y,z}| < L is satisfied." << endl;
-    cout << "# Boundary direction flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
-    cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
+    cout << "# Cumulative thermal conductivity at temperature " << temp[itemp] << " K.\n";
+    cout << "# mode range " << beg_s + 1 << " " << end_s << '\n';
+    if (isotope) cout << "# With phonon-isotope scatterings.\n";
+    cout << "# Each phonon contribute to the total thermal conductivity if\n";
+    cout << "# |v_{x,y,z}| < L is satisfied.\n";
+    cout << "# Boundary direction flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << '\n';
+    cout << "# L [nm], kappa [W/mK] (xx, xy, ...)\n";
 
 
     std::vector<double> length_vec;
@@ -813,7 +813,7 @@ void calc_kappa_cumulative2(double max_length,
                 cout << setw(15) << kappa[i][j] * factor;
             }
         }
-        cout << endl;
+        cout << '\n';
     }
 }
 
@@ -828,11 +828,11 @@ void calc_kappa_boundary(const double len_boundary)
 
     double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
-    cout << "# Temperature dependence of thermal conductivity with boundary effects." << endl;
-    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
-    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
-    cout << "# Size of boundary " << len_boundary << " [nm]" << endl;
-    cout << "# Temperature [K], kappa [W/mK] (xx, xy, xz, yx, yy, yz, zx, zy, zz)" << endl;
+    cout << "# Temperature dependence of thermal conductivity with boundary effects.\n";
+    cout << "# mode range " << beg_s + 1 << " " << end_s << '\n';
+    if (isotope) cout << "# With phonon-isotope scatterings.\n";
+    cout << "# Size of boundary " << len_boundary << " [nm]\n";
+    cout << "# Temperature [K], kappa [W/mK] (xx, xy, xz, yx, yy, yz, zx, zy, zz)\n";
 
     for (i = 0; i < nt; ++i) {
         for (j = 0; j < 3; ++j) {
@@ -880,7 +880,7 @@ void calc_kappa_boundary(const double len_boundary)
                 cout << setw(15) << kappa[it][i][j] * factor;
             }
         }
-        cout << endl;
+        cout << '\n';
 
     }
 
@@ -903,12 +903,12 @@ void calc_kappa_boundary2(double max_length,
     double factor = 1.0e+18 / (pow(Bohr_in_Angstrom, 3) * static_cast<double>(nkx * nky * nkz) * volume);
 
 
-    cout << "# Size dependent thermal conductivity at temperature " << temp[itemp] << " K." << endl;
-    cout << "# Relaxation time will be modified following Matthiesen's rule " << endl;
-    cout << "# mode range " << beg_s + 1 << " " << end_s << endl;
-    if (isotope) cout << "# With phonon-isotope scatterings." << endl;
-    cout << "# Size change flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << endl;
-    cout << "# L [nm], kappa [W/mK] (xx, xy, ...)" << endl;
+    cout << "# Size dependent thermal conductivity at temperature " << temp[itemp] << " K.\n";
+    cout << "# Relaxation time will be modified following Matthiesen's rule \n";
+    cout << "# mode range " << beg_s + 1 << " " << end_s << '\n';
+    if (isotope) cout << "# With phonon-isotope scatterings.\n";
+    cout << "# Size change flag  :" << flag[0] << " " << flag[1] << " " << flag[2] << '\n';
+    cout << "# L [nm], kappa [W/mK] (xx, xy, ...)\n";
 
 
     for (il = 0; il < nlength; ++il) {
@@ -965,7 +965,7 @@ void calc_kappa_boundary2(double max_length,
                 cout << setw(15) << kappa[i][j] * factor;
             }
         }
-        cout << endl;
+        cout << '\n';
     }
 }
 
@@ -1019,7 +1019,7 @@ void update_tau_isotope(const std::string file,
     ifs.open(file.c_str(), ios::in);
 
     if (!ifs) {
-        cout << "ERROR: Cannot open file " << file << endl;
+        cout << "ERROR: Cannot open file " << file << '\n';
         exit(1);
     }
 
@@ -1033,11 +1033,11 @@ void update_tau_isotope(const std::string file,
         for (is = 0; is < ns; ++is) {
             ifs >> jk >> js >> omega_tmp >> tau_tmp;
             if (jk < 1 || jk > nk) {
-                cout << "ERROR: In file " << file << ", k point index is out-of-range. " << endl;
+                cout << "ERROR: In file " << file << ", k point index is out-of-range. \n";
                 exit(1);
             }
             if (js < 1 || js > ns) {
-                cout << "ERROR: In file " << file << ", mode index is out-of-range. " << endl;
+                cout << "ERROR: In file " << file << ", mode index is out-of-range. \n";
                 exit(1);
             }
 

@@ -30,6 +30,7 @@ public:
             mode_analysis(ptr->mode_analysis),
             selfenergy(ptr->selfenergy),
             conductivity(ptr->conductivity),
+            iterativebte(ptr->iterativebte),
             writes(ptr->writes),
             dos(ptr->dos),
             gruneisen(ptr->gruneisen),
@@ -59,6 +60,7 @@ protected:
     ModeAnalysis *&mode_analysis;
     Selfenergy *&selfenergy;
     Conductivity *&conductivity;
+    Iterativebte *&iterativebte;
     Writes *&writes;
     Dos *&dos;
     Gruneisen *&gruneisen;

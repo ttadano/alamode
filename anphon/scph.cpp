@@ -2552,7 +2552,7 @@ void Scph::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out,
 
     if (mympi->my_rank == 0) {
         if (self_offdiag) {
-            std::cout << " IALGO = 1 : Use different algorithm efficient when nbands >> nk\n";
+            std::cout << " IALGO = 1 : Use different algorithm efficient when nbands >> nk_3ph\n";
             std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... \n";
         } else {
             exit("compute_V4_elements_mpi_over_kpoint",
@@ -4628,7 +4628,7 @@ void Scph::compute_free_energy_bubble_SCPH(const unsigned int kmesh[3],
                   << std::fixed << std::setprecision(4) << nsize_dble << " GByte.\n";
         std::cout << "  To avoid possible faults associated with insufficient memory,\n"
                      "  please reduce the number of MPI processes per node and/or\n"
-                     "  the number of temperagure grids.\n\n";
+                     "  the number of temperature grids.\n\n";
     }
 
     allocate(thermodynamics->FE_bubble, NT);

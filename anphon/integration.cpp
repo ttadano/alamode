@@ -14,6 +14,11 @@
 #include "mathfunctions.h"
 #include "memory.h"
 #include "system.h"
+#include "phonon_dos.h"
+#include "phonon_velocity.h"
+#include "dynamical.h"
+#include "anharmonic_core.h"
+#include "fcs_phonon.h"
 #include <iomanip>
 #include <algorithm>
 #include <cmath>
@@ -32,41 +37,95 @@ Integration::~Integration()
 
 void Integration::set_default_variables()
 {
-    ismear = -1;
+    ismear = -1; // for 3ph scattering
+    ismear_4ph = 1; // for 4ph scattering
     epsilon = 10.0;
+    epsilon_4ph = 10.0;
+    adaptive_sigma = nullptr;
+    adaptive_sigma4 = nullptr;
+    adaptive_factor = 1.0;
 }
 
 void Integration::deallocate_variables()
 {
+    delete adaptive_sigma;
+    delete adaptive_sigma4;
 }
 
 void Integration::setup_integration()
 {
     MPI_Bcast(&ismear, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&ismear_4ph, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (mympi->my_rank == 0) {
         std::cout << '\n';
+
+        std::cout << " ================\n";
+        std::cout << "  BZ integration \n";
+        std::cout << " ================\n\n";
+
+        std::cout << "  General settings for DOS and 3-phonon scattering rates:\n";
+
         if (ismear == -1) {
-            std::cout << " ISMEAR = -1: Tetrahedron method will be used.\n";
+            std::cout << "   ISMEAR = -1: Tetrahedron method\n";
         } else if (ismear == 0) {
-            std::cout << " ISMEAR = 0: Lorentzian broadening with epsilon = "
+            std::cout << "   ISMEAR = 0: Lorentzian broadening with epsilon = "
                       << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
         } else if (ismear == 1) {
-            std::cout << " ISMEAR = 1: Gaussian broadening with epsilon = "
+            std::cout << "   ISMEAR = 1: Gaussian broadening with epsilon = "
                       << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
+        } else if (ismear == 2) {
+            std::cout << "   ISMEAR = 2: Adaptive Gaussian broadening\n";
         } else {
-            exit("setup_relaxation", "Invalid ksum_mode");
+            exit("setup_integration", "Invalid ismear");
         }
         std::cout << '\n';
+
+        if (anharmonic_core->quartic_mode) {
+            std::cout << "  Additional settings for 4-phonon scattering rates:\n";
+            if (ismear_4ph == -1) {
+                std::cout << "   Tetrahedron method (ISMEAR_4PH) is not implemented. Switch to adaptive smearing !\n";
+                ismear_4ph = 2;
+            } else if (ismear_4ph == 0) {
+                std::cout << "   ISMEAR_4PH = 0: Lorentzian broadening with epsilon = "
+                          << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
+            } else if (ismear_4ph == 1) {
+                std::cout << "   ISMEAR_4PH = 1: Gaussian broadening with epsilon = "
+                          << std::fixed << std::setprecision(2) << epsilon << " (cm^-1)\n";
+            } else if (ismear_4ph == 2) {
+                std::cout << "   ISMEAR_4PH = 2: Adaptive Gaussian broadening\n";
+            } else {
+                exit("setup_integration", "Invalid ismear_4ph");
+            }
+            std::cout << '\n';
+        }
     }
 
+    prepare_adaptivesmearing();
+
     epsilon *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
+    epsilon_4ph *= time_ry / Hz_to_kayser; // Convert epsilon to a.u.
     MPI_Bcast(&epsilon, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&epsilon_4ph, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+}
+
+void Integration::prepare_adaptivesmearing()
+{
+    if (ismear == 2) {
+        adaptive_sigma = new AdaptiveSmearingSigma(dos->kmesh_dos->nk,
+                                                   dynamical->neval,
+                                                   adaptive_factor);
+        adaptive_sigma->setup(phonon_velocity,
+                              dos->kmesh_dos,
+                              system->get_primcell().lattice_vector,
+                              system->get_primcell().reciprocal_lattice_vector);
+    }
 }
 
 void TetraNodes::setup()
 {
     // This menber function creates node information of the tetrahedra.
+
     const auto nk23 = nk2 * nk3;
 
     for (int i = 0; i < nk1; ++i) {
@@ -332,14 +391,14 @@ void Integration::calc_weight_smearing(const unsigned int nk,
 
 double Integration::fij(const double ei,
                         const double ej,
-                        const double e) const
+                        const double e)
 {
     return (e - ej) / (ei - ej);
 }
 
 void Integration::insertion_sort(double *a,
                                  int *ind,
-                                 int n) const
+                                 int n)
 {
     int i;
 
@@ -357,4 +416,103 @@ void Integration::insertion_sort(double *a,
         a[j] = tmp;
         ind[j] = i;
     }
+}
+
+void AdaptiveSmearingSigma::setup(const PhononVelocity *phvel_class,
+                                  const KpointMeshUniform *kmesh_in,
+                                  const Eigen::Matrix3d &lavec_p_in,
+                                  const Eigen::Matrix3d &rlavec_p_in)
+{
+    phvel_class->get_phonon_group_velocity_mesh(*kmesh_in,
+                                                lavec_p_in,
+                                                false,
+                                                vel);
+
+    for (auto u = 0; u < 3; u++) {
+        for (auto a = 0; a < 3; a++) {
+            dq[u][a] = rlavec_p_in(u,a) / static_cast<double>(kmesh_in->nk_i[u]);
+        }
+    }
+}
+
+void AdaptiveSmearingSigma::get_sigma(const unsigned int k1,
+                                      const unsigned int s1,
+                                      double &sigma_out)
+{
+    double tmp;
+    double parts = 0;
+
+    for (auto & u : dq) {
+
+        tmp = 0;
+        for (auto a = 0; a < 3; ++a) {
+            tmp += vel[k1][s1][a] * u[a];
+        }
+
+        parts += std::pow(tmp, 2);
+    }
+
+    sigma_out = std::max(2.0e-5, adaptive_factor * std::sqrt(parts / 12)); // for (w1 - w2)
+}
+
+void AdaptiveSmearingSigma::get_sigma(const unsigned int k1,
+                                      const unsigned int s1,
+                                      const unsigned int k2,
+                                      const unsigned int s2,
+                                      double sigma_out[2])
+{
+    double parts[2];
+    double tmp[2];
+    int i;
+
+    for (i = 0; i < 2; ++i) parts[i] = 0;
+
+    for (auto & u : dq) {
+
+        for (i = 0; i < 2; ++i) tmp[i] = 0;
+
+        for (auto a = 0; a < 3; ++a) {
+            tmp[0] += (vel[k1][s1][a] - vel[k2][s2][a]) * u[a];
+            tmp[1] += (vel[k1][s1][a] + vel[k2][s2][a]) * u[a];
+        }
+
+        for (i = 0; i < 2; ++i) parts[i] += std::pow(tmp[i], 2);
+    }
+
+    sigma_out[0] = std::max(2.0e-5, adaptive_factor * std::sqrt((parts[0]) / 12)); // for (w1 - w2 - w3)
+    sigma_out[1] = std::max(2.0e-5, adaptive_factor * std::sqrt((parts[1]) / 12)); // for (w1 + w3 - w3)
+    // 2.0e-5 ry ~ 3 cm^-1
+}
+
+void AdaptiveSmearingSigma::get_sigma(const unsigned int k2,
+                                      const unsigned int s2,
+                                      const unsigned int k3,
+                                      const unsigned int s3,
+                                      const unsigned int k4,
+                                      const unsigned int s4,
+                                      double sigma_out[2])
+{
+    double parts[3];
+    double tmp[3];
+    int i;
+    for (i = 0; i < 3; ++i) parts[i] = 0;
+
+    for (auto & u : dq) {
+
+        for (i = 0; i < 3; ++i) tmp[i] = 0;
+
+        for (auto a = 0; a < 3; ++a) {
+            tmp[0] += (vel[k2][s2][a] - vel[k4][s4][a]) * u[a];
+            tmp[1] += (vel[k3][s3][a] - vel[k4][s4][a]) * u[a];
+            tmp[2] += (vel[k2][s2][a] + vel[k4][s4][a]) * u[a];
+        }
+
+        for (i = 0; i < 3; ++i) parts[i] += std::pow(tmp[i], 2);
+    }
+
+    sigma_out[0] = std::max(2.0e-5,
+                            adaptive_factor * std::sqrt((parts[0] + parts[1]) / 12));  // for delta(w1 - w2 - w3 - w4)
+    sigma_out[1] = std::max(2.0e-5,
+                            adaptive_factor * std::sqrt((parts[2] + parts[1]) /
+                                                        12));  // for delta(w1 + w2 - w3 - w4) and (w1 - w2 + w3 + w4)
 }

@@ -235,6 +235,15 @@ public:
                                       const std::vector<SymmetryOperationWithMapping> &symmlist,
                                       std::complex<double> ****&mat_transform_sym) const;
 
+    void get_eigenvalues_dymat(const unsigned int nk_in,
+                               const double *const *xk_in,
+                               const double *const *kvec_na_in,
+                               const std::vector<FcsArrayWithCell> &fc2,
+                               const std::vector<FcsArrayWithCell> &fc2_without_dipole_in,
+                               const bool require_evec,
+                               double **eval_ret,
+                               std::complex<double> ***evec_ret);
+
 private:
     void set_default_variables();
 
@@ -256,14 +265,7 @@ private:
     void detect_imaginary_branches(const KpointMeshUniform &kmesh_in,
                                    double **eval_in);
 
-    void get_eigenvalues_dymat(const unsigned int nk_in,
-                               const double *const *xk_in,
-                               const double *const *kvec_na_in,
-                               const std::vector<FcsArrayWithCell> &fc2,
-                               const std::vector<FcsArrayWithCell> &fc2_without_dipole_in,
-                               const bool require_evec,
-                               double **eval_ret,
-                               std::complex<double> ***evec_ret);
+
 
     std::vector<std::vector<double>> projection_directions;
 

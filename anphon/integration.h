@@ -12,6 +12,7 @@
 
 #include "pointers.h"
 #include "constants.h"
+#include "fcs_phonon.h"
 #include "kpoint.h"
 #include "memory.h"
 #include <vector>
@@ -78,6 +79,54 @@ private:
     unsigned int **tetras;
 };
 
+class AdaptiveSmearingSigma {
+public:
+    AdaptiveSmearingSigma() {};
+
+    AdaptiveSmearingSigma(const unsigned int nk_in,
+                          const unsigned int ns_in,
+                          const double factor)
+    {
+
+        allocate(vel, nk_in, ns_in, 3);
+        adaptive_factor = factor;
+    };
+
+    ~AdaptiveSmearingSigma()
+    {
+        if (vel) deallocate(vel);
+    };
+
+    void setup(const PhononVelocity *phvel_class,
+               const KpointMeshUniform *kmesh_in,
+               const Eigen::Matrix3d &lavec_p_in,
+               const Eigen::Matrix3d &rlavec_p_in);
+
+    // overload for 3ph or 4ph
+    void get_sigma(const unsigned int k1,
+                   const unsigned int s1,
+                   double &sigma_out);
+
+    void get_sigma(const unsigned int k1,
+                   const unsigned int s1,
+                   const unsigned int k2,
+                   const unsigned int s2,
+                   double sigma_out[2]);
+
+    void get_sigma(const unsigned int k1,
+                   const unsigned int s1,
+                   const unsigned int k2,
+                   const unsigned int s2,
+                   const unsigned int k3,
+                   const unsigned int s3,
+                   double sigma_out[2]);
+
+private:
+    double adaptive_factor;
+    double ***vel = nullptr;
+    double dq[3][3];
+};
+
 class Integration : protected Pointers {
 public:
     Integration(class PHON *);
@@ -85,7 +134,13 @@ public:
     ~Integration();
 
     int ismear; // ismear = -1: tetrahedron, ismear = 0: gaussian
+    int ismear_4ph;
     double epsilon;
+    double epsilon_4ph;
+    double adaptive_factor;
+
+    AdaptiveSmearingSigma *adaptive_sigma = nullptr;
+    AdaptiveSmearingSigma *adaptive_sigma4 = nullptr;
 
     void setup_integration();
 
@@ -116,19 +171,17 @@ private:
 
     void deallocate_variables();
 
-    inline double fij(double,
-                      double,
-                      double) const;
+    void prepare_adaptivesmearing();
 
-    // inline double volume(const int *) const;
+    static inline double fij(double,
+                      double,
+                      double) ;
 
     std::vector<tetra_pair> tetra_data;
 
-    // inline double refold(double) const;
-
-    void insertion_sort(double *,
+    static void insertion_sort(double *,
                         int *,
-                        int) const;
+                        int) ;
 };
 
 inline double delta_lorentz(const double omega,

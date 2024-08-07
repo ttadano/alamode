@@ -1,0 +1,35 @@
+&general
+  PREFIX = Si
+  MODE   = RTA
+  FCSXML = opt_rc12_ndata12.xml 
+  RESTART = 0
+  NKD = 1; KD = Si
+  TMIN = 100; TMAX = 1000; DT = 50
+  ismear = 2
+/
+
+&cell
+  10.271834374410580
+  0.0 0.5 0.5
+  0.5 0.0 0.5
+  0.5 0.5 0.0
+/
+
+&kpoint
+  2      # KPMODE = 1: line mode
+  30 30 30
+/
+
+&kappa
+ismear_4ph = 2
+isotope = 1
+iterative = 0
+interpolator = log-linear
+kmesh_coarse = 10 10 10
+/
+
+&analysis
+quartic = 1
+/
+
+
