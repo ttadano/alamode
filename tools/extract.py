@@ -121,6 +121,7 @@ def run_parse(args, code, file_original, file_results, output_flags, str_unit):
     # Print data
     if code == "VASP":
         handler = VaspParser()
+        handler.set_vca_mode(args.vca)
 
     elif code == "QE":
         handler = QEParser()
@@ -200,6 +201,9 @@ if __name__ == "__main__":
 
     parser.add_argument('target_file', metavar='file_to_parse', type=str, nargs='+',
                         help="Output file of DFT codes, e.g., vasprun.xml.")
+
+    parser.add_argument('--vca', action='store_true', dest='vca', default=False,
+                        help='Use VCA mode for VASP parser. (default: False)')
 
     args = parser.parse_args()
     file_results = args.target_file

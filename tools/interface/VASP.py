@@ -59,6 +59,11 @@ class VaspParser(object):
         self._print_born = False
         self._BOHR_TO_ANGSTROM = 0.529177210903
         self._RYDBERG_TO_EV = 13.60569253
+        self._vca_mode = False
+        self._vca_duplite_sites = None
+
+    def set_vca_mode(self, vca_mode):
+        self._vca_mode = vca_mode
 
     def load_initial_structure(self, file_in):
 
@@ -100,6 +105,24 @@ class VaspParser(object):
             kd = []
             for i in range(len(nat_elem)):
                 kd.extend([i] * nat_elem[i])
+
+        if self._vca_mode:
+            nat = np.sum(nat_elem)
+            flag_scanned = np.zeros(nat, dtype=int)
+            list_vca_duplite_sites = []
+            for i in range(nat):
+                if flag_scanned[i] == 0:
+                    list_samesite_tmp = [i]
+                    flag_scanned[i] = 1
+                    for j in range(i + 1, nat):
+                        if flag_scanned[j] == 0:
+                            if np.allclose(xf[i], xf[j]):
+                                list_samesite_tmp.append(j)
+                                flag_scanned[j] = 1
+
+                    list_vca_duplite_sites.append(list_samesite_tmp)
+
+            self._vca_duplite_sites = list_vca_duplite_sites
 
         self._lattice_vector = lavec
         self._inverse_lattice_vector = invlavec
@@ -374,24 +397,40 @@ class VaspParser(object):
                 print("# Filename: %s, Snapshot: %d, E_pot (eV): %s" %
                       (search_target, idata + 1, epot[idata]))
 
-                if self._print_disp and self._print_force:
-                    for i in range(self._nat):
-                        print("%15.7F %15.7F %15.7F %20.8E %15.8E %15.8E" % (disp[i, 0],
-                                                                             disp[i, 1],
-                                                                             disp[i, 2],
-                                                                             f[i, 0],
-                                                                             f[i, 1],
-                                                                             f[i, 2]))
-                elif self._print_disp:
-                    for i in range(self._nat):
-                        print("%15.7F %15.7F %15.7F" % (disp[i, 0],
-                                                        disp[i, 1],
-                                                        disp[i, 2]))
-                elif self._print_force:
-                    for i in range(self._nat):
-                        print("%15.8E %15.8E %15.8E" % (f[i, 0],
-                                                        f[i, 1],
-                                                        f[i, 2]))
+                if self._vca_mode:
+                    nat_vca = len(self._vca_duplite_sites)
+                    disp_vca = np.zeros((nat_vca, 3))
+                    f_vca = np.zeros((nat_vca, 3))
+                    for i in range(nat_vca):
+                        disp_vca[i, :] = disp[self._vca_duplite_sites[i][0], :]
+                        f_vca[i, :] = np.sum(f[self._vca_duplite_sites[i], :], axis=0)
+
+                    if self._print_disp and self._print_force:
+                        for i in range(nat_vca):
+                            print("{:15.7F} {:15.7F} {:15.7F} {:20.8E} {:15.8E} {:15.8E}".format(*disp_vca[i],
+                                                                                                 *f_vca[i]))
+
+                    elif self._print_disp:
+                        for i in range(nat_vca):
+                            print("{:15.7F} {:15.7F} {:15.7F}".format(*disp_vca[i]))
+
+                    elif self._print_force:
+                        for i in range(nat_vca):
+                            print("{:15.8E} {:15.8E} {:15.8E}".format(*f_vca[i]))
+
+                else:
+
+                    if self._print_disp and self._print_force:
+                        for i in range(self._nat):
+                            print("{:15.7F} {:15.7F} {:15.7F} {:20.8E} {:15.8E} {:15.8E}".format(*disp[i], *f[i]))
+
+                    elif self._print_disp:
+                        for i in range(self._nat):
+                            print("{:15.7F} {:15.7F} {:15.7F}".format(*disp[i]))
+
+                    elif self._print_force:
+                        for i in range(self._nat):
+                            print("{:15.8E} {:15.8E} {:15.8E}".format(*f[i]))
 
     def _print_energies(self, xml_files, file_offset):
 
