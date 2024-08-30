@@ -20,13 +20,18 @@ namespace PHON_NS {
 
 class Cell {
 public:
+    // lattice_vector(i, j) : i(=x,y,z) component of j-th lattice vector in Bohr
     Eigen::Matrix3d lattice_vector;
+    // reciprocal_lattice_vector(i, j) : 
+    // [j(=x,y,z) component of i-th reciprocal lattice vector in Bohr^-1] x 2pi
     Eigen::Matrix3d reciprocal_lattice_vector;
     double volume;
     size_t number_of_atoms;
     size_t number_of_elems;
     std::vector<int> kind;
+    // x_fractional(i, j) : j-th component of i-th atom in Fractional coordinates
     Eigen::MatrixXd x_fractional;
+    // x_cartesian(i, j) : j(=x,y,z) component of i-th atom in Cartesian coordinates in Bohr
     Eigen::MatrixXd x_cartesian;
     int has_entry{0};
 };

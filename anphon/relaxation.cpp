@@ -1829,7 +1829,7 @@ void Relaxation::calculate_delv2_delumn_finite_difference(double **omega2_harmon
     std::vector<std::vector<FcsArrayWithCell>> fc2_deformed(nmode);
 
     for (imode = 0; imode < nmode; imode++) {
-        fcs_phonon->get_fcs_from_file(strain_IFC_dir + filename_list[imode], 1, fc2_deformed[imode]);
+        fcs_phonon->get_fcs_from_file(strain_IFC_dir + filename_list[imode], 0, fc2_deformed[imode]);
     }
 
     for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
@@ -1931,7 +1931,7 @@ void Relaxation::calculate_delv2_delumn_finite_difference(double **omega2_harmon
     make_supercell_mapping_by_symmetry_operations(symm_mapping_s);
 
     // TODO: check if index=0 can be used here.
-    const auto ntran = system->get_map_p2s(0).size();
+    const auto ntran = system->get_map_p2s(0)[0].size();
 
     allocate(inv_translation_mapping, ntran, ntran);
     make_inverse_translation_mapping(inv_translation_mapping);
@@ -3010,6 +3010,7 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayW
             pairs_tmp.index = index_with_cell_old[3 * i - 2];
             pairs_tmp.tran = index_with_cell_old[3 * i - 1];
             pairs_tmp.cell_s = index_with_cell_old[3 * i];
+            pairs_vec.push_back(pairs_tmp);
             //fcs_aligned.clear();
         }
         delta_fcs.emplace_back(fcs_tmp,
@@ -3024,7 +3025,7 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayW
 void Relaxation::make_supercell_mapping_by_symmetry_operations(int **symm_mapping_s)
 {
     int nat = system->get_supercell(0).number_of_atoms;
-    int ntran = system->get_map_p2s().size();
+    int ntran = system->get_map_p2s()[0].size();
 
     Eigen::Matrix3d rotmat;
     Eigen::Vector3d shift, xr_tmp;
@@ -3132,7 +3133,7 @@ void Relaxation::make_supercell_mapping_by_symmetry_operations(int **symm_mappin
 
 void Relaxation::make_inverse_translation_mapping(int **inv_translation_mapping)
 {
-    int ntran = system->get_map_p2s(0).size();
+    int ntran = system->get_map_p2s(0)[0].size();
 
     int i1, i2, i3;
     int ixyz1;
