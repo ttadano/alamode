@@ -1742,6 +1742,7 @@ void Relaxation::calculate_delv2_delumn_finite_difference(double **omega2_harmon
     int itran1, itran2;
     int ik, is1, is2, is, js;
     int isymm, imode;
+    int index1, index2;
 
     std::complex<double> ***dymat_q, **dymat_tmp;
     std::complex<double> ***dymat_new;
@@ -1868,11 +1869,14 @@ void Relaxation::calculate_delv2_delumn_finite_difference(double **omega2_harmon
 
         for (const auto &it: fc2_deformed[imode]) {
 ///            dphi2_dumn_realspace_tmp[it.atm1 * 3 + it.xyz1][it.atm2 * 3 + it.xyz2] += it.fcs_val;
-            dphi2_dumn_realspace_tmp[it.pairs[0].index][it.pairs[1].index] += it.fcs_val;
+            // 
+            index2 = system->get_map_p2s(0)[it.pairs[1].index/3][it.pairs[1].tran];
+            dphi2_dumn_realspace_tmp[it.pairs[0].index][index2*3 + it.pairs[1].index%3] += it.fcs_val;
         }
         for (const auto &it: fcs_phonon->force_constant_with_cell[0]) {
 //            dphi2_dumn_realspace_tmp[it.atm1 * 3 + it.xyz1][it.atm2 * 3 + it.xyz2] -= it.fcs_val;
-            dphi2_dumn_realspace_tmp[it.pairs[0].index][it.pairs[1].index] -= it.fcs_val;
+            index2 = system->get_map_p2s(0)[it.pairs[1].index/3][it.pairs[1].tran];
+            dphi2_dumn_realspace_tmp[it.pairs[0].index][index2*3 + it.pairs[1].index%3] -= it.fcs_val;
         }
 
         if (ixyz1 == ixyz2) {
