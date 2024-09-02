@@ -24,6 +24,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <unordered_map>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
@@ -941,8 +942,6 @@ void Writer::save_fc3_shengbte_format(const System *system,
     size_t i, j, k;
     int pair_tmp[3], coord_tmp[3];
     std::ofstream ofs_fc3;
-    double ***fc3;
-    int ***has_element;
     size_t nelems = 0;
     const auto nat3 = 3 * system->get_supercell().number_of_atoms;
     const auto natmin = symmetry->get_nat_prim();
@@ -956,27 +955,10 @@ void Writer::save_fc3_shengbte_format(const System *system,
     flatten_array.resize(2);
     cell_dummy.resize(2);
 
+    std::unordered_map<std::tuple<size_t, size_t, size_t>, size_t> has_element;
+    std::unordered_map<std::tuple<size_t, size_t, size_t>, double> fc3;
+
     double ***x_image = system->get_x_image();
-
-    allocate(fc3, 3 * natmin, nat3, nat3);
-    allocate(has_element, natmin, nat, nat);
-
-    for (i = 0; i < 3 * natmin; ++i) {
-        for (j = 0; j < nat3; ++j) {
-            for (k = 0; k < nat3; ++k) {
-                fc3[i][j][k] = 0.0;
-            }
-        }
-    }
-    for (i = 0; i < natmin; ++i) {
-        for (j = 0; j < nat; ++j) {
-            for (k = 0; k < nat; ++k) {
-                has_element[i][j][k] = 0;
-            }
-        }
-    }
-
-    const auto ishift = fcs->get_nequiv()[0].size();
 
     for (const auto &it: fcs->get_fc_cart()[1]) {
 
@@ -996,11 +978,12 @@ void Writer::save_fc3_shengbte_format(const System *system,
         iter_cluster = cluster->get_interaction_cluster(1, j).find(InteractionCluster(atom_tmp, cell_dummy));
 
         do {
-            if (!has_element[j][flatten_array[0] / 3][flatten_array[1] / 3]) {
+            std::tuple<int, int, int> atom_tuple(j, flatten_array[0] / 3, flatten_array[1] / 3);
+            if (has_element.find(atom_tuple) == has_element.end()) {
                 nelems += (*iter_cluster).cell.size();
-                has_element[j][flatten_array[0] / 3][flatten_array[1] / 3] = 1;
+                has_element[atom_tuple] = 1;
             }
-            fc3[3 * j + coord_tmp[0]][flatten_array[0]][flatten_array[1]] = it.fc_value;
+            fc3[std::make_tuple(3 * j + coord_tmp[0], flatten_array[0], flatten_array[1])] = it.fc_value;
         } while (std::next_permutation(flatten_array.begin(), flatten_array.end()));
     }
 
@@ -1023,7 +1006,7 @@ void Writer::save_fc3_shengbte_format(const System *system,
                         const auto jat = symmetry->get_map_p2s()[j][jtran];
                         const auto kat = symmetry->get_map_p2s()[k][ktran];
 
-                        if (!has_element[i][jat][kat]) continue;
+                        if (has_element.find(std::make_tuple(i, jat, kat)) == has_element.end()) continue;
 
                         atom_tmp[0] = jat;
                         atom_tmp[1] = kat;
@@ -1093,9 +1076,14 @@ void Writer::save_fc3_shengbte_format(const System *system,
                                         ofs_fc3 << std::setw(2) << ii + 1;
                                         ofs_fc3 << std::setw(3) << jj + 1;
                                         ofs_fc3 << std::setw(3) << kk + 1;
-                                        ofs_fc3 << std::setw(20)
-                                                << fc3[3 * i + ii][3 * jat + jj][3 * kat + kk]
-                                                   * factor / static_cast<double>(multiplicity) << std::endl;
+                                        if (fc3.find(std::make_tuple(3 * i + ii, 3 * jat + jj, 3 * kat + kk)) !=
+                                            fc3.end()) {
+                                            ofs_fc3 << std::setw(20)
+                                                    << fc3[std::make_tuple(3 * i + ii, 3 * jat + jj, 3 * kat + kk)]
+                                                       * factor / static_cast<double>(multiplicity) << std::endl;
+                                        } else {
+                                            ofs_fc3 << std::setw(20) << 0.0 << std::endl;
+                                        }
                                     }
                                 }
                             }
@@ -1107,9 +1095,6 @@ void Writer::save_fc3_shengbte_format(const System *system,
     }
 
     ofs_fc3.close();
-    deallocate(fc3);
-    deallocate(has_element);
-
 
     if (verbosity) {
         std::cout << " Third-order FCs in ShengBTE format         : " << fname_out << std::endl;
@@ -1128,8 +1113,6 @@ void Writer::save_fc4_shengbte_format(const System *system,
     size_t i, j, k, l;
     int pair_tmp[4], coord_tmp[4];
     std::ofstream ofs_fc4;
-    double ****fc4;
-    int ****has_element;
     size_t nelems = 0;
     const auto nat3 = 3 * system->get_supercell().number_of_atoms;
     const auto natmin = symmetry->get_nat_prim();
@@ -1150,29 +1133,8 @@ void Writer::save_fc4_shengbte_format(const System *system,
              "No fourth-order terms when NORDER < 3.");
     }
 
-    allocate(fc4, 3 * natmin, nat3, nat3, nat3);
-    allocate(has_element, natmin, nat, nat, nat);
-
-    for (i = 0; i < 3 * natmin; ++i) {
-        for (j = 0; j < nat3; ++j) {
-            for (k = 0; k < nat3; ++k) {
-                for (l = 0; l < nat3; ++l) {
-                    fc4[i][j][k][l] = 0.0;
-                }
-            }
-        }
-    }
-    for (i = 0; i < natmin; ++i) {
-        for (j = 0; j < nat; ++j) {
-            for (k = 0; k < nat; ++k) {
-                for (l = 0; l < nat; ++l) {
-                    has_element[i][j][k][l] = 0;
-                }
-            }
-        }
-    }
-
-    const auto ishift = fcs->get_nequiv()[0].size() + fcs->get_nequiv()[1].size();
+    std::unordered_map<std::tuple<size_t, size_t, size_t, size_t>, size_t> has_element;
+    std::unordered_map<std::tuple<size_t, size_t, size_t, size_t>, double> fc4;
 
     for (const auto &it: fcs->get_fc_cart()[2]) {
 
@@ -1193,12 +1155,18 @@ void Writer::save_fc4_shengbte_format(const System *system,
         iter_cluster = cluster->get_interaction_cluster(2, j).find(InteractionCluster(atom_tmp, cell_dummy));
 
         do {
-            if (!has_element[j][flatten_array[0] / 3][flatten_array[1] / 3][flatten_array[2] / 3]) {
+            std::tuple<size_t, size_t, size_t, size_t> atom_tuple(j,
+                                                                  flatten_array[0] / 3,
+                                                                  flatten_array[1] / 3,
+                                                                  flatten_array[2] / 3);
+            if (has_element.find(atom_tuple) == has_element.end()) {
                 nelems += (*iter_cluster).cell.size();
-                has_element[j][flatten_array[0] / 3][flatten_array[1] / 3][flatten_array[2] / 3] = 1;
+                has_element[atom_tuple] = 1;
             }
-            fc4[3 * j + coord_tmp[0]][flatten_array[0]][flatten_array[1]][flatten_array[2]] = it.fc_value;
-
+            fc4[std::make_tuple(3 * j + coord_tmp[0],
+                                flatten_array[0],
+                                flatten_array[1],
+                                flatten_array[2])] = it.fc_value;
         } while (std::next_permutation(flatten_array.begin(), flatten_array.end()));
     }
 
@@ -1223,7 +1191,7 @@ void Writer::save_fc4_shengbte_format(const System *system,
                                 const auto kat = symmetry->get_map_p2s()[k][ktran];
                                 const auto lat = symmetry->get_map_p2s()[l][ltran];
 
-                                if (!has_element[i][jat][kat][lat]) continue;
+                                if (has_element.find(std::make_tuple(i, jat, kat, lat)) == has_element.end()) continue;
 
                                 atom_tmp[0] = jat;
                                 atom_tmp[1] = kat;
@@ -1302,10 +1270,21 @@ void Writer::save_fc4_shengbte_format(const System *system,
                                                     ofs_fc4 << std::setw(3) << jj + 1;
                                                     ofs_fc4 << std::setw(3) << kk + 1;
                                                     ofs_fc4 << std::setw(3) << ll + 1;
-                                                    ofs_fc4 << std::setw(20)
-                                                            << fc4[3 * i + ii][3 * jat + jj][3 * kat + kk][3 * lat + ll]
-                                                               * factor / static_cast<double>(multiplicity)
-                                                            << std::endl;
+                                                    if (fc4.find(std::make_tuple(3 * i + ii,
+                                                                                 3 * jat + jj,
+                                                                                 3 * kat + kk,
+                                                                                 3 * lat + ll)) != fc4.end()) {
+                                                        ofs_fc4 << std::setw(20)
+                                                                << fc4[std::make_tuple(3 * i + ii,
+                                                                                       3 * jat + jj,
+                                                                                       3 * kat + kk,
+                                                                                       3 * lat + ll)]
+                                                                   * factor / static_cast<double>(multiplicity)
+                                                                << std::endl;
+                                                    } else {
+                                                        ofs_fc4 << std::setw(20) << 0.0 << std::endl;
+                                                    }
+
                                                 }
                                             }
                                         }
@@ -1320,9 +1299,6 @@ void Writer::save_fc4_shengbte_format(const System *system,
     }
 
     ofs_fc4.close();
-    deallocate(fc4);
-    deallocate(has_element);
-
 
     if (verbosity) {
         std::cout << " Fourth-order FCs in ShengBTE format        : " << fname_out << std::endl;
