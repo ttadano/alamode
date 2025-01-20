@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <stdlib.h>
+#include <cstdlib>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
@@ -76,9 +76,12 @@ int main()
 
     allocate(kd_symbol, nkd);
 
+    // read nkd lines for kd_symbol, which is the chemical symbol of each atom.
+    // remove ' characters from the string and then convert second character to lower case.
     for (i = 0; i < nkd; ++i) {
         ifs_fc2qe >> dummy >> kd_symbol[i] >> str_dummy >> tmp;
-        kd_symbol[i] = kd_symbol[i].substr(1);
+        kd_symbol[i].erase(std::remove(kd_symbol[i].begin(),
+                                       kd_symbol[i].end(), '\''), kd_symbol[i].end());
     }
 
     allocate(kd, natmin);
@@ -89,7 +92,8 @@ int main()
     }
 
     std::string str_na;
-    ifs_fc2qe >> str_na;
+    std::getline(ifs_fc2qe >> std::ws, str_na);
+    str_na = str_na.substr(0, str_na.find(' '));
 
     if (str_na[0] == 'T') {
         include_na = true;
