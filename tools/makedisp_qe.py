@@ -14,7 +14,7 @@ import seekpath
 from interface.QE import QEParser
 from GenDisplacement import AlamodeDisplace
 
-ALAMODE_root = "~/src/alamode"
+ALAMODE_root = "~/src/alamode/_build"
 
 parser = argparse.ArgumentParser()
 
@@ -39,6 +39,12 @@ parser.add_argument('--dfset',
                     type=str, default=None,
                     help="The displacement-force datasets for harmonic phonon calculation.")
 
+parser.add_argument('--symprec', type=float, default=1.0e-3,
+                    help="Symmetry tolerance for space group determination.")
+
+parser.add_argument('--alamode_ver', type=int, default=1,
+                    help="ALAMODE major version (default: 1)")
+
 
 def gen_kpoints_file(structure):
     kmesh = inputs.Kpoints.automatic_density_by_vol(structure, 450)
@@ -57,7 +63,7 @@ def gen_species_dictionary(atomic_number_uniq):
 
 
 def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
-                  ndata=0, dfset='DFSET'):
+                  ndata=0, dfset='DFSET', symprec=1.0e-3, alamode_ver=1):
     Bohr = 0.52917721067
 
     if (mode != "suggest" and mode != "optimize"):
@@ -77,7 +83,7 @@ def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
         for num in atomic_numbers_uniq:
             str_spec += str(get_el_sp(num)) + " "
         f.write(" NKD = %i; KD = %s\n" % (structure.ntypesp, str_spec))
-        f.write(" TOLERANCE = 1.0e-3\n")
+        f.write(" TOLERANCE = {:f}\n".format(symprec))
         f.write("/\n\n")
         f.write("&interaction\n")
         f.write(" NORDER = %i\n" % norder)
@@ -108,7 +114,8 @@ def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
 
 
 def gen_anphon_input(filename, prefix,
-                     mode, structure, path_info, npoints=51):
+                     mode, structure, path_info, npoints=51,
+                     symprec=1.0e-3, alamode_ver=1):
     Bohr = 0.52917721067
 
     if mode != "phonons":
@@ -127,8 +134,11 @@ def gen_anphon_input(filename, prefix,
         for num in atomic_numbers_uniq:
             str_spec += str(get_el_sp(num)) + " "
         f.write(" NKD = %i; KD = %s\n" % (structure.ntypesp, str_spec))
-        f.write(" TOLERANCE = 1.0e-3\n")
-        f.write(" FCSXML = %s.xml\n" % prefix)
+        f.write(" TOLERANCE = {:f}}\n".format(symprec))
+        if alamode_ver == 1:
+            f.write(" FCSXML = %s.xml\n" % prefix)
+        else:
+            f.write(" FCSFILE = %s.xml\n" % prefix)
         f.write("/\n\n")
         f.write("&cell\n")
         f.write("%20.14f\n" % (1.0 / Bohr))
@@ -225,7 +235,7 @@ def update_qeobj(qeparse_in, structure_in):
     return qeparse_in
 
 
-def run_displacement(file_primitive, prefix, scaling_matrix, disp_magnitude_angstrom):
+def run_displacement(file_primitive, prefix, scaling_matrix, disp_magnitude_angstrom, symprec):
     qeobj = QEParser()
     qeobj.load_initial_structure(file_primitive)
 
@@ -251,12 +261,13 @@ def run_displacement(file_primitive, prefix, scaling_matrix, disp_magnitude_angs
     os.system(command)
 
     # Generate displacement files
-    gen_alm_input('ALM0.in', prefix0, 'suggest', structure, 1, "*-* None")
+    gen_alm_input('ALM0.in', prefix0, 'suggest', structure, 1, "*-* None",
+                  symprec=symprec)
     command = ("%s/alm/alm ALM0.in > ALM0.log" % ALAMODE_root)
     os.system(command)
 
     dispobj = AlamodeDisplace("fd", qeobj_mod, verbosity=0)
-    header_list, disp_list \
+    header_list, disp_list, _ \
         = dispobj.generate(file_pattern=["%s.pattern_HARMONIC" % prefix0],
                            magnitude=disp_magnitude_angstrom)
 
@@ -265,7 +276,7 @@ def run_displacement(file_primitive, prefix, scaling_matrix, disp_magnitude_angs
                                   disp_list)
 
 
-def run_optimize(file_primitive, file_dfset, scaling_matrix):
+def run_optimize(file_primitive, file_dfset, scaling_matrix, symprec, alamode_ver):
     qeobj = QEParser()
     qeobj.load_initial_structure(file_primitive)
 
@@ -282,7 +293,7 @@ def run_optimize(file_primitive, file_dfset, scaling_matrix):
     # Generate displacement files
     gen_alm_input('ALM1.in', prefix0, 'optimize',
                   structure, 1, "*-* None",
-                  dfset=file_dfset)
+                  dfset=file_dfset, symprec=symprec)
     command = ("%s/alm/alm ALM1.in > ALM1.log" % ALAMODE_root)
     os.system(command)
 
@@ -297,7 +308,7 @@ def gen_bzpath(structure):
     return path_info
 
 
-def gen_phband(file_primitive):
+def gen_phband(file_primitive, symprec=1.0e-3, alamode_ver=1):
     qeobj = QEParser()
     qeobj.load_initial_structure(file_primitive)
 
@@ -309,7 +320,8 @@ def gen_phband(file_primitive):
 
     prefix0 = 'supercell'
     gen_anphon_input('phband.in', prefix0, 'phonons',
-                     structure, path_info)
+                     structure, path_info, alamode_ver=alamode_ver,
+                     symprec=symprec)
 
     command = ("%s/anphon/anphon phband.in > phband.log" % ALAMODE_root)
     os.system(command)
@@ -324,10 +336,13 @@ if __name__ == '__main__':
         run_displacement(args.file_primitive,
                          prefix,
                          scaling_matrix,
-                         disp_magnitude_angstrom)
+                         disp_magnitude_angstrom,
+                         args.symprec)
     else:
         run_optimize(args.file_primitive,
                      args.dfset,
-                     scaling_matrix)
+                     scaling_matrix,
+                     args.symprec,
+                     args.alamode_ver)
 
-        gen_phband(args.file_primitive)
+        gen_phband(args.file_primitive, symprec=args.symprec, alamode_ver=args.alamode_ver)
