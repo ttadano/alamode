@@ -83,7 +83,7 @@ def gen_alm_input(filename, prefix, mode, structure, norder, str_cutoff,
         for num in atomic_numbers_uniq:
             str_spec += str(get_el_sp(num)) + " "
         f.write(" NKD = %i; KD = %s\n" % (structure.ntypesp, str_spec))
-        f.write(" TOLERANCE = {:f}\n".format(symprec))
+        f.write(" TOLERANCE = {:e}\n".format(symprec))
         f.write("/\n\n")
         f.write("&interaction\n")
         f.write(" NORDER = %i\n" % norder)

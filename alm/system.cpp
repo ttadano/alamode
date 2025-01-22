@@ -181,21 +181,10 @@ void System::build_primcell()
     // The symmetry detection is not performed here as it will be done
     // when the Symmetry::init() is called.
 
-
-//    Cell cell_out;
-//    Spin spin_out;
-//    find_primitive_cell(inputcell, spin_input,
-//                        cell_out, spin_out,
-//                        symmetry_tolerance);
-//
-//
-
     transmat_to_prim_spglib = compute_transmat_to_prim_using_spglib(inputcell,
                                                                     symmetry_tolerance);
 
     if (autoset_primcell) transmat_to_prim = transmat_to_prim_spglib;
-
-//    std::cout << transmat_to_prim_spglib << '\n';
 
     const auto ndiv = nint(1.0 / transmat_to_prim.determinant());
     if (inputcell.number_of_atoms % ndiv != 0) {
@@ -362,9 +351,10 @@ void System::build_supercell()
                     DD << static_cast<double>(i), static_cast<double>(j), static_cast<double>(k);
                     DD = transmat_newprim_to_origsuper * DD + xs_f;
                     DD_mod = DD.unaryExpr([](const double x) { return std::fmod(x, 1.0); });
-//                    for (auto m = 0; m < 3; ++m) {
-//                        if (DD_mod[m] < -eps6) DD_mod[m] += 1.0;
-//                    }
+                    // fmod allows negative values, so correct them.
+                    for (auto m = 0; m < 3; ++m) {
+                        if (DD_mod[m] < 0.0) DD_mod[m] += 1.0;
+                    }
                     supercell.x_fractional.row(counter) = DD_mod;
                     supercell.kind.emplace_back(kind_now);
                     if (spin_input.lspin) magmom_tmp.emplace_back(spin_input.magmom[iat]);
@@ -373,8 +363,6 @@ void System::build_supercell()
             }
         }
     }
-//
-//    std::cout << supercell.x_fractional << '\n';
 
     supercell.x_cartesian = supercell.x_fractional * supercell.lattice_vector.transpose();
 
