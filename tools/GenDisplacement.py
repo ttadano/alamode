@@ -677,6 +677,81 @@ class AlamodeDisplace(object):
 
         return disp
 
+    def _find_fraction(self, x, tol=1e-6):
+        """
+        Find a fraction a/b that approximates the floating value x within a tolerance.
+
+        Parameters:
+        - x: float, the input floating-point number.
+        - tol: float, the tolerance within which the approximation should be.
+
+        Returns:
+        - (a, b): tuple of integers, the numerator (a) and denominator (b) of the fraction.
+        """
+        negative = x < 0
+        x = abs(x)
+
+        h1, h2, k1, k2 = 1, 0, 0, 1
+        b = x
+
+        while True:
+            a = int(b)
+            aux = h1
+            h1 = a * h1 + h2
+            h2 = aux
+            aux = k1
+            k1 = a * k1 + k2
+            k2 = aux
+
+            if abs(x - h1 / k1) < tol:
+                if negative:
+                    h1 = -h1
+                return h1, k1
+
+            b = 1 / (b - a)
+
+    def get_commensurate_qlist(self):
+        tol_zero = 1.0e-3
+
+        nqmax = supercell.get_global_number_of_atoms() // primitive.get_global_number_of_atoms()
+        convertor = np.dot(np.linalg.inv(supercell.get_cell()).T, primitive.get_cell().T)
+
+        for i in range(3):
+            for j in range(3):
+                numerator, denominator = find_fraction(convertor[i, j], tol=tol_zero)
+                convertor[i, j] = float(numerator) / float(denominator)
+
+        comb = np.array([[Lx * sx, Ly * sy, Lz * sz]
+                         for Lx in range(10)
+                         for Ly in range(10)
+                         for Lz in range(10)
+                         for sx in (1, -1)
+                         for sy in (1, -1)
+                         for sz in (1, -1)])
+
+        qlist = []
+
+        for entry in comb:
+            qvec = np.dot(entry, convertor) % 1.0
+            qvec = np.where(qvec >= 0.5, qvec - 1.0, qvec)
+            qvec = np.where(qvec < -0.5, qvec + 1.0, qvec)
+
+            # Check if qvec is close to any vector in qlist
+            is_duplicate = False
+            for elem in qlist:
+                diff = (elem - qvec + 1.0) % 1.0
+                diff = np.where(diff >= 0.5, diff - 1.0, diff)
+                if np.linalg.norm(diff) < tol_zero:
+                    is_duplicate = True
+                    break
+
+            if not is_duplicate:
+                qlist.append(qvec)
+                if len(qlist) == nqmax:
+                    break
+
+        return qlist
+
     def _find_commensurate_q(self):
 
         tol_zero = 1.0e-3
@@ -684,70 +759,40 @@ class AlamodeDisplace(object):
         nqmax = self._supercell.nat // self._nat_primitive
         convertor = np.dot(self._supercell.inverse_lattice_vector,
                            self._primitive_lattice_vector)
-        nmax = 10
-        qlist = []
 
         for i in range(3):
             for j in range(3):
-                frac = abs(convertor[i, j])
+                numerator, denominator = self._find_fraction(convertor[i, j], tol=tol_zero)
+                convertor[i, j] = float(numerator) / float(denominator)
 
-                if frac < tol_zero:
-                    convertor[i, j] = 0.0
-                else:
-                    found_nnp = False
-                    for nnp in range(1, 1000):
-                        if abs(frac * float(nnp) - 1.0) < tol_zero:
-                            found_nnp = True
-                            break
-                    if found_nnp:
-                        convertor[i, j] = np.sign(convertor[i, j]) / float(nnp)
-                    else:
-                        raise RuntimeError("Failed to express the inverse transformation matrix"
-                                           "by using fractional numbers.\n\n"
-                                           "Please make sure that the lattice parameters of \n"
-                                           "the supercell and primitive cell are consistent.\n")
+        comb = np.array([[Lx * sx, Ly * sy, Lz * sz]
+                         for Lx in range(10)
+                         for Ly in range(10)
+                         for Lz in range(10)
+                         for sx in (1, -1)
+                         for sy in (1, -1)
+                         for sz in (1, -1)])
 
-        comb = []
-        for Lx in range(nmax):
-            for Ly in range(nmax):
-                for Lz in range(nmax):
-                    for sx in (1, -1):
-                        for sy in (1, -1):
-                            for sz in (1, -1):
-                                comb.append([Lx * sx, Ly * sy, Lz * sz])
+        qlist = []
 
         for entry in comb:
-            vec = np.array([entry[0], entry[1], entry[2]])
-            qvec = np.dot(vec, convertor) % 1.0
+            qvec = np.dot(entry, convertor) % 1.0
+            qvec = np.where(qvec >= 0.5, qvec - 1.0, qvec)
+            qvec = np.where(qvec < -0.5, qvec + 1.0, qvec)
 
-            for i in range(3):
-                if qvec[i] >= 0.5:
-                    qvec[i] -= 1.0
-                elif qvec[i] < -0.5:
-                    qvec[i] += 1.0
-
-            new_entry = True
-
+            # Check if qvec is close to any vector in qlist
+            is_duplicate = False
             for elem in qlist:
-                diff = (elem - qvec) % 1.0
-
-                for i in range(3):
-                    if diff[i] >= 0.5:
-                        diff[i] -= 1.0
-                    elif diff[i] < -0.5:
-                        diff[i] += 1.0
-
-                norm = math.sqrt(np.dot(diff, diff))
-
-                if norm < tol_zero:
-                    new_entry = False
+                diff = (elem - qvec + 1.0) % 1.0
+                diff = np.where(diff >= 0.5, diff - 1.0, diff)
+                if np.linalg.norm(diff) < tol_zero:
+                    is_duplicate = True
                     break
 
-            if new_entry:
+            if not is_duplicate:
                 qlist.append(qvec)
-
-            if len(qlist) == nqmax:
-                break
+                if len(qlist) == nqmax:
+                    break
 
         self._commensurate_qpoints = qlist
 

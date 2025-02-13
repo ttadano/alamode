@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
+#include <functional>
 #include "system.h"
 #include "symmetry.h"
 #include "cluster.h"
@@ -248,3 +250,25 @@ private:
 
 };
 }
+
+// Helper function to combine hash values
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& value) {
+    seed ^= std::hash<T>()(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+// Hash function for tuple
+namespace std {
+template <typename... Types>
+struct hash<std::tuple<Types...>> {
+    size_t operator()(const std::tuple<Types...>& t) const {
+        return std::apply([](auto&&... args) {
+            size_t seed = 0;
+            (hash_combine(seed, args), ...);
+            return seed;
+        }, t);
+    }
+};
+}
+
+
