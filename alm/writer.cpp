@@ -1313,7 +1313,7 @@ void Writer::save_fc3_shengbte_format(const std::unique_ptr<System> &system,
     std::unordered_map<std::tuple<size_t, size_t, size_t>, size_t> has_element;
     std::unordered_map<std::tuple<size_t, size_t, size_t>, double> fc3;
 
-}    for (const auto &it: fcs->get_fc_cart()[1]) {
+    for (const auto &it: fcs->get_fc_cart()[1]) {
 
         if (!it.is_ascending_order) continue;
 
