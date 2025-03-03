@@ -139,42 +139,49 @@ class TaylorExpansionPotential:
         Builds the necessary structure information from the supercell,
         including the primitive cell and translation mappings.
         """
-        cell = (self.supercell0.get_cell(),
+        cell = (np.array(self.supercell0.get_cell()),
                 self.supercell0.get_scaled_positions(),
                 self.supercell0.get_atomic_numbers())
 
         self.primitive_cell = spglib.standardize_cell(cell,
                                                       to_primitive=True,
-                                                      no_idealize=False,
+                                                      no_idealize=True,
                                                       symprec=1.0e-3)
-        lavec_super = self.supercell0.get_cell()
+        lavec_super = np.array(self.supercell0.get_cell())
         lavec_prim = self.primitive_cell[0]
-        self.transformation_matrix = np.dot(np.linalg.inv(lavec_prim), lavec_super)
+        self.transformation_matrix = np.dot(lavec_super, np.linalg.inv(lavec_prim))
         self.transformation_matrix_int = np.round(self.transformation_matrix).astype(int)
-        ntrans = self.supercell0.get_global_number_of_atoms() // self.primitive_cell[1].shape[0]
-        self.map_translation = np.zeros((self.supercell0.get_global_number_of_atoms(), ntrans), dtype=int)
-
         if np.abs(self.transformation_matrix - self.transformation_matrix_int).max() > 1.0e-3:
             raise RuntimeError("The transformation matrix is not integer.")
 
+        ntrans = self.supercell0.get_global_number_of_atoms() // self.primitive_cell[1].shape[0]
+        self.map_translation = np.zeros((self.supercell0.get_global_number_of_atoms(), ntrans), dtype=int)
+
         positions_tmp = np.dot(cell[1], self.transformation_matrix)
-        rounded_array = np.round(positions_tmp)
-        shift_vectors = np.where(np.abs(positions_tmp - rounded_array) < 1.0e-3,
-                                 rounded_array, np.floor(positions_tmp)).astype(int)
-        unique_shifts = np.unique(shift_vectors, axis=0)
-        if len(unique_shifts) != ntrans:
-            raise RuntimeError("The number of translations in the force constant file is inconsistent.")
+        atom_labels = np.zeros(len(positions_tmp), dtype=int)
+        for i, position in enumerate(positions_tmp):
+            position_diffs = self.primitive_cell[1] - position
+            position_diffs_round = np.round(position_diffs)
+            diffs_fraction = np.linalg.norm(position_diffs - position_diffs_round, axis=1)
+            indices_mindiff = np.argmin(diffs_fraction)
+
+            if diffs_fraction[indices_mindiff] > 1.0e-3:
+                raise RuntimeError("Failed to find the corresponding primitive cell position.")
+            atom_labels[i] = indices_mindiff
 
         transmat_inv = np.linalg.inv(self.transformation_matrix)
 
-        for i, shift in enumerate(unique_shifts):
-            xf_shifted = np.mod(cell[1] + np.dot(shift, transmat_inv), 1.0)
+        for i, atom_index in enumerate(np.where(atom_labels == 0)[0]):
+            xshift = np.round(positions_tmp[atom_index] - self.primitive_cell[1][0])
+            xf_shifted = np.mod(cell[1] + np.dot(xshift, transmat_inv), 1.0)
             indices = np.zeros(len(xf_shifted), dtype=int)
+
             for j, coord in enumerate(xf_shifted):
                 distances = np.linalg.norm(cell[1] - coord, axis=1)
                 indices[j] = np.argmin(distances)
 
             self.map_translation[:, i] = indices
+
 
     @staticmethod
     def _check_consistency_primitive_cell(primcell1, primcell2):

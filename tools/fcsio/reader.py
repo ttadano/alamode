@@ -144,7 +144,7 @@ class ForceConstantParser:
 
         self.primitive_cell = spglib.standardize_cell(self.supercell,
                                                       to_primitive=True,
-                                                      no_idealize=False,
+                                                      no_idealize=True,
                                                       symprec=1.0e-3)
 
         self.map_p2s = np.zeros((ntrans, natom_prim), dtype=int)
@@ -160,23 +160,24 @@ class ForceConstantParser:
         Parses structural information specific to the HDF5 format.
         """
         with h5py.File(self.filename, 'r') as f:
-            lavec_tmp = f['/SuperCell/lattice_vector'][:].T
+            lavec_tmp = f['/SuperCell/lattice_vector'][:]
             xf_tmp = f['/SuperCell/fractional_coordinate'][:]
             kinds = f['/SuperCell/atomic_kinds'][:].astype(int)
             elems = f['/SuperCell/elements'][:].astype(str)
             numbers = np.array([atomic_numbers[elems[i]] for i in kinds])
             self.supercell = (lavec_tmp, xf_tmp, numbers)
             natom_super = int(f['/SuperCell/number_of_atoms'][()])
-            lavec_tmp = f['/PrimitiveCell/lattice_vector'][:].T
+            lavec_tmp = f['/PrimitiveCell/lattice_vector'][:]
             xf_tmp = f['/PrimitiveCell/fractional_coordinate'][:]
             kinds = f['/PrimitiveCell/atomic_kinds'][:].astype(int)
             elems = f['/PrimitiveCell/elements'][:].astype(str)
             numbers = np.array([atomic_numbers[elems[i]] for i in kinds])
             cell_tmp = (lavec_tmp, xf_tmp, numbers)
-            self.primitive_cell = spglib.standardize_cell(cell_tmp,
-                                                          to_primitive=True,
-                                                          no_idealize=False,
-                                                          symprec=1.0e-3)
+            self.primitive_cell = cell_tmp
+            # self.primitive_cell = spglib.standardize_cell(cell_tmp,
+            #                                               to_primitive=True,
+            #                                               no_idealize=True,
+            #                                               symprec=1.0e-3)
             self.map_p2s = f['/SuperCell/mapping_table'][:].astype(int).T
             self.map_s2p = np.zeros(natom_super, dtype=int)
             for i, j in enumerate(self.map_p2s):
