@@ -2,6 +2,7 @@ import argparse
 
 import numpy as np
 from ase.io import read
+from ase.units import Ry, Bohr
 
 from fcsio.reader import ForceConstantParser
 from taylor import TaylorExpansionPotential
@@ -26,14 +27,24 @@ def get_original_structure(fname_in, format):
     return structure
 
 
-def print_energies(energies):
+def print_energies(energies, unit='rydberg'):
     """
     Print the calculated potential energies.
 
     Parameters:
     - energies (dict): A dictionary containing arrays of energies. The key 'total' should contain the total energy array.
     """
-    print("# potential energies (Ry)")
+    if unit == 'rydberg':
+        factor = 1.0
+        print("# potential energies (Ry)")
+    elif unit == 'hartree':
+        factor = 0.5
+        print("# potential energies (Ha)")
+    elif unit == 'eV':
+        factor = Ry
+        print("# potential energies (eV)")
+    else:
+        raise RuntimeError("Invalid unit: %s" % unit)
     print("#", end='')
 
     keys = list(energies.keys())
@@ -53,8 +64,38 @@ def print_energies(energies):
 
     for i in range(energies['total'].shape[0]):
         for j in range(len(key_list)):
-            print("{:15.7f}".format(energies_array[i, j]), end='')
+            print("{:15.8e}".format(energies_array[i, j]*factor), end='')
         print('')
+
+
+def print_forces(forces, unit='rydberg'):
+    """
+    Print the calculated forces.
+
+    Parameters:
+    - forces (numpy.ndarray): The array of forces.
+    """
+
+    if unit == 'rydberg':
+        factor = 1.0
+        print("# atomic forces (Ry/Bohr)")
+    elif unit == 'hartree':
+        factor = 0.5
+        print("# atomic forces (Ha/Bohr)")
+    elif unit == 'eV':
+        factor = Ry / Bohr
+        print("# atomic forces (eV/Angstrom)")
+    else:
+        raise RuntimeError("Invalid unit: %s" % unit)
+    print("#", end='')
+
+    forces_array = forces['total'] * factor
+    for i in range(forces_array.shape[0]):
+        print("# Snapshot %d" % (i + 1))
+        for j in range(forces_array.shape[1]):
+            print("{:15.8e} {:15.8e} {:15.8e}".format(forces_array[i, j, 0],
+                                                      forces_array[i, j, 1],
+                                                      forces_array[i, j, 2]))
 
 
 def get_argoptions():
@@ -85,6 +126,13 @@ def get_argoptions():
     parser.add_argument('--disp', type=str, default=None,
                         help="File containing the displacements in units of Bohr")
 
+    parser.add_argument('--unit', type=str, default='rydberg',
+                        choices=['rydberg', 'hartree', 'eV'],
+                        help="The unit of the output potential energies.")
+
+    parser.add_argument('--print-forces', action='store_true', default=False,
+                        help="Print the forces in the output.")
+
     return parser.parse_args()
 
 
@@ -110,7 +158,10 @@ def main():
 
     displacements = displacements.reshape(-1, structure.get_global_number_of_atoms(), 3)
     energies, forces = taylor.compute(displacements)
-    print_energies(energies)
+    if args.print_forces:
+        print_forces(forces, args.unit)
+    else:
+        print_energies(energies, args.unit)
 
 
 if __name__ == '__main__':
