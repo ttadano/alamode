@@ -439,6 +439,69 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                                      relaxation->relax_str,
                                      mindist_list_qha, phase_factor_qha);
 
+    // std::cout << "\n";
+    // std::cout << "del_v1_del_umn\n";
+    // for (int i = 0; i < 9; i++) {
+    //     for (int j = 0; j < ns; j++) {
+    //         if (std::abs(del_v1_del_umn[i][j]) > eps8) {
+    //             std::cout << del_v1_del_umn[i][j] << '\n';
+    //         } 
+    //     }
+    // }
+    // std::cout << "\n";
+    // std::cout << "del2_v1_del_umn2\n";
+    // for (int i = 0; i < 81; i++) {
+    //     for (int j = 0; j < ns; j++) {
+    //         if (std::abs(del2_v1_del_umn2[i][j]) > eps8) {
+    //             std::cout << del2_v1_del_umn2[i][j] << '\n';
+    //         } 
+    //     }
+    // }
+    // std::cout << "\n";
+    // std::cout << "del3_v1_del_umn3\n";
+    // for (int i = 0; i < 729; i++) {
+    //     for (int j = 0; j < ns; j++) {
+    //         if (std::abs(del3_v1_del_umn3[i][j]) > eps8) {
+    //             std::cout << del3_v1_del_umn3[i][j] << "\n";
+    //         } 
+    //     }
+    // }
+    // std::cout << "\n";
+    // std::cout << "dev_v2_del_umn\n";
+    // for (int i = 0; i < 9; i++) {
+    //     for (int j = 0; j < nk; j++) {
+    //         for (int k = 0; k < ns * ns; k++) {
+    //             if (std::abs(del_v2_del_umn[i][j][k]) > eps8) {
+    //                 std::cout << std::abs(del_v2_del_umn[i][j][k]) << "\n";
+    //             } 
+    //         }
+    //     }
+    // }
+    // std::cout << "\n";
+    // std::cout << "dev2_v2_del_umn2\n";
+    // for (int i = 0; i < 81; i++) {
+    //     for (int j = 0; j < nk; j++) {
+    //         for (int k = 0; k < ns * ns; k++) {
+    //             if (std::abs(del2_v2_del_umn2[i][j][k]) > eps8) {
+    //                 std::cout << del2_v2_del_umn2[i][j][k] << "\n";
+    //             } 
+    //         }
+    //     }
+    // }
+    // std::cout << "\n";
+    // std::cout << "dev_v3_del_umn\n";
+    // for (int i = 0; i < 9; i++) {
+    //     for (int j = 0; j < nk; j++) {
+    //         for (int k = 0; k < ns; k++) {
+    //             for (int l = 0; l < ns * ns; l++) {
+    //                 if (std::abs(del_v3_del_umn[i][j][k][l]) > eps8) {
+    //                     std::cout << del_v3_del_umn[i][j][k][l] << "\n";
+    //                 } 
+    //             }
+    //         }
+    //     }
+    // }                                     
+
     // get indices of optical modes at Gamma point
     js = 0;
     for (is = 0; is < ns; is++) {
@@ -572,12 +635,24 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                 // get eta tensor
                 relaxation->calculate_eta_tensor(eta_tensor, u_tensor);
 
+                // std::cout << "Eta tensor:\n";
+                // for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
+                //     std::cout << " ";
+                //     for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
+                //         std::cout << std::scientific << std::setw(15) << std::setprecision(6) << eta_tensor[ixyz1][ixyz2];
+                //     }
+                //     std::cout << '\n';
+                // }                
+
                 // calculate IFCs under strain
                 relaxation->renormalize_v0_from_umn(v0_with_umn, v0_ref, eta_tensor,
                                                     C1_array, C2_array, C3_array, u_tensor, pvcell);
 
-                relaxation->renormalize_v1_from_umn(v1_with_umn, v1_ref,
-                                                    del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
+                relaxation->renormalize_v1_from_umn(v1_with_umn, 
+                                                    v1_ref,
+                                                    del_v1_del_umn, 
+                                                    del2_v1_del_umn2, 
+                                                    del3_v1_del_umn3,
                                                     u_tensor);
 
                 relaxation->renormalize_v2_from_umn(kmesh_coarse, kmesh_dense, kmap_coarse_to_dense,
@@ -593,6 +668,20 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                         }
                     }
                 }
+
+                // std::cout << "V0 with strain = " << v0_with_umn << '\n';
+                // std::cout << "V1_with_umn\n";
+                // for (i1 = 0; i1 < ns; ++i1) {
+                //     std::cout << "v1_with_umn[" << i1 << "] = " << v1_with_umn[i1] << '\n';
+                // }
+                // std::cout << "delta_v2_with_umn\n";
+                // for (i1 = 0; i1 < nk_interpolate; ++i1) {
+                //     for (size_t i2 = 0; i2 < ns * ns; ++i2) {
+                //         if (std::abs(delta_v2_with_umn[i1][i2]) > eps8) {
+                //             std::cout << "delta_v2_with_umn[" << i1 << "][" << i2 << "] = " << delta_v2_with_umn[i1][i2] << '\n';
+                //         }
+                //     }
+                // }
 
                 //renormalize IFC
                 relaxation->renormalize_v1_from_q0(omega2_harmonic, kmesh_coarse, kmesh_dense,
@@ -635,13 +724,22 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                                                           del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
                                                           del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
                                                           q0, pvcell, kmesh_dense);
-
+                    // std::cout << "\n";
+                    // for (i1 = 0; i1 < 9; ++i1) {
+                    //     std::cout << "del_v0_del_umn_renorm[" << i1 << "] = " << del_v0_del_umn_renorm[i1] << '\n';
+                    // }     
                     // calculate renormalized strain-force coupling for ZSISA and v-ZSISA.
                     calculate_del_v1_del_umn_renorm(del_v1_del_umn_renorm,
                                                     u_tensor,
                                                     del_v1_del_umn, del2_v1_del_umn2, del3_v1_del_umn3,
                                                     del_v2_del_umn, del2_v2_del_umn2, del_v3_del_umn,
                                                     q0);
+                    // std::cout << "\n";
+                    // for (i1 = 0; i1 < 9; ++i1) {
+                    //     for (is1 = 0; is1 < ns; ++is1) {
+                    //         std::cout << "del_v1_del_umn_renorm[" << i1 << "][" << is1 << "] = " << del_v1_del_umn_renorm[i1][is1] << '\n';
+                    //     }
+                    // }                                                    
                 }
 
                 dynamical->compute_renormalized_harmonic_frequency(omega2_harm_renorm[iT],

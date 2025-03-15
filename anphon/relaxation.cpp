@@ -909,30 +909,6 @@ void Relaxation::compute_del_v1_del_umn(std::complex<double> **del_v1_del_umn,
     int i, ind1, is1;
     int ixyz, ixyz1;
 
-    // prepare supercell shift
-//    double **xshift_s;
-//    const auto ncell_s = 27;
-
-//    allocate(xshift_s, ncell_s, 3);
-
-//    unsigned int icell = 0;
-//    int ix, iy, iz;
-//    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0;
-//    icell = 1;
-//    for (ix = -1; ix <= 1; ++ix) {
-//        for (iy = -1; iy <= 1; ++iy) {
-//            for (iz = -1; iz <= 1; ++iz) {
-//                if (ix == 0 && iy == 0 && iz == 0) continue;
-//
-//                xshift_s[icell][0] = ix * 1.0;
-//                xshift_s[icell][1] = iy * 1.0;
-//                xshift_s[icell][2] = iz * 1.0;
-//
-//                ++icell;
-//            }
-//        }
-//    }
-
     // calculate renormalization in real space
     for (ixyz = 0; ixyz < 9; ixyz++) {
         for (i = 0; i < ns; i++) {
@@ -996,30 +972,6 @@ void Relaxation::compute_del2_v1_del_umn2(std::complex<double> **del2_v1_del_umn
     int i, ind1, is1;
     int ixyz, ixyz1, ixyz2;
     int ixyz_comb;
-
-    // prepare supercell shift
-//    double **xshift_s;
-//    const auto ncell_s = 27;
-
-//    allocate(xshift_s, ncell_s, 3);
-
-//    unsigned int icell = 0;
-//    int ix, iy, iz;
-//    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0;
-//    icell = 1;
-//    for (ix = -1; ix <= 1; ++ix) {
-//        for (iy = -1; iy <= 1; ++iy) {
-//            for (iz = -1; iz <= 1; ++iz) {
-//                if (ix == 0 && iy == 0 && iz == 0) continue;
-//
-//                xshift_s[icell][0] = ix * 1.0;
-//                xshift_s[icell][1] = iy * 1.0;
-//                xshift_s[icell][2] = iz * 1.0;
-//
-//                ++icell;
-//            }
-//        }
-//    }
 
     // calculate renormalization in real space
     for (ixyz = 0; ixyz < 81; ixyz++) {
@@ -1094,31 +1046,6 @@ void Relaxation::compute_del3_v1_del_umn3(std::complex<double> **del3_v1_del_umn
     int i, ind1, is1;
     int ixyz, ixyz1, ixyz2, ixyz3;
     int ixyz_comb;
-//    double vec1[3], vec2[3], vec3[3];
-
-    // prepare supercell shift
-//    double **xshift_s;
-//    const auto ncell_s = 27;
-
-//    allocate(xshift_s, ncell_s, 3);
-
-//    unsigned int icell = 0;
-//    int ix, iy, iz;
-//    for (i = 0; i < 3; ++i) xshift_s[0][i] = 0;
-//    icell = 1;
-//    for (ix = -1; ix <= 1; ++ix) {
-//        for (iy = -1; iy <= 1; ++iy) {
-//            for (iz = -1; iz <= 1; ++iz) {
-//                if (ix == 0 && iy == 0 && iz == 0) continue;
-//
-//                xshift_s[icell][0] = ix * 1.0;
-//                xshift_s[icell][1] = iy * 1.0;
-//                xshift_s[icell][2] = iz * 1.0;
-//
-//                ++icell;
-//            }
-//        }
-//    }
 
     // calculate renormalization in real space
     for (ixyz = 0; ixyz < 729; ixyz++) {
@@ -1166,7 +1093,6 @@ void Relaxation::compute_del3_v1_del_umn3(std::complex<double> **del3_v1_del_umn
     // transform to Fourier space
     allocate(inv_sqrt_mass, natmin);
     for (i = 0; i < natmin; i++) {
-//        inv_sqrt_mass[i] = 1.0 / std::sqrt(system->mass[system->map_p2s[i][0]]);
         inv_sqrt_mass[i] = 1.0 / std::sqrt(system->get_mass_prim()[i]);
     }
 
@@ -1212,13 +1138,6 @@ void Relaxation::compute_del_v2_del_umn(std::complex<double> ***del_v2_del_umn,
 
     std::vector<FcsArrayWithCell> fcs_aligned;
 
-//    fcs_aligned.clear();
-
-//    for (const auto &it: fcs_phonon->force_constant_with_cell[1]) {
-//        fcs_aligned.emplace_back(it);
-//    }
-//    std::sort(fcs_aligned.begin(), fcs_aligned.end());
-//
     fcs_aligned.clear();
 
     for (const auto &it: fcs_phonon->force_constant_with_cell[1]) {
@@ -1314,7 +1233,6 @@ void Relaxation::compute_del2_v2_del_umn2(std::complex<double> ***del2_v2_del_um
             compute_del_v_strain_in_real_space2(fcs_aligned,
                                                 delta_fcs, ixyz11, ixyz12, ixyz21, ixyz22, 1);
 
-
             for (ik = 0; ik < nk; ik++) {
                 //anharmonic_core->calc_analytic_k_from_FcsArrayWithCell(xk_in[ik],
                 //                                                       delta_fcs,
@@ -1379,8 +1297,8 @@ void Relaxation::compute_del_v3_del_umn(std::complex<double> ****del_v3_del_umn,
     for (const auto &it: fcs_phonon->force_constant_with_cell[2]) {
         fcs_aligned.emplace_back(it);
     }
-    std::sort(fcs_aligned.begin(), fcs_aligned.end());
-
+    sort_by_heading_indices operator_fcs(1);
+    std::sort(fcs_aligned.begin(), fcs_aligned.end(), operator_fcs);
 
     for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
         for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
@@ -1691,7 +1609,6 @@ void Relaxation::calculate_delv1_delumn_finite_difference(std::complex<double> *
     // transform to Fourier space
     allocate(inv_sqrt_mass, natmin);
     for (iat1 = 0; iat1 < natmin; iat1++) {
-//        inv_sqrt_mass[iat1] = 1.0 / std::sqrt(system->mass[system->map_p2s[iat1][0]]);
         inv_sqrt_mass[iat1] = 1.0 / std::sqrt(system->get_mass_prim()[iat1]);
     }
 
@@ -2691,8 +2608,7 @@ void Relaxation::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayW
 
     delta_fcs.clear();
 
-
-    const auto convmat = system->get_primcell().lattice_vector;
+    const auto convmat = system->get_supercell(1).lattice_vector;
     const auto norder = fcs_aligned[0].pairs.size();
     const auto nelems = norder - 1;
 
@@ -2716,7 +2632,7 @@ void Relaxation::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayW
     relvecs_vel_now.resize(nelems - 1);
     relvecs_vel_old.resize(nelems - 1);
 
-    for (i = 0; i < nelems; ++i) index_with_cell_old.push_back(-1);
+    for (i = 0; i < 3 * (norder - 2) + 1; ++i) index_with_cell_old.push_back(-1);
 
     for (const auto &it: fcs_aligned) {
 
@@ -2782,37 +2698,48 @@ void Relaxation::compute_del_v_strain_in_real_space1(const std::vector<FcsArrayW
             index_with_cell_old = index_with_cell;
         }
 
-//        for (i = 0; i < 3; i++) {
-//            vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
-//
-//            for (j = 1; j < norder - 1; j++) {
-//                vec_origin[i] +=
-//                        system->xr_s_anharm[system->map_p2s_anharm[it.pairs[j].index / 3][it.pairs[j].tran]][i]
-//                        + xshift_s[it.pairs[j].cell_s][i];
-//            }
-//            vec_origin[i] /= (norder - 1);
-//        }
-
         vec_origin.setZero();
         vec.setZero();
 
-        for (j = 1; j < nelems; ++j) {
-            vec_origin += it.relvecs_velocity[j - 1];
+        for (i = 0; i < 3; ++i) {
+            vec_origin[i] = system->get_supercell(1).x_fractional(system->get_map_p2s(1)[it.pairs[0].index / 3][0], i);
+            for (j = 1; j < norder - 1; j++) {
+                vec_origin[i] +=
+                        system->get_supercell(1).x_fractional(system->get_map_p2s(1)[it.pairs[j].index / 3][it.pairs[j].tran], i)
+                        + dynamical->get_xrs_image()[it.pairs[j].cell_s][i];
+            }
+            vec_origin[i] /= static_cast<double>(norder - 1);
         }
-        vec_origin /= static_cast<double>(nelems);
 
-//        for (i = 0; i < 3; ++i) {
-//            vec[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[norder - 1].index / 3][it.pairs[norder -
-//                                                                                                         1].tran]][i]
-//                     - vec_origin[i]
-//                     + xshift_s[it.pairs[norder - 1].cell_s][i];
-//        }
+        // for (j = 1; j < nelems; ++j) {
+        //     vec_origin += it.relvecs_velocity[j - 1];
+        // }
+        // vec_origin /= static_cast<double>(nelems);
 
-        vec = it.relvecs_velocity[nelems] - vec_origin;
+        for (i = 0; i < 3; ++i) {
+            vec[i] = system->get_supercell(1).x_fractional(system->get_map_p2s(1)[it.pairs[norder - 1].index / 3][it.pairs[norder - 1].tran], i)
+                     - vec_origin[i]
+                     + dynamical->get_xrs_image()[it.pairs[norder - 1].cell_s][i];
+        }
+
+        // vec = it.relvecs_velocity[nelems] - vec_origin;
+
         vec = convmat * vec;
-//        rotvec(vec, vec, system->lavec_s_anharm);
         fcs_tmp += it.fcs_val * vec[ixyz2];
-        // it.pairs[norder - 1].index % 3 == ixyz1 has been checked.
+
+        // if (ixyz1 == 0)
+        // {
+        //     std::cout << "DEBUG: ";
+        //     std::cout << " ixyz1 = " << ixyz1 << " ixyz2 = " << ixyz2 << " ";
+        //     for (i = 0; i < it.pairs.size(); ++i) {
+        //         std::cout << std::setw(5) << it.pairs[i].index;
+        //         std::cout << std::setw(5) << it.pairs[i].tran;
+        //         std::cout << std::setw(5) << it.pairs[i].cell_s;
+        //     }
+        //     std::cout << std::setw(20) << it.fcs_val;
+        //     std::cout << std::setw(20) << vec[ixyz2] << '\n';
+    
+        // }
     }
 
     if (std::abs(fcs_tmp) > eps15) {
@@ -2868,7 +2795,7 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayW
 
     // new implementation
     // calculate IFC renormalization separately for each mirror image combinations.
-    const auto convmat = system->get_primcell().lattice_vector;
+    const auto convmat = system->get_supercell(2).lattice_vector;
     const auto norder = fcs_aligned[0].pairs.size();
     const auto nelems = norder - 2;
 
@@ -2891,8 +2818,7 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayW
     relvecs_vel_now.resize(nelems - 1);
     relvecs_vel_old.resize(nelems - 1);
 
-    for (i = 0; i < nelems; ++i) index_with_cell_old.push_back(-1);
-
+    for (i = 0; i < 3 * (norder - 3) + 1; ++i) index_with_cell_old.push_back(-1);
 
     for (const auto &it: fcs_aligned) {
 
@@ -2967,6 +2893,15 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayW
         }
         vec_origin /= static_cast<double>(nelems);
 
+        for (i = 0; i < 3; ++i) {
+            vec_origin[i] = system->get_supercell(2).x_fractional(system->get_map_p2s(2)[it.pairs[0].index / 3][0], i);
+            for (j = 1; j < norder - 2; j++) {
+                vec_origin[i] +=
+                        system->get_supercell(2).x_fractional(system->get_map_p2s(2)[it.pairs[j].index / 3][it.pairs[j].tran], i)
+                        + dynamical->get_xrs_image()[it.pairs[j].cell_s][i];
+            }
+            vec_origin[i] /= static_cast<double>(norder - 2);
+        }
 //
 //        for (i = 0; i < 3; i++) {
 //            vec_origin[i] = system->xr_s_anharm[system->map_p2s_anharm[it.pairs[0].index / 3][0]][i];
@@ -2978,8 +2913,19 @@ void Relaxation::compute_del_v_strain_in_real_space2(const std::vector<FcsArrayW
 //            vec_origin[i] /= (norder - 2);
 //        }
 
-        vec1 = it.relvecs_velocity[nelems - 1] - vec_origin;
-        vec2 = it.relvecs_velocity[nelems] - vec_origin;
+        // vec1 = it.relvecs_velocity[nelems - 1] - vec_origin;
+        // vec2 = it.relvecs_velocity[nelems] - vec_origin;
+
+
+
+        for (i = 0; i < 3; ++i) {
+            vec1[i] = system->get_supercell(2).x_fractional(system->get_map_p2s(2)[it.pairs[norder - 2].index / 3][it.pairs[norder - 2].tran], i)
+                      - vec_origin[i]
+                      + dynamical->get_xrs_image()[it.pairs[norder - 2].cell_s][i];
+            vec2[i] = system->get_supercell(2).x_fractional(system->get_map_p2s(2)[it.pairs[norder - 1].index / 3][it.pairs[norder - 1].tran], i)
+                      - vec_origin[i]
+                      + dynamical->get_xrs_image()[it.pairs[norder - 1].cell_s][i];
+        }
 
         vec1 = convmat * vec1;
         vec2 = convmat * vec2;

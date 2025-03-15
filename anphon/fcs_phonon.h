@@ -149,7 +149,7 @@ public:
 struct sort_by_heading_indices {
     unsigned int number_of_tails; // number of indices at the tail of the array
     // It should be 1 when renormalizing 2nd-order force constants by 3rd-order force constants,
-    // and should be 2 when renormalizing 2nd-order force cnstants by 4th-order force constants.
+    // and should be 2 when renormalizing 2nd-order force constants by 4th-order force constants.
 
     sort_by_heading_indices(const unsigned int n) : number_of_tails(n) {}
 

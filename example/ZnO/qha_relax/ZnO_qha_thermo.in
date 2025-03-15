@@ -1,10 +1,10 @@
 &general
   PREFIX = ZnO_qha
   MODE = QHA
-  NKD = 2
-  FCSXML = ZnO332_500K_cutoff1208_nbody233.xml
-  FC2XML = ZnO442_harmonic.xml
-  KD = Zn O
+#  NKD = 2
+  FCSFILE = ZnO332_500K_cutoff1208_nbody233.xml
+  FC2FILE = ZnO442_harmonic.xml
+#  KD = Zn O
 
   TMIN = 0
   TMAX = 1000
@@ -17,6 +17,7 @@
 
   RELAX_STR = 2
   QHA_SCHEME = 0
+  RESTART_QHA = 0
 / 
 &relax
   RELAX_ALGO = 2
