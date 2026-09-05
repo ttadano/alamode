@@ -1,9 +1,14 @@
 #include "ifc_derivative.h"
 #include <algorithm>
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <vector>
 #include "anharmonic_core.h"
 #include "constants.h"
 #include "dynamical.h"
@@ -12,6 +17,7 @@
 #include "mpi_common.h"
 #include "relaxation.h"
 #include "scph_v3v4_elements.h"
+#include "strain_reference_cell.h"
 #include "system.h"
 
 using namespace PHON_NS;
@@ -1309,6 +1315,63 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
         exit("calculate_delv1_delumn_finite_difference", "strain_force.in not found");
     }
 
+    // Optional "&reference_cell ... /" header: the cell the force rows were
+    // generated for. When it is present the rows of every block are mapped
+    // onto the atoms of the current primitive cell (which the &cell field may
+    // have enlarged); without it the rows are those of the current cell, as
+    // before. The first token is carried into the block loop, so no seeking
+    // is needed.
+    const auto &pcell = system_.get_primcell();
+    std::string first_token;
+    const bool has_first = static_cast<bool>(fin_strain_force_coupling >> first_token);
+    const bool has_header = has_first && strain_parsers::is_reference_cell_tag(first_token);
+    strain_parsers::AtomMatch atom_match;
+    std::size_t nrow = natmin;
+    if (has_header) {
+        try {
+            const auto refcell = strain_parsers::parse_reference_cell(fin_strain_force_coupling, "strain_force.in");
+            std::vector<std::string> symbols_cur(natmin);
+            for (std::size_t iat = 0; iat < natmin; ++iat) symbols_cur[iat] = system_.symbol_kd[pcell.kind[iat]];
+            atom_match = strain_parsers::match_atoms(refcell,
+                                                     pcell.lattice_vector,
+                                                     pcell.x_cartesian,
+                                                     symbols_cur,
+                                                     "strain_force.in");
+            nrow = refcell.natom();
+            if (my_rank_ == 0) {
+                const auto flags = std::cout.flags();
+                const auto prec = std::cout.precision();
+                std::cout << "  &reference_cell header found in " << strain_ifc_dir << "strain_force.in\n"
+                          << "    Reference cell : " << nrow << " atoms,  V = " << std::scientific
+                          << std::setprecision(4) << std::fabs(refcell.lattice.determinant()) << " (a.u.)^3\n"
+                          << "    Current cell   : " << natmin << " atoms,  V = " << pcell.volume
+                          << " (a.u.)^3   (V(current) / V(reference) = " << std::fixed << std::setprecision(4)
+                          << atom_match.ratio << ")\n"
+                          << "    The " << nrow << " force rows per strain mode are mapped onto the " << natmin
+                          << " atoms of the current primitive cell.\n"
+                          << "    The file on disk is not modified.\n";
+                std::cout.flags(flags);
+                std::cout.precision(prec);
+            }
+        } catch (const std::runtime_error &e) {
+            exit("calculate_delv1_delumn_finite_difference", e.what());
+        }
+    }
+    std::vector<double> rows_in(nrow * 3), rows_now;
+    double max_spread = 0.0;
+    bool pending_first = has_first && !has_header;
+
+    // Read the 'mode smag weight' line of the next block; the first block's
+    // mode name may already be in first_token.
+    auto next_block = [&]() -> bool {
+        if (pending_first) {
+            pending_first = false;
+            mode_tmp = first_token;
+            return static_cast<bool>(fin_strain_force_coupling >> smag >> weight);
+        }
+        return static_cast<bool>(fin_strain_force_coupling >> mode_tmp >> smag >> weight);
+    };
+
     weight_sum.setZero();
 
     for (ixyz1 = 0; ixyz1 < 9; ixyz1++) {
@@ -1316,7 +1379,7 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
     }
 
     while (true) {
-        if (fin_strain_force_coupling >> mode_tmp >> smag >> weight) {
+        if (next_block()) {
             if (mode_tmp == "xx") {
                 ixyz1 = ixyz2 = 0;
             } else if (mode_tmp == "yy") {
@@ -1336,13 +1399,26 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
                 exit("calculate_delv1_delumn_finite_difference", "Invalid name of strain mode in strain_force.in.");
             }
 
+            // One row of three force components per atom of the cell the
+            // file describes (the reference cell of the header, or the current
+            // primitive cell), then mapped onto the current atoms.
+            for (std::size_t k = 0; k < rows_in.size(); ++k) {
+                if (!(fin_strain_force_coupling >> rows_in[k])) {
+                    exit("calculate_delv1_delumn_finite_difference",
+                         "strain_force.in ended in the middle of a block. Every block must consist of a\n"
+                         " 'mode smag weight' line followed by one line of three force components per atom\n"
+                         " of the cell the file describes.");
+                }
+            }
+            if (has_header) {
+                max_spread = std::max(max_spread, strain_parsers::expand_atom_rows(atom_match, rows_in, rows_now));
+            } else {
+                rows_now = rows_in;
+            }
+
             for (iat1 = 0; iat1 < natmin; iat1++) {
                 for (ixyz3 = 0; ixyz3 < 3; ixyz3++) {
-                    if (!(fin_strain_force_coupling >> dtmp)) {
-                        exit("calculate_delv1_delumn_finite_difference",
-                             "strain_force.in ended in the middle of a block. Every block must consist of a\n"
-                             " 'mode smag weight' line followed by natmin lines of three force components.");
-                    }
+                    dtmp = rows_now[iat1 * 3 + ixyz3];
                     del_v1_del_umn_in_real_space[ixyz1 * 3 + ixyz2][iat1 * 3 + ixyz3] += dtmp * -1.0 / smag * weight;
 
                     if (ixyz1 != ixyz2) {
@@ -1370,6 +1446,14 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
     if (my_rank_ == 0 && !fin_strain_force_coupling.eof()) {
         warn("calculate_delv1_delumn_finite_difference",
              "Unexpected extra data at the end of strain_force.in is ignored.");
+    }
+    if (has_header && max_spread > 1.0e-8 && my_rank_ == 0) {
+        std::ostringstream os;
+        os << "The reference cell of strain_force.in is larger than the primitive cell of this run;\n"
+           << " the force rows of translation-equivalent atoms are averaged. Largest spread: " << std::scientific
+           << std::setprecision(2) << max_spread << " eV/Angstrom.\n"
+           << " A large spread means the reference data does not have the translational symmetry assumed here.";
+        warn("calculate_delv1_delumn_finite_difference", os.str().c_str());
     }
 
     for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {

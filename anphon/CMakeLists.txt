@@ -167,6 +167,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/diis.cpp
             ${PROJECT_SOURCE_DIR}/elastic_tensor.cpp
             ${PROJECT_SOURCE_DIR}/strain_file_parsers.cpp
+            ${PROJECT_SOURCE_DIR}/strain_reference_cell.cpp
             ${PROJECT_SOURCE_DIR}/dynamical.cpp
             ${PROJECT_SOURCE_DIR}/ewald.cpp
             ${PROJECT_SOURCE_DIR}/fcs_phonon.cpp
@@ -216,6 +217,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/diis.h
             ${PROJECT_SOURCE_DIR}/elastic_tensor.h
             ${PROJECT_SOURCE_DIR}/strain_file_parsers.h
+            ${PROJECT_SOURCE_DIR}/strain_reference_cell.h
             ${PROJECT_SOURCE_DIR}/dynamical.h
             ${PROJECT_SOURCE_DIR}/error.h
             ${PROJECT_SOURCE_DIR}/ewald.h
@@ -325,12 +327,19 @@ if (BUILD_NDARRAY_TEST)
     target_include_directories(test_ndarray PRIVATE ${PROJECT_SOURCE_DIR}/../include)
 endif ()
 
-# Unit test for the token parsers of C1_array.in / elastic_constants.in
-# (strain_file_parsers.h): unit tokens, legacy files, short reads. No MPI.
+# Unit test for the parsers of the strain-coupling inputs: the unit tokens of
+# C1_array.in / elastic_constants.in (strain_file_parsers.h) and the
+# &reference_cell header and atom mapping of strain_force.in
+# (strain_reference_cell.h). Standard library and Eigen only; no MPI.
 option(BUILD_STRAIN_PARSER_TEST "Build the strain input parser unit test" ON)
 if (BUILD_STRAIN_PARSER_TEST)
     add_executable(test_strain_parsers ${PROJECT_SOURCE_DIR}/../test/test_strain_parsers.cpp
-                                       ${PROJECT_SOURCE_DIR}/strain_file_parsers.cpp)
+                                       ${PROJECT_SOURCE_DIR}/strain_file_parsers.cpp
+                                       ${PROJECT_SOURCE_DIR}/strain_reference_cell.cpp)
     target_compile_options(test_strain_parsers PRIVATE -Wall -Wextra)
-    target_include_directories(test_strain_parsers PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include)
+    target_include_directories(test_strain_parsers PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include
+                                                           ${eigen_includes})
+    if (eigen_target) # empty with the header-only fallback (-DEIGEN3_INCLUDE); the include dirs above suffice then
+        target_link_libraries(test_strain_parsers ${eigen_target})
+    endif ()
 endif ()
