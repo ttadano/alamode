@@ -43,13 +43,20 @@ Here, please unzip all the XML files in **example/ZnO/qha_relax** and **example/
 
 We need to calculate the elastic constants, the strain-force coupling, and the strain-harmonic-IFC coupling
 to calculate the :math:`T`-dependence of the shape of the unit cell.
-These input files must be placed in the directory named as the value of ``STRAIN_IFC_DIR``-tag,
-specified in ``&relax``-field in the input file of :red:`anphon` (except :red:`C1_array.in`, which is read
-from the working directory of :red:`anphon`).
-The Python tools :red:`elastic.py` and :red:`strainifc.py` in the ``tools`` directory generate these files
-from DFT calculations of strained cells; see :ref:`this page <label_strain_tools>` for the full description
-and ``example/ZnO/strain_IFC_workflow`` for template inputs. All quantities are the clamped-ion ones
-(fixed fractional coordinates), because the internal coordinates are optimized explicitly by :red:`anphon`.
+The recommended way to hand them to :red:`anphon` is the strain-coupling container, one HDF5 file
+given as ``STRAINFILE`` in the ``&relax`` field: :red:`strain_IFC/ZnO.strain.h5` of this example holds
+all of them, and :red:`ZnO_qha_thermo_strainfile.in` is the input using it. The container is written by
+the Python tools :red:`elastic.py` and :red:`strainifc.py` (``--strain-file``) from DFT calculations of
+strained cells, or packed from the text files with :red:`strainfile.py`; ``strainfile.py show`` and
+``strainfile.py check`` inspect it and verify it against the planned run. See
+:ref:`this page <label_strain_tools>` for the full description and ``example/ZnO/strain_IFC_workflow``
+for template inputs. All quantities are the clamped-ion ones (fixed fractional coordinates), because
+the internal coordinates are optimized explicitly by :red:`anphon`.
+
+The rest of this section describes the legacy text files, which :red:`ZnO_qha_thermo.in` still uses:
+they are placed in the directory named as the value of the ``STRAIN_IFC_DIR``-tag (except
+:red:`C1_array.in`, which is read from the working directory of :red:`anphon`). The container stores the
+same quantities, with the units as attributes and the reference structure once.
 
 * The second-order elastic constants (SOEC) and the third-order elastic constants (TOEC) are read from
   :red:`elastic_constants.in`, whose format is as follows.
@@ -164,7 +171,9 @@ and ``example/ZnO/strain_IFC_workflow`` for template inputs. All quantities are 
 3. Prepare the input file.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The input file for the :red:`anphon` calculation is :red:`ZnO_qha_thermo.in`.
+The input file for the :red:`anphon` calculation is :red:`ZnO_qha_thermo.in` (text-file inputs in
+``STRAIN_IFC_DIR``) or, equivalently, :red:`ZnO_qha_thermo_strainfile.in` (the container as ``STRAINFILE``);
+the two give identical results.
 
 .. note::
   

@@ -37,6 +37,18 @@ For the strain–force coupling, `--central` (13 instead of 7 primitive-cell run
 the one-sided difference at smag = 0.005 was found to change the c-axis thermal expansion of ZnO
 by ~10 % (see the validation notes in the anphon documentation).
 
-Copy `elastic/results/elastic_constants.in`, `force/results/strain_force.in`,
+## 4. One container for anphon (recommended)
+
+Add `--strain-file ZnO.strain.h5` (and `--fcs-format h5` for the harmonic coupling) to the three
+`fit`/`collect` commands above: each writes its own group into the same HDF5 file, and anphon
+reads it with `STRAINFILE = ZnO.strain.h5` in the `&relax` field. Inspect and verify it before
+submitting the run:
+
+    strainfile.py show  ZnO.strain.h5
+    strainfile.py check ZnO.strain.h5 --anphon-cell ../qha_relax/ZnO_qha_thermo.in --fcs ../qha_relax/ZnO442_harmonic.xml
+
+Existing text files are packed with `strainfile.py pack --strain-ifc-dir DIR --fcs ... --anphon-cell ... -o ZnO.strain.h5`.
+
+Legacy alternative: copy `elastic/results/elastic_constants.in`, `force/results/strain_force.in`,
 `harmonic/results/strain_harmonic.in` and the `strain_00N.xml` files into
 `STRAIN_IFC_DIR`, and `elastic/results/C1_array.in` into the anphon working directory.

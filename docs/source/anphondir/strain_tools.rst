@@ -1,13 +1,104 @@
 .. _label_strain_tools:
 
-Tools for the cell-relaxation inputs (strainifc.py, elastic.py)
-=================================================================
+Tools for the cell-relaxation inputs (strainifc.py, elastic.py, strainfile.py)
+================================================================================
 
 The structural optimization with cell relaxation (``RELAX_STR = 2, 3`` in the
 SCPH/QHA modes) needs a few quantities that anphon cannot compute from the
-force constants alone. They are read from the directory given by
-``STRAIN_IFC_DIR`` (except ``C1_array.in``, which is read from the working
-directory of anphon):
+force constants alone: the reference stress and the second- and third-order
+elastic constants, the strain–force coupling, and the strain–harmonic-IFC
+coupling. They are prepared from DFT calculations of strained cells by the
+Python scripts described below, and handed to anphon in one of two ways:
+
+* **the strain-coupling container** (recommended): one HDF5 file given as
+  ``STRAINFILE`` in the ``&relax`` field, see :ref:`label_strain_container`;
+* **the legacy text files** in the directory given by ``STRAIN_IFC_DIR``
+  (plus ``C1_array.in`` in the working directory of anphon), see
+  :ref:`label_strain_legacy_files`. anphon prints a note when this route is
+  used; it will be removed in a later release.
+
+.. _label_strain_container:
+
+One file for all inputs: the strain-coupling container (``STRAINFILE``)
+-----------------------------------------------------------------------
+
+The container is an HDF5 file with the schema ``alamode:strain_coupling``.
+Every ingredient lives in its own group, the units are stored as attributes,
+and the reference structure is stored once, so that anphon can verify that
+the pieces belong together and to the cell of the run:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 18 60
+
+   * - Group
+     - Needed by
+     - Content
+   * - ``/ReferenceCell``
+     - always
+     - The reference structure (lattice, fractional coordinates, elements) in
+       anphon's primitive-cell atom order. anphon checks that its own
+       primitive cell (the ``&cell`` field) describes the same crystal; a nested
+       super- or sub-cell is accepted.
+   * - ``/Elastic``
+     - ``ELASTIC_CONST = 2`` (``soec``, ``toec``); the reference stress is used
+       with ``ELASTIC_CONST = 1`` as well
+     - ``stress`` (3×3), ``soec`` (9×9) and ``toec`` (9×9×9) in GPa, the layout
+       of the text files (:math:`i = 3\mu + \nu`). The stress may be absent
+       (zero is used, with a note); ``soec`` and ``toec`` come together.
+   * - ``/StrainForce``
+     - ``RENORM_2TO1ST = 2``
+     - The strain-mode table (``modes``, ``smag``, ``weight``), the forces
+       ``[n_modes, n_atoms, 3]`` in eV/Å, and ``Cell``, the cell the rows
+       belong to (the role of the ``&reference_cell`` header of the text file).
+   * - ``/StrainHarmonic``
+     - ``RENORM_3TO2ND = 2, 3``
+     - The strain-mode table and one sub-group ``entry_NNN`` per strained
+       supercell holding its harmonic force constants in the layout of the
+       alm ``.h5`` files (``SuperCell``, ``ForceConstants/Order2``). anphon
+       checks every entry against the supercell of ``FC2FILE``/``FCSFILE``
+       deformed by the entry's own strain, atom by atom.
+
+The producing commands write into the container directly; the same file can
+be updated by all three, each replacing only its own group and refusing a
+reference structure that is not the crystal already stored::
+
+    elastic.py fit ... --fcs FC2FILE --anphon-cell anphon.in --strain-file ZnO.strain.h5
+    strainifc.py collect --coupling force    ... --fcs FC2FILE --anphon-cell anphon.in --strain-file ZnO.strain.h5
+    strainifc.py collect --coupling harmonic ... --fcs FC2FILE --anphon-cell anphon.in --fcs-format h5 --strain-file ZnO.strain.h5
+
+and the anphon input needs a single line::
+
+    &relax
+      ...
+      STRAINFILE = ZnO.strain.h5
+    /
+
+``strainfile.py`` inspects, checks, and converts containers::
+
+    strainfile.py show  ZnO.strain.h5
+    strainfile.py check ZnO.strain.h5 --anphon-cell anphon.in --fcs FC2FILE
+    strainfile.py pack  --strain-ifc-dir strain_IFC [--c1 C1_array.in] --fcs FC2FILE --anphon-cell anphon.in
+                        [--legacy-cell anphon.in] -o ZnO.strain.h5
+
+``show`` prints the contents (cells, units, the elastic constants in GPa, the
+strain modes and their weight sums) and which anphon settings the file
+supports; ``check`` repeats anphon's consistency checks against a planned run
+before it is submitted; ``pack`` converts an existing ``STRAIN_IFC_DIR`` (any
+subset of the text files; legacy ``Ry`` files are converted to GPa with the
+volume of ``--legacy-cell``, the ``&cell`` of the run they were made for, and
+that assumption is recorded in the file). Every write records its command
+line in the ``provenance`` attribute. The container is read on every MPI
+rank and must not be modified while anphon runs. Non-magnetic reference
+structures only.
+
+.. _label_strain_legacy_files:
+
+Legacy text layout (``STRAIN_IFC_DIR``)
+---------------------------------------
+
+The text files are read from the directory given by ``STRAIN_IFC_DIR``
+(except ``C1_array.in``, which is read from the working directory of anphon):
 
 .. list-table::
    :header-rows: 1
@@ -145,6 +236,7 @@ elastic.py
                         [--dft-command DFT_command.sh] [--force]
     elastic.py fit      [--outdir DIR] [--fit {stress,energy,both}] [--fcs REF] [--anphon-cell FILE]
                         [--no-symmetrize] [--symprec 1e-5] [--compare anphon.log] [--exclude strain_NNN,...]
+                        [--strain-file FILE.h5 [--force]]
     elastic.py show     elastic_constants.in [--structure FILE | --volume V_A3] [--c1 C1_array.in]
 
 ``generate`` creates the unstrained reference ``strain_000`` and strained cells
@@ -164,8 +256,11 @@ cell; when given, the two cells must be commensurate in the same Cartesian frame
 an integer combination of the lattice vectors of the other (a conventional anphon cell and a
 primitive DFT cell, or the reverse); rotated settings are rejected. ``--compare`` prints the
 difference to the clamped-ion constants that anphon prints with ``ELASTIC_CONST = 1``.
-``show`` prints any ``elastic_constants.in`` in GPa; ``--structure``/``--volume`` are needed
-only for legacy files holding :math:`V C` in Ry.
+``--strain-file`` additionally writes the reference stress and the constants into the
+strain-coupling container (``/Elastic``); with ``--fcs``/``--anphon-cell`` the container is
+labeled with the anphon primitive cell after the DFT reference structure has been verified to
+be that crystal. ``show`` prints any ``elastic_constants.in`` in GPa; ``--structure``/``--volume``
+are needed only for legacy files holding :math:`V C` in Ry.
 
 strainifc.py
 ------------
@@ -178,6 +273,7 @@ strainifc.py
                           [--nbody 2] [--cutoff R] [--job-template job.sh] [--dft-command FILE]
     strainifc.py collect  [--outdir DIR] [--fcs REF [--anphon-cell FILE]] [--fcs-format {xml,h5}]
                           [--prefix strain] [--reorder] [--write-dfset] [--unchecked]
+                          [--strain-file FILE.h5 [--force]]
     strainifc.py check    [--outdir DIR] --fcs REF [--anphon-cell FILE]
 
 ``--fcs`` is mandatory for ``--coupling harmonic`` (unless ``--unchecked``); for
@@ -189,7 +285,7 @@ XML force-constant files).
 * ``--coupling force``: the template is the primitive cell. ``strain_000/primitive`` (reference)
   and ``strain_NNN/primitive`` (strained cells) are generated; ``collect`` subtracts the reference
   forces and writes ``strain_force.in`` in anphon's atom order, with the ``&reference_cell``
-  header when ``--fcs`` is given. All six strain modes are required
+  header when ``--fcs`` is given (and ``/StrainForce`` of the container with ``--strain-file``). All six strain modes are required
   (anphon demands that the weights of every component sum to 1); ``--modes`` subsets are only
   meaningful for ``--coupling harmonic`` with ``RENORM_3TO2ND = 3``.
 * ``--coupling harmonic``: the template is the **same supercell** as the one used to fit the
@@ -198,7 +294,8 @@ XML force-constant files).
   (``strain_NNN/nodisp``) whose residual forces are subtracted unless ``--no-offset`` is given.
   ``collect`` fits the harmonic force constants of every strained supercell with the ``alm``
   package (translational invariance imposed), writes them as ``results/strain_NNN.xml`` (or
-  ``.h5``) and ``results/strain_harmonic.in``. With ``--with-reference`` the undeformed supercell
+  ``.h5``) and ``results/strain_harmonic.in``; with ``--strain-file`` (which requires
+  ``--fcs-format h5``) the fitted force constants are embedded in ``/StrainHarmonic`` of the container. With ``--with-reference`` the undeformed supercell
   is generated as well (``strain_000``); ``collect`` fits it to ``results/strain_000.*`` (not
   listed in ``strain_harmonic.in``) and prints its difference to ``--fcs`` — a direct check that
   the DFT setup reproduces the harmonic force constants given to anphon.
