@@ -24,6 +24,7 @@ namespace PHON_NS
 {
 
 class DerivativeIFC;
+class ElasticTensor;
 
 class DelVStrainData
 {
@@ -257,12 +258,13 @@ public:
     // them from elastic_constants.in (default).
     int elastic_const;
     std::string strain_IFC_dir;
+    std::string strain_file; // STRAINFILE: the HDF5 container replacing the text files
 
     // The source of the strain couplings and elastic constants (STRAIN_IFC_DIR
     // text files or the STRAINFILE container).
     strain_coupling::StrainSource strain_source() const
     {
-        return strain_coupling::StrainSource{strain_IFC_dir, std::string()};
+        return strain_coupling::StrainSource{strain_IFC_dir, strain_file};
     }
 
     std::unique_ptr<Optimizer> optimizer;
@@ -291,6 +293,15 @@ public:
     // cell. C1 (reference stress) is not contained in the IFC model and is
     // still taken from C1_array.in when present (zero otherwise).
     void set_elastic_constants_from_ifcs(double *C1_array, double **C2_array, double ***C3_array) const;
+
+    // The stress tensor at the reference structure (C1): /Elastic/stress of
+    // STRAINFILE when given (zero when the dataset is absent), else
+    // C1_array.in of the working directory.
+    void load_reference_stress(const ElasticTensor &elastic, double *C1_array) const;
+
+    // Schema, required groups, and the reference cell of STRAINFILE against
+    // the primitive cell of this run; runs on every rank.
+    void validate_strain_file() const;
 
     static void renormalize_v0_from_umn(double &v0_with_umn, double v0_ref,
                                         std::array<std::array<double, 3>, 3> &eta_tensor, double *C1_array,

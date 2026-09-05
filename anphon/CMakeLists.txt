@@ -168,6 +168,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/elastic_tensor.cpp
             ${PROJECT_SOURCE_DIR}/strain_file_parsers.cpp
             ${PROJECT_SOURCE_DIR}/strain_reference_cell.cpp
+        ${PROJECT_SOURCE_DIR}/strain_coupling_io.cpp
             ${PROJECT_SOURCE_DIR}/dynamical.cpp
             ${PROJECT_SOURCE_DIR}/ewald.cpp
             ${PROJECT_SOURCE_DIR}/fcs_phonon.cpp
@@ -219,6 +220,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/strain_file_parsers.h
             ${PROJECT_SOURCE_DIR}/strain_reference_cell.h
         ${PROJECT_SOURCE_DIR}/strain_coupling_types.h
+        ${PROJECT_SOURCE_DIR}/strain_coupling_io.h
             ${PROJECT_SOURCE_DIR}/dynamical.h
             ${PROJECT_SOURCE_DIR}/error.h
             ${PROJECT_SOURCE_DIR}/ewald.h

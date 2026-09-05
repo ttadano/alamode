@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -56,6 +57,7 @@ struct StrainForceSet
     bool has_cell{false};               // the rows follow the atoms of `cell` ...
     strain_parsers::ReferenceCell cell; // ... otherwise those of the current primitive cell
     std::string origin;                 // for messages: the file (and group) the data came from
+    std::string cell_description;       // for the log: where `cell` was declared
     bool trailing_data{false};          // text route: tokens remained after the last block
 };
 
@@ -77,6 +79,18 @@ struct StrainHarmonicSet
     std::vector<StrainHarmonicEntry> entries;
     std::string origin;
     bool trailing_data{false};
+};
+
+// The /Elastic group of the container: reference stress and elastic
+// constants in GPa (the layout of the text files, i = 3*mu + nu).
+struct ElasticSet
+{
+    bool has_stress{false};
+    bool has_c2c3{false};
+    std::array<double, 9> stress_gpa{};
+    std::vector<double> soec_gpa; // 81
+    std::vector<double> toec_gpa; // 729
+    std::string source;
 };
 } // namespace strain_coupling
 } // namespace PHON_NS

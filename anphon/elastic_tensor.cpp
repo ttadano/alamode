@@ -165,6 +165,39 @@ void ElasticTensor::read_elastic_constants(double *const *C2_array, double *cons
     }
 }
 
+void ElasticTensor::set_reference_stress_from_set(const strain_coupling::ElasticSet &set, double *C1_array) const
+{
+    std::fill_n(C1_array, 9, 0.0);
+    if (!set.has_stress) return;
+    std::array<double, 9> values = set.stress_gpa;
+    const std::string name = set.source + "/stress";
+    convert_to_ry_per_cell(name.c_str(), "C1", strain_parsers::ElasticUnit::GPa, values.data(), values.size());
+    std::copy(values.begin(), values.end(), C1_array);
+}
+
+void ElasticTensor::set_elastic_constants_from_set(const strain_coupling::ElasticSet &set, double *const *C2_array,
+                                                   double *const *const *C3_array) const
+{
+    for (int i1 = 0; i1 < 9; i1++) {
+        std::fill_n(C2_array[i1], 9, 0.0);
+        for (int i2 = 0; i2 < 9; i2++) std::fill_n(C3_array[i1][i2], 9, 0.0);
+    }
+    if (!set.has_c2c3 || set.soec_gpa.size() != 81 || set.toec_gpa.size() != 729) {
+        exit("set_elastic_constants_from_set", "The elastic-constant set has no second- and third-order constants.");
+    }
+    auto c2 = set.soec_gpa;
+    auto c3 = set.toec_gpa;
+    const std::string name2 = set.source + "/soec", name3 = set.source + "/toec";
+    convert_to_ry_per_cell(name2.c_str(), "SOEC", strain_parsers::ElasticUnit::GPa, c2.data(), c2.size());
+    convert_to_ry_per_cell(name3.c_str(), "TOEC", strain_parsers::ElasticUnit::GPa, c3.data(), c3.size());
+    for (int i1 = 0; i1 < 9; i1++) {
+        for (int i2 = 0; i2 < 9; i2++) {
+            C2_array[i1][i2] = c2[i1 * 9 + i2];
+            for (int i3 = 0; i3 < 9; i3++) C3_array[i1][i2][i3] = c3[(i1 * 9 + i2) * 9 + i3];
+        }
+    }
+}
+
 void ElasticTensor::set_dummy_elastic_constants(double *C1_array, double *const *C2_array,
                                                 double *const *const *C3_array)
 {

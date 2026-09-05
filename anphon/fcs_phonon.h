@@ -190,6 +190,12 @@ struct sort_by_heading_indices
 class Fcs_phonon: protected Pointers
 {
 public:
+    // Read a force-constant layout stored below group_prefix ("" = file root)
+    // of an already opened HDF5 file, e.g. the strained-supercell entries
+    // embedded in a strain-coupling container.
+    void parse_fcs_from_h5(const HighFive::File &file, const std::string &group_prefix, const int order,
+                           std::vector<FcsArrayWithCell> &fcs_out, const int temperature_index = -1) const;
+
     Fcs_phonon(class PHON *);
 
     ~Fcs_phonon();
@@ -232,12 +238,6 @@ private:
     void load_fcs_xml(const std::string &fname_fcs, const int order, std::vector<FcsArrayWithCell> &fcs_out) const;
 
     void parse_fcs_from_h5(const std::string &fname_fcs, const int order, std::vector<FcsArrayWithCell> &fcs_out) const;
-
-    // Read a force-constant layout stored below group_prefix ("" = file root)
-    // of an already opened HDF5 file, e.g. the strained-supercell entries
-    // embedded in a strain-coupling container.
-    void parse_fcs_from_h5(const HighFive::File &file, const std::string &group_prefix, const int order,
-                           std::vector<FcsArrayWithCell> &fcs_out, const int temperature_index = -1) const;
 
     void append_delta_fc2_from_scph(const std::string &fname_dfc2, std::vector<FcsArrayWithCell> &fcs_out) const;
 

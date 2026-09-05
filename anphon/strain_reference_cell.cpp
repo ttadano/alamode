@@ -9,6 +9,7 @@
 */
 
 #include "strain_reference_cell.h"
+#include "constants.h"
 #include <Eigen/Dense> // inverse() and determinant() are defined in Eigen/LU
 #include <algorithm>
 #include <cctype>
@@ -232,6 +233,67 @@ double expand_atom_rows(const AtomMatch &match, const std::vector<double> &rows_
         }
     }
     return spread;
+}
+Eigen::Matrix3d displacement_gradient(const std::string &mode, const double smag)
+{
+    Eigen::Matrix3d u = Eigen::Matrix3d::Zero();
+    if (mode == "xx") {
+        u(0, 0) = smag;
+    } else if (mode == "yy") {
+        u(1, 1) = smag;
+    } else if (mode == "zz") {
+        u(2, 2) = smag;
+    } else if (mode == "yz") {
+        u(1, 2) = u(2, 1) = 0.5 * smag;
+    } else if (mode == "zx") {
+        u(2, 0) = u(0, 2) = 0.5 * smag;
+    } else if (mode == "xy") {
+        u(0, 1) = u(1, 0) = 0.5 * smag;
+    } else {
+        throw std::runtime_error("Invalid name of strain mode \"" + mode + "\" (xx, yy, zz, yz, zx, xy).");
+    }
+    return u;
+}
+
+void check_strained_supercell(const ReferenceCell &strained, const std::string &mode, const double smag,
+                              const Eigen::Matrix3d &lattice_ref, const Eigen::MatrixXd &xf_ref,
+                              const std::vector<std::string> &symbols_ref, const char *what)
+{
+    const std::string where(what);
+    const Eigen::Matrix3d F = Eigen::Matrix3d::Identity() + displacement_gradient(mode, smag);
+    if (!F.allFinite() || F.determinant() <= 0.0) {
+        throw std::runtime_error(where + ": the deformation of mode " + mode + " with magnitude " +
+                                 std::to_string(smag) + " is not a proper deformation.");
+    }
+    const Eigen::Matrix3d expected = F * lattice_ref;
+    constexpr double tol_lattice_bohr = 1.0e-4 / Bohr_in_Angstrom;
+    const double dev = (strained.lattice - expected).cwiseAbs().maxCoeff();
+    if (dev > tol_lattice_bohr) {
+        throw std::runtime_error(where + ": the supercell of this entry is not the reference supercell strained by " +
+                                 mode + " = " + std::to_string(smag) + " (largest lattice deviation " +
+                                 std::to_string(dev * Bohr_in_Angstrom) + " Angstrom).");
+    }
+    const auto natom = static_cast<std::size_t>(xf_ref.rows());
+    if (strained.natom() != natom || symbols_ref.size() != natom) {
+        throw std::runtime_error(where + ": the entry has " + std::to_string(strained.natom()) +
+                                 " atoms but the reference supercell has " + std::to_string(natom) + ".");
+    }
+    for (std::size_t i = 0; i < natom; ++i) {
+        if (lowercase(strained.symbols[i]) != lowercase(symbols_ref[i])) {
+            throw std::runtime_error(where + ": atom " + std::to_string(i + 1) + " is " + strained.symbols[i] +
+                                     " in the entry but " + symbols_ref[i] +
+                                     " in the reference supercell (the atoms must be in the same order).");
+        }
+        for (int j = 0; j < 3; ++j) {
+            double d = strained.x_fractional(static_cast<Eigen::Index>(i), j) - xf_ref(static_cast<Eigen::Index>(i), j);
+            d -= std::round(d);
+            if (std::fabs(d) > 1.0e-5) {
+                throw std::runtime_error(where + ": the fractional coordinates of atom " + std::to_string(i + 1) +
+                                         " differ from the reference supercell (the atoms must be in the same order"
+                                         " and must not be relaxed).");
+            }
+        }
+    }
 }
 } // namespace strain_parsers
 } // namespace PHON_NS

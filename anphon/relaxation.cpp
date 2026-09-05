@@ -9,6 +9,11 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "relaxation.h"
+#include "strain_coupling_io.h"
+#include "strain_reference_cell.h"
+#include "hdf5_parser.h"
+#include <iomanip>
+#include <stdexcept>
 #include <Eigen/Core>
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include <fstream>
@@ -83,6 +88,7 @@ void Relaxation::set_default_variables()
     renorm_34to1st = 0;
     elastic_const = 2;
     strain_IFC_dir.clear();
+    strain_file.clear();
 }
 
 void Relaxation::deallocate_variables()
@@ -100,6 +106,92 @@ void Relaxation::setup_relaxation()
     MPI_Bcast(&renorm_34to1st, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
     MPI_Bcast(&elastic_const, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
     mympi->MPI_Bcast_string(strain_IFC_dir, 0, MPI_COMM_WORLD);
+    mympi->MPI_Bcast_string(strain_file, 0, MPI_COMM_WORLD);
+
+    const auto relax_mode = to_relaxation_str_mode(relax_str);
+    if (relax_mode != RelaxationStrMode::CoordinatesAndCell && relax_mode != RelaxationStrMode::PerturbativeQha) {
+        return;
+    }
+    if (!strain_file.empty()) {
+        validate_strain_file();
+    } else if (mympi->my_rank == 0 &&
+               (renorm_2to1st == 2 || renorm_3to2nd == 2 || renorm_3to2nd == 3 || elastic_const == 2))
+    {
+        std::cout << "  NOTE: the strain couplings and elastic constants are read from the text files in\n"
+                  << "        STRAIN_IFC_DIR (and C1_array.in in the working directory). This route is deprecated:\n"
+                  << "        pack the files into one container with 'tools/strainfile.py pack' and give it as\n"
+                  << "        STRAINFILE in the &relax field.\n\n";
+    }
+}
+
+void Relaxation::validate_strain_file() const
+{
+    using strain_coupling::StrainCouplingFile;
+    try {
+        const StrainCouplingFile container(strain_file);
+        const auto summary = container.probe();
+
+        const auto need = [this](const bool present, const char *group, const std::string &tag) {
+            if (present) return;
+            throw std::runtime_error(tag + " needs the " + group + " data, but " + strain_file +
+                                     " does not contain it.\n " + StrainCouplingFile::missing_group_hint(group));
+        };
+        if (elastic_const == 2) need(summary.has_c2c3, "/Elastic", "ELASTIC_CONST = 2");
+        if (renorm_2to1st == 2) need(summary.has_strain_force, "/StrainForce", "RENORM_2TO1ST = 2");
+        if (renorm_3to2nd == 2 || renorm_3to2nd == 3) {
+            need(summary.has_strain_harmonic, "/StrainHarmonic", "RENORM_3TO2ND = " + std::to_string(renorm_3to2nd));
+        }
+
+        // The reference structure must describe the crystal of this run; the
+        // primitive cell of the run may be a nested super- or sub-cell of it.
+        const auto ref = container.read_reference_cell();
+        const auto &pcell = system->get_primcell();
+        std::vector<std::string> symbols(pcell.number_of_atoms);
+        for (std::size_t i = 0; i < pcell.number_of_atoms; ++i) symbols[i] = system->symbol_kd[pcell.kind[i]];
+        const auto what = strain_file + ":/ReferenceCell";
+        const auto match =
+            strain_parsers::match_atoms(ref, pcell.lattice_vector, pcell.x_cartesian, symbols, what.c_str());
+
+        if (mympi->my_rank == 0) {
+            const auto flags = std::cout.flags();
+            const auto prec = std::cout.precision();
+            std::cout << "  STRAINFILE = " << strain_file << "\n"
+                      << "    schema " << h5_schema_strain_coupling << " v" << summary.format_version;
+            if (!summary.writer.empty()) std::cout << ", written by strainkit " << summary.writer;
+            if (!summary.created_date.empty()) std::cout << " on " << summary.created_date;
+            std::cout << "\n    Reference cell : " << ref.natom() << " atoms;  V(current) / V(reference) = "
+                      << std::fixed << std::setprecision(4) << match.ratio << "\n"
+                      << "    Elastic        : "
+                      << (summary.has_c2c3 ? "C2, C3" : summary.has_elastic ? "no C2/C3" : "absent")
+                      << (summary.has_stress ? " + reference stress" : ", no reference stress") << "\n"
+                      << "    StrainForce    : " << (summary.has_strain_force ? "present" : "absent") << "\n"
+                      << "    StrainHarmonic : " << (summary.has_strain_harmonic ? "present" : "absent") << "\n\n";
+            std::cout.flags(flags);
+            std::cout.precision(prec);
+        }
+    } catch (const std::runtime_error &e) {
+        exit("setup_relaxation", e.what());
+    }
+}
+
+void Relaxation::load_reference_stress(const ElasticTensor &elastic, double *C1_array) const
+{
+    if (strain_file.empty()) {
+        elastic.read_C1_array(C1_array);
+        return;
+    }
+    std::fill_n(C1_array, 9, 0.0);
+    try {
+        const strain_coupling::StrainCouplingFile container(strain_file);
+        if (container.probe().has_stress) {
+            elastic.set_reference_stress_from_set(container.read_elastic(), C1_array);
+            return;
+        }
+    } catch (const std::runtime_error &e) {
+        exit("load_reference_stress", e.what());
+    }
+    std::cout << "  " << strain_file
+              << " has no /Elastic/stress dataset: the stress tensor at the reference structure is set to zero.\n";
 }
 
 void Relaxation::create_optimizer(const size_t num_modes)
@@ -134,8 +226,37 @@ void Relaxation::set_elastic_constants(double *C1_array, double **C2_array, doub
             return;
         }
         const ElasticTensor elastic(*system);
-        elastic.read_C1_array(C1_array);
-        elastic.read_elastic_constants(C2_array, C3_array, strain_IFC_dir);
+        std::string source_stress = "C1_array.in";
+        std::string source_c2c3 = "elastic_constants.in";
+        if (!strain_file.empty()) {
+            // STRAINFILE: the reference stress and the elastic constants come
+            // from its /Elastic group (GPa, multiplied by the volume of the
+            // current primitive cell).
+            strain_coupling::ElasticSet es;
+            try {
+                const strain_coupling::StrainCouplingFile container(strain_file);
+                es = container.read_elastic();
+            } catch (const std::runtime_error &e) {
+                exit("set_elastic_constants", e.what());
+            }
+            if (!es.has_c2c3) {
+                const auto msg = "ELASTIC_CONST = 2 needs the second- and third-order elastic constants, but " +
+                                 strain_file + " has no /Elastic/soec and /Elastic/toec datasets.\n " +
+                                 strain_coupling::StrainCouplingFile::missing_group_hint("/Elastic");
+                exit("set_elastic_constants", msg.c_str());
+            }
+            if (!es.has_stress) {
+                std::cout << "  " << strain_file
+                          << " has no /Elastic/stress dataset: the stress tensor at the reference structure is set to zero.\n";
+            }
+            elastic.set_reference_stress_from_set(es, C1_array);
+            elastic.set_elastic_constants_from_set(es, C2_array, C3_array);
+            source_stress = strain_file + ":/Elastic/stress";
+            source_c2c3 = strain_file + ":/Elastic/soec,toec";
+        } else {
+            elastic.read_C1_array(C1_array);
+            elastic.read_elastic_constants(C2_array, C3_array, strain_IFC_dir);
+        }
 
         // Detect unexpected symmetry breaking in the user-supplied arrays:
         // the stress tensor must be symmetric, and C2/C3 must satisfy the
@@ -144,26 +265,26 @@ void Relaxation::set_elastic_constants(double *C1_array, double **C2_array, doub
         auto scale = 0.0;
         for (auto i = 0; i < 9; ++i) scale = std::max(scale, std::abs(C1_array[i]));
         if (const auto dev = ElasticTensor::stress_tensor_asymmetry(C1_array); dev > 1.0e-6 * std::max(scale, 1.0)) {
-            warn("set_elastic_constants",
-                 "The stress tensor in C1_array.in is not symmetric.\n"
-                 " Please check the file for input errors.");
+            const auto msg = "The stress tensor in " + source_stress + " is not symmetric.\n" +
+                             " Please check the file for input errors.";
+            warn("set_elastic_constants", msg.c_str());
         }
         scale = 0.0;
         for (auto i = 0; i < 9; ++i)
             for (auto j = 0; j < 9; ++j) scale = std::max(scale, std::abs(C2_array[i][j]));
         if (ElasticTensor::elastic_tensor2_asymmetry(C2_array) > 1.0e-6 * std::max(scale, 1.0)) {
-            warn("set_elastic_constants",
-                 "The second-order elastic constants in elastic_constants.in violate\n"
-                 " the minor or pair-permutation symmetry. Please check the file for input errors.");
+            const auto msg = "The second-order elastic constants in " + source_c2c3 + " violate\n" +
+                             " the minor or pair-permutation symmetry. Please check the file for input errors.";
+            warn("set_elastic_constants", msg.c_str());
         }
         scale = 0.0;
         for (auto i = 0; i < 9; ++i)
             for (auto j = 0; j < 9; ++j)
                 for (auto k = 0; k < 9; ++k) scale = std::max(scale, std::abs(C3_array[i][j][k]));
         if (ElasticTensor::elastic_tensor3_asymmetry(C3_array) > 1.0e-6 * std::max(scale, 1.0)) {
-            warn("set_elastic_constants",
-                 "The third-order elastic constants in elastic_constants.in violate\n"
-                 " the minor or pair-permutation symmetry. Please check the file for input errors.");
+            const auto msg = "The third-order elastic constants in " + source_c2c3 + " violate\n" +
+                             " the minor or pair-permutation symmetry. Please check the file for input errors.";
+            warn("set_elastic_constants", msg.c_str());
         }
         return;
     }
@@ -185,9 +306,10 @@ void Relaxation::set_elastic_constants_from_ifcs(double *C1_array, double **C2_a
 
     const ElasticTensor elastic(*system);
 
-    // The reference stress is not contained in the IFC model; it is still
-    // taken from C1_array.in when the file exists (zero otherwise).
-    elastic.read_C1_array(C1_array);
+    // The reference stress is not contained in the IFC model; it is taken
+    // from STRAINFILE (/Elastic/stress) or C1_array.in when present (zero
+    // otherwise).
+    load_reference_stress(elastic, C1_array);
 
     // Clamped-ion tensors: the sublattice relaxation is treated explicitly by
     // the internal coordinates (q0) of the structural optimization, so the

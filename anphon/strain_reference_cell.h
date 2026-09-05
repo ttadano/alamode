@@ -89,5 +89,21 @@ AtomMatch match_atoms(const ReferenceCell &ref, const Eigen::Matrix3d &lattice_c
 // otherwise. Returns the largest spread among the averaged images (0 when
 // nothing is averaged) so that the caller can warn about it.
 double expand_atom_rows(const AtomMatch &match, const std::vector<double> &rows_in, std::vector<double> &rows_out);
+
+// The displacement-gradient tensor u of a strain mode (xx, yy, zz, yz, zx, xy)
+// of magnitude smag: smag on the diagonal slot of a normal mode, smag/2 on
+// both off-diagonal slots of a shear mode (the convention of the
+// strain-coupling inputs). Throws std::runtime_error on an unknown mode.
+Eigen::Matrix3d displacement_gradient(const std::string &mode, double smag);
+
+// Verify that `strained` is the reference supercell (lattice vectors as
+// columns in bohr, fractional coordinates, one symbol per atom) deformed by
+// F = 1 + u for the given mode and magnitude, atom by atom in the same order:
+// |L_strained - F L_ref| within 1e-4 Angstrom, identical symbols, fractional
+// coordinates equal modulo lattice translations within 1e-5. Throws
+// std::runtime_error (mentioning `what`) otherwise.
+void check_strained_supercell(const ReferenceCell &strained, const std::string &mode, double smag,
+                              const Eigen::Matrix3d &lattice_ref, const Eigen::MatrixXd &xf_ref,
+                              const std::vector<std::string> &symbols_ref, const char *what);
 } // namespace strain_parsers
 } // namespace PHON_NS

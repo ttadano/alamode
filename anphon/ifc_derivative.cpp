@@ -17,6 +17,7 @@
 #include "mpi_common.h"
 #include "relaxation.h"
 #include "scph_v3v4_elements.h"
+#include "strain_coupling_io.h"
 #include "strain_file_parsers.h"
 #include "strain_reference_cell.h"
 #include "system.h"
@@ -1304,7 +1305,13 @@ DerivativeIFC::load_strain_force_set(const strain_coupling::StrainSource &strain
     strain_coupling::StrainForceSet set;
 
     if (strain_source.use_file()) {
-        exit("load_strain_force_set", "STRAINFILE is not supported by this build.");
+        try {
+            const strain_coupling::StrainCouplingFile container(strain_source.file);
+            set = container.read_strain_force();
+        } catch (const std::runtime_error &e) {
+            exit("calculate_delv1_delumn_finite_difference", e.what());
+        }
+        return set;
     }
 
     const auto path = strain_source.ifc_dir + "strain_force.in";
@@ -1318,6 +1325,7 @@ DerivativeIFC::load_strain_force_set(const strain_coupling::StrainSource &strain
         exit("calculate_delv1_delumn_finite_difference", e.what());
     }
     set.origin = path;
+    set.cell_description = "&reference_cell header found in " + path;
 
     // Trailing data after the last block was silently skipped before, so it
     // is reported, on one rank, but not fatal.
@@ -1366,7 +1374,7 @@ void DerivativeIFC::process_strain_force_set(const strain_coupling::StrainForceS
         if (my_rank_ == 0) {
             const auto flags = std::cout.flags();
             const auto prec = std::cout.precision();
-            std::cout << "  &reference_cell header found in " << set.origin << "\n"
+            std::cout << "  " << set.cell_description << "\n"
                       << "    Reference cell : " << set.natom_rows << " atoms,  V = " << std::scientific
                       << std::setprecision(4) << std::fabs(set.cell.lattice.determinant()) << " (a.u.)^3\n"
                       << "    Current cell   : " << natmin << " atoms,  V = " << pcell.volume
@@ -1543,7 +1551,37 @@ DerivativeIFC::load_strain_harmonic_set(const strain_coupling::StrainSource &str
     strain_coupling::StrainHarmonicSet set;
 
     if (strain_source.use_file()) {
-        exit("load_strain_harmonic_set", "STRAINFILE is not supported by this build.");
+        // Every embedded entry must be the supercell of the harmonic force
+        // constants of this run, deformed by its own strain mode, atom by
+        // atom: replicate_force_constant relies on that index correspondence.
+        try {
+            const strain_coupling::StrainCouplingFile container(strain_source.file);
+            set = container.read_strain_harmonic();
+            const auto &scell = system_.get_supercell(0);
+            std::vector<std::string> symbols(scell.number_of_atoms);
+            for (std::size_t i = 0; i < scell.number_of_atoms; ++i) symbols[i] = system_.symbol_kd[scell.kind[i]];
+            fc2_deformed.assign(set.entries.size(), {});
+            for (std::size_t imode = 0; imode < set.entries.size(); ++imode) {
+                const auto &entry = set.entries[imode];
+                const auto what = strain_source.file + ":" + entry.label;
+                strain_parsers::check_strained_supercell(entry.supercell,
+                                                         entry.mode,
+                                                         entry.smag,
+                                                         scell.lattice_vector,
+                                                         scell.x_fractional,
+                                                         symbols,
+                                                         what.c_str());
+                container.load_harmonic_fc2(entry, fcs_phonon_, fc2_deformed[imode]);
+                fcs_phonon_.replicate_force_constant(&system_, fc2_deformed[imode]);
+            }
+        } catch (const std::runtime_error &e) {
+            exit("calculate_delv2_delumn_finite_difference", e.what());
+        }
+        if (my_rank_ == 0) {
+            std::cout << "\n    " << set.entries.size() << " strained supercells read from " << strain_source.file
+                      << ":/StrainHarmonic;\n    each one matches the supercell of the harmonic force constants.\n";
+        }
+        return set;
     }
 
     const auto path = strain_source.ifc_dir + "strain_harmonic.in";

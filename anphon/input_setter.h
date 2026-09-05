@@ -227,6 +227,7 @@ struct RelaxInputVars
     int elastic_const = 2;
 
     std::string strain_IFC_dir;
+    std::string strain_file; // STRAINFILE
 };
 
 class InputSetter

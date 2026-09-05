@@ -339,6 +339,48 @@ int main()
         check(parse_strain_harmonic(partial, "h").trailing_data, "strain_harmonic: an unreadable row is trailing data");
     }
 
+    // ---- strained-supercell consistency (embedded harmonic entries)
+    {
+        const auto u = displacement_gradient("yz", 0.01);
+        check(near(u(1, 2), 0.005) && near(u(2, 1), 0.005) && near(u(0, 0), 0.0) && near(u(1, 1), 0.0),
+              "displacement_gradient: shear modes carry smag/2 on both slots");
+        check(near(displacement_gradient("zz", -0.02)(2, 2), -0.02), "displacement_gradient: normal mode");
+        check(throws([] { displacement_gradient("xz", 0.01); }), "displacement_gradient: unknown mode throws");
+
+        Eigen::Matrix3d lat_ref;
+        lat_ref << 10.0, 1.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 12.0; // columns = lattice vectors, bohr
+        Eigen::MatrixXd xf(2, 3);
+        xf << 0.0, 0.0, 0.0, 0.5, 0.5, 0.5;
+        const std::vector<std::string> sym = {"A", "B"};
+        ReferenceCell strained;
+        strained.lattice = (Eigen::Matrix3d::Identity() + displacement_gradient("zx", 0.01)) * lat_ref;
+        strained.x_fractional = xf;
+        strained.symbols = sym;
+        check(!throws([&] { check_strained_supercell(strained, "zx", 0.01, lat_ref, xf, sym, "e"); }),
+              "strained supercell: a consistent entry passes");
+        check(throws([&] { check_strained_supercell(strained, "zx", 0.02, lat_ref, xf, sym, "e"); }),
+              "strained supercell: a wrong magnitude throws");
+        check(throws([&] { check_strained_supercell(strained, "xy", 0.01, lat_ref, xf, sym, "e"); }),
+              "strained supercell: a wrong mode throws");
+        ReferenceCell perm = strained;
+        perm.symbols = {"B", "A"};
+        check(throws([&] { check_strained_supercell(perm, "zx", 0.01, lat_ref, xf, sym, "e"); }),
+              "strained supercell: permuted atoms throw");
+        ReferenceCell shifted = strained;
+        shifted.x_fractional(1, 0) += 1.0;
+        check(!throws([&] { check_strained_supercell(shifted, "zx", 0.01, lat_ref, xf, sym, "e"); }),
+              "strained supercell: lattice translations are equivalent");
+        ReferenceCell moved = strained;
+        moved.x_fractional(1, 0) += 1.0e-4;
+        check(throws([&] { check_strained_supercell(moved, "zx", 0.01, lat_ref, xf, sym, "e"); }),
+              "strained supercell: a displaced atom throws");
+        ReferenceCell fewer = strained;
+        fewer.symbols = {"A"};
+        fewer.x_fractional = xf.topRows(1);
+        check(throws([&] { check_strained_supercell(fewer, "zx", 0.01, lat_ref, xf, sym, "e"); }),
+              "strained supercell: a different atom count throws");
+    }
+
     if (nfail == 0) {
         std::printf("test_strain_parsers: all checks passed\n");
         return EXIT_SUCCESS;

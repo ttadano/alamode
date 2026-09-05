@@ -74,6 +74,14 @@ public:
     void read_elastic_constants(double *const *C2_array, double *const *const *C3_array,
                                 const std::string &strain_ifc_dir) const;
 
+    // The reference stress (C1) and the elastic constants (C2, C3) from the
+    // /Elastic group of the STRAINFILE container. The container stores GPa,
+    // so the values are multiplied by the volume of the current primitive
+    // cell like a GPa text file. An absent stress gives C1 = 0.
+    void set_reference_stress_from_set(const strain_coupling::ElasticSet &set, double *C1_array) const;
+    void set_elastic_constants_from_set(const strain_coupling::ElasticSet &set, double *const *C2_array,
+                                        double *const *const *C3_array) const;
+
     // GPa -> Ry per current primitive cell (V0(u) stores V0 * C in Ry).
     double gpa_to_ry_per_cell() const;
 

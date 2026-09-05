@@ -208,7 +208,11 @@ void Writes::writeInputVars()
             std::cout << "  RENORM_3TO2ND = " << relaxation->renorm_3to2nd << '\n';
             std::cout << "  RENORM_2TO1ST = " << relaxation->renorm_2to1st << '\n';
             std::cout << "  RENORM_34TO1ST = " << relaxation->renorm_34to1st << '\n';
-            std::cout << "  STRAIN_IFC_DIR = " << relaxation->strain_IFC_dir << '\n';
+            if (!relaxation->strain_file.empty()) {
+                std::cout << "  STRAINFILE = " << relaxation->strain_file << '\n';
+            } else {
+                std::cout << "  STRAIN_IFC_DIR = " << relaxation->strain_IFC_dir << '\n';
+            }
         }
         std::cout << '\n';
     }
