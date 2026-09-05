@@ -50,10 +50,12 @@ inline const std::string h5_schema_kappa_result = "alamode:kappa_result";
 inline const std::string h5_schema_scph_state = "alamode:scph_state";
 inline const std::string h5_schema_eigenvalues = "alamode:eigenvalues";
 inline const std::string h5_schema_eigenvectors = "alamode:eigenvectors";
+inline const std::string h5_schema_strain_coupling = "alamode:strain_coupling";
 inline constexpr int h5_version_eigen = 1;
 constexpr int h5_version_force_constants = 1;
 constexpr int h5_version_kappa_result = 1;
 constexpr int h5_version_scph_state = 1;
+constexpr int h5_version_strain_coupling = 1;
 
 // Write the root schema attributes plus provenance (code version, creation
 // date). Existing attributes are replaced, so this is safe to call again on
@@ -243,44 +245,49 @@ inline auto resolve_h5_cell_name(const std::string &celltype) -> std::string
     exit(1);
 }
 
+// The get_*_from_h5 helpers accept an optional group_prefix ("" for the file
+// root, otherwise an absolute group path such as "/StrainHarmonic/entry_001"
+// without a trailing slash) so that a force-constant layout embedded below a
+// sub-group of a larger file is read with the same code as a standalone file.
 inline auto get_structures_from_h5(const H5Easy::File &file, const std::string &celltype, Eigen::Matrix3d &lavec,
                                    Eigen::MatrixXd &x_fractional, std::vector<int> &kind_index,
                                    std::vector<std::string> &element_names,
-                                   std::string *length_unit_detected = nullptr) -> void
+                                   std::string *length_unit_detected = nullptr,
+                                   const std::string &group_prefix = "") -> void
 {
     using namespace H5Easy;
-    const std::string search_cell = resolve_h5_cell_name(celltype);
+    const std::string base = group_prefix + "/" + resolve_h5_cell_name(celltype);
 
-    lavec = load<Eigen::Matrix3d>(file, "/" + search_cell + "/lattice_vector");
+    lavec = load<Eigen::Matrix3d>(file, base + "/lattice_vector");
     lavec.transposeInPlace();
     // Convert the lattice into the internal unit (bohr) if the file declares
     // another unit; files without the attribute are assumed to be in bohr.
-    lavec *= h5_length_factor_to_bohr(file, "/" + search_cell + "/lattice_vector", length_unit_detected);
-    x_fractional = load<Eigen::MatrixXd>(file, "/" + search_cell + "/fractional_coordinate");
-    kind_index = load<std::vector<int>>(file, "/" + search_cell + "/atomic_kinds");
-    element_names = load<std::vector<std::string>>(file, "/" + search_cell + "/elements");
+    lavec *= h5_length_factor_to_bohr(file, base + "/lattice_vector", length_unit_detected);
+    x_fractional = load<Eigen::MatrixXd>(file, base + "/fractional_coordinate");
+    kind_index = load<std::vector<int>>(file, base + "/atomic_kinds");
+    element_names = load<std::vector<std::string>>(file, base + "/elements");
 }
 
 inline auto get_mapping_table_from_h5(const H5Easy::File &file, const std::string &celltype,
-                                      std::vector<std::vector<int>> &mapping_table) -> void
+                                      std::vector<std::vector<int>> &mapping_table,
+                                      const std::string &group_prefix = "") -> void
 {
-    const std::string search_cell = resolve_h5_cell_name(celltype);
-    mapping_table = H5Easy::load<std::vector<std::vector<int>>>(file, "/" + search_cell + "/mapping_table");
+    const std::string base = group_prefix + "/" + resolve_h5_cell_name(celltype);
+    mapping_table = H5Easy::load<std::vector<std::vector<int>>>(file, base + "/mapping_table");
 }
 
 inline auto get_magnetism_from_h5(const H5Easy::File &file, const std::string &celltype, int &lspin,
                                   std::vector<std::vector<double>> &magmom, int &noncollinear,
-                                  int &time_reversal_symmetry) -> void
+                                  int &time_reversal_symmetry, const std::string &group_prefix = "") -> void
 {
     using namespace H5Easy;
-    const std::string search_cell = resolve_h5_cell_name(celltype);
+    const std::string base = group_prefix + "/" + resolve_h5_cell_name(celltype);
 
-    lspin = load<int>(file, "/" + search_cell + "/spin_polarized");
+    lspin = load<int>(file, base + "/spin_polarized");
     if (lspin > 0) {
-        magmom = load<std::vector<std::vector<double>>>(file, "/" + search_cell + "/magnetic_moments");
-        noncollinear = loadAttribute<int>(file, "/" + search_cell + "/magnetic_moments", "noncollinear");
-        time_reversal_symmetry =
-            loadAttribute<int>(file, "/" + search_cell + "/magnetic_moments", "time_reversal_symmetry");
+        magmom = load<std::vector<std::vector<double>>>(file, base + "/magnetic_moments");
+        noncollinear = loadAttribute<int>(file, base + "/magnetic_moments", "noncollinear");
+        time_reversal_symmetry = loadAttribute<int>(file, base + "/magnetic_moments", "time_reversal_symmetry");
     } else {
         noncollinear = 0;
         time_reversal_symmetry = 1;
@@ -293,21 +300,81 @@ inline auto get_magnetism_from_h5(const H5Easy::File &file, const std::string &c
 // (the renormalized FC2 written by an SCPH/QHA run) while the index and
 // shift datasets are shared with the base /ForceConstants/Order2 group,
 // which holds the same row set by construction.
+// The structural sanity checks of a force-constant group: consistent row
+// counts, index columns matching the order, Cartesian indices in [0, 3),
+// finite numbers, a Cartesian shift basis, and atom indices inside the cells
+// stored next to the group (when those cell groups exist). Files written by
+// alm always pass; the checks protect against hand-edited or third-party
+// files and against embedded groups that were copied incompletely.
+inline auto validate_fc_order_group_h5(const H5Easy::File &file, const std::string &group_path, const int order,
+                                       const Eigen::MatrixXi &atom_indices, const Eigen::MatrixXi &atom_indices_super,
+                                       const Eigen::MatrixXi &coord_indices, const Eigen::MatrixXd &shift_vectors,
+                                       const Eigen::ArrayXd &fcs_values, const std::string &group_prefix) -> void
+{
+    const auto fail = [&file, &group_path](const std::string &what) {
+        std::cout << "Error: " << group_path << " in file " << file.getName() << ": " << what << '\n';
+        exit(1);
+    };
+    const auto ncols = static_cast<Eigen::Index>(order + 2);
+    const auto nrows = atom_indices.rows();
+    if (atom_indices.cols() != ncols || atom_indices_super.cols() != ncols || coord_indices.cols() != ncols) {
+        fail("the index datasets must have " + std::to_string(ncols) + " columns for this order.");
+    }
+    if (atom_indices_super.rows() != nrows || coord_indices.rows() != nrows || shift_vectors.rows() != nrows ||
+        fcs_values.size() != nrows)
+    {
+        fail("the index, shift, and value datasets have different numbers of rows.");
+    }
+    if (shift_vectors.cols() != 3 * (ncols - 1)) {
+        fail("shift_vectors must have " + std::to_string(3 * (ncols - 1)) + " columns for this order.");
+    }
+    if ((coord_indices.array() < 0).any() || (coord_indices.array() > 2).any()) {
+        fail("coord_indices must be 0, 1, or 2.");
+    }
+    if ((atom_indices.array() < 0).any() || (atom_indices_super.array() < 0).any()) {
+        fail("negative atom indices.");
+    }
+    if (!fcs_values.allFinite() || !shift_vectors.allFinite()) {
+        fail("non-finite force constants or shift vectors.");
+    }
+    if (nrows > 0) {
+        const auto dset = file.getDataSet(group_path + "/shift_vectors");
+        if (dset.hasAttribute("basis")) {
+            std::string basis;
+            dset.getAttribute("basis").read(basis);
+            if (basis != "Cartesian") fail("shift_vectors are stored in the \"" + basis + "\" basis; Cartesian is required.");
+        }
+        const auto check_bounds = [&](const std::string &cell, const Eigen::MatrixXi &idx, const char *what) {
+            const std::string path = group_prefix + "/" + cell + "/number_of_atoms";
+            if (!file.exist(path)) return;
+            const auto natom = H5Easy::load<std::size_t>(file, path);
+            if (static_cast<std::size_t>(idx.maxCoeff()) >= natom) {
+                fail(std::string(what) + " refer to atom " + std::to_string(idx.maxCoeff()) + " but " + cell +
+                     " has only " + std::to_string(natom) + " atoms.");
+            }
+        };
+        check_bounds("PrimitiveCell", atom_indices, "atom_indices");
+        check_bounds("SuperCell", atom_indices_super, "atom_indices_supercell");
+    }
+}
+
 inline auto get_force_constants_from_h5(const H5Easy::File &file, const int order, Eigen::MatrixXi &atom_indices,
                                         Eigen::MatrixXi &atom_indices_super, Eigen::MatrixXi &coord_indices,
                                         Eigen::MatrixXd &shift_vectors, Eigen::ArrayXd &fcs_values,
                                         std::string *shift_unit_detected = nullptr,
                                         std::string *fc_unit_detected = nullptr,
-                                        const int temperature_index = -1) -> void
+                                        const int temperature_index = -1,
+                                        const std::string &group_prefix = "") -> void
 {
     using namespace H5Easy;
     const std::string str_ordername = "Order" + std::to_string(order + 2);
-    atom_indices = load<Eigen::MatrixXi>(file, "/ForceConstants/" + str_ordername + "/atom_indices");
-    atom_indices_super = load<Eigen::MatrixXi>(file, "/ForceConstants/" + str_ordername + "/atom_indices_supercell");
-    coord_indices = load<Eigen::MatrixXi>(file, "/ForceConstants/" + str_ordername + "/coord_indices");
-    shift_vectors = load<Eigen::MatrixXd>(file, "/ForceConstants/" + str_ordername + "/shift_vectors");
+    const std::string group_path = group_prefix + "/ForceConstants/" + str_ordername;
+    atom_indices = load<Eigen::MatrixXi>(file, group_path + "/atom_indices");
+    atom_indices_super = load<Eigen::MatrixXi>(file, group_path + "/atom_indices_supercell");
+    coord_indices = load<Eigen::MatrixXi>(file, group_path + "/coord_indices");
+    shift_vectors = load<Eigen::MatrixXd>(file, group_path + "/shift_vectors");
 
-    std::string path_values = "/ForceConstants/" + str_ordername + "/force_constant_values";
+    std::string path_values = group_path + "/force_constant_values";
 
     if (temperature_index >= 0) {
         if (order != 0) {
@@ -315,7 +382,7 @@ inline auto get_force_constants_from_h5(const H5Easy::File &file, const int orde
                       << "(harmonic FC2), not " << str_ordername << ".\n";
             exit(1);
         }
-        path_values = "/ForceConstants/" + str_ordername + "_temperature_dependent/force_constant_values";
+        path_values = group_prefix + "/ForceConstants/" + str_ordername + "_temperature_dependent/force_constant_values";
         if (!file.exist(path_values)) {
             std::cout << "Error: file " << file.getName() << " does not contain temperature-dependent force constants ("
                       << path_values << ").\n";
@@ -340,18 +407,20 @@ inline auto get_force_constants_from_h5(const H5Easy::File &file, const int orde
         fcs_values = load<Eigen::ArrayXd>(file, path_values);
     }
 
+    validate_fc_order_group_h5(file, group_path, order, atom_indices, atom_indices_super, coord_indices,
+                               shift_vectors, fcs_values, group_prefix);
+
     // Convert into the internal units (bohr, Ry/bohr^m) if the file declares
     // other units; datasets without the attribute are assumed to already be in
     // the internal units (files written before the attributes existed).
     std::string unit_shift, unit_fc;
-    const auto factor_shift =
-        h5_length_factor_to_bohr(file, "/ForceConstants/" + str_ordername + "/shift_vectors", &unit_shift);
+    const auto factor_shift = h5_length_factor_to_bohr(file, group_path + "/shift_vectors", &unit_shift);
     const auto factor_fc = h5_fc_factor_to_ry_bohr(file, path_values, order, &unit_fc);
     // Reject partially annotated files when a non-default unit is declared:
     // one dataset in a non-default unit while its sibling carries no unit
     // attribute is ambiguous, most likely a hand-edited or third-party file.
     if ((unit_shift.empty() && factor_fc != 1.0) || (unit_fc.empty() && factor_shift != 1.0)) {
-        std::cout << "Error: /ForceConstants/" << str_ordername << " in file " << file.getName()
+        std::cout << "Error: " << group_path << " in file " << file.getName()
                   << " declares a non-default unit on one dataset while its sibling"
                   << " (shift_vectors / force_constant_values) has no unit attribute.\n";
         exit(1);
