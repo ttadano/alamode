@@ -139,13 +139,15 @@ def _reference_atoms(manifest, outdir):
 def anphon_cell_relation(ref_atoms, fcs=None, anphon_cell=None, log=print):
     """Report how the anphon primitive cell relates to the DFT cell.
 
-    Returns (V_anphon / V_dft, anphon lattice rows in Angstrom), or (None, None)
-    when neither --fcs nor --anphon-cell is given.  Informative only: the files
-    are written in GPa, which does not depend on the cell anphon uses.
+    Returns (V_anphon / V_dft, anphon lattice rows in Angstrom, anphon primitive
+    cell or None), or (None, None, None) when neither --fcs nor --anphon-cell is
+    given.  Informative for the text files, which are written in GPa and do not
+    depend on the cell anphon uses; the primitive cell labels the container.
     """
     if fcs is None and anphon_cell is None:
-        return None, None
+        return None, None, None
     a_dft = np.asarray(ref_atoms.cell[:], dtype=float)
+    prim = None
     if fcs is not None:
         fcs_struct = read_fcs_structure(fcs)
         cell = read_anphon_cell(anphon_cell) if anphon_cell else None
@@ -163,7 +165,7 @@ def anphon_cell_relation(ref_atoms, fcs=None, anphon_cell=None, log=print):
         log(
             f"  DFT cell = M x anphon cell with det(M) = {int(round(1.0 / ratio))} {note}"
         )
-    return float(ratio), lav
+    return float(ratio), lav, prim
 
 
 def fit(
@@ -179,6 +181,8 @@ def fit(
     compare=None,
     min_c3=0.5,
     exclude=(),
+    strain_file=None,
+    force=False,
     log=print,
 ):
     outdir = os.path.abspath(outdir)
@@ -268,7 +272,7 @@ def fit(
     log(ef.format_report(fit_res, s0, c2, c3, changes, min_c3))
     log("")
 
-    ratio, _ = anphon_cell_relation(ref_atoms, fcs, anphon_cell, log)
+    ratio, _, prim = anphon_cell_relation(ref_atoms, fcs, anphon_cell, log)
 
     rdir = os.path.join(outdir, results_dir)
     os.makedirs(rdir, exist_ok=True)
@@ -317,13 +321,69 @@ def fit(
             "  WARNING: the DFT outputs are not clamped-ion/fixed-cell; the files are marked "
             "NOT_FOR_ANPHON (use --force-write to override)"
         )
-    log(anphon_file_locations())
-    log(
-        f"  e.g.:  cp {f_ec} <STRAIN_IFC_DIR>/ ;  cp {f_c1} <anphon working directory>/"
-    )
+    if strain_file:
+        if unsafe:
+            log(
+                f"  NOTE: relaxed-ion data are not written to {strain_file} (use --force-write to override)"
+            )
+        else:
+            _write_container(
+                strain_file, force, ref_atoms, prim, s0, c2, c3, fit_res, manifest, mode,
+                symmetrize, geometry_ok, outdir, rdir, log,
+            )
+    else:
+        log(anphon_file_locations())
+        log(
+            f"  e.g.:  cp {f_ec} <STRAIN_IFC_DIR>/ ;  cp {f_c1} <anphon working directory>/"
+        )
     if compare:
         log(compare_with_anphon_log(compare, c2))
     return fit_res, summary
+
+
+def _write_container(strain_file, force, ref_atoms, prim, s0, c2, c3, fit_res, manifest, mode,
+                     symmetrize, geometry_ok, outdir, rdir, log):
+    """Add /Elastic to the strain-coupling container (create it if needed)."""
+    from . import strainfile as sfile
+
+    if prim is not None:
+        # The DFT reference structure must be the crystal of the anphon cell
+        # before the container is labeled with the anphon cell.
+        try:
+            sfile.same_crystal(sfile.cell_from_atoms(ref_atoms), sfile.cell_from_primitive(prim))
+        except ValueError as exc:
+            raise ValueError(
+                f"the DFT reference structure is not the crystal of the anphon cell: {exc}"
+            ) from None
+        reference, ref_source = sfile.cell_from_primitive(prim), prim.source
+    else:
+        reference, ref_source = sfile.cell_from_atoms(ref_atoms), "DFT reference structure"
+    g = EV_PER_ANG3_TO_GPA
+    attrs = {
+        "source": "elastic.py fit",
+        "dft_code": manifest["code"],
+        "fit_mode": mode,
+        "smag": manifest.get("smag"),
+        "nmag": manifest.get("nmag"),
+        "dirset": manifest.get("dirset"),
+        "symmetrized": bool(symmetrize),
+        "rank": fit_res.rank,
+        "expected_rank": fit_res.expected_rank,
+        "condition_number": fit_res.cond,
+        "rms_stress_GPa": fit_res.rms_stress * g,
+        "rms_energy_GPa": fit_res.rms_energy * g,
+        "geometry_clamped": bool(geometry_ok),
+        "stress_source": "fit",
+    }
+    rec = sfile.provenance_record(
+        "Elastic", manifest=os.path.join(outdir, ELASTIC_MANIFEST), results=rdir
+    )
+    with sfile.update(strain_file, reference, rec, force, ref_source) as f:
+        sfile.write_elastic(
+            f, s0 * g, ef.full2_to_9x9(c2) * g, ef.full3_to_9x9x9(c3) * g, attrs
+        )
+    log(f"  written: {strain_file} (/Elastic: reference stress, C2, C3 in GPa)")
+    log("  give it to anphon as STRAINFILE in the &relax field")
 
 
 def parse_anphon_elastic_log(path):

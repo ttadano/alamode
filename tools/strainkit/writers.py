@@ -376,7 +376,9 @@ def asymmetry_rank6(c999):
 
 def anphon_file_locations():
     return (
-        "Where anphon expects these files:\n"
+        "Recommended: collect everything in one container (--strain-file FILE.h5, or\n"
+        "  strainfile.py pack for existing text files) and give it to anphon as STRAINFILE.\n"
+        "Where anphon expects these text files otherwise (legacy STRAIN_IFC_DIR route):\n"
         "  STRAIN_IFC_DIR/  <- elastic_constants.in, strain_harmonic.in (+ the FC files it lists),\n"
         "                      strain_force.in\n"
         "  working dir      <- C1_array.in (read from the directory anphon runs in)\n"

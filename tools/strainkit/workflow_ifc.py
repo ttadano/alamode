@@ -308,6 +308,8 @@ def collect_harmonic(
     last=False,
     solver="dense",
     write_dfset_files=False,
+    strain_file=None,
+    force=False,
     log=print,
 ):
     from .almfit import displaced_structures, fit_harmonic
@@ -316,6 +318,11 @@ def collect_harmonic(
     ref_atoms = _reference_atoms(manifest, outdir)
     fcs_struct = None
     transmat_to_prim = None
+    prim = None
+    if strain_file and fcs_format != "h5":
+        raise ValueError(
+            "--strain-file embeds the strained force constants in the alm h5 layout: use --fcs-format h5"
+        )
     if fcs:
         fcs_struct = read_fcs_structure(fcs)
         check_supercell_equivalence(ref_atoms, fcs_struct)
@@ -419,7 +426,32 @@ def collect_harmonic(
             "  NOTE: not all strain components are covered; use RENORM_3TO2ND = 3 (symmetry completion)"
         )
     log(f"  written: {fname} (+ {len(rows)} force-constant files in {rdir})")
-    log(anphon_file_locations())
+    if strain_file:
+        from . import strainfile as sfile
+
+        if prim is None:
+            raise ValueError(
+                "--strain-file needs the anphon primitive cell: give --fcs (and --anphon-cell for an xml reference)"
+            )
+        attrs = {
+            "source": "strainifc.py collect --coupling harmonic",
+            "dft_code": code,
+            "central": bool(manifest.get("central", False)),
+            "dmag": manifest.get("dmag"),
+            "nbody": manifest.get("nbody"),
+            "cutoff": manifest.get("cutoff"),
+        }
+        rec = sfile.provenance_record(
+            "StrainHarmonic", manifest=os.path.join(outdir, IFC_MANIFEST), results=rdir
+        )
+        with sfile.update(strain_file, sfile.cell_from_primitive(prim), rec, force, prim.source) as f:
+            sfile.write_strain_harmonic(
+                f, [r[:3] for r in rows], [os.path.join(rdir, r[3]) for r in rows], attrs
+            )
+        log(f"  written: {strain_file} (/StrainHarmonic: {len(rows)} strained supercells embedded)")
+        log("  give it to anphon as STRAINFILE in the &relax field")
+    else:
+        log(anphon_file_locations())
     return fname
 
 
@@ -477,6 +509,8 @@ def collect_force(
     results_dir=RESULTS_DIR,
     last=False,
     reorder=False,
+    strain_file=None,
+    force=False,
     log=print,
 ):
     code = manifest["code"]
@@ -532,7 +566,27 @@ def collect_force(
     log(
         f"  written: {fname} ({len(blocks)} blocks x {blocks[0][3].shape[0]} atoms, eV/A; {header})"
     )
-    log(anphon_file_locations())
+    if strain_file:
+        from . import strainfile as sfile
+
+        if prim is not None:
+            cell, source = sfile.cell_from_primitive(prim), prim.source
+        else:
+            cell, source = sfile.cell_from_atoms(ref_atoms), "DFT template (no --fcs)"
+        attrs = {
+            "source": "strainifc.py collect --coupling force",
+            "dft_code": code,
+            "central": bool(manifest.get("central", False)),
+        }
+        rec = sfile.provenance_record(
+            "StrainForce", manifest=os.path.join(outdir, IFC_MANIFEST), results=rdir
+        )
+        with sfile.update(strain_file, cell, rec, force, source) as f:
+            sfile.write_strain_force(f, blocks, cell, attrs)
+        log(f"  written: {strain_file} (/StrainForce: {len(blocks)} blocks x {cell.natom} atoms)")
+        log("  give it to anphon as STRAINFILE in the &relax field")
+    else:
+        log(anphon_file_locations())
     return fname
 
 
@@ -549,6 +603,8 @@ def collect(
     reorder=False,
     solver="dense",
     write_dfset_files=False,
+    strain_file=None,
+    force=False,
     log=print,
 ):
     outdir = os.path.abspath(outdir)
@@ -573,10 +629,12 @@ def collect(
             last,
             solver,
             write_dfset_files,
+            strain_file,
+            force,
             log,
         )
     return collect_force(
-        outdir, manifest, fcs, anphon_cell, results_dir, last, reorder, log
+        outdir, manifest, fcs, anphon_cell, results_dir, last, reorder, strain_file, force, log
     )
 
 

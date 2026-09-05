@@ -126,6 +126,17 @@ def main(argv=None):
         default="",
         help="comma-separated strain_NNN directories to exclude",
     )
+    f.add_argument(
+        "--strain-file",
+        default=None,
+        help="also write /Elastic into this strain-coupling container (HDF5; created or updated; "
+        "give --fcs and --anphon-cell so that it is labeled with the anphon cell)",
+    )
+    f.add_argument(
+        "--force",
+        action="store_true",
+        help="recreate the container when its reference cell differs (its other groups are dropped)",
+    )
 
     s = sub.add_parser("show", help="print an elastic_constants.in in GPa")
     s.add_argument("file")
@@ -173,6 +184,8 @@ def main(argv=None):
                 args.compare,
                 args.min_c3,
                 excl,
+                strain_file=args.strain_file,
+                force=args.force,
             )
         elif args.cmd == "show":
             print(we.show(args.file, args.volume, args.structure, args.c1, args.min_c3))

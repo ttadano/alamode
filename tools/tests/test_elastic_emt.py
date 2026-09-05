@@ -85,6 +85,18 @@ def test_stress_fit_matches_finite_differences(cu_workdir):
     assert unit_c1 == "GPa" and np.abs(s0).max() < 0.05  # relaxed: sigma0 ~ 0 GPa
     assert summary["file_unit"] == "GPa" and summary["volume_anphon_over_dft"] is None
     assert os.path.exists(os.path.join(work, "results", "elastic_fit.json"))
+    # the strain-coupling container holds the same constants (GPa, full precision)
+    h5py = pytest.importorskip("h5py")
+    from strainkit import strainfile as sf
+
+    cont = os.path.join(work, "cu.strain.h5")
+    we.fit(work, "stress", strain_file=cont, log=lambda *a: None)
+    with h5py.File(cont, "r") as f:
+        s, a2, a3, attrs = sf.read_elastic(f)
+        assert np.allclose(a2, c2f, rtol=1e-11) and np.allclose(a3, c3f, rtol=1e-11) and np.allclose(s, s0, atol=1e-11)
+        assert attrs["fit_mode"] == "stress" and attrs["rank"] == 83 and attrs["geometry_clamped"] == 1
+        assert sf.read_cell_group(f["ReferenceCell"]).natom == len(atoms)
+    assert sf.check(cont, log=lambda *a: None) == []
 
 
 def test_both_fit_and_show(cu_workdir):
