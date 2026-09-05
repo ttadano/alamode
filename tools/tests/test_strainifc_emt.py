@@ -57,7 +57,7 @@ def test_harmonic_coupling(cu_supercell):
     rows = read_strain_harmonic_in(fname)
     assert [r[0] for r in rows] == ["xx", "xx", "yz", "yz"]  # strain_000 not listed
     assert os.path.exists(os.path.join(work, "results", "strain_000.xml"))
-    assert any("FC2 vs" in l and "max|dPhi2|" in l for l in logs)
+    assert any("FC2 vs" in ln and "max|dPhi2|" in ln for ln in logs)
     st = fcsorder.fc2_difference(
         os.path.join(work, "results", "strain_000.xml"), ref_xml
     )
@@ -122,8 +122,12 @@ def test_force_coupling(hcp_setup):
     fname = wi.collect(
         work, fcs=ref, anphon_cell=os.path.join(root, "cell_prim.extxyz"), log=QUIET
     )
-    blocks = read_strain_force_in(fname, 2)
+    blocks, ref_cell = read_strain_force_in(fname, 2)
     assert [b[0] for b in blocks] == ["xx", "yy", "zz", "yz", "zx", "xy"]
+    # the &reference_cell header names the anphon primitive cell (here the DFT cell)
+    assert ref_cell is not None and ref_cell.natom == 2
+    assert set(ref_cell.elements) == set(hcp.get_chemical_symbols())
+    assert np.isclose(abs(np.linalg.det(ref_cell.lavec)), hcp.get_volume())
     fxx = blocks[0][3]
     assert np.abs(fxx).max() > 1e-3 and np.allclose(
         fxx[0], -fxx[1]
@@ -137,11 +141,15 @@ def test_force_coupling(hcp_setup):
         results_dir="results_211",
         log=QUIET,
     )
-    b4 = read_strain_force_in(fname, 4)
+    b4, ref4 = read_strain_force_in(fname)  # natmin from the header
+    assert ref4.natom == 4 and np.isclose(
+        abs(np.linalg.det(ref4.lavec)), 2 * hcp.get_volume()
+    )
     assert np.allclose(b4[0][3][:2], fxx) and np.allclose(b4[0][3][2:], fxx)
-    # without --fcs: template order
+    # without --fcs: template order, and no header (the anphon cell is unknown)
     fname = wi.collect(work, results_dir="results_nofcs", log=QUIET)
-    assert np.allclose(read_strain_force_in(fname, 2)[0][3], fxx)
+    b_nofcs, ref_nofcs = read_strain_force_in(fname, 2)
+    assert ref_nofcs is None and np.allclose(b_nofcs[0][3], fxx)
 
 
 def test_force_coupling_permuted_template(hcp_setup):
@@ -161,10 +169,10 @@ def test_force_coupling_permuted_template(hcp_setup):
     with pytest.raises(ValueError, match="permutation"):
         wi.collect(work, fcs=ref, anphon_cell=cell, log=QUIET)
     fname = wi.collect(work, fcs=ref, anphon_cell=cell, reorder=True, log=QUIET)
-    ref_rows = read_strain_force_in(
+    ref_rows, _ = read_strain_force_in(
         os.path.join(root, "force", "results", "strain_force.in"), 2
     )
-    rows = read_strain_force_in(fname, 2)
+    rows, _ = read_strain_force_in(fname, 2)
     assert np.allclose(
         rows[0][3], ref_rows[0][3]
     )  # rows are in anphon order after --reorder

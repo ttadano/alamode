@@ -27,7 +27,7 @@ from .symmetry import (
     symmetrize_rank4,
     symmetrize_rank6,
 )
-from .units import EV_PER_ANG3_TO_GPA, volume_times_c_to_ry
+from .units import EV_PER_ANG3_TO_GPA
 from .writers import (
     anphon_file_locations,
     write_C1_array_in,
@@ -136,11 +136,16 @@ def _reference_atoms(manifest, outdir):
     return _ase_read(os.path.join(outdir, "reference", manifest["structure_file"]), fmt)
 
 
-def target_cell_scale(ref_atoms, fcs=None, anphon_cell=None, log=print):
-    """Volume ratio V_anphon / V_dft (and the anphon lattice) for the file units."""
-    a_dft = np.asarray(ref_atoms.cell[:], dtype=float)
+def anphon_cell_relation(ref_atoms, fcs=None, anphon_cell=None, log=print):
+    """Report how the anphon primitive cell relates to the DFT cell.
+
+    Returns (V_anphon / V_dft, anphon lattice rows in Angstrom), or (None, None)
+    when neither --fcs nor --anphon-cell is given.  Informative only: the files
+    are written in GPa, which does not depend on the cell anphon uses.
+    """
     if fcs is None and anphon_cell is None:
-        return 1.0, None
+        return None, None
+    a_dft = np.asarray(ref_atoms.cell[:], dtype=float)
     if fcs is not None:
         fcs_struct = read_fcs_structure(fcs)
         cell = read_anphon_cell(anphon_cell) if anphon_cell else None
@@ -149,14 +154,14 @@ def target_cell_scale(ref_atoms, fcs=None, anphon_cell=None, log=print):
     else:
         lav = read_anphon_cell(anphon_cell)
     m, ratio = lattice_relation(lav, a_dft)
+    note = (
+        "(informative only: the files are written in GPa and do not depend on the cell)"
+    )
     if ratio >= 1.0:
-        log(
-            f"  anphon cell = M x DFT cell with det(M) = {int(round(ratio))}; V*C values are scaled accordingly"
-        )
+        log(f"  anphon cell = M x DFT cell with det(M) = {int(round(ratio))} {note}")
     else:
         log(
-            f"  DFT cell = M x anphon cell with det(M) = {int(round(1.0 / ratio))}; V*C values are scaled by "
-            f"1/{int(round(1.0 / ratio))}"
+            f"  DFT cell = M x anphon cell with det(M) = {int(round(1.0 / ratio))} {note}"
         )
     return float(ratio), lav
 
@@ -208,7 +213,7 @@ def fit(
             if not allow_relaxed:
                 raise
             geometry_ok = False
-            warnings.warn(str(exc))
+            warnings.warn(str(exc), stacklevel=2)
         eta6 = voigt_from_sym(np.array(e["eta"]))
         s6 = None
         if r.stress is not None:
@@ -226,7 +231,8 @@ def fit(
         )
     if fit_res.cond > 1.0e8:
         warnings.warn(
-            f"ill-conditioned design matrix (condition number {fit_res.cond:.2e})"
+            f"ill-conditioned design matrix (condition number {fit_res.cond:.2e})",
+            stacklevel=2,
         )
     if fit_res.block_rms:
         log(
@@ -262,13 +268,7 @@ def fit(
     log(ef.format_report(fit_res, s0, c2, c3, changes, min_c3))
     log("")
 
-    scale, lav = target_cell_scale(ref_atoms, fcs, anphon_cell, log)
-    v_target = v_dft * scale
-    if fcs is None and anphon_cell is None:
-        log(
-            "  NOTE: no anphon cell given (--fcs/--anphon-cell); the files assume the anphon "
-            f"primitive cell has the volume of the DFT cell ({v_dft:.4f} A^3)"
-        )
+    ratio, _ = anphon_cell_relation(ref_atoms, fcs, anphon_cell, log)
 
     rdir = os.path.join(outdir, results_dir)
     os.makedirs(rdir, exist_ok=True)
@@ -276,12 +276,14 @@ def fit(
     suffix = ".relaxed_ion.NOT_FOR_ANPHON" if unsafe else ""
     f_ec = os.path.join(rdir, "elastic_constants.in" + suffix)
     f_c1 = os.path.join(rdir, "C1_array.in" + suffix)
+    # s0, c2, c3 are densities in eV/A^3; the files store GPa (cell-independent)
     write_elastic_constants_in(
         f_ec,
-        volume_times_c_to_ry(v_target, ef.full2_to_9x9(c2)),
-        volume_times_c_to_ry(v_target, ef.full3_to_9x9x9(c3)),
+        ef.full2_to_9x9(c2) * EV_PER_ANG3_TO_GPA,
+        ef.full3_to_9x9x9(c3) * EV_PER_ANG3_TO_GPA,
+        unit="GPa",
     )
-    write_C1_array_in(f_c1, volume_times_c_to_ry(v_target, s0))
+    write_C1_array_in(f_c1, s0 * EV_PER_ANG3_TO_GPA, unit="GPa")
     summary = {
         "fit_mode": mode,
         "rank": fit_res.rank,
@@ -290,7 +292,8 @@ def fit(
         "rms_energy_eV_per_A3": fit_res.rms_energy,
         "rms_stress_eV_per_A3": fit_res.rms_stress,
         "volume_dft_A3": v_dft,
-        "volume_anphon_A3": v_target,
+        "volume_anphon_over_dft": ratio,
+        "file_unit": "GPa",
         "symmetrization_max_change_eV_per_A3": changes,
         "sigma0_GPa": (s0 * EV_PER_ANG3_TO_GPA).tolist(),
         "C2_voigt_GPa": (ef.voigt66(c2) * EV_PER_ANG3_TO_GPA).tolist(),
@@ -305,6 +308,9 @@ def fit(
         json.dump(summary, f, indent=2)
     log(
         f"  written: {f_ec}\n           {f_c1}\n           {os.path.join(rdir, 'elastic_fit.json')}"
+    )
+    log(
+        "  units: GPa (cell-independent; anphon multiplies by the volume of its own primitive cell)"
     )
     if unsafe:
         log(
@@ -324,8 +330,8 @@ def parse_anphon_elastic_log(path):
     """6x6 Voigt table (GPa) printed by anphon for ELASTIC_CONST = 1."""
     with open(path, errors="replace") as f:
         lines = f.readlines()
-    for i, l in enumerate(lines):
-        if "second-order elastic constants" in l and "GPa" in l:
+    for i, line in enumerate(lines):
+        if "second-order elastic constants" in line and "GPa" in line:
             rows = []
             for k in range(1, 7):
                 rows.append([float(t) for t in lines[i + k].split()[:6]])
@@ -350,7 +356,11 @@ def compare_with_anphon_log(path, c2_full):
 
 
 def show(path, volume_A3=None, structure=None, c1_path=None, min_c3=0.5):
-    """Pretty-print an elastic_constants.in (and C1_array.in) in GPa."""
+    """Pretty-print an elastic_constants.in (and C1_array.in) in GPa.
+
+    GPa files need no volume.  Legacy files (V*C in Ry) need the volume of the
+    cell they were written for (``volume_A3`` or ``structure``).
+    """
     from .units import ry_to_c_ev_per_ang3
     from .writers import read_C1_array_in, read_elastic_constants_in
 
@@ -358,28 +368,35 @@ def show(path, volume_A3=None, structure=None, c1_path=None, min_c3=0.5):
         import ase.io
 
         volume_A3 = float(abs(np.linalg.det(ase.io.read(structure).cell[:])))
-    if volume_A3 is None:
-        raise ValueError("the cell volume is needed (--volume or --structure)")
-    c2, c3 = read_elastic_constants_in(path)
-    out = [f"{path}  (V = {volume_A3:.4f} A^3)"]
+
+    def to_ev_per_ang3(values, unit, what):
+        if unit == "GPa":
+            return values / EV_PER_ANG3_TO_GPA
+        if volume_A3 is None:
+            raise ValueError(
+                f"{what} is in the legacy per-cell unit (V*C in Ry): the cell volume is "
+                "needed (--volume or --structure)"
+            )
+        return ry_to_c_ev_per_ang3(values, volume_A3)
+
+    c2, c3, unit = read_elastic_constants_in(path)
+    c2_ev = to_ev_per_ang3(ef.from_9x9(c2), unit, path)
+    c3_ev = to_ev_per_ang3(ef.from_9x9x9(c3), unit, path)
+    head = f"{path}  (unit in file: {unit}"
+    if unit != "GPa":
+        head += f", V = {volume_A3:.4f} A^3"
+    out = [head + ")"]
     out.append(
         ef.voigt_table_gpa(
-            ry_to_c_ev_per_ang3(ef.from_9x9(c2), volume_A3),
-            "Second-order elastic constants (GPa, Voigt notation):",
+            c2_ev, "Second-order elastic constants (GPa, Voigt notation):"
         )
     )
     out.append(f"Third-order elastic constants (GPa, |C| >= {min_c3}):")
-    out.append(
-        ef.format_c3_gpa(
-            ef.full3_to_voigt(ry_to_c_ev_per_ang3(ef.from_9x9x9(c3), volume_A3)), min_c3
-        )
-    )
+    out.append(ef.format_c3_gpa(ef.full3_to_voigt(c3_ev), min_c3))
     if c1_path:
-        s = (
-            ry_to_c_ev_per_ang3(read_C1_array_in(c1_path), volume_A3)
-            * EV_PER_ANG3_TO_GPA
-        )
-        out.append(f"{c1_path}: reference stress (GPa)")
+        s, unit_c1 = read_C1_array_in(c1_path)
+        s = to_ev_per_ang3(s, unit_c1, c1_path) * EV_PER_ANG3_TO_GPA
+        out.append(f"{c1_path}: reference stress (GPa; unit in file: {unit_c1})")
         for i in range(3):
             out.append("   " + "".join(f"{s[i, j]:11.4f}" for j in range(3)))
     return "\n".join(out)

@@ -46,7 +46,8 @@ def gpa_to_ev_per_ang3(x):
 
 
 def volume_times_c_to_ry(volume_ang3, c_ev_per_ang3):
-    """V * C in Ry, the unit anphon expects in elastic_constants.in / C1_array.in.
+    """V * C in Ry: the legacy per-cell layout of elastic_constants.in / C1_array.in
+    (files without a unit token); new files are written in GPa instead.
 
     ``volume_ang3`` is the volume of the anphon primitive cell in Angstrom^3 and
     ``c_ev_per_ang3`` the constant (or stress) in eV/Angstrom^3.

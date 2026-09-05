@@ -8,9 +8,12 @@ anphon's SCPH/QHA cell relaxation (elastic_constants.in and C1_array.in).
   (run the DFT code in every directory; fixed cell, fixed ions)
   elastic.py fit [--fit stress|energy|both] [--fcs REF.xml --anphon-cell anphon.in]
       fits sigma0, C2 (SOEC) and C3 (TOEC) as derivatives with respect to the
-      Green-Lagrange strain and writes results/elastic_constants.in, C1_array.in.
-  elastic.py show elastic_constants.in --structure POSCAR
-      prints any elastic_constants.in as GPa tables.
+      Green-Lagrange strain and writes results/elastic_constants.in, C1_array.in
+      in GPa (valid for any anphon &cell; --fcs/--anphon-cell only report the
+      cell relation).
+  elastic.py show elastic_constants.in [--structure POSCAR]
+      prints any elastic_constants.in as GPa tables (the structure or --volume is
+      needed only for legacy files holding V*C in Ry).
 
 Requires numpy, ase and spglib.
 """
@@ -82,12 +85,13 @@ def main(argv=None):
     f.add_argument(
         "--fcs",
         default=None,
-        help="reference force-constant file (.xml/.h5) used by anphon",
+        help="reference force-constant file (.xml/.h5) used by anphon (only to report the cell relation)",
     )
     f.add_argument(
         "--anphon-cell",
         default=None,
-        help="anphon input with the &cell field (or a structure file) defining the anphon primitive cell",
+        help="anphon input with the &cell field (or a structure file) defining the anphon primitive cell "
+        "(only to report the cell relation; the files are cell-independent)",
     )
     f.add_argument(
         "--allow-relaxed",
@@ -125,11 +129,16 @@ def main(argv=None):
 
     s = sub.add_parser("show", help="print an elastic_constants.in in GPa")
     s.add_argument("file")
-    s.add_argument("--volume", type=float, default=None, help="cell volume in A^3")
+    s.add_argument(
+        "--volume",
+        type=float,
+        default=None,
+        help="cell volume in A^3 (legacy files holding V*C in Ry only)",
+    )
     s.add_argument(
         "--structure",
         default=None,
-        help="structure file (ase-readable) giving the cell volume",
+        help="structure file (ase-readable) giving the cell volume (legacy files only)",
     )
     s.add_argument("--c1", default=None, help="C1_array.in to print as well")
     s.add_argument("--min-c3", type=float, default=0.5)

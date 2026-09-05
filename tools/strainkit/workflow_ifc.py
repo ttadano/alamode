@@ -112,7 +112,8 @@ def generate(
             ) from None
         warnings.warn(
             str(exc)
-            + " -- strain_harmonic.in will be usable only with RENORM_3TO2ND = 3"
+            + " -- strain_harmonic.in will be usable only with RENORM_3TO2ND = 3",
+            stacklevel=2,
         )
 
     outdir = os.path.abspath(outdir)
@@ -423,7 +424,11 @@ def collect_harmonic(
 
 
 def _anphon_mapping(ref_atoms, fcs, anphon_cell, reorder, log):
-    """Mapping anphon-primitive-atom -> DFT-cell atom, or None (DFT order used)."""
+    """(mapping anphon-primitive-atom -> DFT-cell atom, anphon primitive cell).
+
+    Without --fcs the anphon cell is unknown: (None, None) is returned, the rows
+    are written in the order of the template and no &reference_cell header.
+    """
     if fcs is None:
         if anphon_cell is not None:
             raise ValueError(
@@ -433,7 +438,7 @@ def _anphon_mapping(ref_atoms, fcs, anphon_cell, reorder, log):
             "  NOTE: no --fcs given; strain_force.in rows are written in the order of the template "
             "structure, which must be anphon's primitive-cell atom order"
         )
-        return None
+        return None, None
     fcs_struct = read_fcs_structure(fcs)
     cell = read_anphon_cell(anphon_cell) if anphon_cell else None
     prim = anphon_primitive_cell(fcs_struct, cell)
@@ -461,7 +466,7 @@ def _anphon_mapping(ref_atoms, fcs, anphon_cell, reorder, log):
             f"  the DFT cell contains {len(ref_atoms) // n} copies of the anphon cell; one translation image "
             "per anphon atom is used"
         )
-    return mapping
+    return mapping, prim
 
 
 def collect_force(
@@ -476,7 +481,7 @@ def collect_force(
 ):
     code = manifest["code"]
     ref_atoms = _reference_atoms(manifest, outdir)
-    mapping = _anphon_mapping(ref_atoms, fcs, anphon_cell, reorder, log)
+    mapping, prim = _anphon_mapping(ref_atoms, fcs, anphon_cell, reorder, log)
     ref_out = os.path.join(outdir, _dirname(0), "primitive", manifest["output_file"])
     f0 = np.zeros((len(ref_atoms), 3))
     if os.path.exists(ref_out):
@@ -488,7 +493,8 @@ def collect_force(
         if fmax > 1.0e-3:
             warnings.warn(
                 "the reference structure is not well relaxed (max |F| > 1e-3 eV/A); "
-                "the strain-force coupling then depends on the residual forces"
+                "the strain-force coupling then depends on the residual forces",
+                stacklevel=2,
             )
     else:
         log(
@@ -516,9 +522,15 @@ def collect_force(
     rdir = os.path.join(outdir, results_dir)
     os.makedirs(rdir, exist_ok=True)
     fname = os.path.join(rdir, "strain_force.in")
-    write_strain_force_in(fname, blocks)
+    write_strain_force_in(fname, blocks, reference_cell=prim)
+    header = (
+        "with an &reference_cell header naming the anphon primitive cell, so anphon can "
+        "map the rows onto a user-defined &cell"
+        if prim is not None
+        else "no &reference_cell header (no --fcs): the rows must match anphon's primitive cell"
+    )
     log(
-        f"  written: {fname} ({len(blocks)} blocks x {blocks[0][3].shape[0]} atoms, eV/A)"
+        f"  written: {fname} ({len(blocks)} blocks x {blocks[0][3].shape[0]} atoms, eV/A; {header})"
     )
     log(anphon_file_locations())
     return fname
