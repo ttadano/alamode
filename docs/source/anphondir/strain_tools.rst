@@ -18,18 +18,26 @@ directory of anphon):
      - Content
    * - ``elastic_constants.in``
      - ``ELASTIC_CONST = 2``
-     - Second- and third-order elastic constants :math:`V C^{(2)}`, :math:`V C^{(3)}` (Ry): a label
-       (``SOEC``), 81 values :math:`C_{\mu_1\nu_1,\mu_2\nu_2}` in the full-index layout
-       (:math:`i = 3\mu + \nu`, row-major), a label (``TOEC``) and 729 values. :math:`V` is the
-       volume of the anphon primitive cell (the ``&cell`` field).
+     - Second- and third-order elastic constants in GPa: a label with the unit token
+       (``SOEC GPa``), 81 values :math:`C_{\mu_1\nu_1,\mu_2\nu_2}` in the full-index layout
+       (:math:`i = 3\mu + \nu`, row-major), a label (``TOEC GPa``) and 729 values. anphon
+       multiplies them by the volume of its primitive cell, so the file does not depend on the
+       cell size (any nested ``&cell`` of the same reference crystal, in the same Cartesian
+       frame and strain convention). Files without the unit token (the legacy layout) or with
+       an explicit ``Ry`` token hold :math:`V C^{(2)}`, :math:`V C^{(3)}` in Ry for one
+       specific cell; anphon cannot check that cell and warns when such a file is used
+       together with a user-defined ``&cell``.
    * - ``C1_array.in`` (working directory)
      - ``ELASTIC_CONST = 1, 2``
-     - Reference stress :math:`V\sigma_{\mu\nu}` (Ry): a label followed by 9 values (row-major).
-       Zero when the file is absent.
+     - Reference stress :math:`\sigma_{\mu\nu}` in GPa: ``C1 GPa`` followed by 9 values
+       (row-major); files without the unit token (or with ``Ry``) hold :math:`V\sigma` in Ry
+       for one specific cell. Zero when the file is absent.
    * - ``strain_force.in``
      - ``RENORM_2TO1ST = 2``
-     - Forces (eV/Å) on the atoms of the anphon primitive cell in strained cells, one block per
-       strain mode: a header ``mode smag weight`` followed by ``natmin`` lines ``fx fy fz``.
+     - Forces (eV/Å) in strained cells, one block per strain mode: a header ``mode smag weight``
+       followed by one line ``fx fy fz`` per atom. An optional ``&reference_cell ... /`` header
+       (see below) records the cell the rows belong to; without it the rows must follow the
+       atom order of the anphon primitive cell.
    * - ``strain_harmonic.in`` + force-constant files
      - ``RENORM_3TO2ND = 2, 3``
      - One line ``mode smag weight filename`` per strained supercell; ``filename`` (relative to
@@ -68,19 +76,64 @@ rejected.
 Atom ordering
 -------------
 
-The tools never reorder atoms: the order of the template structure is used everywhere
-(generated inputs, force-constant files, ``strain_force.in`` rows). anphon's primitive-cell
-order is the order obtained by folding the supercell of the force-constant file into the
-``&cell`` lattice, keeping the first occurrence of every site (for ``.h5`` files without
-``&cell``, the stored primitive cell). Give the reference force-constant file (``--fcs``, the
-``FC2FILE``/``FCSFILE`` of the anphon run) and the anphon input (``--anphon-cell``) to
-``collect``: the supercell template is checked index-wise against the file, every generated
-force-constant file is checked for identical translation tables, and the rows of
-``strain_force.in`` are written in anphon's order (a permuted template is reported as an error
-unless ``--reorder`` is given; for a conventional anphon cell the rows of the translation-equivalent
-atoms are duplicated, which requires the DFT setup to have the full translational symmetry — e.g.
-no magnetic order enlarging the cell). ``strainifc.py check`` prints the full picture before any
-DFT calculation is run.
+The generated inputs and the force-constant files keep the order of the template structure.
+For ``--coupling harmonic`` the template must be the supercell of the force-constant file
+given to anphon: ``collect`` checks it index-wise against ``--fcs`` and checks every generated
+force-constant file for identical translation tables. The rows of ``strain_force.in``, on the
+other hand, refer to the atoms of anphon's primitive cell, i.e. the order obtained by folding
+the supercell of the force-constant file into the ``&cell`` lattice, keeping the first
+occurrence of every site (for ``.h5`` files without ``&cell``, the stored primitive cell).
+Give the reference force-constant file (``--fcs``, the ``FC2FILE``/``FCSFILE`` of the anphon
+run) and the anphon input (``--anphon-cell``) to ``collect``: the atoms of the DFT cell are
+matched by position to that cell, and the rows are written in anphon's order and preceded by
+an ``&reference_cell`` header that records that cell (a permuted template is reported as an
+error unless ``--reorder`` is given; for a conventional anphon cell the rows of the
+translation-equivalent atoms are duplicated, which requires the DFT setup to have the full
+translational symmetry — e.g. no magnetic order enlarging the cell; for a DFT supercell of the
+anphon cell one translation image per atom is used). ``strainifc.py check`` prints the full
+picture before any DFT calculation is run.
+
+The ``&reference_cell`` header of strain_force.in
+-------------------------------------------------
+
+``strain_force.in`` holds one force row per atom, so by itself it is tied to the atom list of
+the cell the strained calculations were done for. ``strainifc.py collect --fcs ...`` therefore
+records that cell at the top of the file::
+
+    &reference_cell
+      1.889726124565062
+       3.235859326375770   0.000000000000000   0.000000000000000
+      -1.617929663187880   2.802336379714220   0.000000000000000
+       0.000000000000000   0.000000000000000   5.224712025937350
+      4
+      Zn    0.333333333333333   0.666666666666667   0.000000000000000
+      Zn    0.666666666666667   0.333333333333333   0.500000000000000
+      O     0.333333333333333   0.666666666666667   0.381500000000000
+      O     0.666666666666667   0.333333333333333   0.881500000000000
+    /
+    xx 0.005 1.0
+    ...
+
+i.e. a scale factor and three lattice vectors (one per line) as in the ``&cell`` field (here
+Å converted to bohr), the number of atoms, one line ``symbol x y z`` per atom in fractional
+coordinates, and a closing ``/``. No comments are allowed anywhere in the file: anphon reads it
+as a plain stream of tokens.
+
+With the header, anphon compares this cell with its own primitive cell (the ``&cell`` field)
+and matches the atoms by position, so the row order in the file no longer matters. If the
+anphon cell is an integer supercell of the reference cell — for instance an enlarged ``&cell``
+chosen to condense a zone-boundary instability — every row is copied onto the translation
+images of its atom; if it is a sub-cell, the images are averaged (a warning reports their
+spread when it exceeds 1e-8 eV/Å). The two cells must describe the same crystal in the same
+Cartesian frame, and one must be an integer supercell of the other: rotated settings and
+commensurate but non-nested cells, inconsistent atom counts and atoms without a counterpart
+are rejected with an explicit message. anphon logs the atom counts and the volume ratio of
+the mapping it applied. Without the header the rows must follow the atom order of the anphon
+primitive cell, as before.
+
+``elastic_constants.in`` and ``C1_array.in`` need no such header: written in GPa they do not
+depend on the cell size (the reference structure and the Cartesian frame must of course be
+the same), and anphon multiplies them by the volume of its own primitive cell.
 
 elastic.py
 ----------
@@ -92,7 +145,7 @@ elastic.py
                         [--dft-command DFT_command.sh] [--force]
     elastic.py fit      [--outdir DIR] [--fit {stress,energy,both}] [--fcs REF] [--anphon-cell FILE]
                         [--no-symmetrize] [--symprec 1e-5] [--compare anphon.log] [--exclude strain_NNN,...]
-    elastic.py show     elastic_constants.in (--structure FILE | --volume V_A3) [--c1 C1_array.in]
+    elastic.py show     elastic_constants.in [--structure FILE | --volume V_A3] [--c1 C1_array.in]
 
 ``generate`` creates the unstrained reference ``strain_000`` and strained cells
 :math:`u = k\,s\,d` for :math:`k = \pm 1, \ldots, \pm n_\mathrm{mag}` along a set of directions
@@ -103,13 +156,16 @@ second Piola–Kirchhoff stress :math:`S = \det(F) F^{-1}\sigma F^{-T}` from the
 stress and solves the linear least-squares problem
 :math:`S(\eta) = \sigma_0 + C^{(2)}\eta + \frac{1}{2}C^{(3)}\eta\eta` (and/or the energy
 expansion) for the 83 independent Voigt components, symmetrizes the tensors over the point
-group of the reference structure, prints the constants in GPa and writes the files with
-:math:`V` of the anphon cell (``--fcs``/``--anphon-cell``; without them the volume of the DFT
-cell is used and a note is printed). The anphon cell and the DFT cell must be commensurate in
-the same Cartesian frame: one must be an integer combination of the lattice vectors of the
-other (a conventional anphon cell and a primitive DFT cell, or the reverse); rotated settings are
-rejected. ``--compare`` prints the difference to the clamped-ion constants that anphon prints
-with ``ELASTIC_CONST = 1``.
+group of the reference structure, prints the constants in GPa and writes the files in GPa
+(unit token ``GPa`` after each label), which makes them independent of the size of the cell
+anphon uses (they still refer to the DFT reference structure and its Cartesian frame).
+``--fcs``/``--anphon-cell`` are optional and only report how the anphon cell relates to the DFT
+cell; when given, the two cells must be commensurate in the same Cartesian frame: one must be
+an integer combination of the lattice vectors of the other (a conventional anphon cell and a
+primitive DFT cell, or the reverse); rotated settings are rejected. ``--compare`` prints the
+difference to the clamped-ion constants that anphon prints with ``ELASTIC_CONST = 1``.
+``show`` prints any ``elastic_constants.in`` in GPa; ``--structure``/``--volume`` are needed
+only for legacy files holding :math:`V C` in Ry.
 
 strainifc.py
 ------------
@@ -132,7 +188,8 @@ XML force-constant files).
 
 * ``--coupling force``: the template is the primitive cell. ``strain_000/primitive`` (reference)
   and ``strain_NNN/primitive`` (strained cells) are generated; ``collect`` subtracts the reference
-  forces and writes ``strain_force.in`` in anphon's atom order. All six strain modes are required
+  forces and writes ``strain_force.in`` in anphon's atom order, with the ``&reference_cell``
+  header when ``--fcs`` is given. All six strain modes are required
   (anphon demands that the weights of every component sum to 1); ``--modes`` subsets are only
   meaningful for ``--coupling harmonic`` with ``RENORM_3TO2ND = 3``.
 * ``--coupling harmonic``: the template is the **same supercell** as the one used to fit the

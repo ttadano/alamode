@@ -1092,6 +1092,13 @@ Description of input variables
   This option is used only when ``RELAX_STR = 2, 3``.
   With ``ELASTIC_CONST = 2``, ``elastic_constants.in`` (and ``C1_array.in``) can be generated from DFT
   calculations of strained cells with the ``tools/elastic.py`` script, see :ref:`this page <label_strain_tools>`.
+  Both files hold the constants in GPa when their section labels carry the unit token
+  (``SOEC GPa``, ``TOEC GPa``, ``C1 GPa``); anphon multiplies them by the volume of its
+  primitive cell, so the same files serve any nested ``&cell`` of the same reference structure
+  (the values are not transformed between Cartesian frames). Files without the unit token (the
+  legacy layout) or with an explicit ``Ry`` token hold :math:`V C` and :math:`V \sigma` in Ry
+  for one specific cell, which anphon cannot check: a warning is printed when such a file is
+  used together with a user-defined ``&cell``.
 
 ````
 
@@ -1107,7 +1114,12 @@ Description of input variables
    force-constant files it lists) must be given in this directory, as well as ``elastic_constants.in``
    when ``ELASTIC_CONST = 2``. Note that ``C1_array.in`` is read from the working directory of anphon,
    not from this directory. See :ref:`this page <label_strain_tools>` for the file formats and the
-   tools that generate them.
+   tools that generate them. When the ``&cell`` field selects a cell different from the one the
+   strain-force calculations were done for (for instance an enlarged cell chosen to condense a
+   zone-boundary instability), ``strain_force.in`` must either carry the ``&reference_cell``
+   header, so that its rows can be mapped onto the atoms of that cell, or already contain one
+   row per atom of that cell in its order; ``elastic_constants.in`` and ``C1_array.in`` in GPa
+   need no change.
 
 
 ````
