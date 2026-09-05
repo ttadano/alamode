@@ -166,6 +166,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/dielec.cpp
             ${PROJECT_SOURCE_DIR}/diis.cpp
             ${PROJECT_SOURCE_DIR}/elastic_tensor.cpp
+            ${PROJECT_SOURCE_DIR}/strain_file_parsers.cpp
             ${PROJECT_SOURCE_DIR}/dynamical.cpp
             ${PROJECT_SOURCE_DIR}/ewald.cpp
             ${PROJECT_SOURCE_DIR}/fcs_phonon.cpp
@@ -214,6 +215,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/dielec.h
             ${PROJECT_SOURCE_DIR}/diis.h
             ${PROJECT_SOURCE_DIR}/elastic_tensor.h
+            ${PROJECT_SOURCE_DIR}/strain_file_parsers.h
             ${PROJECT_SOURCE_DIR}/dynamical.h
             ${PROJECT_SOURCE_DIR}/error.h
             ${PROJECT_SOURCE_DIR}/ewald.h
@@ -321,4 +323,14 @@ if (BUILD_NDARRAY_TEST)
     add_executable(test_ndarray ${PROJECT_SOURCE_DIR}/../test/test_ndarray.cpp)
     target_compile_options(test_ndarray PRIVATE -Wall -Wextra)
     target_include_directories(test_ndarray PRIVATE ${PROJECT_SOURCE_DIR}/../include)
+endif ()
+
+# Unit test for the token parsers of C1_array.in / elastic_constants.in
+# (strain_file_parsers.h): unit tokens, legacy files, short reads. No MPI.
+option(BUILD_STRAIN_PARSER_TEST "Build the strain input parser unit test" ON)
+if (BUILD_STRAIN_PARSER_TEST)
+    add_executable(test_strain_parsers ${PROJECT_SOURCE_DIR}/../test/test_strain_parsers.cpp
+                                       ${PROJECT_SOURCE_DIR}/strain_file_parsers.cpp)
+    target_compile_options(test_strain_parsers PRIVATE -Wall -Wextra)
+    target_include_directories(test_strain_parsers PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include)
 endif ()

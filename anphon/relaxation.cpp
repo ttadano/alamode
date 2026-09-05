@@ -114,8 +114,9 @@ void Relaxation::set_elastic_constants(double *C1_array, double **C2_array, doub
             set_elastic_constants_from_ifcs(C1_array, C2_array, C3_array);
             return;
         }
-        ElasticTensor::read_C1_array(C1_array);
-        ElasticTensor::read_elastic_constants(C2_array, C3_array, strain_IFC_dir);
+        const ElasticTensor elastic(*system);
+        elastic.read_C1_array(C1_array);
+        elastic.read_elastic_constants(C2_array, C3_array, strain_IFC_dir);
 
         // Detect unexpected symmetry breaking in the user-supplied arrays:
         // the stress tensor must be symmetric, and C2/C3 must satisfy the
@@ -163,11 +164,11 @@ void Relaxation::set_elastic_constants_from_ifcs(double *C1_array, double **C2_a
     const auto &fc2 = fcs_phonon->force_constant_with_cell[0];
     const auto &fc3 = fcs_phonon->force_constant_with_cell[1];
 
+    const ElasticTensor elastic(*system);
+
     // The reference stress is not contained in the IFC model; it is still
     // taken from C1_array.in when the file exists (zero otherwise).
-    ElasticTensor::read_C1_array(C1_array);
-
-    const ElasticTensor elastic(*system);
+    elastic.read_C1_array(C1_array);
 
     // Clamped-ion tensors: the sublattice relaxation is treated explicitly by
     // the internal coordinates (q0) of the structural optimization, so the
@@ -188,8 +189,7 @@ void Relaxation::set_elastic_constants_from_ifcs(double *C1_array, double **C2_a
     elastic.calc_elastic_tensor3(fc2, fc3, false, C3_gpa, true);
 
     // V0(u) stores V0 * C in Ry per primitive cell.
-    const auto volume = system->get_primcell().volume * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in m^3
-    const auto gpa2ry = 1.0e9 * volume / Ryd;
+    const auto gpa2ry = elastic.gpa_to_ry_per_cell();
 
     for (auto i = 0; i < 9; ++i) {
         for (auto j = 0; j < 9; ++j) {
