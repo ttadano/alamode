@@ -73,6 +73,16 @@ void Relaxation::set_default_variables()
 
     add_hess_diag = 100.0; // [cm^{-1}]
     stat_pressure = 0.0;   // [GPa]
+
+    // Sources of the strain couplings and elastic constants. The input parser
+    // sets these on rank 0 only; the defaults must match RelaxInputVars so
+    // that the other ranks hold defined values until setup_relaxation
+    // broadcasts the parsed ones.
+    renorm_3to2nd = 2;
+    renorm_2to1st = 2;
+    renorm_34to1st = 0;
+    elastic_const = 2;
+    strain_IFC_dir.clear();
 }
 
 void Relaxation::deallocate_variables()
@@ -81,6 +91,15 @@ void Relaxation::deallocate_variables()
 void Relaxation::setup_relaxation()
 {
     MPI_Bcast(&relax_str, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+
+    // The strain-coupling settings are consumed on every rank
+    // (compute_del_v_strain is collective), so they must not stay at their
+    // defaults on the non-root ranks.
+    MPI_Bcast(&renorm_3to2nd, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&renorm_2to1st, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&renorm_34to1st, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&elastic_const, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    mympi->MPI_Bcast_string(strain_IFC_dir, 0, MPI_COMM_WORLD);
 }
 
 void Relaxation::create_optimizer(const size_t num_modes)
