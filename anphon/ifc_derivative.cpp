@@ -1296,7 +1296,7 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
     std::string mode_tmp;
     double smag, weight;
     Eigen::Matrix3d weight_sum;
-    std::fstream fin_strain_force_coupling;
+    std::ifstream fin_strain_force_coupling;
 
     NDArray<double, 2> del_v1_del_umn_in_real_space;
     NDArray<double, 2> del_v1_del_umn_in_real_space_symm;
@@ -1332,11 +1332,17 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
             } else if (mode_tmp == "zx") {
                 ixyz1 = 2;
                 ixyz2 = 0;
+            } else {
+                exit("calculate_delv1_delumn_finite_difference", "Invalid name of strain mode in strain_force.in.");
             }
 
             for (iat1 = 0; iat1 < natmin; iat1++) {
                 for (ixyz3 = 0; ixyz3 < 3; ixyz3++) {
-                    fin_strain_force_coupling >> dtmp;
+                    if (!(fin_strain_force_coupling >> dtmp)) {
+                        exit("calculate_delv1_delumn_finite_difference",
+                             "strain_force.in ended in the middle of a block. Every block must consist of a\n"
+                             " 'mode smag weight' line followed by natmin lines of three force components.");
+                    }
                     del_v1_del_umn_in_real_space[ixyz1 * 3 + ixyz2][iat1 * 3 + ixyz3] += dtmp * -1.0 / smag * weight;
 
                     if (ixyz1 != ixyz2) {
@@ -1355,6 +1361,15 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
         } else {
             break;
         }
+    }
+
+    // The loop ends at the end of the file, or at a token that does not start
+    // a valid 'mode smag weight' line (a partial line ending exactly at EOF is
+    // not distinguished). Such trailing data was silently skipped before, so
+    // it is reported, on one rank, but not fatal.
+    if (my_rank_ == 0 && !fin_strain_force_coupling.eof()) {
+        warn("calculate_delv1_delumn_finite_difference",
+             "Unexpected extra data at the end of strain_force.in is ignored.");
     }
 
     for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
@@ -1465,7 +1480,7 @@ void DerivativeIFC::calculate_delv2_delumn_finite_difference(
     MatrixXcd dymat_tmp_alphamu(ns, ns);
     MatrixXcd evec_tmp(ns, ns);
 
-    std::fstream fin_strain_mode_coupling;
+    std::ifstream fin_strain_mode_coupling;
     int nmode;
     std::vector<std::string> mode_list;
     std::vector<double> smag_list;
@@ -1523,6 +1538,14 @@ void DerivativeIFC::calculate_delv2_delumn_finite_difference(
         } else {
             break;
         }
+    }
+
+    // A trailing line with fewer than four tokens (unless it ends exactly at
+    // EOF) was silently skipped before; report it on one rank but keep the
+    // previous (non-fatal) behavior.
+    if (my_rank_ == 0 && !fin_strain_mode_coupling.eof()) {
+        warn("calculate_delv2_delumn_finite_difference",
+             "Unexpected extra data at the end of strain_harmonic.in is ignored.");
     }
 
     std::vector<std::vector<FcsArrayWithCell>> fc2_deformed(nmode);

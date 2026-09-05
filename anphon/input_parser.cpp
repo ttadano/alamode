@@ -1032,7 +1032,7 @@ void InputParser::parse_relax_vars(PHON *phon)
 
 void InputParser::check_relax_vars() const
 {
-    std::fstream fin_test;
+    std::ifstream fin_test;
 
     // structural optimization
     if (relax_str != 0) {

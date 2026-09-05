@@ -28,7 +28,7 @@ ElasticTensor::ElasticTensor(const System &system_in) : system_(system_in)
 
 void ElasticTensor::read_C1_array(double *C1_array)
 {
-    std::fstream fin_C1_array;
+    std::ifstream fin_C1_array;
     std::string str_tmp;
 
     // initialize elastic constants
@@ -46,16 +46,29 @@ void ElasticTensor::read_C1_array(double *C1_array)
 
     fin_C1_array >> str_tmp;
     for (auto i1 = 0; i1 < 9; i1++) {
-        fin_C1_array >> C1_array[i1];
+        if (!(fin_C1_array >> C1_array[i1])) {
+            exit("read_C1_array", "C1_array.in ended before all 9 values of the stress tensor were read.");
+        }
+    }
+    if (fin_C1_array >> str_tmp) {
+        warn("read_C1_array", "Unexpected extra data at the end of C1_array.in is ignored.");
     }
 }
 
 void ElasticTensor::read_elastic_constants(double *const *C2_array, double *const *const *C3_array,
                                            const std::string &strain_ifc_dir)
 {
-    std::fstream fin_elastic_constants;
+    std::ifstream fin_elastic_constants;
     std::string str_tmp;
     int i1, i2;
+
+    // initialize elastic constants
+    for (i1 = 0; i1 < 9; i1++) {
+        std::fill_n(C2_array[i1], 9, 0.0);
+        for (i2 = 0; i2 < 9; i2++) {
+            std::fill_n(C3_array[i1][i2], 9, 0.0);
+        }
+    }
 
     // read elastic_constants.in from strain_ifc_dir directory
     fin_elastic_constants.open(strain_ifc_dir + "elastic_constants.in");
@@ -67,16 +80,25 @@ void ElasticTensor::read_elastic_constants(double *const *C2_array, double *cons
     fin_elastic_constants >> str_tmp;
     for (i1 = 0; i1 < 9; i1++) {
         for (i2 = 0; i2 < 9; i2++) {
-            fin_elastic_constants >> C2_array[i1][i2];
+            if (!(fin_elastic_constants >> C2_array[i1][i2])) {
+                exit("read_elastic_constants",
+                     "elastic_constants.in ended before all 81 second-order elastic constants were read.");
+            }
         }
     }
     fin_elastic_constants >> str_tmp;
     for (i1 = 0; i1 < 9; i1++) {
         for (i2 = 0; i2 < 9; i2++) {
             for (int i3 = 0; i3 < 9; i3++) {
-                fin_elastic_constants >> C3_array[i1][i2][i3];
+                if (!(fin_elastic_constants >> C3_array[i1][i2][i3])) {
+                    exit("read_elastic_constants",
+                         "elastic_constants.in ended before all 729 third-order elastic constants were read.");
+                }
             }
         }
+    }
+    if (fin_elastic_constants >> str_tmp) {
+        warn("read_elastic_constants", "Unexpected extra data at the end of elastic_constants.in is ignored.");
     }
 }
 
