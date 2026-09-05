@@ -218,6 +218,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/elastic_tensor.h
             ${PROJECT_SOURCE_DIR}/strain_file_parsers.h
             ${PROJECT_SOURCE_DIR}/strain_reference_cell.h
+        ${PROJECT_SOURCE_DIR}/strain_coupling_types.h
             ${PROJECT_SOURCE_DIR}/dynamical.h
             ${PROJECT_SOURCE_DIR}/error.h
             ${PROJECT_SOURCE_DIR}/ewald.h

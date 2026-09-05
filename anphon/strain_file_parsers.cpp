@@ -13,6 +13,8 @@
 #include <cerrno>
 #include <cstdlib>
 #include <stdexcept>
+#include <utility>
+#include "strain_reference_cell.h"
 
 namespace PHON_NS
 {
@@ -115,6 +117,77 @@ bool has_trailing_data(std::istream &fin)
 {
     std::string tok;
     return static_cast<bool>(fin >> tok);
+}
+
+bool is_strain_mode_name(const std::string &mode)
+{
+    return mode == "xx" || mode == "yy" || mode == "zz" || mode == "xy" || mode == "yz" || mode == "zx";
+}
+
+strain_coupling::StrainForceSet parse_strain_force(std::istream &fin, const std::size_t natom_default,
+                                                   const char *filename)
+{
+    strain_coupling::StrainForceSet set;
+    set.origin = filename;
+    const std::string fname(filename);
+
+    // Optional header. The first token is carried into the block loop, so no
+    // seeking is needed.
+    std::string first_token;
+    const bool has_first = static_cast<bool>(fin >> first_token);
+    set.has_cell = has_first && is_reference_cell_tag(first_token);
+    set.natom_rows = natom_default;
+    if (set.has_cell) {
+        set.cell = parse_reference_cell(fin, filename);
+        set.natom_rows = set.cell.natom();
+    }
+
+    bool pending_first = has_first && !set.has_cell;
+    while (true) {
+        strain_coupling::StrainForceBlock block;
+        bool ok;
+        if (pending_first) {
+            pending_first = false;
+            block.mode = first_token;
+            ok = static_cast<bool>(fin >> block.smag >> block.weight);
+        } else {
+            ok = static_cast<bool>(fin >> block.mode >> block.smag >> block.weight);
+        }
+        if (!ok) break;
+        if (!is_strain_mode_name(block.mode)) {
+            throw std::runtime_error("Invalid name of strain mode in " + fname + ".");
+        }
+        block.forces.resize(set.natom_rows * 3);
+        for (auto &v: block.forces) {
+            if (!(fin >> v)) {
+                throw std::runtime_error(fname + " ended in the middle of a block. Every block must consist of a\n"
+                                         " 'mode smag weight' line followed by one line of three force components per atom\n"
+                                         " of the cell the file describes.");
+            }
+        }
+        set.blocks.push_back(std::move(block));
+    }
+    // The loop ends at the end of the stream, or at a token that does not
+    // start a valid 'mode smag weight' line (a partial line ending exactly at
+    // the end of the stream is not distinguished).
+    set.trailing_data = !fin.eof();
+    return set;
+}
+
+strain_coupling::StrainHarmonicSet parse_strain_harmonic(std::istream &fin, const char *filename)
+{
+    strain_coupling::StrainHarmonicSet set;
+    set.origin = filename;
+    const std::string fname(filename);
+    strain_coupling::StrainHarmonicEntry entry;
+    while (fin >> entry.mode >> entry.smag >> entry.weight >> entry.label) {
+        if (!is_strain_mode_name(entry.mode)) {
+            throw std::runtime_error("Invalid name of strain mode in " + fname + ".");
+        }
+        set.entries.push_back(entry);
+    }
+    set.trailing_data = !fin.eof();
+    return set;
 }
 } // namespace strain_parsers
 } // namespace PHON_NS

@@ -15,6 +15,7 @@
 #include <istream>
 #include <string>
 #include <vector>
+#include "strain_coupling_types.h"
 
 // Token-stream parsers of the elastic-constant input files of the SCPH/QHA
 // structural optimization (C1_array.in and elastic_constants.in).
@@ -75,5 +76,22 @@ ElasticData parse_elastic_constants(std::istream &fin);
 
 // True if any token remains after the last value (the caller reports it).
 bool has_trailing_data(std::istream &fin);
+
+// True for the six strain-mode names xx, yy, zz, xy, yz, zx.
+bool is_strain_mode_name(const std::string &mode);
+
+// strain_force.in: an optional "&reference_cell ... /" header, then blocks of
+// a 'mode smag weight' line followed by one line of three force components
+// (eV/Angstrom) per atom of the described cell (natom_default atoms when there
+// is no header). Reading stops at the end of the stream or at a line that
+// does not start a block; the latter is recorded in trailing_data for the
+// caller to report. Throws std::runtime_error on an invalid mode name, a
+// malformed header, or a block that ends early.
+strain_coupling::StrainForceSet parse_strain_force(std::istream &fin, std::size_t natom_default,
+                                                   const char *filename);
+
+// strain_harmonic.in: rows 'mode smag weight filename'. Same stop and error
+// rules as parse_strain_force.
+strain_coupling::StrainHarmonicSet parse_strain_harmonic(std::istream &fin, const char *filename);
 } // namespace strain_parsers
 } // namespace PHON_NS

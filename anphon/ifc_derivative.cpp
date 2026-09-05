@@ -17,6 +17,7 @@
 #include "mpi_common.h"
 #include "relaxation.h"
 #include "scph_v3v4_elements.h"
+#include "strain_file_parsers.h"
 #include "strain_reference_cell.h"
 #include "system.h"
 
@@ -1011,8 +1012,8 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
                                          const size_t ns, DelVStrainData &del_v_strain, double **omega2_harmonic,
                                          std::complex<double> ***evec_harmonic, const int renorm_2to1st,
                                          const int renorm_34to1st, const int renorm_3to2nd,
-                                         const std::string &strain_ifc_dir, MinimumDistList ***mindist_list,
-                                         const PhaseFactorCache *phase_cache_in) const
+                                         const strain_coupling::StrainSource &strain_source,
+                                         MinimumDistList ***mindist_list, const PhaseFactorCache *phase_cache_in) const
 {
     const auto nk = kmesh_dense->nk;
     const auto nk_interpolate = kmesh_coarse->nk;
@@ -1034,7 +1035,7 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
     case 2:
         if (my_rank_ == 0)
             std::cout << "  - first-order derivatives of first-order IFCs (finite difference method) ... ";
-        calculate_delv1_delumn_finite_difference(del_v_strain.del_v1, evec_harmonic, strain_ifc_dir);
+        calculate_delv1_delumn_finite_difference(del_v_strain.del_v1, evec_harmonic, strain_source);
         if (my_rank_ == 0) std::cout << "  done!\n";
         break;
     default:
@@ -1087,7 +1088,7 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
                                                  kmesh_coarse,
                                                  kmesh_dense,
                                                  renorm_3to2nd,
-                                                 strain_ifc_dir,
+                                                 strain_source,
                                                  mindist_list);
         break;
 
@@ -1103,7 +1104,7 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
                                                  kmesh_coarse,
                                                  kmesh_dense,
                                                  renorm_3to2nd,
-                                                 strain_ifc_dir,
+                                                 strain_source,
                                                  mindist_list);
         break;
 
@@ -1143,7 +1144,7 @@ void DerivativeIFC::set_del_v_relax_cell_linearQHA(const KpointMeshUniform *kmes
                                                    DelVStrainData &del_v_strain, double **omega2_harmonic,
                                                    std::complex<double> ***evec_harmonic, const int renorm_2to1st,
                                                    const int renorm_34to1st, const int renorm_3to2nd,
-                                                   const std::string &strain_ifc_dir,
+                                                   const strain_coupling::StrainSource &strain_source,
                                                    MinimumDistList ***mindist_list) const
 {
     const auto nk = kmesh_dense->nk;
@@ -1161,7 +1162,7 @@ void DerivativeIFC::set_del_v_relax_cell_linearQHA(const KpointMeshUniform *kmes
     } else if (renorm_2to1st == 2) {
         if (my_rank_ == 0)
             std::cout << "  - first-order derivatives of first-order IFCs (finite difference method) ... ";
-        calculate_delv1_delumn_finite_difference(del_v_strain.del_v1, evec_harmonic, strain_ifc_dir);
+        calculate_delv1_delumn_finite_difference(del_v_strain.del_v1, evec_harmonic, strain_source);
     }
     if (my_rank_ == 0) {
         std::cout << "  done!\n";
@@ -1199,7 +1200,7 @@ void DerivativeIFC::set_del_v_relax_cell_linearQHA(const KpointMeshUniform *kmes
                                                  kmesh_coarse,
                                                  kmesh_dense,
                                                  renorm_3to2nd,
-                                                 strain_ifc_dir,
+                                                 strain_source,
                                                  mindist_list);
     } else if (renorm_3to2nd == 4) {
         if (my_rank_ == 0) {
@@ -1291,7 +1292,45 @@ void DerivativeIFC::read_del_v2_del_umn_in_kspace(double **omega2_harmonic,
 
 void DerivativeIFC::calculate_delv1_delumn_finite_difference(
     MatrixXcdRowMajor &del_v1_del_umn, const std::complex<double> *const *const *const evec_harmonic,
-    const std::string &strain_ifc_dir) const
+    const strain_coupling::StrainSource &strain_source) const
+{
+    const auto set = load_strain_force_set(strain_source);
+    process_strain_force_set(set, del_v1_del_umn, evec_harmonic);
+}
+
+strain_coupling::StrainForceSet
+DerivativeIFC::load_strain_force_set(const strain_coupling::StrainSource &strain_source) const
+{
+    strain_coupling::StrainForceSet set;
+
+    if (strain_source.use_file()) {
+        exit("load_strain_force_set", "STRAINFILE is not supported by this build.");
+    }
+
+    const auto path = strain_source.ifc_dir + "strain_force.in";
+    std::ifstream fin(path);
+    if (!fin) {
+        exit("calculate_delv1_delumn_finite_difference", "strain_force.in not found");
+    }
+    try {
+        set = strain_parsers::parse_strain_force(fin, system_.get_primcell().number_of_atoms, "strain_force.in");
+    } catch (const std::runtime_error &e) {
+        exit("calculate_delv1_delumn_finite_difference", e.what());
+    }
+    set.origin = path;
+
+    // Trailing data after the last block was silently skipped before, so it
+    // is reported, on one rank, but not fatal.
+    if (my_rank_ == 0 && set.trailing_data) {
+        warn("calculate_delv1_delumn_finite_difference",
+             "Unexpected extra data at the end of strain_force.in is ignored.");
+    }
+    return set;
+}
+
+void DerivativeIFC::process_strain_force_set(const strain_coupling::StrainForceSet &set,
+                                             MatrixXcdRowMajor &del_v1_del_umn,
+                                             const std::complex<double> *const *const *const evec_harmonic) const
 {
     const auto natmin = system_.get_primcell().number_of_atoms;
     auto ns = dynamical_.neval;
@@ -1299,78 +1338,53 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
     int ixyz1, ixyz2, ixyz3, ixyz12, ixyz22, ixyz32, i1, i2;
     int iat1, iat2, is1, isymm;
     double dtmp;
-    std::string mode_tmp;
-    double smag, weight;
     Eigen::Matrix3d weight_sum;
-    std::ifstream fin_strain_force_coupling;
 
     NDArray<double, 2> del_v1_del_umn_in_real_space;
     NDArray<double, 2> del_v1_del_umn_in_real_space_symm;
     del_v1_del_umn_in_real_space.resize(9, ns);
     del_v1_del_umn_in_real_space_symm.resize(9, ns);
 
-    fin_strain_force_coupling.open(strain_ifc_dir + "strain_force.in");
-
-    if (!fin_strain_force_coupling) {
-        exit("calculate_delv1_delumn_finite_difference", "strain_force.in not found");
-    }
-
-    // Optional "&reference_cell ... /" header: the cell the force rows were
-    // generated for. When it is present the rows of every block are mapped
-    // onto the atoms of the current primitive cell (which the &cell field may
-    // have enlarged); without it the rows are those of the current cell, as
-    // before. The first token is carried into the block loop, so no seeking
-    // is needed.
+    // When the set names the cell its rows belong to, the rows of every block
+    // are mapped onto the atoms of the current primitive cell (which the &cell
+    // field may have enlarged); otherwise the rows are those of the current
+    // cell.
     const auto &pcell = system_.get_primcell();
-    std::string first_token;
-    const bool has_first = static_cast<bool>(fin_strain_force_coupling >> first_token);
-    const bool has_header = has_first && strain_parsers::is_reference_cell_tag(first_token);
     strain_parsers::AtomMatch atom_match;
-    std::size_t nrow = natmin;
-    if (has_header) {
+    if (set.has_cell) {
         try {
-            const auto refcell = strain_parsers::parse_reference_cell(fin_strain_force_coupling, "strain_force.in");
             std::vector<std::string> symbols_cur(natmin);
             for (std::size_t iat = 0; iat < natmin; ++iat) symbols_cur[iat] = system_.symbol_kd[pcell.kind[iat]];
-            atom_match = strain_parsers::match_atoms(refcell,
+            atom_match = strain_parsers::match_atoms(set.cell,
                                                      pcell.lattice_vector,
                                                      pcell.x_cartesian,
                                                      symbols_cur,
-                                                     "strain_force.in");
-            nrow = refcell.natom();
-            if (my_rank_ == 0) {
-                const auto flags = std::cout.flags();
-                const auto prec = std::cout.precision();
-                std::cout << "  &reference_cell header found in " << strain_ifc_dir << "strain_force.in\n"
-                          << "    Reference cell : " << nrow << " atoms,  V = " << std::scientific
-                          << std::setprecision(4) << std::fabs(refcell.lattice.determinant()) << " (a.u.)^3\n"
-                          << "    Current cell   : " << natmin << " atoms,  V = " << pcell.volume
-                          << " (a.u.)^3   (V(current) / V(reference) = " << std::fixed << std::setprecision(4)
-                          << atom_match.ratio << ")\n"
-                          << "    The " << nrow << " force rows per strain mode are mapped onto the " << natmin
-                          << " atoms of the current primitive cell.\n"
-                          << "    The file on disk is not modified.\n";
-                std::cout.flags(flags);
-                std::cout.precision(prec);
-            }
+                                                     set.origin.c_str());
         } catch (const std::runtime_error &e) {
             exit("calculate_delv1_delumn_finite_difference", e.what());
         }
-    }
-    std::vector<double> rows_in(nrow * 3), rows_now;
-    double max_spread = 0.0;
-    bool pending_first = has_first && !has_header;
-
-    // Read the 'mode smag weight' line of the next block; the first block's
-    // mode name may already be in first_token.
-    auto next_block = [&]() -> bool {
-        if (pending_first) {
-            pending_first = false;
-            mode_tmp = first_token;
-            return static_cast<bool>(fin_strain_force_coupling >> smag >> weight);
+        if (my_rank_ == 0) {
+            const auto flags = std::cout.flags();
+            const auto prec = std::cout.precision();
+            std::cout << "  &reference_cell header found in " << set.origin << "\n"
+                      << "    Reference cell : " << set.natom_rows << " atoms,  V = " << std::scientific
+                      << std::setprecision(4) << std::fabs(set.cell.lattice.determinant()) << " (a.u.)^3\n"
+                      << "    Current cell   : " << natmin << " atoms,  V = " << pcell.volume
+                      << " (a.u.)^3   (V(current) / V(reference) = " << std::fixed << std::setprecision(4)
+                      << atom_match.ratio << ")\n"
+                      << "    The " << set.natom_rows << " force rows per strain mode are mapped onto the "
+                      << natmin << " atoms of the current primitive cell.\n"
+                      << "    The file on disk is not modified.\n";
+            std::cout.flags(flags);
+            std::cout.precision(prec);
         }
-        return static_cast<bool>(fin_strain_force_coupling >> mode_tmp >> smag >> weight);
-    };
+    } else if (set.natom_rows != natmin) {
+        exit("calculate_delv1_delumn_finite_difference",
+             "The number of force rows per block does not match the number of atoms of the primitive cell.");
+    }
+
+    std::vector<double> rows_now;
+    double max_spread = 0.0;
 
     weight_sum.setZero();
 
@@ -1378,78 +1392,60 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
         std::fill_n(del_v1_del_umn_in_real_space[ixyz1], ns, 0.0);
     }
 
-    while (true) {
-        if (next_block()) {
-            if (mode_tmp == "xx") {
-                ixyz1 = ixyz2 = 0;
-            } else if (mode_tmp == "yy") {
-                ixyz1 = ixyz2 = 1;
-            } else if (mode_tmp == "zz") {
-                ixyz1 = ixyz2 = 2;
-            } else if (mode_tmp == "xy") {
-                ixyz1 = 0;
-                ixyz2 = 1;
-            } else if (mode_tmp == "yz") {
-                ixyz1 = 1;
-                ixyz2 = 2;
-            } else if (mode_tmp == "zx") {
-                ixyz1 = 2;
-                ixyz2 = 0;
-            } else {
-                exit("calculate_delv1_delumn_finite_difference", "Invalid name of strain mode in strain_force.in.");
-            }
-
-            // One row of three force components per atom of the cell the
-            // file describes (the reference cell of the header, or the current
-            // primitive cell), then mapped onto the current atoms.
-            for (std::size_t k = 0; k < rows_in.size(); ++k) {
-                if (!(fin_strain_force_coupling >> rows_in[k])) {
-                    exit("calculate_delv1_delumn_finite_difference",
-                         "strain_force.in ended in the middle of a block. Every block must consist of a\n"
-                         " 'mode smag weight' line followed by one line of three force components per atom\n"
-                         " of the cell the file describes.");
-                }
-            }
-            if (has_header) {
-                max_spread = std::max(max_spread, strain_parsers::expand_atom_rows(atom_match, rows_in, rows_now));
-            } else {
-                rows_now = rows_in;
-            }
-
-            for (iat1 = 0; iat1 < natmin; iat1++) {
-                for (ixyz3 = 0; ixyz3 < 3; ixyz3++) {
-                    dtmp = rows_now[iat1 * 3 + ixyz3];
-                    del_v1_del_umn_in_real_space[ixyz1 * 3 + ixyz2][iat1 * 3 + ixyz3] += dtmp * -1.0 / smag * weight;
-
-                    if (ixyz1 != ixyz2) {
-                        del_v1_del_umn_in_real_space[ixyz2 * 3 + ixyz1][iat1 * 3 + ixyz3] =
-                            del_v1_del_umn_in_real_space[ixyz1 * 3 + ixyz2][iat1 * 3 + ixyz3];
-                    }
-                }
-            }
-
-            if (ixyz1 == ixyz2) {
-                weight_sum(ixyz1, ixyz2) += weight;
-            } else {
-                weight_sum(ixyz1, ixyz2) += weight;
-                weight_sum(ixyz2, ixyz1) += weight;
-            }
+    for (const auto &block: set.blocks) {
+        if (block.mode == "xx") {
+            ixyz1 = ixyz2 = 0;
+        } else if (block.mode == "yy") {
+            ixyz1 = ixyz2 = 1;
+        } else if (block.mode == "zz") {
+            ixyz1 = ixyz2 = 2;
+        } else if (block.mode == "xy") {
+            ixyz1 = 0;
+            ixyz2 = 1;
+        } else if (block.mode == "yz") {
+            ixyz1 = 1;
+            ixyz2 = 2;
+        } else if (block.mode == "zx") {
+            ixyz1 = 2;
+            ixyz2 = 0;
         } else {
-            break;
+            exit("calculate_delv1_delumn_finite_difference", "Invalid name of strain mode in strain_force.in.");
+        }
+
+        if (block.forces.size() != set.natom_rows * 3) {
+            exit("calculate_delv1_delumn_finite_difference",
+                 "Inconsistent number of force rows in a strain-force block.");
+        }
+        if (set.has_cell) {
+            max_spread = std::max(max_spread, strain_parsers::expand_atom_rows(atom_match, block.forces, rows_now));
+        } else {
+            rows_now = block.forces;
+        }
+
+        for (iat1 = 0; iat1 < natmin; iat1++) {
+            for (ixyz3 = 0; ixyz3 < 3; ixyz3++) {
+                dtmp = rows_now[iat1 * 3 + ixyz3];
+                del_v1_del_umn_in_real_space[ixyz1 * 3 + ixyz2][iat1 * 3 + ixyz3] +=
+                    dtmp * -1.0 / block.smag * block.weight;
+
+                if (ixyz1 != ixyz2) {
+                    del_v1_del_umn_in_real_space[ixyz2 * 3 + ixyz1][iat1 * 3 + ixyz3] =
+                        del_v1_del_umn_in_real_space[ixyz1 * 3 + ixyz2][iat1 * 3 + ixyz3];
+                }
+            }
+        }
+
+        if (ixyz1 == ixyz2) {
+            weight_sum(ixyz1, ixyz2) += block.weight;
+        } else {
+            weight_sum(ixyz1, ixyz2) += block.weight;
+            weight_sum(ixyz2, ixyz1) += block.weight;
         }
     }
 
-    // The loop ends at the end of the file, or at a token that does not start
-    // a valid 'mode smag weight' line (a partial line ending exactly at EOF is
-    // not distinguished). Such trailing data was silently skipped before, so
-    // it is reported, on one rank, but not fatal.
-    if (my_rank_ == 0 && !fin_strain_force_coupling.eof()) {
-        warn("calculate_delv1_delumn_finite_difference",
-             "Unexpected extra data at the end of strain_force.in is ignored.");
-    }
-    if (has_header && max_spread > 1.0e-8 && my_rank_ == 0) {
+    if (set.has_cell && max_spread > 1.0e-8 && my_rank_ == 0) {
         std::ostringstream os;
-        os << "The reference cell of strain_force.in is larger than the primitive cell of this run;\n"
+        os << "The reference cell of " << set.origin << " is larger than the primitive cell of this run;\n"
            << " the force rows of translation-equivalent atoms are averaged. Largest spread: " << std::scientific
            << std::setprecision(2) << max_spread << " eV/Angstrom.\n"
            << " A large spread means the reference data does not have the translational symmetry assumed here.";
@@ -1524,8 +1520,68 @@ void DerivativeIFC::calculate_delv1_delumn_finite_difference(
 void DerivativeIFC::calculate_delv2_delumn_finite_difference(
     double **omega2_harmonic, const std::complex<double> *const *const *const evec_harmonic,
     std::vector<MatrixXcdRowMajor> &del_v2_del_umn, const KpointMeshUniform *kmesh_coarse,
-    const KpointMeshUniform *kmesh_dense, const int renorm_3to2nd, const std::string &strain_ifc_dir,
+    const KpointMeshUniform *kmesh_dense, const int renorm_3to2nd, const strain_coupling::StrainSource &strain_source,
     MinimumDistList ***mindist_list) const
+{
+    std::vector<std::vector<FcsArrayWithCell>> fc2_deformed;
+    const auto set = load_strain_harmonic_set(strain_source, fc2_deformed);
+    process_strain_harmonic_set(set.entries,
+                                fc2_deformed,
+                                omega2_harmonic,
+                                evec_harmonic,
+                                del_v2_del_umn,
+                                kmesh_coarse,
+                                kmesh_dense,
+                                renorm_3to2nd,
+                                mindist_list);
+}
+
+strain_coupling::StrainHarmonicSet
+DerivativeIFC::load_strain_harmonic_set(const strain_coupling::StrainSource &strain_source,
+                                        std::vector<std::vector<FcsArrayWithCell>> &fc2_deformed) const
+{
+    strain_coupling::StrainHarmonicSet set;
+
+    if (strain_source.use_file()) {
+        exit("load_strain_harmonic_set", "STRAINFILE is not supported by this build.");
+    }
+
+    const auto path = strain_source.ifc_dir + "strain_harmonic.in";
+    std::ifstream fin(path);
+    if (!fin) {
+        exit("calculate_delv2_delumn_finite_difference", "strain_harmonic.in not found");
+    }
+    try {
+        set = strain_parsers::parse_strain_harmonic(fin, "strain_harmonic.in");
+    } catch (const std::runtime_error &e) {
+        exit("calculate_delv2_delumn_finite_difference", e.what());
+    }
+    set.origin = path;
+
+    // A trailing line with fewer than four tokens (unless it ends exactly at
+    // EOF) was silently skipped before; report it on one rank but keep the
+    // previous (non-fatal) behavior.
+    if (my_rank_ == 0 && set.trailing_data) {
+        warn("calculate_delv2_delumn_finite_difference",
+             "Unexpected extra data at the end of strain_harmonic.in is ignored.");
+    }
+
+    fc2_deformed.assign(set.entries.size(), {});
+    for (std::size_t imode = 0; imode < set.entries.size(); ++imode) {
+        fcs_phonon_.get_fcs_from_file(strain_source.ifc_dir + set.entries[imode].label, 0, fc2_deformed[imode]);
+        fcs_phonon_.replicate_force_constant(&system_, fc2_deformed[imode]);
+    }
+    return set;
+}
+
+void DerivativeIFC::process_strain_harmonic_set(const std::vector<strain_coupling::StrainHarmonicEntry> &entries,
+                                                const std::vector<std::vector<FcsArrayWithCell>> &fc2_deformed,
+                                                double **omega2_harmonic,
+                                                const std::complex<double> *const *const *const evec_harmonic,
+                                                std::vector<MatrixXcdRowMajor> &del_v2_del_umn,
+                                                const KpointMeshUniform *kmesh_coarse,
+                                                const KpointMeshUniform *kmesh_dense, const int renorm_3to2nd,
+                                                MinimumDistList ***mindist_list) const
 {
     using namespace Eigen;
 
@@ -1564,15 +1620,6 @@ void DerivativeIFC::calculate_delv2_delumn_finite_difference(
     MatrixXcd dymat_tmp_alphamu(ns, ns);
     MatrixXcd evec_tmp(ns, ns);
 
-    std::ifstream fin_strain_mode_coupling;
-    int nmode;
-    std::vector<std::string> mode_list;
-    std::vector<double> smag_list;
-    std::vector<double> weight_list;
-    std::vector<std::string> filename_list;
-
-    double smag_tmp, weight_tmp;
-    std::string mode_tmp, filename_tmp;
 
     NDArray<double, 4> dphi2_dumn_realspace_in;
     NDArray<double, 4> dphi2_dumn_realspace_symm;
@@ -1600,61 +1647,27 @@ void DerivativeIFC::calculate_delv2_delumn_finite_difference(
         }
     }
 
-    fin_strain_mode_coupling.open(strain_ifc_dir + "strain_harmonic.in");
-
-    if (!fin_strain_mode_coupling) {
-        exit("calculate_delv2_delumn_finite_difference", "strain_harmonic.in not found");
-    }
-
-    mode_list.clear();
-    smag_list.clear();
-    weight_list.clear();
-    filename_list.clear();
-
-    nmode = 0;
-    while (true) {
-        if (fin_strain_mode_coupling >> mode_tmp >> smag_tmp >> weight_tmp >> filename_tmp) {
-            mode_list.push_back(mode_tmp);
-            smag_list.push_back(smag_tmp);
-            weight_list.push_back(weight_tmp);
-            filename_list.push_back(filename_tmp);
-            nmode++;
-        } else {
-            break;
-        }
-    }
-
-    // A trailing line with fewer than four tokens (unless it ends exactly at
-    // EOF) was silently skipped before; report it on one rank but keep the
-    // previous (non-fatal) behavior.
-    if (my_rank_ == 0 && !fin_strain_mode_coupling.eof()) {
-        warn("calculate_delv2_delumn_finite_difference",
-             "Unexpected extra data at the end of strain_harmonic.in is ignored.");
-    }
-
-    std::vector<std::vector<FcsArrayWithCell>> fc2_deformed(nmode);
-
-    for (imode = 0; imode < nmode; imode++) {
-        fcs_phonon_.get_fcs_from_file(strain_ifc_dir + filename_list[imode], 0, fc2_deformed[imode]);
-        fcs_phonon_.replicate_force_constant(&system_, fc2_deformed[imode]);
+    const auto nmode = static_cast<int>(entries.size());
+    if (fc2_deformed.size() != entries.size()) {
+        exit("calculate_delv2_delumn_finite_difference", "Inconsistent number of strained force-constant sets.");
     }
 
     weight_sum.setZero();
 
     for (imode = 0; imode < nmode; imode++) {
-        if (mode_list[imode] == "xx") {
+        if (entries[imode].mode == "xx") {
             ixyz1 = ixyz2 = 0;
-        } else if (mode_list[imode] == "yy") {
+        } else if (entries[imode].mode == "yy") {
             ixyz1 = ixyz2 = 1;
-        } else if (mode_list[imode] == "zz") {
+        } else if (entries[imode].mode == "zz") {
             ixyz1 = ixyz2 = 2;
-        } else if (mode_list[imode] == "xy") {
+        } else if (entries[imode].mode == "xy") {
             ixyz1 = 0;
             ixyz2 = 1;
-        } else if (mode_list[imode] == "yz") {
+        } else if (entries[imode].mode == "yz") {
             ixyz1 = 1;
             ixyz2 = 2;
-        } else if (mode_list[imode] == "zx") {
+        } else if (entries[imode].mode == "zx") {
             ixyz1 = 2;
             ixyz2 = 0;
         } else {
@@ -1676,21 +1689,21 @@ void DerivativeIFC::calculate_delv2_delumn_finite_difference(
             for (i1 = 0; i1 < natmin3; i1++) {
                 for (i2 = 0; i2 < nat3; i2++) {
                     dphi2_dumn_realspace_in[ixyz1][ixyz2][i1][i2] +=
-                        dphi2_dumn_realspace_tmp(i1, i2) / smag_list[imode] * weight_list[imode];
+                        dphi2_dumn_realspace_tmp(i1, i2) / entries[imode].smag * entries[imode].weight;
                 }
             }
-            weight_sum(ixyz1, ixyz2) += weight_list[imode];
+            weight_sum(ixyz1, ixyz2) += entries[imode].weight;
         } else {
             for (i1 = 0; i1 < natmin3; i1++) {
                 for (i2 = 0; i2 < nat3; i2++) {
                     dphi2_dumn_realspace_in[ixyz1][ixyz2][i1][i2] +=
-                        dphi2_dumn_realspace_tmp(i1, i2) / smag_list[imode] * weight_list[imode];
+                        dphi2_dumn_realspace_tmp(i1, i2) / entries[imode].smag * entries[imode].weight;
                     dphi2_dumn_realspace_in[ixyz2][ixyz1][i1][i2] +=
-                        dphi2_dumn_realspace_tmp(i1, i2) / smag_list[imode] * weight_list[imode];
+                        dphi2_dumn_realspace_tmp(i1, i2) / entries[imode].smag * entries[imode].weight;
                 }
             }
-            weight_sum(ixyz1, ixyz2) += weight_list[imode];
-            weight_sum(ixyz2, ixyz1) += weight_list[imode];
+            weight_sum(ixyz1, ixyz2) += entries[imode].weight;
+            weight_sum(ixyz2, ixyz1) += entries[imode].weight;
         }
     }
 

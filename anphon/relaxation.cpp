@@ -1028,7 +1028,7 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse, con
                                              renorm_2to1st,
                                              renorm_34to1st,
                                              renorm_3to2nd,
-                                             strain_IFC_dir,
+                                             strain_source(),
                                              mindist_list,
                                              phase_cache_in);
 
@@ -1049,7 +1049,7 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse, con
                                                        renorm_2to1st,
                                                        renorm_34to1st,
                                                        renorm_3to2nd,
-                                                       strain_IFC_dir,
+                                                       strain_source(),
                                                        mindist_list);
 
         if (mympi->my_rank == 0) timer->print_elapsed();

@@ -290,6 +290,55 @@ int main()
         check(throws([&] { match_atoms(empty, lat2, xc2, sym2, "f"); }), "match: header without atoms throws");
     }
 
+    // ---- strain_force.in / strain_harmonic.in token parsers
+    {
+        std::istringstream ss("xx 0.005 1.0\n1 2 3\n4 5 6\nyy -0.005 0.5\n7 8 9\n10 11 12\n");
+        const auto set = parse_strain_force(ss, 2, "f");
+        check(!set.has_cell && set.natom_rows == 2 && set.blocks.size() == 2, "strain_force: two headerless blocks");
+        check(set.blocks[1].mode == "yy" && near(set.blocks[1].smag, -0.005) && near(set.blocks[1].weight, 0.5) &&
+                  set.blocks[1].forces.size() == 6 && near(set.blocks[1].forces[5], 12.0),
+              "strain_force: block contents");
+        check(!set.trailing_data, "strain_force: no trailing data");
+    }
+    {
+        // A line that cannot start a block (here a non-numeric magnitude) ends
+        // the reading and is reported as trailing data; a partial line that
+        // ends exactly at EOF is not distinguished from a clean end (as before).
+        std::istringstream ss("xx 0.005 1.0\n1 2 3\n4 5 6\nyy abc 1.0\n");
+        const auto set = parse_strain_force(ss, 2, "f");
+        check(set.blocks.size() == 1 && set.trailing_data, "strain_force: an unreadable block line is trailing data");
+        std::istringstream at_eof("xx 0.005 1.0\n1 2 3\n4 5 6\nyy 0.005\n");
+        check(!parse_strain_force(at_eof, 2, "f").trailing_data,
+              "strain_force: a partial line at EOF is not reported");
+    }
+    {
+        std::istringstream ss("xx 0.005 1.0\n1 2 3\n4 5\n");
+        check(throws([&] { parse_strain_force(ss, 2, "f"); }), "strain_force: truncated block throws");
+    }
+    {
+        std::istringstream ss("xz 0.005 1.0\n1 2 3\n");
+        check(throws([&] { parse_strain_force(ss, 1, "f"); }), "strain_force: invalid mode name throws");
+    }
+    {
+        std::istringstream ss("&reference_cell\n1.0\n10 0 0\n0 10 0\n0 0 10\n2\nA 0 0 0\nB 0.5 0.5 0.5\n/\n"
+                              "zz 0.01 1.0\n0 0 1\n0 0 -1\n");
+        const auto set = parse_strain_force(ss, 7, "f");
+        check(set.has_cell && set.natom_rows == 2 && set.cell.symbols[1] == "B" && set.blocks.size() == 1 &&
+                  near(set.blocks[0].forces[5], -1.0),
+              "strain_force: the header defines the row count");
+    }
+    {
+        std::istringstream ss("xx 0.005 1.0 strain_001.xml\nyz -0.005 0.5 strain_002.h5\n");
+        const auto set = parse_strain_harmonic(ss, "h");
+        check(set.entries.size() == 2 && set.entries[1].mode == "yz" && set.entries[1].label == "strain_002.h5" &&
+                  near(set.entries[1].weight, 0.5) && !set.trailing_data,
+              "strain_harmonic: rows");
+        std::istringstream bad("xx 0.005 1.0 a.xml\nqq 0.005 1.0 b.xml\n");
+        check(throws([&] { parse_strain_harmonic(bad, "h"); }), "strain_harmonic: invalid mode name throws");
+        std::istringstream partial("xx 0.005 1.0 a.xml\nyy abc 1.0 b.xml\n");
+        check(parse_strain_harmonic(partial, "h").trailing_data, "strain_harmonic: an unreadable row is trailing data");
+    }
+
     if (nfail == 0) {
         std::printf("test_strain_parsers: all checks passed\n");
         return EXIT_SUCCESS;

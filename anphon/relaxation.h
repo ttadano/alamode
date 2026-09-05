@@ -18,6 +18,7 @@
 #include "pointers.h"
 #include "relaxation_types.h"
 #include "scph.h"
+#include "strain_coupling_types.h"
 
 namespace PHON_NS
 {
@@ -256,6 +257,13 @@ public:
     // them from elastic_constants.in (default).
     int elastic_const;
     std::string strain_IFC_dir;
+
+    // The source of the strain couplings and elastic constants (STRAIN_IFC_DIR
+    // text files or the STRAINFILE container).
+    strain_coupling::StrainSource strain_source() const
+    {
+        return strain_coupling::StrainSource{strain_IFC_dir, std::string()};
+    }
 
     std::unique_ptr<Optimizer> optimizer;
     std::unique_ptr<DerivativeIFC> derivative_ifc;
