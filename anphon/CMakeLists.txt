@@ -201,6 +201,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/scph_qha_common.cpp
             ${PROJECT_SOURCE_DIR}/scph_result_io.cpp
             ${PROJECT_SOURCE_DIR}/scph_v3v4_elements.cpp
+            ${PROJECT_SOURCE_DIR}/v4_service.cpp
             ${PROJECT_SOURCE_DIR}/selfenergy.cpp
             ${PROJECT_SOURCE_DIR}/symmetry_core.cpp
             ${PROJECT_SOURCE_DIR}/system.cpp
@@ -254,6 +255,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/thermodynamics.h
             ${PROJECT_SOURCE_DIR}/v4_distributed.h
+            ${PROJECT_SOURCE_DIR}/v4_service.h
             ${PROJECT_SOURCE_DIR}/timer.h
             ${PROJECT_SOURCE_DIR}/write_phonons.h
             ${PROJECT_SOURCE_DIR}/../include/progress_bar.h

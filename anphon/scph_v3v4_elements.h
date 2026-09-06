@@ -12,6 +12,7 @@
 
 #include <complex>
 #include <vector>
+#include "v4_distributed.h"
 
 namespace PHON_NS
 {
@@ -39,4 +40,7 @@ void compute_V3_elements_for_given_IFCs(std::complex<double> ***v3_out, const st
 void zerofill_elements_acoustic_at_gamma(const std::vector<bool> &is_acoustic, std::complex<double> ***v_elems,
                                          int fc_order, unsigned int ns_in, unsigned int nk_dense_in,
                                          unsigned int nk_irred_coarse_in);
+
+// Row-distributed counterpart for V4 (fc_order = 4): the owned rows of the local block only.
+void zerofill_v4_acoustic_at_gamma_block(const std::vector<bool> &is_acoustic, v4_distributed::V4RowBlock &v4_block);
 } // namespace PHON_NS

@@ -145,8 +145,7 @@ struct StructuralOptWorkspace
     // k-space IFCs at the reference structure
     NDArray<std::complex<double>, 1> v1_ref;
     NDArray<std::complex<double>, 3> v3_ref;
-    NDArray<std::complex<double>, 3> v4_ref;
-    double v0_ref = 0.0;
+    double v0_ref = 0.0; // (v4 lives in ScphQhaCommon::v4_service, row-distributed over the MPI ranks)
 
     // IFCs renormalized by the strain u_{mu nu}
     NDArray<std::complex<double>, 1> v1_with_umn;

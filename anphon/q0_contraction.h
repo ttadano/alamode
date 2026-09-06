@@ -49,9 +49,11 @@
 
 namespace PHON_NS::q0_contraction {
 
-// Column tile: 4096 complex = 64 KB of v4 per row segment; the matching
-// accumulator segment (64 KB) and w segment (32 KB) fit in L2.
-constexpr std::size_t default_tile = 4096;
+// Column tile: 16384 complex = 256 KB of v4 per row segment; the matching
+// accumulator segment (256 KB) and w segment (128 KB) fit in L2. Measured on a
+// 64-core cluster node (ns = 256..320): 216-222 GB/s at 256 KB against 170-183 GB/s
+// at 64 KB and 191-217 GB/s at 1-4 MB; the M2 Max is insensitive to the tile.
+constexpr std::size_t default_tile = 16384;
 
 struct Options {
     std::size_t tile = default_tile;

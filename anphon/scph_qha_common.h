@@ -22,6 +22,8 @@
 #include "anharmonic_core.h"
 #include "constants.h"
 #include "dynamical.h"
+#include "v4_distributed.h"
+#include "v4_service.h"
 #include "error.h"
 #include "fcs_phonon.h"
 #include "kpoint.h"
@@ -197,14 +199,26 @@ protected:
     // the initial strain tensor) at the head of a temperature point.
     void print_initial_structure(const RelaxationStructureState &state, RelaxationStrMode relax_mode) const;
 
-    void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out, std::complex<double> ***evec_in,
+    // Row-distributed V4 (v4_service.h): built by build_v4_service, consumed by the
+    // SCP solvers (fmat) and the q0 renormalization (q0_sweep); the other ranks serve
+    // the contractions in v4_service->worker_loop() while rank 0 runs the loops.
+    std::unique_ptr<V4Service> v4_service;
+
+    // Choose the builder and the partition, allocate the local rows, build them
+    // and gather the on-site diagonal. full_tensor: every element (SELF_OFFDIAG = 1
+    // or structural relaxation); offdiag_fmat: SELF_OFFDIAG.
+    void build_v4_service(bool full_tensor, bool offdiag_fmat);
+
+    void zerofill_v4_acoustic_at_gamma(v4_distributed::V4RowBlock &v4_block) const;
+
+    void compute_V4_elements_mpi_over_kpoint(v4_distributed::V4RowBlock &v4_block, std::complex<double> ***evec_in,
                                              bool self_offdiag, bool relax, const KpointMeshUniform *kmesh_coarse_in,
                                              const KpointMeshUniform *kmesh_dense_in,
                                              const std::vector<int> &kmap_coarse_to_dense,
                                              const PhaseFactorCache *phase_storage_in,
                                              std::complex<double> *phi4_reciprocal_inout);
 
-    void compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out, std::complex<double> ***evec_in,
+    void compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock &v4_block, std::complex<double> ***evec_in,
                                            bool self_offdiag, const KpointMeshUniform *kmesh_coarse_in,
                                            const KpointMeshUniform *kmesh_dense_in,
                                            const std::vector<int> &kmap_coarse_to_scph,

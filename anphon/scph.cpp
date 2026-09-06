@@ -734,7 +734,6 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
     const auto nk = kmesh_dense->nk;
     const auto nk_interpolate = kmesh_coarse->nk;
     const auto ns = dynamical->neval;
-    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
@@ -745,9 +744,6 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
     NDArray<double, 3> omega2_anharm(NT, nk, ns);
     NDArray<std::complex<double>, 3> evec_anharm_tmp(nk, ns, ns);
     NDArray<std::complex<double>, 3> v3_array_all;
-    NDArray<std::complex<double>, 3> v4_array_all(nk_irred_interpolate * nk,
-                                                  static_cast<std::size_t>(ns) * ns,
-                                                  static_cast<std::size_t>(ns) * ns);
     NDArray<std::complex<double>, 2> delta_v2_renorm;
 
     // delta_v2_renorm is zero when structural optimization is not performed
@@ -760,28 +756,9 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
 
     const auto relax_mode = to_relaxation_str_mode(relaxation->relax_str);
 
-    // Calculate v4 array.
+    // Calculate v4 array (row-distributed over the MPI ranks).
     // This operation is the most expensive part of the calculation.
-    if (selfenergy_offdiagonal & (ialgo == 1)) {
-        compute_V4_elements_mpi_over_band(v4_array_all,
-                                          evec_harmonic,
-                                          selfenergy_offdiagonal,
-                                          kmesh_coarse.get(),
-                                          kmesh_dense.get(),
-                                          kmap_coarse_to_dense,
-                                          phase_factor.get(),
-                                          phi4_reciprocal);
-    } else {
-        compute_V4_elements_mpi_over_kpoint(v4_array_all,
-                                            evec_harmonic,
-                                            selfenergy_offdiagonal,
-                                            relax_mode != RelaxationStrMode::None,
-                                            kmesh_coarse.get(),
-                                            kmesh_dense.get(),
-                                            kmap_coarse_to_dense,
-                                            phase_factor.get(),
-                                            phi4_reciprocal);
-    }
+    build_v4_service(selfenergy_offdiagonal || relax_mode != RelaxationStrMode::None, selfenergy_offdiagonal);
 
     if (relax_mode != RelaxationStrMode::None) {
         v3_array_all.resize(nk, ns, ns * ns);
@@ -850,8 +827,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
             }
 
             if (imix_scph == 1) {
-                compute_anharmonic_frequency_diis(v4_array_all,
-                                                  omega2_anharm[iT],
+                compute_anharmonic_frequency_diis(omega2_anharm[iT],
                                                   evec_anharm_tmp,
                                                   temp,
                                                   converged_prev,
@@ -860,8 +836,7 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
                                                   delta_v2_renorm,
                                                   writes->getVerbosity());
             } else {
-                compute_anharmonic_frequency(v4_array_all,
-                                             omega2_anharm[iT],
+                compute_anharmonic_frequency(omega2_anharm[iT],
                                              evec_anharm_tmp,
                                              temp,
                                              converged_prev,
@@ -883,12 +858,15 @@ void Scph::exec_scph_main(std::complex<double> ****dymat_anharm)
         }
 
         cmat_convert.clear();
+        v4_service->finish();
+    } else {
+        v4_service->worker_loop();
     }
+    v4_service.reset();
 
     mpi_bcast_complex(dymat_anharm, NT, kmesh_coarse->nk, ns);
 
     omega2_anharm.clear();
-    v4_array_all.clear();
     evec_anharm_tmp.clear();
     delta_v2_renorm.clear();
     if (relax_mode != RelaxationStrMode::None) {
@@ -923,7 +901,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     auto &v3_ref = ws.v3_ref;
     auto &v3_renorm = ws.v3_renorm;
     auto &v3_with_umn = ws.v3_with_umn;
-    auto &v4_ref = ws.v4_ref;
     auto &v1_with_umn = ws.v1_with_umn;
     auto &v0_ref = ws.v0_ref;
     v0_ref = 0.0; // set original ground state energy as zero
@@ -1083,7 +1060,11 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
         C1_array.clear();
         C2_array.clear();
         C3_array.clear();
+        v4_service->finish();
+    } else {
+        v4_service->worker_loop();
     }
+    v4_service.reset();
 
     mpi_bcast_complex(dymat_anharm, NT, kmesh_coarse->nk, ns);
     mpi_bcast_complex(delta_harmonic_dymat_renormalize, NT, kmesh_coarse->nk, ns);
@@ -1102,7 +1083,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     v3_ref.clear();
     v3_renorm.clear();
     v3_with_umn.clear();
-    v4_ref.clear();
     del_v0_del_umn_renorm.clear();
     v1_SCP.clear();
     del_v0_del_umn_SCP.clear();
@@ -1117,8 +1097,7 @@ void Scph::solve_scp_and_compute_forces(StructuralOptWorkspace &ws, const unsign
     // solve SCP equation
     auto time_stage = timer->elapsed();
     if (imix_scph == 1) {
-        compute_anharmonic_frequency_diis(ws.v4_ref,
-                                          omega2_anharm[iT],
+        compute_anharmonic_frequency_diis(omega2_anharm[iT],
                                           evec_anharm_tmp,
                                           temp,
                                           converged_prev,
@@ -1128,8 +1107,7 @@ void Scph::solve_scp_and_compute_forces(StructuralOptWorkspace &ws, const unsign
                                           writes->getVerbosity(),
                                           true);
     } else {
-        compute_anharmonic_frequency(ws.v4_ref,
-                                     omega2_anharm[iT],
+        compute_anharmonic_frequency(omega2_anharm[iT],
                                      evec_anharm_tmp,
                                      temp,
                                      converged_prev,
@@ -1348,7 +1326,7 @@ void Scph::compute_qmat_and_dmat(const Eigen::MatrixXd &omega_now, const double 
             for (unsigned int is = 0; is < ns; ++is) {
                 if (ik == ik_gamma_dense && is_acoustic_now[is]) continue;
                 // Note that the missing factor 2 in the denominator of Qmat is
-                // already considered in the v4_array_all.
+                // already considered in the V4 elements.
                 // disp_corr_factor is even in omega, so |omega1| gives the same value as
                 // omega1 for any finite frequency.
                 auto omega_for_q = std::abs(omega_now(ik, is));
@@ -1381,75 +1359,48 @@ void Scph::compute_qmat_and_dmat(const Eigen::MatrixXd &omega_now, const double 
 }
 
 void Scph::update_fmat_with_v4(const std::vector<Eigen::MatrixXcd> &Fmat0,
-                               std::complex<double> *const *const *v4_array_all,
                                const std::vector<Eigen::MatrixXcd> &dmat_convert, const bool offdiag,
-                               const unsigned int ik_irred, Eigen::MatrixXcd &Fmat) const
+                               std::complex<double> ***fmat_all) const
 {
     using namespace Eigen;
     const auto nk = kmesh_dense->nk;
     const auto ns = dynamical->neval;
     const auto ns2 = ns * ns;
+    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
 
-    // Fmat harmonic
-    Fmat = Fmat0[ik_irred];
-
-    // Anharmonic correction to Fmat
-    if (!offdiag) {
+    // dvec[jk * ns2 + ns * ks + ls] = dmat_convert[jk](ks, ls)
+    VectorXcd dvec(static_cast<Index>(nk) * ns2);
 #pragma omp parallel for
-        for (int is = 0; is < ns; ++is) {
-            for (unsigned int jk = 0; jk < nk; ++jk) {
-                for (unsigned int ks = 0; ks < ns; ++ks) {
-                    Fmat(is, is) +=
-                        v4_array_all[nk * ik_irred + jk][(ns + 1) * is][(ns + 1) * ks] * dmat_convert[jk](ks, ks);
-                }
+    for (int jk = 0; jk < static_cast<int>(nk); ++jk) {
+        Map<MatrixXcd>(dvec.data() + static_cast<Index>(jk) * ns2, ns, ns) = dmat_convert[jk].transpose();
+    }
+
+    // Seed with the harmonic F; the V4 contraction adds the anharmonic correction
+    // to the lower triangle (SELF_OFFDIAG = 1) or to the diagonal (SELF_OFFDIAG = 0),
+    // summed over the rows of every MPI rank.
+    for (unsigned int ik = 0; ik < nk_irred_interpolate; ++ik) {
+        for (unsigned int is = 0; is < ns; ++is) {
+            for (unsigned int js = 0; js < ns; ++js) {
+                fmat_all[ik][is][js] = Fmat0[ik](is, js);
             }
         }
-    } else {
-        // Fmat is Hermitian and is consumed by SelfAdjointEigenSolver, which
-        // references only the lower triangle, so only the elements with is >= js
-        // are computed (half the work); the upper triangle is filled by conjugation.
-        // The contraction over (jk, ks, ls) is evaluated as vectorized dot products
-        // between the contiguous rows of v4_array_all and the D matrices flattened
-        // in the matching (row-major) order.
+    }
+    v4_service->fmat(dvec.data(), fmat_all);
 
-        // dvec[jk * ns2 + ns * ks + ls] = dmat_convert[jk](ks, ls)
-        VectorXcd dvec(static_cast<Index>(nk) * ns2);
-#pragma omp parallel for
-        for (int jk = 0; jk < static_cast<int>(nk); ++jk) {
-            Map<MatrixXcd>(dvec.data() + static_cast<Index>(jk) * ns2, ns, ns) = dmat_convert[jk].transpose();
-        }
-
-        std::vector<int> ijs_lower;
-        ijs_lower.reserve(ns * (ns + 1) / 2);
-        for (int is = 0; is < ns; ++is) {
-            for (int js = 0; js <= is; ++js) {
-                ijs_lower.push_back(is * ns + js);
-            }
-        }
-
-#pragma omp parallel for
-        for (int ip = 0; ip < static_cast<int>(ijs_lower.size()); ++ip) {
-            const auto ijs = ijs_lower[ip];
-            std::complex<double> sum(0.0, 0.0);
-            for (unsigned int jk = 0; jk < nk; ++jk) {
-                sum += Map<const VectorXcd>(v4_array_all[nk * ik_irred + jk][ijs], ns2)
-                           .cwiseProduct(dvec.segment(static_cast<Index>(jk) * ns2, ns2))
-                           .sum();
-            }
-            Fmat(ijs / ns, ijs % ns) += sum;
-        }
-
+    if (offdiag) {
         // Hermitian completion of the upper triangle
-        for (int is = 0; is < ns; ++is) {
-            for (int js = is + 1; js < ns; ++js) {
-                Fmat(is, js) = std::conj(Fmat(js, is));
+        for (unsigned int ik = 0; ik < nk_irred_interpolate; ++ik) {
+            for (unsigned int is = 0; is < ns; ++is) {
+                for (unsigned int js = is + 1; js < ns; ++js) {
+                    fmat_all[ik][is][js] = std::conj(fmat_all[ik][js][is]);
+                }
             }
         }
     }
 }
 
 void Scph::diagonalize_and_symmetrize(const Eigen::MatrixXcd &Fmat, const std::vector<Eigen::MatrixXcd> &evec_initial,
-                                      std::complex<double> ***v4_array_all, const unsigned int ik_irred,
+                                      const double *const *v4_diag, const unsigned int ik_irred,
                                       const unsigned int knum, const unsigned int knum_interpolate,
                                       const bool flag_converged, double **omega2_out, const unsigned int verbosity,
                                       int &icount, Eigen::VectorXd &eval_tmp, std::complex<double> ***dymat_q,
@@ -1457,7 +1408,6 @@ void Scph::diagonalize_and_symmetrize(const Eigen::MatrixXcd &Fmat, const std::v
 {
     using namespace Eigen;
     const auto ns = dynamical->neval;
-    const auto nk = kmesh_dense->nk;
 
     SelfAdjointEigenSolver<MatrixXcd> saes;
     saes.compute(Fmat);
@@ -1478,7 +1428,7 @@ void Scph::diagonalize_and_symmetrize(const Eigen::MatrixXcd &Fmat, const std::v
                 std::cout << '\n';
             }
 
-            if (v4_array_all[nk * ik_irred + knum][(ns + 1) * is][(ns + 1) * is].real() > 0.0) {
+            if (v4_diag[ik_irred][is] > 0.0) {
                 if (verbosity > 1) {
                     std::cout << "  onsite V4 is positive\n\n";
                 }
@@ -1644,7 +1594,7 @@ bool Scph::check_convergence(const Eigen::MatrixXd &omega_now, const Eigen::Matr
     return false;
 }
 
-void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all, double **omega2_out,
+void Scph::compute_anharmonic_frequency(double **omega2_out,
                                         std::complex<double> ***evec_anharm_scph, const double temp,
                                         bool &flag_converged, std::complex<double> ***cmat_convert, const bool offdiag,
                                         std::complex<double> **delta_v2_renorm, const unsigned int verbosity,
@@ -1671,6 +1621,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all, do
     MatrixXd omega2_HA(nk, ns);
     VectorXd eval_tmp(ns);
     MatrixXcd Fmat(ns, ns);
+    NDArray<std::complex<double>, 3> fmat_all(nk_irred_interpolate, ns, ns);
 
     double diff, diff_prev = 1.0e10;
     const double conv_tol = tolerance_scph;
@@ -1763,21 +1714,26 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all, do
             }
         }
 
-        // TODO: This loop may be parallelized by MPI in the future.
+        // V4 contribution to F for all coarse irreducible k (collective over the V4 rows)
+        const auto time_fmat_start = timer->elapsed();
+        update_fmat_with_v4(Fmat0, dmat_convert, offdiag, fmat_all);
+        time_fmat += timer->elapsed() - time_fmat_start;
+
         for (ik = 0; ik < nk_irred_interpolate; ++ik) {
 
             const unsigned int knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
             knum = kmap_coarse_to_dense[knum_interpolate];
 
-            // Update Fmat with V4 contribution
-            const auto time_fmat_start = timer->elapsed();
-            update_fmat_with_v4(Fmat0, v4_array_all, dmat_convert, offdiag, ik, Fmat);
-            time_fmat += timer->elapsed() - time_fmat_start;
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    Fmat(is, js) = fmat_all[ik][is][js];
+                }
+            }
 
             // Diagonalize and symmetrize
             diagonalize_and_symmetrize(Fmat,
                                        evec_initial,
-                                       v4_array_all,
+                                       v4_service->v4_diag(),
                                        ik,
                                        knum,
                                        knum_interpolate,
@@ -1878,7 +1834,7 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all, do
 }
 
 
-void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_all, double **omega2_out,
+void Scph::compute_anharmonic_frequency_diis(double **omega2_out,
                                              std::complex<double> ***evec_anharm_scph, const double temp,
                                              bool &flag_converged, std::complex<double> ***cmat_convert,
                                              const bool offdiag, std::complex<double> **delta_v2_renorm,
@@ -1916,6 +1872,7 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
     MatrixXd omega2_HA(nk, ns);
     VectorXd eval_tmp(ns);
     MatrixXcd Fmat(ns, ns);
+    NDArray<std::complex<double>, 3> fmat_all(nk_irred_interpolate, ns, ns);
 
     double diff = 1.0;
     const double conv_tol = tolerance_scph;
@@ -2051,19 +2008,26 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
         // coarse mesh, and interpolate to the dense mesh.
         bool eval_repaired = false;
 
+        // V4 contribution to F for all coarse irreducible k (collective over the V4 rows)
+        const auto time_fmat_start = timer->elapsed();
+        update_fmat_with_v4(Fmat0, dmat_convert, offdiag, fmat_all);
+        time_fmat += timer->elapsed() - time_fmat_start;
+
         for (ik = 0; ik < nk_irred_interpolate; ++ik) {
 
             const unsigned int knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
             knum = kmap_coarse_to_dense[knum_interpolate];
 
-            const auto time_fmat_start = timer->elapsed();
-            update_fmat_with_v4(Fmat0, v4_array_all, dmat_convert, offdiag, ik, Fmat);
-            time_fmat += timer->elapsed() - time_fmat_start;
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    Fmat(is, js) = fmat_all[ik][is][js];
+                }
+            }
 
             const auto time_diag_start = timer->elapsed();
             diagonalize_and_symmetrize(Fmat,
                                        evec_initial,
-                                       v4_array_all,
+                                       v4_service->v4_diag(),
                                        ik,
                                        knum,
                                        knum_interpolate,

@@ -445,7 +445,6 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     auto &v3_ref = ws.v3_ref;
     auto &v3_renorm = ws.v3_renorm;
     auto &v3_with_umn = ws.v3_with_umn;
-    auto &v4_ref = ws.v4_ref;
     auto &v0_ref = ws.v0_ref;
     v0_ref = 0.0; // set original ground state energy as zero
 
@@ -614,7 +613,11 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
         C2_array.clear();
         C3_array.clear();
         C2_array_ZSISA.clear();
+        v4_service->finish();
+    } else {
+        v4_service->worker_loop();
     }
+    v4_service.reset();
 
     delta_v2_renorm.clear();
     delta_v2_with_umn.clear();
@@ -628,8 +631,6 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     v3_ref.clear();
     v3_renorm.clear();
     v3_with_umn.clear();
-
-    v4_ref.clear();
 
     v1_QHA.clear();
     del_v1_del_umn_renorm.clear();

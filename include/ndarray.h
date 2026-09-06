@@ -48,6 +48,15 @@
 
 namespace ndarray_detail
 {
+// Hook run before std::exit when an allocation fails; anphon points it at
+// MPI_Abort so that an out-of-memory rank cannot leave the others blocked in a
+// collective. Left unset (nullptr) by alm.
+inline void (*&ndarray_out_of_memory_hook())()
+{
+    static void (*hook)() = nullptr;
+    return hook;
+}
+
 inline void report_bad_alloc_and_exit(const char *what, const int rank, const std::size_t *dims,
                                       const std::size_t bytes_per_elem)
 {
@@ -60,6 +69,9 @@ inline void report_bad_alloc_and_exit(const char *what, const int rank, const st
     }
     std::cout << '\n';
     std::cout << " " << what << " : Array size (MB) = " << ntot * bytes_per_elem / 1000000 << '\n';
+    if (ndarray_out_of_memory_hook() != nullptr) {
+        ndarray_out_of_memory_hook()();
+    }
     std::exit(EXIT_FAILURE);
 }
 

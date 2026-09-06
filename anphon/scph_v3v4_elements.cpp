@@ -24,6 +24,7 @@
 #include "relaxation.h"
 #include "scph.h"
 #include "timer.h"
+#include "v4_distributed.h"
 #include "write_phonons.h"
 using namespace PHON_NS;
 
@@ -588,7 +589,8 @@ void PHON_NS::compute_V3_elements_for_given_IFCs(
 }
 
 
-void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out, std::complex<double> ***evec_in,
+void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(v4_distributed::V4RowBlock &v4_block,
+                                                        std::complex<double> ***evec_in,
                                                         const bool self_offdiag, const bool relax,
                                                         const KpointMeshUniform *kmesh_coarse_in,
                                                         const KpointMeshUniform *kmesh_dense_in,
@@ -599,7 +601,6 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***
     // Calculate the matrix elements of quartic terms in reciprocal space.
     // This is the most expensive part of the SCPH calculation.
 
-    const size_t nk_reduced_interpolate = kmesh_coarse_in->nk_irred;
     const size_t ns = dynamical->neval;
     const size_t ns2 = ns * ns;
     const size_t ns4 = ns * ns * ns * ns;
@@ -616,16 +617,15 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***
     NDArray<std::complex<double>, 2> v4_tmp1;
     NDArray<std::complex<double>, 2> v4_tmp2;
 
-    const size_t nk2_prod = nk_reduced_interpolate * nk_scph;
 
     if (mympi->my_rank == 0) {
         const auto nsize_dble =
-            static_cast<double>((nk2_prod * ns4 + 2 * ns4) * sizeof(std::complex<double>)) / 1000000000.0;
+            static_cast<double>((v4_block.nrows_local() * ns2 + 2 * ns4) * sizeof(std::complex<double>)) / 1000000000.0;
         if (writes->getVerbosity() > 0) {
-            std::cout << " Estimated memory usage for the V4 arrays per MPI process: " << std::setw(10) << std::fixed
-                      << std::setprecision(4) << nsize_dble << " GByte.\n";
-            if (self_offdiag) {
-                std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... " << std::flush;
+            std::cout << " Estimated memory usage for the V4 arrays on this process (local rows + 2 ns^4 scratch): "
+                      << std::setw(10) << std::fixed << std::setprecision(4) << nsize_dble << " GByte.\n";
+            if (self_offdiag || relax) {
+                std::cout << " Calculating all components of v4_array ... " << std::flush;
             } else {
                 std::cout << " SELF_OFFDIAG = 0: Calculating diagonal components of v4_array ... " << std::flush;
             }
@@ -652,14 +652,16 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***
         evec_conj[ik][is][js] = std::conj(evec_in[ik][is][js]);
     }
 
-    // Each rank computes a disjoint subset of the ik_prod slices of v4_out and the
-    // result is summed in place over MPI, so v4_out must be zero everywhere first.
-#pragma omp parallel for
-    for (long int iel = 0; iel < static_cast<long int>(nk2_prod * ns4); ++iel) {
-        v4_out[0][0][iel] = complex_zero;
+    // This rank computes the whole slices it owns (the slice partition keeps
+    // slices intact); the diagonal-only regime relies on the block being zero-filled
+    // at setup, the full-tensor regime overwrites every owned element.
+    if (v4_block.unit_begin % ns != 0 || v4_block.unit_end % ns != 0) {
+        exit("compute_V4_elements_mpi_over_kpoint", "The owned V4 rows are not aligned to whole slices.");
     }
+    const size_t slice_begin = v4_block.unit_begin / ns;
+    const size_t slice_end = v4_block.unit_end / ns;
 
-    for (size_t ik_prod = mympi->my_rank; ik_prod < nk2_prod; ik_prod += mympi->nprocs) {
+    for (size_t ik_prod = slice_begin; ik_prod < slice_end; ++ik_prod) {
         const auto ik = ik_prod / nk_scph;
         const auto jk = ik_prod % nk_scph;
 
@@ -678,7 +680,7 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***
             phi4_skeleton.val[phi4_skeleton.slot_of_group[ii]] = phi4_reciprocal_inout[ii] * invmass_v4[ii];
         }
 
-        if (self_offdiag || relaxation->relax_str) {
+        if (self_offdiag || relax) {
 
             // All matrix elements will be calculated when considering the off-diagonal
             // elements of the phonon self-energy (loop diagram).
@@ -712,7 +714,7 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***
             // outermost mode index of the (ns x ns^3) view of the current buffer and
             // appends the new index innermost, so the layout rotates as
             // [a2 a3 a4 i] -> [a3 a4 i j] -> [a4 i j k] -> [i j k m], and after the
-            // fourth transform the flat layout coincides with v4_out[ik_prod].
+            // fourth transform the flat layout coincides with the owned slice of v4.
             constexpr auto complex_one = std::complex<double>(1.0, 0.0);
 
             // transform the second index (v4_tmp1 -> v4_tmp2)
@@ -721,10 +723,10 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***
             // transform the third index (v4_tmp2 -> v4_tmp1)
             transform_v4_index_gemm(&evec_in[jk][0][0], &v4_tmp2[0][0], &v4_tmp1[0][0], ns, complex_one);
 
-            // transform the fourth index and store to the final matrix (v4_tmp1 -> v4_out)
+            // transform the fourth index and store to the final matrix (v4_tmp1 -> v4 rows)
             transform_v4_index_gemm(&evec_conj[jk][0][0],
                                     &v4_tmp1[0][0],
-                                    &v4_out[ik_prod][0][0],
+                                    v4_block.row(ik_prod * ns, 0), // the ns^2 owned rows of this slice are contiguous
                                     ns,
                                     std::complex<double>(factor, 0.0));
 
@@ -766,7 +768,7 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***
 
                     accumulator += v4_tmp1[is][is2_2] * evec_in[jk][js][ks] * evec_conj[jk][js][ls];
                 }
-                v4_out[ik_prod][(ns + 1) * is][(ns + 1) * js] = factor * accumulator;
+                v4_block.row(ik_prod * ns + is, is)[(ns + 1) * js] = factor * accumulator;
             }
         }
     }
@@ -777,54 +779,7 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***
     v4_tmp1.clear();
     v4_tmp2.clear();
 
-    // Now, communicate the calculated data. Each rank filled a disjoint subset of
-    // v4_out (zero elsewhere), so an in-place summation assembles the full tensor
-    // without a second staging buffer of the same size.
-    // When the data count is larger than 2^31-1, split it.
-
-    long maxsize = 1;
-    maxsize = (maxsize << 31) - 1;
-
-    const size_t count = nk2_prod * ns4;
-    const size_t count_sub = ns4;
-
-    if (count <= maxsize) {
-#ifdef MPI_CXX_DOUBLE_COMPLEX
-        MPI_Allreduce(MPI_IN_PLACE, &v4_out[0][0][0], count, MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
-#else
-        MPI_Allreduce(MPI_IN_PLACE, &v4_out[0][0][0], count, MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    } else if (count_sub <= maxsize) {
-        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
-#ifdef MPI_CXX_DOUBLE_COMPLEX
-            MPI_Allreduce(MPI_IN_PLACE,
-                          &v4_out[ik_prod][0][0],
-                          count_sub,
-                          MPI_CXX_DOUBLE_COMPLEX,
-                          MPI_SUM,
-                          MPI_COMM_WORLD);
-#else
-            MPI_Allreduce(MPI_IN_PLACE, &v4_out[ik_prod][0][0], count_sub, MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
-#endif
-        }
-    } else {
-        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
-            for (is = 0; is < ns2; ++is) {
-#ifdef MPI_CXX_DOUBLE_COMPLEX
-                MPI_Allreduce(MPI_IN_PLACE,
-                              &v4_out[ik_prod][is][0],
-                              ns2,
-                              MPI_CXX_DOUBLE_COMPLEX,
-                              MPI_SUM,
-                              MPI_COMM_WORLD);
-#else
-                MPI_Allreduce(MPI_IN_PLACE, &v4_out[ik_prod][is][0], ns2, MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
-#endif
-            }
-        }
-    }
-
-    zerofill_elements_acoustic_at_gamma(v4_out, 4, kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
+    zerofill_v4_acoustic_at_gamma(v4_block);
 
     if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
         std::cout << " done !\n";
@@ -832,7 +787,8 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(std::complex<double> ***
     }
 }
 
-void ScphQhaCommon::compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out, std::complex<double> ***evec_in,
+void ScphQhaCommon::compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock &v4_block,
+                                                      std::complex<double> ***evec_in,
                                                       const bool self_offdiag, const KpointMeshUniform *kmesh_coarse_in,
                                                       const KpointMeshUniform *kmesh_dense_in,
                                                       const std::vector<int> &kmap_coarse_to_dense,
@@ -846,13 +802,10 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(std::complex<double> ***v4
     const size_t nk_reduced_interpolate = kmesh_coarse_in->nk_irred;
     const size_t ns = dynamical->neval;
     const size_t ns2 = ns * ns;
-    const size_t ns4 = ns * ns * ns * ns;
     int is, js, ks, ls;
     size_t is2_1, is2_2;
     size_t is2;
     unsigned int knum;
-    unsigned int i;
-    NDArray<long int, 1> nset_mpi;
 
     const auto nk_scph = kmesh_dense_in->nk;
     const auto ngroup_v4 = anharmonic_core->get_ngroup_fcs(4);
@@ -862,48 +815,30 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(std::complex<double> ***v4
     NDArray<std::complex<double>, 2> v4_tmp1;
     NDArray<std::complex<double>, 2> v4_tmp2;
 
+    unsigned int i;
     std::vector<int> ik_vec, jk_vec, is_vec;
 
     auto nk2_prod = nk_reduced_interpolate * nk_scph;
 
-    if (mympi->my_rank == 0) {
-        if (self_offdiag) {
-            if (writes->getVerbosity() > 0) {
-                std::cout << " IALGO = 1 : Use different algorithm efficient when nbands >> nk_3ph\n";
-            }
-            const auto nsize_dble =
-                static_cast<double>((nk2_prod * ns4 + 2 * ns * ns2) * sizeof(std::complex<double>)) / 1000000000.0;
-            if (writes->getVerbosity() > 0) {
-                std::cout << " Estimated memory usage for the V4 arrays per MPI process: " << std::setw(10)
-                          << std::fixed << std::setprecision(4) << nsize_dble << " GByte.\n";
-                std::cout << " SELF_OFFDIAG = 1: Calculating all components of v4_array ... \n";
-            }
-        } else {
-            exit("compute_V4_elements_mpi_over_kpoint", "This function can be used only when SELF_OFFDIAG = 1");
-        }
+    // Every element is computed, so this builder serves whenever the full tensor is
+    // needed (SELF_OFFDIAG = 1 or structural relaxation).
+    if (!(self_offdiag || relaxation->relax_str)) {
+        exit("compute_V4_elements_mpi_over_band", "This function can be used only when the full V4 tensor is needed");
+    }
+    if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
+        std::cout << " IALGO = 1 : Use different algorithm efficient when nbands >> nk_3ph\n";
+        const auto nsize_dble =
+            static_cast<double>((v4_block.nrows_local() * ns2 + 2 * ns * ns2) * sizeof(std::complex<double>)) / 1000000000.0;
+        std::cout << " Estimated memory usage for the V4 arrays on this process: " << std::setw(10) << std::fixed
+                  << std::setprecision(4) << nsize_dble << " GByte.\n";
+        std::cout << " Calculating all components of v4_array ... \n";
     }
 
-    nset_mpi.resize(mympi->nprocs);
-
-    const long int nset_tot = nk2_prod * ns;
-    long int nset_each = nset_tot / mympi->nprocs;
-    const long int nres = nset_tot - nset_each * mympi->nprocs;
-
-    for (i = 0; i < mympi->nprocs; ++i) {
-        nset_mpi[i] = nset_each;
-        if (nres > i) {
-            nset_mpi[i] += 1;
-        }
-    }
-
-    MPI_Bcast(&nset_mpi[0], mympi->nprocs, MPI_LONG, 0, MPI_COMM_WORLD);
-    long int nstart = 0;
-    for (i = 0; i < mympi->my_rank; ++i) {
-        nstart += nset_mpi[i];
-    }
-    long int nend = nstart + nset_mpi[mympi->my_rank];
-    nset_each = nset_mpi[mympi->my_rank];
-    nset_mpi.clear();
+    // The sets (ik_prod, is) of this rank are exactly its owned units of the
+    // row-distributed layout (unit u = ik_prod * ns + is).
+    const long int nstart = static_cast<long int>(v4_block.unit_begin);
+    const long int nend = static_cast<long int>(v4_block.unit_end);
+    const long int nset_each = nend - nstart;
 
     ik_vec.clear();
     jk_vec.clear();
@@ -930,17 +865,6 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(std::complex<double> ***v4
     // the entire calculation, only the values are refilled per (k1,k2) pair.
     auto phi4_skeleton = build_phi4_skeleton(anharmonic_core->get_evec_index(4), ngroup_v4, ns);
     const double *invmass_v4 = anharmonic_core->get_invmass_factor(4);
-
-    // Each rank computes a disjoint set of rows of the ik_prod slices of v4_out and
-    // the result is summed in place over MPI, so v4_out must be zero everywhere first.
-    for (ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
-#pragma omp parallel for private(js)
-        for (is = 0; is < ns2; ++is) {
-            for (js = 0; js < ns2; ++js) {
-                v4_out[ik_prod][is][js] = complex_zero;
-            }
-        }
-    }
 
     int ik_old = -1;
     int jk_old = -1;
@@ -1040,14 +964,12 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(std::complex<double> ***v4
             }
         }
 
-        // copy to the final matrix
-#pragma omp parallel for private(is, js)
-        for (is2_1 = 0; is2_1 < ns2; ++is2_1) {
-            is = is2_1 / ns;
-            js = is2_1 % ns;
-
-            for (is2 = 0; is2 < ns; is2++) {
-                v4_out[ik_prod][is_now * ns + is2][is2_1] = factor * v4_tmp2[is2][is2_1];
+        // copy to the final matrix: the ns rows (is_now, is2) of the owned unit
+        // (the loop index is2 must be private to each thread)
+#pragma omp parallel for
+        for (long int col = 0; col < static_cast<long int>(ns2); ++col) {
+            for (size_t is2 = 0; is2 < ns; is2++) {
+                v4_block.row(ik_prod * ns + is_now, is2)[col] = factor * v4_tmp2[is2][col];
             }
         }
 
@@ -1061,63 +983,10 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(std::complex<double> ***v4
 
     } // loop over nk2_prod*ns
 
-    // Now, communicate the calculated data. Each rank filled a disjoint set of rows
-    // of v4_out (zero elsewhere), so an in-place summation assembles the full tensor
-    // without a second staging buffer of the same size.
-    // When the data count is larger than 2^31-1, split it.
-
-    long maxsize = 1;
-    maxsize = (maxsize << 31) - 1;
-
-    const size_t count = nk2_prod * ns4;
-    const size_t count_sub = ns4;
-
-    if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
-        std::cout << "Communicating v4_array over MPI ..." << std::flush;
-    }
-    if (count <= maxsize) {
-#ifdef MPI_CXX_DOUBLE_COMPLEX
-        MPI_Allreduce(MPI_IN_PLACE, &v4_out[0][0][0], count, MPI_CXX_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
-#else
-        MPI_Allreduce(MPI_IN_PLACE, &v4_out[0][0][0], count, MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    } else if (count_sub <= maxsize) {
-        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
-#ifdef MPI_CXX_DOUBLE_COMPLEX
-            MPI_Allreduce(MPI_IN_PLACE,
-                          &v4_out[ik_prod][0][0],
-                          count_sub,
-                          MPI_CXX_DOUBLE_COMPLEX,
-                          MPI_SUM,
-                          MPI_COMM_WORLD);
-#else
-            MPI_Allreduce(MPI_IN_PLACE, &v4_out[ik_prod][0][0], count_sub, MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
-#endif
-        }
-    } else {
-        for (size_t ik_prod = 0; ik_prod < nk2_prod; ++ik_prod) {
-            for (is = 0; is < ns2; ++is) {
-#ifdef MPI_CXX_DOUBLE_COMPLEX
-                MPI_Allreduce(MPI_IN_PLACE,
-                              &v4_out[ik_prod][is][0],
-                              ns2,
-                              MPI_CXX_DOUBLE_COMPLEX,
-                              MPI_SUM,
-                              MPI_COMM_WORLD);
-#else
-                MPI_Allreduce(MPI_IN_PLACE, &v4_out[ik_prod][is][0], ns2, MPI_COMPLEX16, MPI_SUM, MPI_COMM_WORLD);
-#endif
-            }
-        }
-    }
-    if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
-        std::cout << "done.\n";
-    }
-
     v4_tmp1.clear();
     v4_tmp2.clear();
 
-    zerofill_elements_acoustic_at_gamma(v4_out, 4, kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
+    zerofill_v4_acoustic_at_gamma(v4_block);
 
     if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
         std::cout << " done !\n";
@@ -1151,8 +1020,9 @@ void PHON_NS::zerofill_elements_acoustic_at_gamma(const std::vector<bool> &is_ac
     const auto ns = ns_in;
     constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
-    if (!(fc_order == 3 || fc_order == 4)) {
-        exit("zerofill_elements_acoustic_at_gamma", "The fc_order must be either 3 or 4.");
+    if (fc_order != 3) {
+        exit("zerofill_elements_acoustic_at_gamma",
+             "Only the cubic elements use this function; the quartic ones are row-distributed (zerofill_v4_acoustic_at_gamma_block).");
     }
 
     if (std::count(is_acoustic.begin(), is_acoustic.end(), true) != 3) {
@@ -1187,33 +1057,64 @@ void PHON_NS::zerofill_elements_acoustic_at_gamma(const std::vector<bool> &is_ac
             }
         }
 
-    } else if (fc_order == 4) {
-        // Set V4 to zeros so as to avoid mixing with gamma acoustic modes
-        // jk = 0;
-        for (int ik = 0; ik < nk_irred_coarse_in; ++ik) {
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    for (ks = 0; ks < ns; ++ks) {
-                        for (ls = 0; ls < ns; ++ls) {
-                            if (is_acoustic[ks] || is_acoustic[ls]) {
-                                v_elems[nk_dense_in * ik][ns * is + js][ns * ks + ls] = complex_zero;
-                            }
-                        }
-                    }
+    }
+}
+
+void ScphQhaCommon::zerofill_v4_acoustic_at_gamma(v4_distributed::V4RowBlock &v4_block) const
+{
+    PHON_NS::zerofill_v4_acoustic_at_gamma_block(is_acoustic_gamma_harm, v4_block);
+}
+
+void PHON_NS::zerofill_v4_acoustic_at_gamma_block(const std::vector<bool> &is_acoustic,
+                                                  v4_distributed::V4RowBlock &v4_block)
+{
+    // Row-distributed version of zerofill_elements_acoustic_at_gamma(fc_order = 4):
+    // the columns of the Gamma-column slices (ik, jk = 0) and the rows of the
+    // Gamma-row slices (ik_irred = 0, jk) that involve an acoustic mode at Gamma
+    // are set to zero on the rows this rank owns.
+    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
+    const auto ns = v4_block.ns;
+    const auto ns2 = v4_block.ns2;
+    const auto nk = v4_block.nk_dense;
+
+    if (std::count(is_acoustic.begin(), is_acoustic.end(), true) != 3) {
+        exit("zerofill_v4_acoustic_at_gamma_block", "Could not assign acoustic modes at Gamma.");
+    }
+
+    std::vector<std::size_t> acoustic_columns;
+    for (std::size_t ks = 0; ks < ns; ++ks) {
+        for (std::size_t ls = 0; ls < ns; ++ls) {
+            if (is_acoustic[ks] || is_acoustic[ls]) {
+                acoustic_columns.push_back(ks * ns + ls);
+            }
+        }
+    }
+
+    // columns of the slices (ik, 0)
+    for (std::size_t ik = 0; ik < v4_block.nk_irred; ++ik) {
+        const std::size_t ik_prod = ik * nk;
+        std::size_t a0, a1;
+        v4_block.owned_a_range(ik_prod, a0, a1);
+        for (std::size_t a = a0; a < a1; ++a) {
+            const auto u = v4_distributed::V4RowBlock::unit_of(ik_prod, a, ns);
+            for (std::size_t b = 0; b < ns; ++b) {
+                auto *row = v4_block.row(u, b);
+                for (const auto c: acoustic_columns) {
+                    row[c] = complex_zero;
                 }
             }
         }
-        // ik = 0;
-        for (jk = 0; jk < nk_dense_in; ++jk) {
-            for (is = 0; is < ns; ++is) {
-                for (js = 0; js < ns; ++js) {
-                    if (is_acoustic[is] || is_acoustic[js]) {
-                        for (ks = 0; ks < ns; ++ks) {
-                            for (ls = 0; ls < ns; ++ls) {
-                                v_elems[jk][ns * is + js][ns * ks + ls] = complex_zero;
-                            }
-                        }
-                    }
+    }
+    // rows of the slices (0, jk)
+    for (std::size_t jk = 0; jk < nk; ++jk) {
+        const std::size_t ik_prod = jk;
+        std::size_t a0, a1;
+        v4_block.owned_a_range(ik_prod, a0, a1);
+        for (std::size_t a = a0; a < a1; ++a) {
+            const auto u = v4_distributed::V4RowBlock::unit_of(ik_prod, a, ns);
+            for (std::size_t b = 0; b < ns; ++b) {
+                if (is_acoustic[a] || is_acoustic[b]) {
+                    std::fill(v4_block.row(u, b), v4_block.row(u, b) + ns2, complex_zero);
                 }
             }
         }
