@@ -1357,14 +1357,13 @@ void Relaxation::renormalize_v3_from_umn(const KpointMeshUniform *kmesh_coarse, 
     }
 }
 
-void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_coarse,
-                                        const KpointMeshUniform *kmesh_dense, std::complex<double> *v1_renorm,
-                                        std::complex<double> *v1_ref, std::complex<double> **delta_v2_array_original,
-                                        std::complex<double> ***v3_ref, std::complex<double> ***v4_ref,
+void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_dense,
+                                        std::complex<double> *v1_renorm, std::complex<double> *v1_ref,
+                                        std::complex<double> **delta_v2_array_original, std::complex<double> ***v3_ref,
+                                        const std::complex<double> *const *q4_gamma,
                                         const std::vector<double> &q0) const
 {
     int is1, is2;
-    const auto ik_irred0 = kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig;
     const auto ns = dynamical->neval;
     const auto factor = 0.5 * 4.0 * kmesh_dense->nk;
     const auto factor2 = 1.0 / 6.0 * 4.0 * kmesh_dense->nk;
@@ -1385,15 +1384,11 @@ void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic, const KpointMe
             }
         }
 
+        // quartic term sum_{is1,is2,is3} v4[Gamma][is,is1][is2,is3] q0[is1] q0[is2] q0[is3],
+        // with the (is2,is3) sum precomputed in q4_gamma (q0_contraction.h).
+        // the factor 4.0 appears due to the definition of v4_array = 1.0/(4.0*N_scph) Phi_4
         for (is1 = 0; is1 < ns; is1++) {
-            for (is2 = 0; is2 < ns; is2++) {
-                for (int is3 = 0; is3 < ns; is3++) {
-
-                    v1_renorm[is] += factor2 * v4_ref[ik_irred0 * kmesh_dense->nk][is * ns + is1][is2 * ns + is3] *
-                                     q0[is1] * q0[is2] * q0[is3];
-                    // the factor 4.0 appears due to the definition of v4_array = 1.0/(4.0*N_scph) Phi_4
-                }
-            }
+            v1_renorm[is] += factor2 * q4_gamma[is][is1] * q0[is1];
         }
     }
 }
@@ -1404,12 +1399,13 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic, c
                                         std::complex<double> ****mat_transform_sym,
                                         std::complex<double> **delta_v2_renorm,
                                         std::complex<double> **delta_v2_array_original, std::complex<double> ***v3_ref,
-                                        std::complex<double> ***v4_ref, const std::vector<double> &q0) const
+                                        const std::complex<double> *const *const *q4_q0,
+                                        const std::vector<double> &q0) const
 {
     using namespace Eigen;
 
     int ik;
-    int is1, is2, js1, js2;
+    int is1, is2, js1;
     unsigned int knum, knum_interpolate;
     const auto nk_scph = kmesh_dense->nk;
     const auto nk_interpolate = kmesh_coarse->nk;
@@ -1435,15 +1431,13 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic, c
         for (is1 = 0; is1 < ns; is1++) {
             for (is2 = 0; is2 < ns; is2++) {
                 Dymat(is1, is2) = complex_zero;
+                // cubic renormalization
                 for (js1 = 0; js1 < ns; js1++) {
-                    // cubic reormalization
                     Dymat(is1, is2) += factor * v3_ref[knum][js1][is2 * ns + is1] * q0[js1];
-                    // quartic renormalization
-                    for (js2 = 0; js2 < ns; js2++) {
-                        Dymat(is1, is2) +=
-                            factor2 * v4_ref[ik * nk_scph][is1 * ns + is2][js1 * ns + js2] * q0[js1] * q0[js2];
-                    }
                 }
+                // quartic renormalization sum_{js1,js2} v4[ik][is1,is2][js1,js2] q0[js1] q0[js2],
+                // precomputed in q4_q0 (q0_contraction.h)
+                Dymat(is1, is2) += factor2 * q4_q0[ik][is1][is2];
             }
         }
 
@@ -1497,38 +1491,11 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic, c
     dymat_q.clear();
 }
 
-void Relaxation::renormalize_v3_from_q0(const KpointMeshUniform *kmesh_dense, const KpointMeshUniform *kmesh_coarse,
-                                        std::complex<double> ***v3_renorm, std::complex<double> ***v3_ref,
-                                        std::complex<double> ***v4_ref, const std::vector<double> &q0) const
-{
-    const auto ns = dynamical->neval;
-    const auto ik_irred0 = kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig;
-    const auto nk_scph = kmesh_dense->nk;
-
-    const auto ns2 = ns * ns;
-    const auto ns3 = ns * ns2;
-    const auto nkns3 = nk_scph * ns3;
-
-    unsigned int ik, is1, is2, is3, js;
-
-#pragma omp parallel for private(ik, is1, is2, is3, js)
-    for (int iks = 0; iks < nkns3; ++iks) {
-        ik = iks / ns3;
-        is1 = (iks % ns3) / ns2;
-        is2 = (iks % ns2) / ns;
-        is3 = iks % ns;
-        v3_renorm[ik][is1][is2 * ns + is3] = v3_ref[ik][is1][is2 * ns + is3];
-        for (js = 0; js < ns; js++) {
-            v3_renorm[ik][is1][is2 * ns + is3] +=
-                v4_ref[ik_irred0 * nk_scph + ik][js * ns + is1][is2 * ns + is3] * q0[js];
-        }
-    }
-}
-
 void Relaxation::renormalize_v0_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_dense,
                                         double &v0_renorm, double v0_ref, std::complex<double> *v1_ref,
                                         std::complex<double> **delta_v2_array_original, std::complex<double> ***v3_ref,
-                                        std::complex<double> ***v4_ref, const std::vector<double> &q0) const
+                                        const std::complex<double> *const *q4_gamma,
+                                        const std::vector<double> &q0) const
 {
     int is1, is2;
     const auto ns = dynamical->neval;
@@ -1554,11 +1521,10 @@ void Relaxation::renormalize_v0_from_q0(double **omega2_harmonic, const KpointMe
         for (is2 = 0; is2 < ns; is2++) {
             for (int is3 = 0; is3 < ns; is3++) {
                 v0_renorm_tmp += factor3 * v3_ref[0][is1][is2 * ns + is3] * q0[is1] * q0[is2] * q0[is3];
-                for (int is4 = 0; is4 < ns; is4++) {
-                    v0_renorm_tmp +=
-                        factor4 * v4_ref[0][is2 * ns + is1][is3 * ns + is4] * q0[is1] * q0[is2] * q0[is3] * q0[is4];
-                }
             }
+            // quartic term sum_{is3,is4} v4[Gamma][is2,is1][is3,is4] q0[is3] q0[is4] = q4_gamma[is2][is1]
+            // (q0_contraction.h)
+            v0_renorm_tmp += factor4 * q4_gamma[is2][is1] * q0[is1] * q0[is2];
         }
     }
 

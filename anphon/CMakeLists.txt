@@ -245,6 +245,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/phonon_velocity.h
             ${PROJECT_SOURCE_DIR}/pointers.h
             ${PROJECT_SOURCE_DIR}/optimizers.h
+            ${PROJECT_SOURCE_DIR}/q0_contraction.h
             ${PROJECT_SOURCE_DIR}/qha.h
             ${PROJECT_SOURCE_DIR}/relaxation.h
             ${PROJECT_SOURCE_DIR}/scph.h
@@ -345,4 +346,15 @@ if (BUILD_STRAIN_PARSER_TEST)
     if (eigen_target) # empty with the header-only fallback (-DEIGEN3_INCLUDE); the include dirs above suffice then
         target_link_libraries(test_strain_parsers ${eigen_target})
     endif ()
+endif ()
+
+# Unit test for the single sweep over the quartic coefficients that renormalizes
+# v0..v3 by the Gamma-point displacement q0 (q0_contraction.h), compared with the
+# naive loops it replaced. Header-only dependencies plus OpenMP; no MPI.
+option(BUILD_Q0_CONTRACTION_TEST "Build the q0 contraction unit test" ON)
+if (BUILD_Q0_CONTRACTION_TEST)
+    add_executable(test_q0_contraction ${PROJECT_SOURCE_DIR}/../test/test_q0_contraction.cpp)
+    target_compile_options(test_q0_contraction PRIVATE -Wall -Wextra $<$<CONFIG:Release>:-O3>)
+    target_include_directories(test_q0_contraction PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include)
+    target_link_libraries(test_q0_contraction ${openmplibrary})
 endif ()

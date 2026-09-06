@@ -9,6 +9,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "qha.h"
+#include <algorithm>
 #include <Eigen/Core>
 #include <array>
 #include <iomanip>
@@ -761,7 +762,7 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
 {
     using namespace Eigen;
 
-    int ik, is, js, ik1, is1, is2;
+    int ik, is, js, is1, is2;
     int ixyz1, ixyz2, ixyz3;
     int itmp1, itmp2, itmp3, itmp4;
     static auto complex_zero = std::complex<double>(0.0, 0.0);
@@ -782,7 +783,6 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
     // original and renormalized IFCs
     NDArray<std::complex<double>, 1> v1_ref, v1_renorm, v1_with_umn;
     NDArray<std::complex<double>, 3> v3_ref;         // We fix cubic IFCs in perturbative QHA.
-    NDArray<std::complex<double>, 3> v4_array_dummy; // We set quartic IFCs as zero.
 
     // elastic constants
     NDArray<double, 1> C1_array;
@@ -830,15 +830,11 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
     auto &u_tensor = structure_state.u_tensor;
     auto &eta_tensor = structure_state.eta_tensor;
 
-    v4_array_dummy.resize(nk_irred_interpolate * kmesh_dense->nk, ns * ns, ns * ns);
-
-    for (ik1 = 0; ik1 < nk_irred_interpolate * kmesh_dense->nk; ik1++) {
-        for (is1 = 0; is1 < ns * ns; is1++) {
-            for (is2 = 0; is2 < ns * ns; is2++) {
-                v4_array_dummy[ik1][is1][is2] = complex_zero;
-            }
-        }
-    }
+    // Perturbative QHA has no quartic terms: the q0 contraction of v4 that
+    // renormalize_v1/v2/v0_from_q0 consume (q0_contraction.h) is zero.
+    NDArray<std::complex<double>, 3> q4_q0_zero(nk_irred_interpolate, ns, ns);
+    std::fill(&q4_q0_zero[0][0][0], &q4_q0_zero[0][0][0] + q4_q0_zero.size(), complex_zero);
+    const auto ik_gamma_irred = kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig;
 
     v3_ref.resize(nk, ns, ns * ns);
 
@@ -1051,13 +1047,12 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
 
             // renormalization by displacements
             relaxation->renormalize_v1_from_q0(omega2_harmonic,
-                                               kmesh_coarse.get(),
                                                kmesh_dense.get(),
                                                v1_renorm,
                                                v1_with_umn,
                                                delta_v2_with_umn,
                                                v3_ref,
-                                               v4_array_dummy,
+                                               q4_q0_zero[ik_gamma_irred],
                                                q0);
 
             relaxation->renormalize_v2_from_q0(evec_harmonic,
@@ -1068,7 +1063,7 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
                                                delta_v2_renorm,
                                                delta_v2_with_umn,
                                                v3_ref,
-                                               v4_array_dummy,
+                                               q4_q0_zero,
                                                q0);
 
             relaxation->renormalize_v0_from_q0(omega2_harmonic,
@@ -1078,7 +1073,7 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
                                                v1_with_umn,
                                                delta_v2_with_umn,
                                                v3_ref,
-                                               v4_array_dummy,
+                                               q4_q0_zero[ik_gamma_irred],
                                                q0);
 
             V0[iT] = v0_renorm;
@@ -1129,7 +1124,6 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
     delta_v2_renorm.clear();
     delta_v2_with_umn.clear();
 
-    v4_array_dummy.clear();
     v3_ref.clear();
 
     C1_array.clear();

@@ -15,13 +15,16 @@
 #include <iomanip>
 #include <iostream>
 #include <numeric>
+#include <sstream>
 #include <vector>
 #include "constants.h"
 #include "dielec.h"
 #include "interpolation.h"
 #include "phonon_dos.h"
+#include "q0_contraction.h"
 #include "relaxation.h"
 #include "thermodynamics.h"
+#include "timer.h"
 #include "write_phonons.h"
 
 using namespace PHON_NS;
@@ -1027,14 +1030,37 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
     // strain renormalization would require d(v4)/du IFC data, which
     // del_v_strain does not include (it stops at d(v3)/du) -- within this
     // truncation the strain-renormalized v4 equals the reference v4.
+    //
+    // v4 is swept once: the sweep writes v3_renorm and the quartic contraction
+    // q4_q0 that the v1, v2 and v0 renormalizations consume (q0_contraction.h).
+    const auto ns = static_cast<std::size_t>(dynamical->neval);
+    const auto ik_gamma_irred = static_cast<std::size_t>(kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig);
+    const auto time_sweep_start = timer->elapsed();
+    q0_contraction::contract_v4_with_q0(ns,
+                                        kmesh_dense->nk,
+                                        kmesh_coarse->nk_irred,
+                                        ik_gamma_irred,
+                                        static_cast<std::size_t>(ik_gamma_dense),
+                                        ws.v4_ref,
+                                        q0.data(),
+                                        ws.v3_with_umn,
+                                        ws.v3_renorm,
+                                        ws.q4_q0);
+    if (mympi->my_rank == 0 && writes->getVerbosity() > 1) {
+        // format in a local stream so that the precision does not leak into std::cout
+        std::ostringstream line;
+        line << "  q0 renormalization: sweep over V4 took " << std::fixed << std::setprecision(3)
+             << timer->elapsed() - time_sweep_start << " sec.\n";
+        std::cout << line.str();
+    }
+
     relaxation->renormalize_v1_from_q0(omega2_harmonic,
-                                       kmesh_coarse.get(),
                                        kmesh_dense.get(),
                                        ws.v1_renorm,
                                        ws.v1_with_umn,
                                        ws.delta_v2_with_umn,
                                        ws.v3_with_umn,
-                                       ws.v4_ref,
+                                       ws.q4_q0[ik_gamma_irred],
                                        q0);
     relaxation->renormalize_v2_from_q0(evec_harmonic,
                                        kmesh_coarse.get(),
@@ -1044,13 +1070,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                        ws.delta_v2_renorm,
                                        ws.delta_v2_with_umn,
                                        ws.v3_with_umn,
-                                       ws.v4_ref,
-                                       q0);
-    relaxation->renormalize_v3_from_q0(kmesh_dense.get(),
-                                       kmesh_coarse.get(),
-                                       ws.v3_renorm,
-                                       ws.v3_with_umn,
-                                       ws.v4_ref,
+                                       ws.q4_q0,
                                        q0);
     relaxation->renormalize_v0_from_q0(omega2_harmonic,
                                        kmesh_dense.get(),
@@ -1059,7 +1079,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                        ws.v1_with_umn,
                                        ws.delta_v2_with_umn,
                                        ws.v3_with_umn,
-                                       ws.v4_ref,
+                                       ws.q4_q0[ik_gamma_irred],
                                        q0);
 
     // calculate PES gradient by strain
@@ -1133,6 +1153,7 @@ void ScphQhaCommon::setup_structural_opt_buffers(StructuralOptWorkspace &ws)
     ws.structure_state.resize(ns);
 
     ws.del_v0_del_umn_renorm.resize(9);
+    ws.q4_q0.resize(nk_irred_interpolate, ns, ns);
 
     // assume that the atomic forces are zero at the initial structure
     for (auto is = 0; is < ns; is++) {

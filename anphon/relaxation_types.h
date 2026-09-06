@@ -133,8 +133,9 @@ struct RelaxationStructureState
 };
 
 // Scratch buffers shared by the SCPH/QHA structural-optimization drivers.
-// Non-owning: the driver allocates and frees the arrays; this struct only
-// groups them so the loop stages can be factored into functions without
+// The NDArray members own their storage (sized by setup_structural_opt_buffers,
+// freed by the driver); del_v_strain points at the driver's DelVStrainData.
+// Grouping them lets the loop stages be factored into functions without
 // dozens of parameters.
 struct StructuralOptWorkspace
 {
@@ -158,6 +159,11 @@ struct StructuralOptWorkspace
     NDArray<std::complex<double>, 2> delta_v2_renorm;
     NDArray<std::complex<double>, 3> v3_renorm;
     double v0_renorm = 0.0;
+
+    // quartic contraction q4_q0[ik][a][b] = sum_{c,d} v4[ik][a,b][c,d] q0[c] q0[d]
+    // ([nk_irred_coarse][ns][ns]) produced together with v3_renorm by the single
+    // sweep over v4 (q0_contraction.h); feeds the v1, v2 and v0 renormalization
+    NDArray<std::complex<double>, 3> q4_q0;
 
     // strain derivatives of the IFCs and elastic constants
     DelVStrainData *del_v_strain{};
