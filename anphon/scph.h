@@ -83,12 +83,14 @@ private:
                                       double ***omega2_anharm, std::complex<double> ***evec_anharm_tmp,
                                       std::complex<double> *v1_SCP, std::complex<double> *del_v0_del_umn_SCP);
 
-    void compute_anharmonic_frequency(std::complex<double> ***, double **, std::complex<double> ***, double, bool &,
-                                      std::complex<double> ***, bool, std::complex<double> **,
-                                      const unsigned int verbosity, const bool compact_progress = false);
+    // The SCP solvers read V4 through v4_service (row-distributed, collective
+    // contraction once per iteration).
+    void compute_anharmonic_frequency(double **, std::complex<double> ***, double, bool &, std::complex<double> ***,
+                                      bool, std::complex<double> **, const unsigned int verbosity,
+                                      const bool compact_progress = false);
 
-    void compute_anharmonic_frequency_diis(std::complex<double> ***, double **, std::complex<double> ***, double,
-                                           bool &, std::complex<double> ***, bool, std::complex<double> **,
+    void compute_anharmonic_frequency_diis(double **, std::complex<double> ***, double, bool &,
+                                           std::complex<double> ***, bool, std::complex<double> **,
                                            const unsigned int verbosity, const bool compact_progress = false);
 
     // Helper methods for compute_anharmonic_frequency
@@ -106,13 +108,15 @@ private:
     void compute_qmat_and_dmat(const Eigen::MatrixXd &omega_now, const double temp,
                                std::complex<double> ***cmat_convert, std::vector<Eigen::MatrixXcd> &dmat_convert) const;
 
+    // F(k) = Fmat0(k) + the V4 contraction with the D matrices of all dense k, for
+    // every coarse irreducible k at once (collective over the V4 rows): dvec is the
+    // flattened D, fmat_all[ik][a][b] is seeded with Fmat0 and completed on return.
     void update_fmat_with_v4(const std::vector<Eigen::MatrixXcd> &Fmat0,
-                             std::complex<double> *const *const *v4_array_all,
                              const std::vector<Eigen::MatrixXcd> &dmat_convert, const bool offdiag,
-                             const unsigned int ik_irred, Eigen::MatrixXcd &Fmat) const;
+                             std::complex<double> ***fmat_all) const;
 
     void diagonalize_and_symmetrize(const Eigen::MatrixXcd &Fmat, const std::vector<Eigen::MatrixXcd> &evec_initial,
-                                    std::complex<double> ***v4_array_all, const unsigned int ik_irred,
+                                    const double *const *v4_diag, const unsigned int ik_irred,
                                     const unsigned int knum, const unsigned int knum_interpolate,
                                     const bool flag_converged, double **omega2_out, const unsigned int verbosity,
                                     int &icount, Eigen::VectorXd &eval_tmp, std::complex<double> ***dymat_q,

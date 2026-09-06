@@ -20,6 +20,14 @@ shortened temperature grid, T = 0..300 K):
                 diverges). Skipped when mpirun is unavailable.
 5. perturbative: RELAX_STR = 3 (lowest-order QHA) run, compared against
                 committed references.
+6. cell-override: the same optimization in a c-doubled &cell with strain
+                files that carry their own units and cell information
+                (elastic_constants.in in GPa, strain_force.in with an
+                &reference_cell header). The relaxed strain must equal that
+                of the 4-atom cell, V0 and the per-cell thermodynamic
+                quantities must double, and every atomic displacement of the
+                4-atom cell must appear twice; the legacy (cell-bound) files
+                must be rejected in the enlarged cell.
 
 Run from the build directory: python3 ../test/test_qha.py [--jobs all]
 """
@@ -40,6 +48,16 @@ TEMPERATURE_TAG = "  TMIN = 0\n  TMAX = 300\n  DT = 100\n"
 # only the structural-optimization loop writes.
 FILES_POSTPROCESS = ["qha_thermo", "V0"]
 FILES_RELAX_LOOP = ["atom_disp", "umn_tensor", "normal_disp"]
+STAGE_NAMES = (
+    "fresh",
+    "restart-h5",
+    "text-io",
+    "ialgo-mpi",
+    "perturbative",
+    "cell-override",
+    "strainfile",
+    "strainfile-cell2",
+)
 
 
 def isclose(a, b, rel_tol=1e-9, abs_tol=1.0e-12):
@@ -260,6 +278,485 @@ def stage_perturbative(anphonbin, refdir):
     return info
 
 
+# ---------------------------------------------------------------- cell-override
+BOHR_IN_ANGSTROM = 0.52917721092  # include/constants.h
+RYD_IN_J = 4.35974394e-18 / 2.0  # include/constants.h
+
+CELL_A3 = "  0.000000000000000 0.000000000000000 5.224712025937350\n"
+CELL_A3_DOUBLED = "  0.000000000000000 0.000000000000000 10.449424051874700\n"
+DISPLACE_4 = "&displace\n1\n" + "0.0 0.0 0.0\n" * 4 + "/\n"
+DISPLACE_8 = "&displace\n1\n" + "0.0 0.0 0.0\n" * 8 + "/\n"
+STRAIN_DIR_CELL2 = "strain_IFC_cell2"
+
+
+def patch_text(fname, replacements):
+    """Apply exact, unique string replacements to a file."""
+    with open(fname) as f:
+        text = f.read()
+    for old, new in replacements:
+        if text.count(old) != 1:
+            raise RuntimeError(
+                "%s: expected exactly one occurrence of %r" % (fname, old)
+            )
+        text = text.replace(old, new)
+    with open(fname, "w") as f:
+        f.write(text)
+
+
+def read_cell_block(fname):
+    """(scale, lattice vectors as rows) of the &cell field, as written in the input."""
+    with open(fname) as f:
+        lines = f.read().splitlines()
+    start = [k for k, line in enumerate(lines) if line.strip().lower() == "&cell"][0]
+    scale = float(lines[start + 1])
+    lavec = np.array(
+        [[float(x) for x in lines[start + 1 + k].split()] for k in range(1, 4)]
+    )
+    return scale, lavec
+
+
+def read_primitive_atoms(logfile):
+    """[(symbol, x, y, z)] of the primitive cell as printed by anphon."""
+    with open(logfile) as f:
+        lines = f.readlines()
+    atoms = []
+    for i, line in enumerate(lines):
+        if "Atomic positions in the primitive cell (fractional)" in line:
+            for entry in lines[i + 1 :]:
+                parts = entry.split()
+                if len(parts) != 5 or not parts[0].endswith(":"):
+                    break
+                atoms.append(
+                    (parts[4], float(parts[1]), float(parts[2]), float(parts[3]))
+                )
+            break
+    if not atoms:
+        raise RuntimeError("no primitive-cell atom list found in %s" % logfile)
+    return atoms
+
+
+def write_elastic_constants_gpa(src, dest, volume_bohr3):
+    """Rewrite a legacy elastic_constants.in (V*C in Ry) in the GPa layout."""
+    with open(src) as f:
+        tok = f.read().split()
+    if len(tok) != 1 + 81 + 1 + 729:
+        raise RuntimeError("%s: unexpected token count %d" % (src, len(tok)))
+    gpa2ry = 1.0e9 * volume_bohr3 * (BOHR_IN_ANGSTROM * 1.0e-10) ** 3 / RYD_IN_J
+    with open(dest, "w") as f:
+        f.write("SOEC GPa\n")
+        for t in tok[1:82]:
+            f.write("%.12e\n" % (float(t) / gpa2ry))
+        f.write("TOEC GPa\n")
+        for t in tok[83:]:
+            f.write("%.12e\n" % (float(t) / gpa2ry))
+
+
+def write_strain_force_with_header(src, dest, scale, lavec, atoms):
+    """Prepend the &reference_cell header (no comments: a plain token stream)."""
+    with open(src) as f:
+        body = f.read()
+    with open(dest, "w") as f:
+        f.write("&reference_cell\n  %.17g\n" % scale)
+        for v in lavec:
+            f.write("  %.15f %.15f %.15f\n" % tuple(v))
+        f.write("  %d\n" % len(atoms))
+        for symbol, x, y, z in atoms:
+            f.write("  %s %.10f %.10f %.10f\n" % (symbol, x, y, z))
+        f.write("/\n")
+        f.write(body)
+
+
+def prepare_cell_independent_strain_dir(input_file, logfile, dest):
+    """strain_IFC with elastic_constants.in in GPa and a self-describing strain_force.in."""
+    scale, lavec = read_cell_block(input_file)
+    volume_bohr3 = abs(np.linalg.det(lavec)) * scale**3
+    atoms = read_primitive_atoms(logfile)
+    if os.path.isdir(dest):
+        shutil.rmtree(dest)
+    os.makedirs(dest)
+    for name in os.listdir("strain_IFC"):
+        if name.endswith(".zip") or name in ("elastic_constants.in", "strain_force.in"):
+            continue
+        src = os.path.abspath(os.path.join("strain_IFC", name))
+        if name.endswith(".in"):
+            shutil.copy(src, dest)  # small control files
+            continue
+        try:  # the force-constant files are large: link them, copy where links fail
+            os.symlink(src, os.path.join(dest, name))
+        except OSError:
+            shutil.copy(src, dest)
+    write_elastic_constants_gpa(
+        "strain_IFC/elastic_constants.in",
+        os.path.join(dest, "elastic_constants.in"),
+        volume_bohr3,
+    )
+    write_strain_force_with_header(
+        "strain_IFC/strain_force.in",
+        os.path.join(dest, "strain_force.in"),
+        scale,
+        lavec,
+        atoms,
+    )
+    return len(atoms)
+
+
+def compare_scaled(file_now, file_ref, factor, rel_tol, abs_tol, label):
+    """Columns 2.. of file_now must equal factor x those of file_ref (column 1: T)."""
+    now = np.atleast_2d(np.loadtxt(file_now))
+    ref = np.atleast_2d(np.loadtxt(file_ref))
+    if now.shape != ref.shape:
+        print("%s: shape mismatch %s vs %s" % (label, now.shape, ref.shape))
+        return 1
+    ok = np.all(np.isclose(now[:, 0], ref[:, 0], rtol=0.0, atol=1.0e-8))
+    for j in range(1, now.shape[1]):
+        for i in range(now.shape[0]):
+            ok = ok & isclose(now[i, j], factor * ref[i, j], rel_tol, abs_tol)
+    if not ok:
+        print("%s: %s differs from %g x %s" % (label, file_now, factor, file_ref))
+        return 1
+    return 0
+
+
+def compare_displacements(file_now, file_ref, copies, rel_tol, abs_tol, label):
+    """Every (x, y, z) triplet of file_ref must appear `copies` times in file_now.
+
+    .atom_disp holds one row per temperature and one triplet per atom of the
+    run's own primitive cell, whose order in the enlarged cell is not the
+    native one, so the triplets are matched as multisets."""
+    now = np.atleast_2d(np.loadtxt(file_now))
+    ref = np.atleast_2d(np.loadtxt(file_ref))
+    if now.shape[0] != ref.shape[0] or now.shape[1] - 1 != copies * (ref.shape[1] - 1):
+        print("%s: shape mismatch %s vs %s" % (label, now.shape, ref.shape))
+        return 1
+    if not np.allclose(now[:, 0], ref[:, 0], rtol=0.0, atol=1.0e-8):
+        print("%s: temperature columns differ" % label)
+        return 1
+    for it in range(now.shape[0]):
+        rows_now = now[it, 1:].reshape(-1, 3)
+        rows_ref = ref[it, 1:].reshape(-1, 3)
+        used = np.zeros(len(rows_ref), dtype=int)
+        for r in rows_now:
+            hit = [
+                j
+                for j in range(len(rows_ref))
+                if used[j] < copies
+                and all(
+                    isclose(r[k], rows_ref[j, k], rel_tol, abs_tol) for k in range(3)
+                )
+            ]
+            if not hit:
+                print(
+                    "%s: displacement %s (T index %d) has no counterpart"
+                    % (label, r, it)
+                )
+                return 1
+            used[hit[0]] += 1
+        if np.any(used != copies):
+            print("%s: displacement multiplicities %s (T index %d)" % (label, used, it))
+            return 1
+    return 0
+
+
+def log_contains(logfile, needle):
+    with open(logfile, errors="replace") as f:
+        return needle in f.read()
+
+
+def stage_cell_override(anphonbin):
+    tight = [
+        ("COORD_CONV_TOL = 1.0e-5", "COORD_CONV_TOL = 1.0e-10"),
+        ("CELL_CONV_TOL = 1.0e-5", "CELL_CONV_TOL = 1.0e-10"),
+    ]
+    # (a) 4-atom cell with the legacy files, tight tolerances: the reference.
+    rewrite_input("ZnO_qha_thermo.in", "qha_cell1.in", "ZnO_cell1")
+    patch_text("qha_cell1.in", tight)
+    if run_anphon(anphonbin, "qha_cell1.in", "qha_cell1.log"):
+        return 1
+    natom = prepare_cell_independent_strain_dir(
+        "qha_cell1.in", "qha_cell1.log", STRAIN_DIR_CELL2
+    )
+    if natom != 4:
+        print("cell-override: expected 4 atoms in the primitive cell, found %d" % natom)
+        return 1
+
+    # (b) the same cell with the GPa file and the &reference_cell header:
+    #     the header must map every atom onto itself.
+    rewrite_input("ZnO_qha_thermo.in", "qha_cell1g.in", "ZnO_cell1g")
+    patch_text(
+        "qha_cell1g.in",
+        tight
+        + [("STRAIN_IFC_DIR = strain_IFC", "STRAIN_IFC_DIR = " + STRAIN_DIR_CELL2)],
+    )
+    if run_anphon(anphonbin, "qha_cell1g.in", "qha_cell1g.log"):
+        return 1
+    info = 0
+    for suffix in ["umn_tensor", "V0", "atom_disp", "qha_thermo"]:
+        info += compare_files(
+            "ZnO_cell1g.%s" % suffix,
+            "ZnO_cell1.%s" % suffix,
+            1.0e-8,
+            1.0e-10,
+            "cell-override (GPa, same cell)",
+        )
+
+    # (c) c-doubled &cell (8 atoms): same strain files, halved c-meshes.
+    rewrite_input("ZnO_qha_thermo.in", "qha_cell2.in", "ZnO_cell2")
+    patch_text(
+        "qha_cell2.in",
+        tight
+        + [
+            ("STRAIN_IFC_DIR = strain_IFC", "STRAIN_IFC_DIR = " + STRAIN_DIR_CELL2),
+            (CELL_A3, CELL_A3_DOUBLED),
+            (DISPLACE_4, DISPLACE_8),
+            ("KMESH_INTERPOLATE = 4 4 2", "KMESH_INTERPOLATE = 4 4 1"),
+            ("KMESH_QHA = 4 4 2", "KMESH_QHA = 4 4 1"),
+            ("  8 8 8\n", "  8 8 4\n"),
+        ],
+    )
+    if run_anphon(anphonbin, "qha_cell2.in", "qha_cell2.log"):
+        return 1
+    for needle in [
+        "&reference_cell header found",
+        "V(current) / V(reference) = 2.0000",
+        "elastic_constants.in (SOEC) is in GPa",
+    ]:
+        if not log_contains("qha_cell2.log", needle):
+            print("cell-override: %r not found in qha_cell2.log" % needle)
+            info += 1
+    if log_contains("qha_cell2.log", "WARNING"):
+        print("cell-override: unexpected WARNING in qha_cell2.log")
+        info += 1
+    # strain is intensive; V0 and the per-cell thermodynamic quantities double;
+    # the displacements of the 4 atoms appear twice each. The 8-atom run is an
+    # independent computation, so the comparison is limited by the printed
+    # precision: qha_thermo and atom_disp carry ~7 significant digits (1e-6),
+    # umn_tensor and V0 more (1e-7).
+    info += compare_files(
+        "ZnO_cell2.umn_tensor",
+        "ZnO_cell1.umn_tensor",
+        1.0e-7,
+        1.0e-10,
+        "cell-override (strain)",
+    )
+    info += compare_scaled(
+        "ZnO_cell2.V0", "ZnO_cell1.V0", 2.0, 1.0e-7, 1.0e-10, "cell-override (V0)"
+    )
+    info += compare_scaled(
+        "ZnO_cell2.qha_thermo",
+        "ZnO_cell1.qha_thermo",
+        2.0,
+        1.0e-6,
+        1.0e-8,
+        "cell-override (thermo)",
+    )
+    info += compare_displacements(
+        "ZnO_cell2.atom_disp",
+        "ZnO_cell1.atom_disp",
+        2,
+        1.0e-6,
+        1.0e-8,
+        "cell-override (atom_disp)",
+    )
+
+    # (d) negative control: the legacy files are bound to the 4-atom cell and
+    #     must be rejected (strain_force.in rows cannot be mapped without the header).
+    rewrite_input("ZnO_qha_thermo.in", "qha_cell2_legacy.in", "ZnO_cell2l")
+    patch_text(
+        "qha_cell2_legacy.in",
+        [
+            (CELL_A3, CELL_A3_DOUBLED),
+            (DISPLACE_4, DISPLACE_8),
+            ("KMESH_INTERPOLATE = 4 4 2", "KMESH_INTERPOLATE = 4 4 1"),
+            ("KMESH_QHA = 4 4 2", "KMESH_QHA = 4 4 1"),
+            ("  8 8 8\n", "  8 8 4\n"),
+        ],
+    )
+    with open("qha_cell2_legacy.log", "w") as f:
+        proc = subprocess.run(
+            [anphonbin, "qha_cell2_legacy.in"],
+            stdout=f,
+            stderr=subprocess.STDOUT,
+            timeout=600,
+        )
+    if proc.returncode == 0:
+        print("cell-override: legacy strain files were accepted in the enlarged cell")
+        info += 1
+    if not log_contains("qha_cell2_legacy.log", "strain_force.in"):
+        print("cell-override: no strain_force.in diagnostic for the legacy files")
+        info += 1
+    return info
+
+
+STRAINFILE_NAME = os.path.join("strain_IFC", "ZnO.strain.h5")
+
+
+def run_anphon_expect_failure(anphonbin, input_file, logfile, needle, label, nprocs=1, timeout=300):
+    """anphon must exit with a non-zero code (on every rank, without hanging)
+    and print `needle`."""
+    cmd = [anphonbin, input_file]
+    if nprocs > 1:
+        cmd = ["mpirun", "-np", str(nprocs)] + cmd
+    try:
+        with open(logfile, "w") as f:
+            proc = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        print("%s: anphon did not terminate within %d s (%s)" % (label, timeout, input_file))
+        return 1
+    if proc.returncode == 0:
+        print("%s: %s was accepted but must be rejected" % (label, input_file))
+        return 1
+    if not log_contains(logfile, needle):
+        print("%s: %r not found in %s" % (label, needle, logfile))
+        return 1
+    return 0
+
+
+def stage_strainfile(anphonbin, refdir):
+    """The STRAINFILE container: identical results, notes only on the text
+    route, and the container checks reject broken files on every rank."""
+    if not os.path.exists(STRAINFILE_NAME):
+        print("strainfile: %s not found" % STRAINFILE_NAME)
+        return 1
+    switch = [("STRAIN_IFC_DIR = strain_IFC", "STRAINFILE = " + STRAINFILE_NAME)]
+    rewrite_input("ZnO_qha_thermo.in", "qha_h5.in", "ZnO_h5")
+    patch_text("qha_h5.in", switch)
+    if run_anphon(anphonbin, "qha_h5.in", "qha_h5.log"):
+        return 1
+    # the same run through the text files (the fresh stage) is the reference;
+    # fall back to the committed references when it did not run
+    ref_prefix = os.path.join("fresh_out", "ZnO_qha4")
+    rel_tol, abs_tol = 1.0e-8, 1.0e-10
+    if not os.path.exists(ref_prefix + ".umn_tensor"):
+        ref_prefix = os.path.join(refdir, "ZnO_qha4")
+        abs_tol = 1.0e-8
+    info = 0
+    for suffix in FILES_POSTPROCESS + FILES_RELAX_LOOP:
+        info += compare_files(
+            "ZnO_h5.%s" % suffix, "%s.%s" % (ref_prefix, suffix), rel_tol, abs_tol, "strainfile"
+        )
+    for needle in [
+        "STRAINFILE = " + STRAINFILE_NAME,
+        "V(current) / V(reference) = 1.0000",
+        "6 strained supercells read from",
+        "/Elastic/soec (SOEC) is in GPa",
+    ]:
+        if not log_contains("qha_h5.log", needle):
+            print("strainfile: %r not found in qha_h5.log" % needle)
+            info += 1
+    for needle in ["WARNING", "This route is deprecated"]:
+        if log_contains("qha_h5.log", needle):
+            print("strainfile: unexpected %r in qha_h5.log" % needle)
+            info += 1
+    if os.path.exists("qha_fresh.log") and not log_contains("qha_fresh.log", "This route is deprecated"):
+        print("strainfile: the text route did not print the deprecation note")
+        info += 1
+
+    # both tags at once are refused
+    rewrite_input("ZnO_qha_thermo.in", "qha_h5_both.in", "ZnO_h5both")
+    patch_text(
+        "qha_h5_both.in",
+        [("STRAIN_IFC_DIR = strain_IFC", "STRAIN_IFC_DIR = strain_IFC\n  STRAINFILE = " + STRAINFILE_NAME)],
+    )
+    info += run_anphon_expect_failure(
+        anphonbin, "qha_h5_both.in", "qha_h5_both.log", "mutually exclusive", "strainfile (both tags)"
+    )
+
+    try:
+        import h5py
+    except ImportError:
+        print("strainfile: h5py not available, the negative container checks are skipped")
+        return info
+    # a container without the strain-force coupling names the command that adds it
+    shutil.copy(STRAINFILE_NAME, "ZnO_noforce.h5")
+    with h5py.File("ZnO_noforce.h5", "r+") as f:
+        del f["StrainForce"]
+    rewrite_input("ZnO_qha_thermo.in", "qha_h5_noforce.in", "ZnO_h5nf")
+    patch_text("qha_h5_noforce.in", [("STRAIN_IFC_DIR = strain_IFC", "STRAINFILE = ZnO_noforce.h5")])
+    info += run_anphon_expect_failure(
+        anphonbin,
+        "qha_h5_noforce.in",
+        "qha_h5_noforce.log",
+        "strainifc.py collect --coupling force",
+        "strainfile (missing /StrainForce)",
+    )
+    if shutil.which("mpirun"):
+        # the failure must abort all ranks instead of hanging the others
+        info += run_anphon_expect_failure(
+            anphonbin,
+            "qha_h5_noforce.in",
+            "qha_h5_noforce_mpi.log",
+            "strainifc.py collect --coupling force",
+            "strainfile (missing /StrainForce, 2 ranks)",
+            nprocs=2,
+            timeout=120,
+        )
+    else:
+        print("strainfile: mpirun not found, the 2-rank abort check is skipped")
+    # a reference cell of a different crystal is rejected
+    shutil.copy(STRAINFILE_NAME, "ZnO_badcell.h5")
+    with h5py.File("ZnO_badcell.h5", "r+") as f:
+        lv = f["/ReferenceCell/lattice_vector"]
+        lv[...] = lv[()] * 1.01
+    rewrite_input("ZnO_qha_thermo.in", "qha_h5_badcell.in", "ZnO_h5bc")
+    patch_text("qha_h5_badcell.in", [("STRAIN_IFC_DIR = strain_IFC", "STRAINFILE = ZnO_badcell.h5")])
+    info += run_anphon_expect_failure(
+        anphonbin, "qha_h5_badcell.in", "qha_h5_badcell.log", "/ReferenceCell", "strainfile (wrong crystal)"
+    )
+    return info
+
+
+def stage_strainfile_cell2(anphonbin):
+    """The container (4-atom cell) used with a c-doubled &cell: the rows of
+    /StrainForce are tiled onto the 8 atoms, as with the text header."""
+    if not os.path.exists(STRAINFILE_NAME):
+        print("strainfile-cell2: %s not found" % STRAINFILE_NAME)
+        return 1
+    tight = [
+        ("COORD_CONV_TOL = 1.0e-5", "COORD_CONV_TOL = 1.0e-10"),
+        ("CELL_CONV_TOL = 1.0e-5", "CELL_CONV_TOL = 1.0e-10"),
+    ]
+    switch = [("STRAIN_IFC_DIR = strain_IFC", "STRAINFILE = " + STRAINFILE_NAME)]
+    rewrite_input("ZnO_qha_thermo.in", "qha_h5c1.in", "ZnO_h5c1")
+    patch_text("qha_h5c1.in", tight + switch)
+    if run_anphon(anphonbin, "qha_h5c1.in", "qha_h5c1.log"):
+        return 1
+    rewrite_input("ZnO_qha_thermo.in", "qha_h5c2.in", "ZnO_h5c2")
+    patch_text(
+        "qha_h5c2.in",
+        tight
+        + switch
+        + [
+            (CELL_A3, CELL_A3_DOUBLED),
+            (DISPLACE_4, DISPLACE_8),
+            ("KMESH_INTERPOLATE = 4 4 2", "KMESH_INTERPOLATE = 4 4 1"),
+            ("KMESH_QHA = 4 4 2", "KMESH_QHA = 4 4 1"),
+            ("  8 8 8\n", "  8 8 4\n"),
+        ],
+    )
+    if run_anphon(anphonbin, "qha_h5c2.in", "qha_h5c2.log"):
+        return 1
+    info = 0
+    if not log_contains("qha_h5c2.log", "V(current) / V(reference) = 2.0000"):
+        print("strainfile-cell2: the volume ratio 2 was not reported")
+        info += 1
+    if log_contains("qha_h5c2.log", "WARNING"):
+        print("strainfile-cell2: unexpected WARNING in qha_h5c2.log")
+        info += 1
+    info += compare_files(
+        "ZnO_h5c2.umn_tensor", "ZnO_h5c1.umn_tensor", 1.0e-7, 1.0e-10, "strainfile-cell2 (strain)"
+    )
+    info += compare_scaled(
+        "ZnO_h5c2.V0", "ZnO_h5c1.V0", 2.0, 1.0e-7, 1.0e-10, "strainfile-cell2 (V0)"
+    )
+    info += compare_scaled(
+        "ZnO_h5c2.qha_thermo", "ZnO_h5c1.qha_thermo", 2.0, 1.0e-6, 1.0e-8, "strainfile-cell2 (thermo)"
+    )
+    info += compare_displacements(
+        "ZnO_h5c2.atom_disp", "ZnO_h5c1.atom_disp", 2, 1.0e-6, 1.0e-8, "strainfile-cell2 (atom_disp)"
+    )
+    return info
+
+
 def copy_input_files(workdir, example_dir):
     file_list = [
         "ZnO332_500K_cutoff1208_nbody233.xml.zip",
@@ -299,6 +796,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--jobs", type=str, default="all", help="Job types (all, copy, run)"
     )
+    parser.add_argument(
+        "--stage",
+        choices=("all",) + STAGE_NAMES,
+        default="all",
+        help="Run a single stage by name (default: all)",
+    )
     args = parser.parse_args()
 
     build_dir = os.getcwd()
@@ -327,7 +830,12 @@ if __name__ == "__main__":
             ("text-io", lambda: stage_text_io(anphonbin)),
             ("ialgo-mpi", lambda: stage_ialgo_mpi(anphonbin)),
             ("perturbative", lambda: stage_perturbative(anphonbin, refdir)),
+            ("cell-override", lambda: stage_cell_override(anphonbin)),
+            ("strainfile", lambda: stage_strainfile(anphonbin, refdir)),
+            ("strainfile-cell2", lambda: stage_strainfile_cell2(anphonbin)),
         ]:
+            if args.stage not in ("all", name):
+                continue
             info = stage()
             if info:
                 print("ZnO QHA [%s] --> failed" % name)

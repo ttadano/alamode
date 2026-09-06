@@ -533,3 +533,65 @@ def fc2_difference(path_a, path_b):
         "rms": float(np.sqrt(np.mean(d**2))),
         "rms_ref": float(np.sqrt(np.mean(ref**2))),
     }
+
+
+# ------------------------------------------------------- crystal identity
+def same_crystal(lavec_a, xf_a, elements_a, lavec_b, xf_b, elements_b, tol_bohr=1.0e-3, tol_lattice=1.0e-5):
+    """anphon's strain_parsers::match_atoms: two cells describe the same crystal.
+
+    The lattices (rows, Angstrom) must be nested (one an integer supercell of
+    the other, same Cartesian frame) and every atom of the smaller cell must
+    have exactly the expected number of translation images of the same element
+    in the larger cell, matched by the Cartesian distance folded through the
+    smaller lattice (tolerance ``tol_bohr`` in bohr, as in anphon).  Returns
+    V_a / V_b.  Raises ValueError with the reason otherwise.
+    """
+    la = np.asarray(lavec_a, dtype=float)
+    lb = np.asarray(lavec_b, dtype=float)
+    xa = np.asarray(xf_a, dtype=float).reshape(-1, 3)
+    xb = np.asarray(xf_b, dtype=float).reshape(-1, 3)
+    ea = [str(e).lower() for e in elements_a]
+    eb = [str(e).lower() for e in elements_b]
+    if len(ea) != len(xa) or len(eb) != len(xb):
+        raise ValueError("inconsistent atom counts between coordinates and elements")
+    _, ratio = lattice_relation(la, lb, tol_lattice)
+    if ratio >= 1.0:
+        large, small = (la, xa, ea), (lb, xb, eb)
+        n_images = int(round(ratio))
+    else:
+        large, small = (lb, xb, eb), (la, xa, ea)
+        n_images = int(round(1.0 / ratio))
+    if len(large[2]) != n_images * len(small[2]):
+        raise ValueError(
+            f"the larger cell has {len(large[2])} atoms but {n_images} x {len(small[2])} = "
+            f"{n_images * len(small[2])} were expected from the volume ratio"
+        )
+    inv_small = np.linalg.inv(small[0])
+    y_small = (small[1] @ small[0]) @ inv_small
+    y_large = (large[1] @ large[0]) @ inv_small
+    tol_ang = tol_bohr * BOHR_IN_ANGSTROM
+    used = np.zeros(len(large[2]), dtype=bool)
+    for i in range(len(small[2])):
+        hits = []
+        for j in range(len(large[2])):
+            d = y_large[j] - y_small[i]
+            d -= np.round(d)
+            if np.linalg.norm(d @ small[0]) < tol_ang:
+                if large[2][j] != small[2][i]:
+                    raise ValueError(
+                        f"atom {i + 1} ({small[2][i]}) of the smaller cell coincides with a "
+                        f"{large[2][j]} atom of the larger cell"
+                    )
+                hits.append(j)
+        if len(hits) != n_images:
+            raise ValueError(
+                f"atom {i + 1} ({small[2][i]}, fractional {np.array2string(small[1][i], precision=6)}) of the "
+                f"smaller cell has {len(hits)} counterparts in the larger cell, expected {n_images}; "
+                "the two cells must describe the same crystal in the same Cartesian frame"
+            )
+        used[hits] = True
+    if not used.all():
+        raise ValueError(
+            f"{int((~used).sum())} atom(s) of the larger cell have no counterpart in the smaller cell"
+        )
+    return float(ratio)

@@ -22,6 +22,8 @@
 #include "anharmonic_core.h"
 #include "constants.h"
 #include "dynamical.h"
+#include "v4_distributed.h"
+#include "v4_service.h"
 #include "error.h"
 #include "fcs_phonon.h"
 #include "kpoint.h"
@@ -166,6 +168,10 @@ protected:
     // for the structure currently held in ws.structure_state.
     void renormalize_ifcs_at_structure(StructuralOptWorkspace &ws);
 
+    // Print the wall-clock time since t_start for one stage of a structure
+    // step (rank 0, VERBOSITY >= 2); t_start is a timer->elapsed() value.
+    void print_stage_time(const std::string &label, double t_start) const;
+
     // Allocate the workspace buffers common to both structural-optimization
     // drivers, compute the reference V3/V4 elements and the strain
     // derivatives of the IFCs, create the optimizer, and detect the optical
@@ -193,14 +199,26 @@ protected:
     // the initial strain tensor) at the head of a temperature point.
     void print_initial_structure(const RelaxationStructureState &state, RelaxationStrMode relax_mode) const;
 
-    void compute_V4_elements_mpi_over_kpoint(std::complex<double> ***v4_out, std::complex<double> ***evec_in,
+    // Row-distributed V4 (v4_service.h): built by build_v4_service, consumed by the
+    // SCP solvers (fmat) and the q0 renormalization (q0_sweep); the other ranks serve
+    // the contractions in v4_service->worker_loop() while rank 0 runs the loops.
+    std::unique_ptr<V4Service> v4_service;
+
+    // Choose the builder and the partition, allocate the local rows, build them
+    // and gather the on-site diagonal. full_tensor: every element (SELF_OFFDIAG = 1
+    // or structural relaxation); offdiag_fmat: SELF_OFFDIAG.
+    void build_v4_service(bool full_tensor, bool offdiag_fmat);
+
+    void zerofill_v4_acoustic_at_gamma(v4_distributed::V4RowBlock &v4_block) const;
+
+    void compute_V4_elements_mpi_over_kpoint(v4_distributed::V4RowBlock &v4_block, std::complex<double> ***evec_in,
                                              bool self_offdiag, bool relax, const KpointMeshUniform *kmesh_coarse_in,
                                              const KpointMeshUniform *kmesh_dense_in,
                                              const std::vector<int> &kmap_coarse_to_dense,
                                              const PhaseFactorCache *phase_storage_in,
                                              std::complex<double> *phi4_reciprocal_inout);
 
-    void compute_V4_elements_mpi_over_band(std::complex<double> ***v4_out, std::complex<double> ***evec_in,
+    void compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock &v4_block, std::complex<double> ***evec_in,
                                            bool self_offdiag, const KpointMeshUniform *kmesh_coarse_in,
                                            const KpointMeshUniform *kmesh_dense_in,
                                            const std::vector<int> &kmap_coarse_to_scph,
@@ -249,6 +267,17 @@ protected:
     // sorted mode indices that occurs when a soft optical mode becomes nearly degenerate with
     // the acoustic modes during the SCPH iteration.
     std::vector<bool> classify_acoustic_modes_from_cmat(const std::complex<double> *const *cmat_at_gamma) const;
+
+    // Occupation-weighted SCP mode matrix at dense k:
+    //   G(a,b) = sum_js C[a][js] f_js conj(C[b][js]),  C = cmat_at_k,
+    // with f_js the displacement-correlation factor of SCP mode js at T_in (zero for the
+    // Gamma acoustic modes, frequency floor eps8). Any Hermitian form
+    // sum_js f_js (C^T M conj(C))(js,js) or sum_js f_js (C^+ M C)(js,js) then reduces to
+    // sum_ab M(a,b) G(a,b) or sum_ab M(a,b) G(b,a): ns^2 per M instead of an ns^3 product.
+    // Returns the number of non-acoustic modes that hit the frequency floor; the
+    // optional is_acoustic_out receives the exclusion mask (empty away from Gamma).
+    int scp_occupation_matrix(int ik, const std::complex<double> *const *cmat_at_k, const double *omega2_at_k,
+                              double T_in, Eigen::MatrixXcd &G, std::vector<bool> *is_acoustic_out = nullptr) const;
 
     void zerofill_elements_acoustic_at_gamma(std::complex<double> ***v_elems, int fc_order, unsigned int nk_dense_in,
                                              unsigned int nk_irred_coarse_in) const;

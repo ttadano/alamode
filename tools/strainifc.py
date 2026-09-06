@@ -168,6 +168,17 @@ def main(argv=None):
         action="store_true",
         help="also write classic DFSET files (Bohr, Ry/Bohr)",
     )
+    c.add_argument(
+        "--strain-file",
+        default=None,
+        help="also write the coupling into this strain-coupling container (HDF5; created or updated; "
+        "harmonic coupling needs --fcs-format h5)",
+    )
+    c.add_argument(
+        "--force",
+        action="store_true",
+        help="recreate the container when its reference cell differs (its other groups are dropped)",
+    )
 
     k = sub.add_parser(
         "check", help="report cell relations and atom ordering against --fcs"
@@ -219,6 +230,8 @@ def main(argv=None):
                 args.reorder,
                 args.solver,
                 args.write_dfset,
+                strain_file=args.strain_file,
+                force=args.force,
             )
         elif args.cmd == "check":
             wi.check(args.outdir, args.fcs, args.anphon_cell)

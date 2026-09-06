@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <Eigen/Core>
 #include <complex>
 
 namespace PHON_NS
@@ -28,4 +29,13 @@ namespace PHON_NS
 // the eigenvector write-back.
 void solve_dense_hermitian(int n, const std::complex<double> *const *mat_in, double *eval_out,
                            std::complex<double> **evec_out, bool compute_evec, char uplo = 'U');
+
+// Divide-and-conquer variant (LAPACK zheevd, workspace queried) on Eigen
+// matrices, for the SCPH solver: eigenvalues ascending in eval_out; the
+// eigenvectors, when evec_out is given, in its columns (the convention of
+// Eigen::SelfAdjointEigenSolver::eigenvectors()). zheevd is several times
+// faster than Eigen's tridiagonal QR at n of a few hundred and uses the
+// threaded MKL/OpenBLAS kernels; results agree to roundoff (eigenvector phases
+// may differ, which the SCPH solver is invariant to).
+void solve_dense_hermitian_dc(const Eigen::MatrixXcd &mat_in, Eigen::VectorXd &eval_out, Eigen::MatrixXcd *evec_out);
 } // namespace PHON_NS

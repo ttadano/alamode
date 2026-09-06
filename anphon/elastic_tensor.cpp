@@ -10,15 +10,18 @@
 
 #include "elastic_tensor.h"
 #include <Eigen/Dense>
+#include <algorithm>
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <stdexcept>
 #include "constants.h"
 #include "error.h"
 #include "ewald.h"
 #include "ifc_derivative.h"
+#include "strain_file_parsers.h"
 #include "system.h"
 
 using namespace PHON_NS;
@@ -26,17 +29,55 @@ using namespace PHON_NS;
 ElasticTensor::ElasticTensor(const System &system_in) : system_(system_in)
 {}
 
-void ElasticTensor::read_C1_array(double *C1_array)
+double ElasticTensor::gpa_to_ry_per_cell() const
 {
-    std::fstream fin_C1_array;
-    std::string str_tmp;
+    // V0(u) stores V0 * C in Ry per primitive cell (the cell of the run,
+    // i.e. the &cell field when it is given).
+    const auto volume = system_.get_primcell().volume * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in m^3
+    return 1.0e9 * volume / Ryd;
+}
 
-    // initialize elastic constants
-    for (auto i1 = 0; i1 < 9; i1++) {
-        C1_array[i1] = 0.0;
+bool ElasticTensor::convert_to_ry_per_cell(const char *filename, const char *section,
+                                           const strain_parsers::ElasticUnit unit, double *values,
+                                           const std::size_t n) const
+{
+    if (unit != strain_parsers::ElasticUnit::GPa) {
+        // Legacy V*X in Ry per cell: used as is.
+        return true;
     }
 
-    fin_C1_array.open("C1_array.in");
+    const auto factor = gpa_to_ry_per_cell();
+    for (std::size_t i = 0; i < n; ++i) values[i] *= factor;
+
+    const auto flags = std::cout.flags();
+    const auto prec = std::cout.precision();
+    std::cout << "  " << filename << " (" << section
+              << ") is in GPa: multiplied by the volume of the current primitive cell, V = " << std::scientific
+              << std::setprecision(4) << system_.get_primcell().volume << " (a.u.)^3 ("
+              << system_.get_primcell().number_of_atoms << " atoms).\n";
+    std::cout.flags(flags);
+    std::cout.precision(prec);
+    return false;
+}
+
+void ElasticTensor::warn_legacy_unit(const char *filename, const char *what, const char *how) const
+{
+    // Legacy V*X in Ry is bound to the cell the file was generated for, which
+    // cannot be checked once the &cell field overrides the primitive cell.
+    if (system_.load_primitive_from_file != 1) return;
+
+    const std::string msg = std::string(filename) + how + ": its values are " + what +
+                            " in Ry for one specific cell and cannot\n"
+                            " be checked against the &cell field of this run. Regenerate the file in GPa\n"
+                            " (elastic.py fit) to make it independent of the cell definition.";
+    warn("ElasticTensor::warn_legacy_unit", msg.c_str());
+}
+
+void ElasticTensor::read_C1_array(double *C1_array) const
+{
+    std::fill_n(C1_array, 9, 0.0);
+
+    std::ifstream fin_C1_array("C1_array.in");
 
     if (!fin_C1_array) {
         std::cout << "  Warning: file C1_array.in could not be open.\n";
@@ -44,38 +85,115 @@ void ElasticTensor::read_C1_array(double *C1_array)
         return;
     }
 
-    fin_C1_array >> str_tmp;
-    for (auto i1 = 0; i1 < 9; i1++) {
-        fin_C1_array >> C1_array[i1];
+    strain_parsers::C1Data data;
+    try {
+        data = strain_parsers::parse_c1_array(fin_C1_array);
+    } catch (const std::runtime_error &e) {
+        exit("read_C1_array", e.what());
     }
+    if (strain_parsers::has_trailing_data(fin_C1_array)) {
+        warn("read_C1_array", "Unexpected extra data at the end of C1_array.in is ignored.");
+    }
+
+    if (convert_to_ry_per_cell("C1_array.in", "C1", data.unit, data.values.data(), data.values.size())) {
+        warn_legacy_unit("C1_array.in",
+                         "V*sigma",
+                         data.unit == strain_parsers::ElasticUnit::Ry ? " declares the unit 'Ry'"
+                                                                      : " has no unit token");
+    }
+    std::copy(data.values.begin(), data.values.end(), C1_array);
 }
 
 void ElasticTensor::read_elastic_constants(double *const *C2_array, double *const *const *C3_array,
-                                           const std::string &strain_ifc_dir)
+                                           const std::string &strain_ifc_dir) const
 {
-    std::fstream fin_elastic_constants;
-    std::string str_tmp;
     int i1, i2;
 
+    // initialize elastic constants
+    for (i1 = 0; i1 < 9; i1++) {
+        std::fill_n(C2_array[i1], 9, 0.0);
+        for (i2 = 0; i2 < 9; i2++) {
+            std::fill_n(C3_array[i1][i2], 9, 0.0);
+        }
+    }
+
     // read elastic_constants.in from strain_ifc_dir directory
-    fin_elastic_constants.open(strain_ifc_dir + "elastic_constants.in");
+    std::ifstream fin_elastic_constants(strain_ifc_dir + "elastic_constants.in");
 
     if (!fin_elastic_constants) {
         exit("read_elastic_constants", "could not open file elastic_constants.in");
     }
 
-    fin_elastic_constants >> str_tmp;
+    strain_parsers::ElasticData data;
+    try {
+        data = strain_parsers::parse_elastic_constants(fin_elastic_constants);
+    } catch (const std::runtime_error &e) {
+        exit("read_elastic_constants", e.what());
+    }
+    if (strain_parsers::has_trailing_data(fin_elastic_constants)) {
+        warn("read_elastic_constants", "Unexpected extra data at the end of elastic_constants.in is ignored.");
+    }
+
+    // Each section carries its own optional unit token.
+    const auto legacy_soec =
+        convert_to_ry_per_cell("elastic_constants.in", "SOEC", data.unit_soec, data.c2.data(), data.c2.size());
+    const auto legacy_toec =
+        convert_to_ry_per_cell("elastic_constants.in", "TOEC", data.unit_toec, data.c3.data(), data.c3.size());
+    if (data.unit_soec != data.unit_toec) {
+        warn("read_elastic_constants",
+             "The SOEC and TOEC sections of elastic_constants.in declare different units;\n"
+             " each section is converted according to its own unit token.");
+    }
+    if (legacy_soec || legacy_toec) {
+        using strain_parsers::ElasticUnit;
+        const char *how = (data.unit_soec == ElasticUnit::Ry && data.unit_toec == ElasticUnit::Ry)
+                              ? " declares the unit 'Ry'"
+                          : (legacy_soec && legacy_toec && data.unit_soec == ElasticUnit::Legacy &&
+                             data.unit_toec == ElasticUnit::Legacy)
+                              ? " has no unit token"
+                              : " uses the legacy Ry convention in at least one section";
+        warn_legacy_unit("elastic_constants.in", "V*C", how);
+    }
+
     for (i1 = 0; i1 < 9; i1++) {
         for (i2 = 0; i2 < 9; i2++) {
-            fin_elastic_constants >> C2_array[i1][i2];
+            C2_array[i1][i2] = data.c2[i1 * 9 + i2];
+            for (int i3 = 0; i3 < 9; i3++) {
+                C3_array[i1][i2][i3] = data.c3[(i1 * 9 + i2) * 9 + i3];
+            }
         }
     }
-    fin_elastic_constants >> str_tmp;
-    for (i1 = 0; i1 < 9; i1++) {
-        for (i2 = 0; i2 < 9; i2++) {
-            for (int i3 = 0; i3 < 9; i3++) {
-                fin_elastic_constants >> C3_array[i1][i2][i3];
-            }
+}
+
+void ElasticTensor::set_reference_stress_from_set(const strain_coupling::ElasticSet &set, double *C1_array) const
+{
+    std::fill_n(C1_array, 9, 0.0);
+    if (!set.has_stress) return;
+    std::array<double, 9> values = set.stress_gpa;
+    const std::string name = set.source + "/stress";
+    convert_to_ry_per_cell(name.c_str(), "C1", strain_parsers::ElasticUnit::GPa, values.data(), values.size());
+    std::copy(values.begin(), values.end(), C1_array);
+}
+
+void ElasticTensor::set_elastic_constants_from_set(const strain_coupling::ElasticSet &set, double *const *C2_array,
+                                                   double *const *const *C3_array) const
+{
+    for (int i1 = 0; i1 < 9; i1++) {
+        std::fill_n(C2_array[i1], 9, 0.0);
+        for (int i2 = 0; i2 < 9; i2++) std::fill_n(C3_array[i1][i2], 9, 0.0);
+    }
+    if (!set.has_c2c3 || set.soec_gpa.size() != 81 || set.toec_gpa.size() != 729) {
+        exit("set_elastic_constants_from_set", "The elastic-constant set has no second- and third-order constants.");
+    }
+    auto c2 = set.soec_gpa;
+    auto c3 = set.toec_gpa;
+    const std::string name2 = set.source + "/soec", name3 = set.source + "/toec";
+    convert_to_ry_per_cell(name2.c_str(), "SOEC", strain_parsers::ElasticUnit::GPa, c2.data(), c2.size());
+    convert_to_ry_per_cell(name3.c_str(), "TOEC", strain_parsers::ElasticUnit::GPa, c3.data(), c3.size());
+    for (int i1 = 0; i1 < 9; i1++) {
+        for (int i2 = 0; i2 < 9; i2++) {
+            C2_array[i1][i2] = c2[i1 * 9 + i2];
+            for (int i3 = 0; i3 < 9; i3++) C3_array[i1][i2][i3] = c3[(i1 * 9 + i2) * 9 + i3];
         }
     }
 }

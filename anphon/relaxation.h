@@ -18,11 +18,13 @@
 #include "pointers.h"
 #include "relaxation_types.h"
 #include "scph.h"
+#include "strain_coupling_types.h"
 
 namespace PHON_NS
 {
 
 class DerivativeIFC;
+class ElasticTensor;
 
 class DelVStrainData
 {
@@ -256,6 +258,14 @@ public:
     // them from elastic_constants.in (default).
     int elastic_const;
     std::string strain_IFC_dir;
+    std::string strain_file; // STRAINFILE: the HDF5 container replacing the text files
+
+    // The source of the strain couplings and elastic constants (STRAIN_IFC_DIR
+    // text files or the STRAINFILE container).
+    strain_coupling::StrainSource strain_source() const
+    {
+        return strain_coupling::StrainSource{strain_IFC_dir, strain_file};
+    }
 
     std::unique_ptr<Optimizer> optimizer;
     std::unique_ptr<DerivativeIFC> derivative_ifc;
@@ -284,6 +294,15 @@ public:
     // still taken from C1_array.in when present (zero otherwise).
     void set_elastic_constants_from_ifcs(double *C1_array, double **C2_array, double ***C3_array) const;
 
+    // The stress tensor at the reference structure (C1): /Elastic/stress of
+    // STRAINFILE when given (zero when the dataset is absent), else
+    // C1_array.in of the working directory.
+    void load_reference_stress(const ElasticTensor &elastic, double *C1_array) const;
+
+    // Schema, required groups, and the reference cell of STRAINFILE against
+    // the primitive cell of this run; runs on every rank.
+    void validate_strain_file() const;
+
     static void renormalize_v0_from_umn(double &v0_with_umn, double v0_ref,
                                         std::array<std::array<double, 3>, 3> &eta_tensor, double *C1_array,
                                         double **C2_array, double ***C3_array,
@@ -300,24 +319,25 @@ public:
                                  std::complex<double> ***, std::complex<double> ***, const DelVStrainData &,
                                  const std::array<std::array<double, 3>, 3> &) const;
 
-    void renormalize_v1_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_coarse,
-                                const KpointMeshUniform *kmesh_dense, std::complex<double> *, std::complex<double> *,
-                                std::complex<double> **, std::complex<double> ***, std::complex<double> ***,
-                                const std::vector<double> &) const;
+    // Renormalization by the Gamma-point displacement q0. The quartic terms
+    // enter through the contraction q4_q0[ik][a][b] = sum_{c,d} v4[ik][a,b][c,d]
+    // q0[c] q0[d] computed by q0_contraction::contract_v4_with_q0 together with
+    // v3_renorm in a single sweep over v4; q4_gamma is the Gamma block q4_q0[g].
+    void renormalize_v1_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_dense,
+                                std::complex<double> *v1_renorm, std::complex<double> *v1_ref,
+                                std::complex<double> **delta_v2_array_original, std::complex<double> ***v3_ref,
+                                const std::complex<double> *const *q4_gamma, const std::vector<double> &q0) const;
 
     void renormalize_v2_from_q0(std::complex<double> ***evec_harmonic, const KpointMeshUniform *kmesh_coarse,
                                 const KpointMeshUniform *kmesh_dense, const std::vector<int> &kmap_coarse_to_dense,
                                 std::complex<double> ****mat_transform_sym, std::complex<double> **delta_v2_renorm,
                                 std::complex<double> **delta_v2_array_original, std::complex<double> ***v3_ref,
-                                std::complex<double> ***v4_ref, const std::vector<double> &) const;
+                                const std::complex<double> *const *const *q4_q0, const std::vector<double> &q0) const;
 
-    void renormalize_v3_from_q0(const KpointMeshUniform *kmesh_dense, const KpointMeshUniform *kmesh_coarse,
-                                std::complex<double> ***, std::complex<double> ***, std::complex<double> ***,
-                                const std::vector<double> &) const;
-
-    void renormalize_v0_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_dense, double &, double,
-                                std::complex<double> *, std::complex<double> **, std::complex<double> ***,
-                                std::complex<double> ***, const std::vector<double> &) const;
+    void renormalize_v0_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_dense, double &v0_renorm,
+                                double v0_ref, std::complex<double> *v1_ref,
+                                std::complex<double> **delta_v2_array_original, std::complex<double> ***v3_ref,
+                                const std::complex<double> *const *q4_gamma, const std::vector<double> &q0) const;
 
     void calculate_u0(const double *const q0, double *const u0, double **omega2_harmonic,
                       std::complex<double> ***evec_harmonic) const;

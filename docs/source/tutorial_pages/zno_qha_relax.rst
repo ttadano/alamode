@@ -43,43 +43,53 @@ Here, please unzip all the XML files in **example/ZnO/qha_relax** and **example/
 
 We need to calculate the elastic constants, the strain-force coupling, and the strain-harmonic-IFC coupling
 to calculate the :math:`T`-dependence of the shape of the unit cell.
-These input files must be placed in the directory named as the value of ``STRAIN_IFC_DIR``-tag,
-specified in ``&relax``-field in the input file of :red:`anphon` (except :red:`C1_array.in`, which is read
-from the working directory of :red:`anphon`).
-The Python tools :red:`elastic.py` and :red:`strainifc.py` in the ``tools`` directory generate these files
-from DFT calculations of strained cells; see :ref:`this page <label_strain_tools>` for the full description
-and ``example/ZnO/strain_IFC_workflow`` for template inputs. All quantities are the clamped-ion ones
-(fixed fractional coordinates), because the internal coordinates are optimized explicitly by :red:`anphon`.
+The recommended way to hand them to :red:`anphon` is the strain-coupling container, one HDF5 file
+given as ``STRAINFILE`` in the ``&relax`` field: :red:`strain_IFC/ZnO.strain.h5` of this example holds
+all of them, and :red:`ZnO_qha_thermo_strainfile.in` is the input using it. The container is written by
+the Python tools :red:`elastic.py` and :red:`strainifc.py` (``--strain-file``) from DFT calculations of
+strained cells, or packed from the text files with :red:`strainfile.py`; ``strainfile.py show`` and
+``strainfile.py check`` inspect it and verify it against the planned run. See
+:ref:`this page <label_strain_tools>` for the full description and ``example/ZnO/strain_IFC_workflow``
+for template inputs. All quantities are the clamped-ion ones (fixed fractional coordinates), because
+the internal coordinates are optimized explicitly by :red:`anphon`.
+
+The rest of this section describes the legacy text files, which :red:`ZnO_qha_thermo.in` still uses:
+they are placed in the directory named as the value of the ``STRAIN_IFC_DIR``-tag (except
+:red:`C1_array.in`, which is read from the working directory of :red:`anphon`). The container stores the
+same quantities, with the units as attributes and the reference structure once.
 
 * The second-order elastic constants (SOEC) and the third-order elastic constants (TOEC) are read from
   :red:`elastic_constants.in`, whose format is as follows.
   ::
 
-    SOEC
-    V_cell * C_xx,xx
-    V_cell * C_xx,xy
-    V_cell * C_xx,xz
+    SOEC GPa
+    C_xx,xx
+    C_xx,xy
+    C_xx,xz
     ...
-    V_cell * C_zz,zz
-    TOEC
-    V_cell * C_xx,xx,xx
-    V_cell * C_xx,xx,xy
+    C_zz,zz
+    TOEC GPa
+    C_xx,xx,xx
+    C_xx,xx,xy
     ...
-    V_cell * C_zz,zz,zz
+    C_zz,zz,zz
 
-  :math:`V_{cell}` is the volume of the unit cell given in the ``&cell`` field and
   :math:`C_{\mu_1 \nu_1, \mu_2 \nu_2} = \frac{1}{V}\frac{\partial^2 U}{\partial \eta_{\mu_1 \nu_1} \partial \eta_{\mu_2 \nu_2}}`,
   :math:`C_{\mu_1 \nu_1, \mu_2 \nu_2, \mu_3 \nu_3} = \frac{1}{V}\frac{\partial^3 U}{\partial \eta_{\mu_1 \nu_1} \partial \eta_{\mu_2 \nu_2} \partial \eta_{\mu_3 \nu_3}}`
   are the second-order and third-order (Brugger) elastic constants, i.e., the derivatives with respect to the
-  Green-Lagrange strain :math:`\eta = \mathrm{sym}(u) + \frac{1}{2}u u^{T}` of the deformation gradient :math:`F = I + u`.
-  The values in :red:`elastic_constants.in` should be in Rydberg unit. The residual stress of the reference
-  structure, :math:`V_{cell}\sigma_{\mu\nu}` in Rydberg unit, can be given in :red:`C1_array.in` (a label followed by
-  nine values) placed in the working directory of :red:`anphon`.
+  Green-Lagrange strain :math:`\eta = \mathrm{sym}(u) + \frac{1}{2}u u^{T}` of the deformation gradient :math:`F = I + u`,
+  given in GPa: the unit token ``GPa`` after each label tells :red:`anphon` to multiply the values by the volume
+  of its primitive cell, so the file does not depend on the size of the cell given in the ``&cell`` field. Files without the unit token
+  (the legacy layout, used by the :red:`elastic_constants.in` shipped with this tutorial) hold
+  :math:`V_{cell} C` in Rydberg unit, where :math:`V_{cell}` is the volume of the unit cell given in the
+  ``&cell`` field. The residual stress of the reference structure, :math:`\sigma_{\mu\nu}` in GPa, can be
+  given in :red:`C1_array.in` (``C1 GPa`` followed by nine values; without the token, :math:`V_{cell}\sigma_{\mu\nu}`
+  in Rydberg unit) placed in the working directory of :red:`anphon`.
 
   These files can be generated with :red:`elastic.py`: ``elastic.py generate`` writes strained primitive cells,
-  and after the DFT calculations ``elastic.py fit --fcs ZnO442_harmonic.xml --anphon-cell ZnO_qha_thermo.in``
-  fits the constants to the DFT stresses and writes both files (``elastic.py show`` prints any
-  :red:`elastic_constants.in` in GPa).
+  and after the DFT calculations ``elastic.py fit`` fits the constants to the DFT stresses and writes both files
+  in GPa (``--fcs ZnO442_harmonic.xml --anphon-cell ZnO_qha_thermo.in`` only report how the :red:`anphon` cell
+  relates to the DFT cell; ``elastic.py show`` prints any :red:`elastic_constants.in` in GPa).
 
   Alternatively, setting ``ELASTIC_CONST = 1`` in the ``&relax``-field computes the clamped-ion
   SOEC and TOEC directly from the harmonic and cubic force constants, in which case
@@ -109,7 +119,11 @@ and ``example/ZnO/strain_IFC_workflow`` for template inputs. All quantities are 
     0.000000  0.039854  0.022224
 
   The rows follow the atom order of the primitive cell of :red:`anphon` (the ``&cell`` field); the meaning of
-  the weight ``1.0`` is similar to that in the next paragraph.
+  the weight ``1.0`` is similar to that in the next paragraph. Files written by ``strainifc.py collect --fcs``
+  start with an ``&reference_cell ... /`` header recording the lattice vectors and atoms the rows belong to;
+  with it, :red:`anphon` matches the atoms by position and can also use the file in a run whose ``&cell`` is
+  an enlarged supercell of that cell (the rows are copied onto the translation images), see
+  :ref:`this page <label_strain_tools>`.
 
 * The strain-harmonic-IFC coupling is obtained from the harmonic IFCs of strained supercells
   (``strainifc.py generate --coupling harmonic`` with the same supercell as :red:`ZnO442_harmonic.xml`,
@@ -157,7 +171,9 @@ and ``example/ZnO/strain_IFC_workflow`` for template inputs. All quantities are 
 3. Prepare the input file.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The input file for the :red:`anphon` calculation is :red:`ZnO_qha_thermo.in`.
+The input file for the :red:`anphon` calculation is :red:`ZnO_qha_thermo.in` (text-file inputs in
+``STRAIN_IFC_DIR``) or, equivalently, :red:`ZnO_qha_thermo_strainfile.in` (the container as ``STRAINFILE``);
+the two give identical results.
 
 .. note::
   

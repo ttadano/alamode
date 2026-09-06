@@ -133,8 +133,9 @@ struct RelaxationStructureState
 };
 
 // Scratch buffers shared by the SCPH/QHA structural-optimization drivers.
-// Non-owning: the driver allocates and frees the arrays; this struct only
-// groups them so the loop stages can be factored into functions without
+// The NDArray members own their storage (sized by setup_structural_opt_buffers,
+// freed by the driver); del_v_strain points at the driver's DelVStrainData.
+// Grouping them lets the loop stages be factored into functions without
 // dozens of parameters.
 struct StructuralOptWorkspace
 {
@@ -144,8 +145,7 @@ struct StructuralOptWorkspace
     // k-space IFCs at the reference structure
     NDArray<std::complex<double>, 1> v1_ref;
     NDArray<std::complex<double>, 3> v3_ref;
-    NDArray<std::complex<double>, 3> v4_ref;
-    double v0_ref = 0.0;
+    double v0_ref = 0.0; // (v4 lives in ScphQhaCommon::v4_service, row-distributed over the MPI ranks)
 
     // IFCs renormalized by the strain u_{mu nu}
     NDArray<std::complex<double>, 1> v1_with_umn;
@@ -159,10 +159,10 @@ struct StructuralOptWorkspace
     NDArray<std::complex<double>, 3> v3_renorm;
     double v0_renorm = 0.0;
 
-    // v4 entering the q0 renormalization: v4_ref in SCPH, the (numerically
-    // identical) v4_with_umn copy in QHA. Strain renormalization of v4 would
-    // need d(v4)/du IFC data, which del_v_strain does not provide.
-    std::complex<double> ***v4_for_renorm{};
+    // quartic contraction q4_q0[ik][a][b] = sum_{c,d} v4[ik][a,b][c,d] q0[c] q0[d]
+    // ([nk_irred_coarse][ns][ns]) produced together with v3_renorm by the single
+    // sweep over v4 (q0_contraction.h); feeds the v1, v2 and v0 renormalization
+    NDArray<std::complex<double>, 3> q4_q0;
 
     // strain derivatives of the IFCs and elastic constants
     DelVStrainData *del_v_strain{};

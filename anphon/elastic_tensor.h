@@ -15,6 +15,7 @@
 #include <vector>
 #include "fcs_phonon.h"
 #include "ndarray.h"
+#include "strain_file_parsers.h"
 
 namespace PHON_NS
 {
@@ -43,29 +44,58 @@ struct Tensor6
     }
 };
 
-// Elastic-constant utilities: parsers of the user-provided elastic constants
+// Elastic-constant utilities: readers of the user-provided elastic constants
 // used by the SCPH/QHA structural relaxation, and the clamped-ion (Born
 // long-wave) stress-energy and elastic tensors computed from the harmonic
 // IFCs. All dependencies are explicit constructor arguments (no Pointers
-// base); the file parsers are static.
+// base). The token parsing of the input files lives in strain_file_parsers.h
+// so that it can be unit-tested without a System; the readers here add the
+// unit conversion, which needs the volume of the current primitive cell.
 class ElasticTensor
 {
 public:
     explicit ElasticTensor(const System &system_in);
     ~ElasticTensor() = default;
 
-    // ---- Parsers of the user-provided elastic constants ----
+    // ---- Readers of the user-provided elastic constants ----
+    // Both files store either the legacy V*C in Ry for one specific cell
+    // (no unit token, or "Ry") or intensive values in GPa ("GPa" after the
+    // section label), which are multiplied by the volume of the current
+    // primitive cell here and therefore do not depend on the &cell field.
 
     // Read the first-order coefficients (stress tensor at the reference
     // structure, 9 entries) from "C1_array.in" in the working directory.
     // A missing file is not an error: C1 is set to zero with a warning.
-    static void read_C1_array(double *C1_array);
+    void read_C1_array(double *C1_array) const;
 
     // Read the second- and third-order elastic constants (9x9 and 9x9x9,
     // row-major in the strain components mu*3+nu) from
     // strain_ifc_dir + "elastic_constants.in".
-    static void read_elastic_constants(double *const *C2_array, double *const *const *C3_array,
-                                       const std::string &strain_ifc_dir);
+    void read_elastic_constants(double *const *C2_array, double *const *const *C3_array,
+                                const std::string &strain_ifc_dir) const;
+
+    // The reference stress (C1) and the elastic constants (C2, C3) from the
+    // /Elastic group of the STRAINFILE container. The container stores GPa,
+    // so the values are multiplied by the volume of the current primitive
+    // cell like a GPa text file. An absent stress gives C1 = 0.
+    void set_reference_stress_from_set(const strain_coupling::ElasticSet &set, double *C1_array) const;
+    void set_elastic_constants_from_set(const strain_coupling::ElasticSet &set, double *const *C2_array,
+                                        double *const *const *C3_array) const;
+
+    // GPa -> Ry per current primitive cell (V0(u) stores V0 * C in Ry).
+    double gpa_to_ry_per_cell() const;
+
+    // Bring the `n` values of one section of `filename` to Ry per current
+    // primitive cell according to the unit declared for that section (GPa
+    // values are multiplied by the cell volume; legacy V*X in Ry is used as
+    // is). Returns true when the legacy, cell-bound convention was used.
+    bool convert_to_ry_per_cell(const char *filename, const char *section, strain_parsers::ElasticUnit unit,
+                                double *values, std::size_t n) const;
+
+    // Warn that `filename` holds legacy V*X in Ry (`what` = "V*sigma" or
+    // "V*C", `how` describes the declaration) when the &cell field overrides
+    // the primitive cell, since the file can then no longer be checked.
+    void warn_legacy_unit(const char *filename, const char *what, const char *how) const;
 
     // Positive-definite dummy elastic constants for fixed-cell relaxation
     // (only the coordinates are optimized, so C never enters physically).

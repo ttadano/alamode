@@ -17,6 +17,11 @@
 #include "ndarray.h"
 #include "pointers.h"
 
+namespace HighFive
+{
+class File;
+}
+
 namespace PHON_NS
 {
 
@@ -185,6 +190,12 @@ struct sort_by_heading_indices
 class Fcs_phonon: protected Pointers
 {
 public:
+    // Read a force-constant layout stored below group_prefix ("" = file root)
+    // of an already opened HDF5 file, e.g. the strained-supercell entries
+    // embedded in a strain-coupling container.
+    void parse_fcs_from_h5(const HighFive::File &file, const std::string &group_prefix, const int order,
+                           std::vector<FcsArrayWithCell> &fcs_out, const int temperature_index = -1) const;
+
     Fcs_phonon(class PHON *);
 
     ~Fcs_phonon();

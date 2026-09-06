@@ -9,6 +9,11 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "relaxation.h"
+#include "strain_coupling_io.h"
+#include "strain_reference_cell.h"
+#include "hdf5_parser.h"
+#include <iomanip>
+#include <stdexcept>
 #include <Eigen/Core>
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include <fstream>
@@ -73,6 +78,17 @@ void Relaxation::set_default_variables()
 
     add_hess_diag = 100.0; // [cm^{-1}]
     stat_pressure = 0.0;   // [GPa]
+
+    // Sources of the strain couplings and elastic constants. The input parser
+    // sets these on rank 0 only; the defaults must match RelaxInputVars so
+    // that the other ranks hold defined values until setup_relaxation
+    // broadcasts the parsed ones.
+    renorm_3to2nd = 2;
+    renorm_2to1st = 2;
+    renorm_34to1st = 0;
+    elastic_const = 2;
+    strain_IFC_dir.clear();
+    strain_file.clear();
 }
 
 void Relaxation::deallocate_variables()
@@ -81,6 +97,101 @@ void Relaxation::deallocate_variables()
 void Relaxation::setup_relaxation()
 {
     MPI_Bcast(&relax_str, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+
+    // The strain-coupling settings are consumed on every rank
+    // (compute_del_v_strain is collective), so they must not stay at their
+    // defaults on the non-root ranks.
+    MPI_Bcast(&renorm_3to2nd, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&renorm_2to1st, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&renorm_34to1st, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&elastic_const, 1, MPI_INTEGER, 0, MPI_COMM_WORLD);
+    mympi->MPI_Bcast_string(strain_IFC_dir, 0, MPI_COMM_WORLD);
+    mympi->MPI_Bcast_string(strain_file, 0, MPI_COMM_WORLD);
+
+    const auto relax_mode = to_relaxation_str_mode(relax_str);
+    if (relax_mode != RelaxationStrMode::CoordinatesAndCell && relax_mode != RelaxationStrMode::PerturbativeQha) {
+        return;
+    }
+    if (!strain_file.empty()) {
+        validate_strain_file();
+    } else if (mympi->my_rank == 0 &&
+               (renorm_2to1st == 2 || renorm_3to2nd == 2 || renorm_3to2nd == 3 || elastic_const == 2))
+    {
+        std::cout << "  NOTE: the strain couplings and elastic constants are read from the text files in\n"
+                  << "        STRAIN_IFC_DIR (and C1_array.in in the working directory). This route is deprecated:\n"
+                  << "        pack the files into one container with 'tools/strainfile.py pack' and give it as\n"
+                  << "        STRAINFILE in the &relax field.\n\n";
+    }
+}
+
+void Relaxation::validate_strain_file() const
+{
+    using strain_coupling::StrainCouplingFile;
+    try {
+        const StrainCouplingFile container(strain_file);
+        const auto summary = container.probe();
+
+        const auto need = [this](const bool present, const char *group, const std::string &tag) {
+            if (present) return;
+            throw std::runtime_error(tag + " needs the " + group + " data, but " + strain_file +
+                                     " does not contain it.\n " + StrainCouplingFile::missing_group_hint(group));
+        };
+        if (elastic_const == 2) need(summary.has_c2c3, "/Elastic", "ELASTIC_CONST = 2");
+        if (renorm_2to1st == 2) need(summary.has_strain_force, "/StrainForce", "RENORM_2TO1ST = 2");
+        if (renorm_3to2nd == 2 || renorm_3to2nd == 3) {
+            need(summary.has_strain_harmonic, "/StrainHarmonic", "RENORM_3TO2ND = " + std::to_string(renorm_3to2nd));
+        }
+
+        // The reference structure must describe the crystal of this run; the
+        // primitive cell of the run may be a nested super- or sub-cell of it.
+        const auto ref = container.read_reference_cell();
+        const auto &pcell = system->get_primcell();
+        std::vector<std::string> symbols(pcell.number_of_atoms);
+        for (std::size_t i = 0; i < pcell.number_of_atoms; ++i) symbols[i] = system->symbol_kd[pcell.kind[i]];
+        const auto what = strain_file + ":/ReferenceCell";
+        const auto match =
+            strain_parsers::match_atoms(ref, pcell.lattice_vector, pcell.x_cartesian, symbols, what.c_str());
+
+        if (mympi->my_rank == 0) {
+            const auto flags = std::cout.flags();
+            const auto prec = std::cout.precision();
+            std::cout << "  STRAINFILE = " << strain_file << "\n"
+                      << "    schema " << h5_schema_strain_coupling << " v" << summary.format_version;
+            if (!summary.writer.empty()) std::cout << ", written by strainkit " << summary.writer;
+            if (!summary.created_date.empty()) std::cout << " on " << summary.created_date;
+            std::cout << "\n    Reference cell : " << ref.natom() << " atoms;  V(current) / V(reference) = "
+                      << std::fixed << std::setprecision(4) << match.ratio << "\n"
+                      << "    Elastic        : "
+                      << (summary.has_c2c3 ? "C2, C3" : summary.has_elastic ? "no C2/C3" : "absent")
+                      << (summary.has_stress ? " + reference stress" : ", no reference stress") << "\n"
+                      << "    StrainForce    : " << (summary.has_strain_force ? "present" : "absent") << "\n"
+                      << "    StrainHarmonic : " << (summary.has_strain_harmonic ? "present" : "absent") << "\n\n";
+            std::cout.flags(flags);
+            std::cout.precision(prec);
+        }
+    } catch (const std::runtime_error &e) {
+        exit("setup_relaxation", e.what());
+    }
+}
+
+void Relaxation::load_reference_stress(const ElasticTensor &elastic, double *C1_array) const
+{
+    if (strain_file.empty()) {
+        elastic.read_C1_array(C1_array);
+        return;
+    }
+    std::fill_n(C1_array, 9, 0.0);
+    try {
+        const strain_coupling::StrainCouplingFile container(strain_file);
+        if (container.probe().has_stress) {
+            elastic.set_reference_stress_from_set(container.read_elastic(), C1_array);
+            return;
+        }
+    } catch (const std::runtime_error &e) {
+        exit("load_reference_stress", e.what());
+    }
+    std::cout << "  " << strain_file
+              << " has no /Elastic/stress dataset: the stress tensor at the reference structure is set to zero.\n";
 }
 
 void Relaxation::create_optimizer(const size_t num_modes)
@@ -114,8 +225,38 @@ void Relaxation::set_elastic_constants(double *C1_array, double **C2_array, doub
             set_elastic_constants_from_ifcs(C1_array, C2_array, C3_array);
             return;
         }
-        ElasticTensor::read_C1_array(C1_array);
-        ElasticTensor::read_elastic_constants(C2_array, C3_array, strain_IFC_dir);
+        const ElasticTensor elastic(*system);
+        std::string source_stress = "C1_array.in";
+        std::string source_c2c3 = "elastic_constants.in";
+        if (!strain_file.empty()) {
+            // STRAINFILE: the reference stress and the elastic constants come
+            // from its /Elastic group (GPa, multiplied by the volume of the
+            // current primitive cell).
+            strain_coupling::ElasticSet es;
+            try {
+                const strain_coupling::StrainCouplingFile container(strain_file);
+                es = container.read_elastic();
+            } catch (const std::runtime_error &e) {
+                exit("set_elastic_constants", e.what());
+            }
+            if (!es.has_c2c3) {
+                const auto msg = "ELASTIC_CONST = 2 needs the second- and third-order elastic constants, but " +
+                                 strain_file + " has no /Elastic/soec and /Elastic/toec datasets.\n " +
+                                 strain_coupling::StrainCouplingFile::missing_group_hint("/Elastic");
+                exit("set_elastic_constants", msg.c_str());
+            }
+            if (!es.has_stress) {
+                std::cout << "  " << strain_file
+                          << " has no /Elastic/stress dataset: the stress tensor at the reference structure is set to zero.\n";
+            }
+            elastic.set_reference_stress_from_set(es, C1_array);
+            elastic.set_elastic_constants_from_set(es, C2_array, C3_array);
+            source_stress = strain_file + ":/Elastic/stress";
+            source_c2c3 = strain_file + ":/Elastic/soec,toec";
+        } else {
+            elastic.read_C1_array(C1_array);
+            elastic.read_elastic_constants(C2_array, C3_array, strain_IFC_dir);
+        }
 
         // Detect unexpected symmetry breaking in the user-supplied arrays:
         // the stress tensor must be symmetric, and C2/C3 must satisfy the
@@ -124,26 +265,26 @@ void Relaxation::set_elastic_constants(double *C1_array, double **C2_array, doub
         auto scale = 0.0;
         for (auto i = 0; i < 9; ++i) scale = std::max(scale, std::abs(C1_array[i]));
         if (const auto dev = ElasticTensor::stress_tensor_asymmetry(C1_array); dev > 1.0e-6 * std::max(scale, 1.0)) {
-            warn("set_elastic_constants",
-                 "The stress tensor in C1_array.in is not symmetric.\n"
-                 " Please check the file for input errors.");
+            const auto msg = "The stress tensor in " + source_stress + " is not symmetric.\n" +
+                             " Please check the file for input errors.";
+            warn("set_elastic_constants", msg.c_str());
         }
         scale = 0.0;
         for (auto i = 0; i < 9; ++i)
             for (auto j = 0; j < 9; ++j) scale = std::max(scale, std::abs(C2_array[i][j]));
         if (ElasticTensor::elastic_tensor2_asymmetry(C2_array) > 1.0e-6 * std::max(scale, 1.0)) {
-            warn("set_elastic_constants",
-                 "The second-order elastic constants in elastic_constants.in violate\n"
-                 " the minor or pair-permutation symmetry. Please check the file for input errors.");
+            const auto msg = "The second-order elastic constants in " + source_c2c3 + " violate\n" +
+                             " the minor or pair-permutation symmetry. Please check the file for input errors.";
+            warn("set_elastic_constants", msg.c_str());
         }
         scale = 0.0;
         for (auto i = 0; i < 9; ++i)
             for (auto j = 0; j < 9; ++j)
                 for (auto k = 0; k < 9; ++k) scale = std::max(scale, std::abs(C3_array[i][j][k]));
         if (ElasticTensor::elastic_tensor3_asymmetry(C3_array) > 1.0e-6 * std::max(scale, 1.0)) {
-            warn("set_elastic_constants",
-                 "The third-order elastic constants in elastic_constants.in violate\n"
-                 " the minor or pair-permutation symmetry. Please check the file for input errors.");
+            const auto msg = "The third-order elastic constants in " + source_c2c3 + " violate\n" +
+                             " the minor or pair-permutation symmetry. Please check the file for input errors.";
+            warn("set_elastic_constants", msg.c_str());
         }
         return;
     }
@@ -163,11 +304,12 @@ void Relaxation::set_elastic_constants_from_ifcs(double *C1_array, double **C2_a
     const auto &fc2 = fcs_phonon->force_constant_with_cell[0];
     const auto &fc3 = fcs_phonon->force_constant_with_cell[1];
 
-    // The reference stress is not contained in the IFC model; it is still
-    // taken from C1_array.in when the file exists (zero otherwise).
-    ElasticTensor::read_C1_array(C1_array);
-
     const ElasticTensor elastic(*system);
+
+    // The reference stress is not contained in the IFC model; it is taken
+    // from STRAINFILE (/Elastic/stress) or C1_array.in when present (zero
+    // otherwise).
+    load_reference_stress(elastic, C1_array);
 
     // Clamped-ion tensors: the sublattice relaxation is treated explicitly by
     // the internal coordinates (q0) of the structural optimization, so the
@@ -188,8 +330,7 @@ void Relaxation::set_elastic_constants_from_ifcs(double *C1_array, double **C2_a
     elastic.calc_elastic_tensor3(fc2, fc3, false, C3_gpa, true);
 
     // V0(u) stores V0 * C in Ry per primitive cell.
-    const auto volume = system->get_primcell().volume * std::pow(Bohr_in_Angstrom, 3) * 1.0e-30; // in m^3
-    const auto gpa2ry = 1.0e9 * volume / Ryd;
+    const auto gpa2ry = elastic.gpa_to_ry_per_cell();
 
     for (auto i = 0; i < 9; ++i) {
         for (auto j = 0; j < 9; ++j) {
@@ -1009,7 +1150,7 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse, con
                                              renorm_2to1st,
                                              renorm_34to1st,
                                              renorm_3to2nd,
-                                             strain_IFC_dir,
+                                             strain_source(),
                                              mindist_list,
                                              phase_cache_in);
 
@@ -1030,7 +1171,7 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse, con
                                                        renorm_2to1st,
                                                        renorm_34to1st,
                                                        renorm_3to2nd,
-                                                       strain_IFC_dir,
+                                                       strain_source(),
                                                        mindist_list);
 
         if (mympi->my_rank == 0) timer->print_elapsed();
@@ -1216,19 +1357,28 @@ void Relaxation::renormalize_v3_from_umn(const KpointMeshUniform *kmesh_coarse, 
     }
 }
 
-void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_coarse,
-                                        const KpointMeshUniform *kmesh_dense, std::complex<double> *v1_renorm,
-                                        std::complex<double> *v1_ref, std::complex<double> **delta_v2_array_original,
-                                        std::complex<double> ***v3_ref, std::complex<double> ***v4_ref,
+void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_dense,
+                                        std::complex<double> *v1_renorm, std::complex<double> *v1_ref,
+                                        std::complex<double> **delta_v2_array_original, std::complex<double> ***v3_ref,
+                                        const std::complex<double> *const *q4_gamma,
                                         const std::vector<double> &q0) const
 {
-    int is1, is2;
-    const auto ik_irred0 = kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig;
+    int is1;
     const auto ns = dynamical->neval;
     const auto factor = 0.5 * 4.0 * kmesh_dense->nk;
     const auto factor2 = 1.0 / 6.0 * 4.0 * kmesh_dense->nk;
 
+    // w[is1*ns+is2] = q0[is1] q0[is2] (real; Eigen's dot conjugates its left operand, which is
+    // harmless for the real w, so w is the left operand and the complex v3 row the right one)
+    Eigen::VectorXcd w(ns * ns);
+    for (is1 = 0; is1 < ns; is1++) {
+        for (int is2 = 0; is2 < ns; is2++) {
+            w(is1 * ns + is2) = std::complex<double>(q0[is1] * q0[is2], 0.0);
+        }
+    }
+
     // renormalize v1 array
+#pragma omp parallel for private(is1)
     for (int is = 0; is < ns; is++) {
 
         v1_renorm[is] = v1_ref[is];
@@ -1238,21 +1388,15 @@ void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic, const KpointMe
             v1_renorm[is] += delta_v2_array_original[0][is * ns + is1] * q0[is1];
         }
 
-        for (is1 = 0; is1 < ns; is1++) {
-            for (is2 = 0; is2 < ns; is2++) {
-                v1_renorm[is] += factor * v3_ref[0][is][is1 * ns + is2] * q0[is1] * q0[is2];
-            }
-        }
+        // cubic term sum_{is1,is2} v3[Gamma][is][is1,is2] q0[is1] q0[is2] = (row is of V3) . w
+        // (w on the conjugating side of dot(): it is real, the v3 row must not be conjugated)
+        v1_renorm[is] += factor * w.dot(Eigen::Map<const Eigen::VectorXcd>(v3_ref[0][is], ns * ns));
 
+        // quartic term sum_{is1,is2,is3} v4[Gamma][is,is1][is2,is3] q0[is1] q0[is2] q0[is3],
+        // with the (is2,is3) sum precomputed in q4_gamma (q0_contraction.h).
+        // the factor 4.0 appears due to the definition of v4_array = 1.0/(4.0*N_scph) Phi_4
         for (is1 = 0; is1 < ns; is1++) {
-            for (is2 = 0; is2 < ns; is2++) {
-                for (int is3 = 0; is3 < ns; is3++) {
-
-                    v1_renorm[is] += factor2 * v4_ref[ik_irred0 * kmesh_dense->nk][is * ns + is1][is2 * ns + is3] *
-                                     q0[is1] * q0[is2] * q0[is3];
-                    // the factor 4.0 appears due to the definition of v4_array = 1.0/(4.0*N_scph) Phi_4
-                }
-            }
+            v1_renorm[is] += factor2 * q4_gamma[is][is1] * q0[is1];
         }
     }
 }
@@ -1263,19 +1407,19 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic, c
                                         std::complex<double> ****mat_transform_sym,
                                         std::complex<double> **delta_v2_renorm,
                                         std::complex<double> **delta_v2_array_original, std::complex<double> ***v3_ref,
-                                        std::complex<double> ***v4_ref, const std::vector<double> &q0) const
+                                        const std::complex<double> *const *const *q4_q0,
+                                        const std::vector<double> &q0) const
 {
     using namespace Eigen;
+    using MatrixXcdRowMajor = Matrix<std::complex<double>, Dynamic, Dynamic, RowMajor>;
 
     int ik;
-    int is1, is2, js1, js2;
+    int is1, is2;
     unsigned int knum, knum_interpolate;
     const auto nk_scph = kmesh_dense->nk;
     const auto nk_interpolate = kmesh_coarse->nk;
     const auto factor = 4.0 * nk_scph;
     const auto factor2 = 4.0 * nk_scph * 0.5;
-
-    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     const auto ns = dynamical->neval;
     const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
@@ -1285,24 +1429,25 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic, c
     MatrixXcd evec_tmp(ns, ns);
     dymat_q.resize(ns, ns, nk_interpolate);
 
+    VectorXcd q0c(ns);
+    for (is1 = 0; is1 < ns; is1++) {
+        q0c(is1) = std::complex<double>(q0[is1], 0.0);
+    }
+
     for (ik = 0; ik < nk_irred_interpolate; ik++) {
 
         knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
         knum = kmap_coarse_to_dense[knum_interpolate];
 
         // calculate renormalization
+        // cubic: t[is2*ns+is1] = sum_js1 v3[knum][js1][is2,is1] q0[js1]  (one GEMV V3^T q0)
+        const VectorXcd t = Map<const MatrixXcdRowMajor>(v3_ref[knum][0], ns, ns * ns).transpose() * q0c;
         for (is1 = 0; is1 < ns; is1++) {
             for (is2 = 0; is2 < ns; is2++) {
-                Dymat(is1, is2) = complex_zero;
-                for (js1 = 0; js1 < ns; js1++) {
-                    // cubic reormalization
-                    Dymat(is1, is2) += factor * v3_ref[knum][js1][is2 * ns + is1] * q0[js1];
-                    // quartic renormalization
-                    for (js2 = 0; js2 < ns; js2++) {
-                        Dymat(is1, is2) +=
-                            factor2 * v4_ref[ik * nk_scph][is1 * ns + is2][js1 * ns + js2] * q0[js1] * q0[js2];
-                    }
-                }
+                Dymat(is1, is2) = factor * t(is2 * ns + is1);
+                // quartic renormalization sum_{js1,js2} v4[ik][is1,is2][js1,js2] q0[js1] q0[js2],
+                // precomputed in q4_q0 (q0_contraction.h)
+                Dymat(is1, is2) += factor2 * q4_q0[ik][is1][is2];
             }
         }
 
@@ -1356,38 +1501,11 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic, c
     dymat_q.clear();
 }
 
-void Relaxation::renormalize_v3_from_q0(const KpointMeshUniform *kmesh_dense, const KpointMeshUniform *kmesh_coarse,
-                                        std::complex<double> ***v3_renorm, std::complex<double> ***v3_ref,
-                                        std::complex<double> ***v4_ref, const std::vector<double> &q0) const
-{
-    const auto ns = dynamical->neval;
-    const auto ik_irred0 = kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig;
-    const auto nk_scph = kmesh_dense->nk;
-
-    const auto ns2 = ns * ns;
-    const auto ns3 = ns * ns2;
-    const auto nkns3 = nk_scph * ns3;
-
-    unsigned int ik, is1, is2, is3, js;
-
-#pragma omp parallel for private(ik, is1, is2, is3, js)
-    for (int iks = 0; iks < nkns3; ++iks) {
-        ik = iks / ns3;
-        is1 = (iks % ns3) / ns2;
-        is2 = (iks % ns2) / ns;
-        is3 = iks % ns;
-        v3_renorm[ik][is1][is2 * ns + is3] = v3_ref[ik][is1][is2 * ns + is3];
-        for (js = 0; js < ns; js++) {
-            v3_renorm[ik][is1][is2 * ns + is3] +=
-                v4_ref[ik_irred0 * nk_scph + ik][js * ns + is1][is2 * ns + is3] * q0[js];
-        }
-    }
-}
-
 void Relaxation::renormalize_v0_from_q0(double **omega2_harmonic, const KpointMeshUniform *kmesh_dense,
                                         double &v0_renorm, double v0_ref, std::complex<double> *v1_ref,
                                         std::complex<double> **delta_v2_array_original, std::complex<double> ***v3_ref,
-                                        std::complex<double> ***v4_ref, const std::vector<double> &q0) const
+                                        const std::complex<double> *const *q4_gamma,
+                                        const std::vector<double> &q0) const
 {
     int is1, is2;
     const auto ns = dynamical->neval;
@@ -1408,16 +1526,24 @@ void Relaxation::renormalize_v0_from_q0(double **omega2_harmonic, const KpointMe
             v0_renorm_tmp += factor2 * delta_v2_array_original[0][is1 * ns + is2] * q0[is1] * q0[is2];
         }
     }
-    // renormalize from the cubic, quartic IFC
+    // renormalize from the cubic IFC: sum_{is1,is2,is3} v3[Gamma][is1][is2,is3] q0 q0 q0 = q0^T (V3 w)
+    {
+        using MatrixXcdRowMajor = Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+        Eigen::VectorXcd q0c(ns), w(ns * ns);
+        for (is1 = 0; is1 < ns; is1++) {
+            q0c(is1) = std::complex<double>(q0[is1], 0.0);
+            for (is2 = 0; is2 < ns; is2++) {
+                w(is1 * ns + is2) = std::complex<double>(q0[is1] * q0[is2], 0.0);
+            }
+        }
+        const Eigen::VectorXcd v3w = Eigen::Map<const MatrixXcdRowMajor>(v3_ref[0][0], ns, ns * ns) * w;
+        v0_renorm_tmp += factor3 * q0c.dot(v3w);
+    }
+    // renormalize from the quartic IFC: sum_{is3,is4} v4[Gamma][is2,is1][is3,is4] q0[is3] q0[is4] = q4_gamma[is2][is1]
+    // (q0_contraction.h)
     for (is1 = 0; is1 < ns; is1++) {
         for (is2 = 0; is2 < ns; is2++) {
-            for (int is3 = 0; is3 < ns; is3++) {
-                v0_renorm_tmp += factor3 * v3_ref[0][is1][is2 * ns + is3] * q0[is1] * q0[is2] * q0[is3];
-                for (int is4 = 0; is4 < ns; is4++) {
-                    v0_renorm_tmp +=
-                        factor4 * v4_ref[0][is2 * ns + is1][is3 * ns + is4] * q0[is1] * q0[is2] * q0[is3] * q0[is4];
-                }
-            }
+            v0_renorm_tmp += factor4 * q4_gamma[is2][is1] * q0[is1] * q0[is2];
         }
     }
 

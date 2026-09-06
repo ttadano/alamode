@@ -447,11 +447,6 @@ void Fcs_phonon::parse_fcs_from_h5(const std::string &fname_fcs, const int order
     using namespace H5Easy;
     const File file(fname_fcs, File::ReadOnly);
 
-    Eigen::MatrixXi atom_indices, atom_indices_super, coord_indices;
-    Eigen::MatrixXd shift_vectors;
-    Eigen::ArrayXd fcs_values;
-    std::string unit_shift, unit_fc;
-
     // FC2_TEMPERATURE: pick one temperature row of the renormalized FC2
     // stored in an SCPH/QHA state file instead of the base values. When
     // DFC2FILE is given, FC2_TEMPERATURE refers to that correction file
@@ -501,6 +496,17 @@ void Fcs_phonon::parse_fcs_from_h5(const std::string &fname_fcs, const int order
                       << " K : loading the renormalized FC2 at this temperature from " << fname_fcs << "\n  ";
     }
 
+    parse_fcs_from_h5(file, "", order, fcs_out, temperature_index);
+}
+
+void Fcs_phonon::parse_fcs_from_h5(const HighFive::File &file, const std::string &group_prefix, const int order,
+                                   std::vector<FcsArrayWithCell> &fcs_out, const int temperature_index) const
+{
+    Eigen::MatrixXi atom_indices, atom_indices_super, coord_indices;
+    Eigen::MatrixXd shift_vectors;
+    Eigen::ArrayXd fcs_values;
+    std::string unit_shift, unit_fc;
+
     get_force_constants_from_h5(file,
                                 order,
                                 atom_indices,
@@ -510,15 +516,16 @@ void Fcs_phonon::parse_fcs_from_h5(const std::string &fname_fcs, const int order
                                 fcs_values,
                                 &unit_shift,
                                 &unit_fc,
-                                temperature_index);
+                                temperature_index,
+                                group_prefix);
 
     // The helper already converted the data; report only when the stored unit
     // differs from the internal one to keep the common case quiet.
     const std::string unit_fc_internal = "Ry/bohr^" + std::to_string(order + 2);
     if (!unit_fc.empty() && unit_fc != unit_fc_internal) {
         if (writes->getVerbosity() > 0)
-            std::cout << "\n  " << fname_fcs << " [Order " << order + 2 << "]: stored unit " << unit_fc
-                      << " -> converted to " << unit_fc_internal << '\n';
+            std::cout << "\n  " << file.getName() << group_prefix << " [Order " << order + 2 << "]: stored unit "
+                      << unit_fc << " -> converted to " << unit_fc_internal << '\n';
     }
 
     const auto nentries = fcs_values.size();

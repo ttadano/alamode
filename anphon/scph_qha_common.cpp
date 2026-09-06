@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <iostream>
 #include <numeric>
+#include <sstream>
 #include <vector>
 #include "constants.h"
 #include "dielec.h"
@@ -22,6 +23,7 @@
 #include "phonon_dos.h"
 #include "relaxation.h"
 #include "thermodynamics.h"
+#include "timer.h"
 #include "write_phonons.h"
 
 using namespace PHON_NS;
@@ -988,6 +990,18 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
     }
 }
 
+void ScphQhaCommon::print_stage_time(const std::string &label, const double t_start) const
+{
+    if (mympi->my_rank != 0 || writes->getVerbosity() < 2) {
+        return;
+    }
+    // format in a local stream so that the precision does not leak into std::cout
+    std::ostringstream line;
+    line << "  [timer] " << std::left << std::setw(40) << label << std::right << std::fixed << std::setprecision(3)
+         << timer->elapsed() - t_start << " sec.\n";
+    std::cout << line.str();
+}
+
 void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
 {
     auto &q0 = ws.structure_state.q0;
@@ -998,6 +1012,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
     relaxation->calculate_eta_tensor(eta_tensor, u_tensor);
 
     // calculate IFCs under strain
+    auto time_stage = timer->elapsed();
     relaxation->renormalize_v0_from_umn(ws.v0_with_umn,
                                         ws.v0_ref,
                                         eta_tensor,
@@ -1020,21 +1035,31 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                         ws.v3_ref,
                                         *ws.del_v_strain,
                                         u_tensor);
+    print_stage_time("strain renormalization v0..v3", time_stage);
 
     // Renormalize the IFCs by the internal displacement q0 (exact Taylor
     // recentering of the quartic PES). The strain-renormalized v1..v3
-    // (_with_umn) enter here; v4 enters through ws.v4_for_renorm because its
+    // (_with_umn) enter here; v4 enters unrenormalized (the row-distributed
+    // reference V4 of v4_service) because its
     // strain renormalization would require d(v4)/du IFC data, which
     // del_v_strain does not include (it stops at d(v3)/du) -- within this
     // truncation the strain-renormalized v4 equals the reference v4.
+    //
+    // v4 is swept once: the sweep writes v3_renorm and the quartic contraction
+    // q4_q0 that the v1, v2 and v0 renormalizations consume (q0_contraction.h).
+    const auto ik_gamma_irred = static_cast<std::size_t>(kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig);
+    const auto time_sweep_start = timer->elapsed();
+    v4_service->q0_sweep(q0.data(), ws.v3_with_umn, ws.v3_renorm, ws.q4_q0);
+    print_stage_time("q0 renormalization: sweep over V4", time_sweep_start);
+    time_stage = timer->elapsed();
+
     relaxation->renormalize_v1_from_q0(omega2_harmonic,
-                                       kmesh_coarse.get(),
                                        kmesh_dense.get(),
                                        ws.v1_renorm,
                                        ws.v1_with_umn,
                                        ws.delta_v2_with_umn,
                                        ws.v3_with_umn,
-                                       ws.v4_for_renorm,
+                                       ws.q4_q0[ik_gamma_irred],
                                        q0);
     relaxation->renormalize_v2_from_q0(evec_harmonic,
                                        kmesh_coarse.get(),
@@ -1044,13 +1069,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                        ws.delta_v2_renorm,
                                        ws.delta_v2_with_umn,
                                        ws.v3_with_umn,
-                                       ws.v4_for_renorm,
-                                       q0);
-    relaxation->renormalize_v3_from_q0(kmesh_dense.get(),
-                                       kmesh_coarse.get(),
-                                       ws.v3_renorm,
-                                       ws.v3_with_umn,
-                                       ws.v4_for_renorm,
+                                       ws.q4_q0,
                                        q0);
     relaxation->renormalize_v0_from_q0(omega2_harmonic,
                                        kmesh_dense.get(),
@@ -1059,8 +1078,10 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                        ws.v1_with_umn,
                                        ws.delta_v2_with_umn,
                                        ws.v3_with_umn,
-                                       ws.v4_for_renorm,
+                                       ws.q4_q0[ik_gamma_irred],
                                        q0);
+    print_stage_time("q0 renormalization v0, v1, v2", time_stage);
+    time_stage = timer->elapsed();
 
     // calculate PES gradient by strain
     if (ws.relax_mode == RelaxationStrMode::CoordinatesOnly) {
@@ -1079,6 +1100,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                         ws.pvcell,
                                         kmesh_dense.get());
     }
+    print_stage_time("strain gradient of the PES", time_stage);
 }
 
 void ScphQhaCommon::print_initial_structure(const RelaxationStructureState &state,
@@ -1116,6 +1138,71 @@ void ScphQhaCommon::print_initial_structure(const RelaxationStructureState &stat
     }
 }
 
+
+void ScphQhaCommon::build_v4_service(const bool full_tensor, const bool offdiag_fmat)
+{
+    const auto ns = static_cast<std::size_t>(dynamical->neval);
+    const auto nk = static_cast<std::size_t>(kmesh_dense->nk);
+    const auto nk_irred = static_cast<std::size_t>(kmesh_coarse->nk_irred);
+    const auto ik_gamma_irred = static_cast<std::size_t>(kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig);
+    const auto jk_gamma_dense = static_cast<std::size_t>(ik_gamma_dense);
+    const auto nk2_prod = nk_irred * nk;
+    const auto nprocs = static_cast<std::size_t>(mympi->nprocs);
+
+    // The band-parallel builder computes every element in units of ns rows and
+    // distributes with the weighted unit partition; the k-point builder computes
+    // whole slices (two ns^2 x ns^2 scratch arrays) and distributes slices. The
+    // latter cannot distribute when there are fewer slices than ranks, and its
+    // scratch dwarfs the local rows when there are few slices per rank.
+    // With a single process the user's IALGO is kept as is (the k-point builder's
+    // 2 ns^4 scratch then costs up to 3x the V4 size for a Gamma-only mesh; IALGO = 1
+    // avoids it), so that single-process results stay bitwise reproducible.
+    auto band = full_tensor && use_band_parallel_v4();
+    if (full_tensor && !band && nprocs > 1) {
+        const auto ns4 = static_cast<double>(ns) * ns * ns * ns;
+        const double scratch_kpoint = 2.0 * ns4;
+        const double local_rows = static_cast<double>(nk2_prod) * ns4 / static_cast<double>(nprocs);
+        if (nk2_prod < nprocs || scratch_kpoint > local_rows) {
+            band = true;
+            if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
+                std::cout << " V4 is distributed over " << nprocs << " MPI processes: the band-parallel builder"
+                          << " (IALGO = 1) is used so that the rows can be split evenly.\n";
+            }
+        }
+    }
+
+    v4_service = std::make_unique<V4Service>(mympi->my_rank, mympi->nprocs);
+    v4_service->setup(ns, nk, nk_irred, ik_gamma_irred, jk_gamma_dense, full_tensor, offdiag_fmat,
+                      band ? V4Service::Partition::Units : V4Service::Partition::Slices);
+
+    if (band) {
+        compute_V4_elements_mpi_over_band(v4_service->block(),
+                                          evec_harmonic,
+                                          selfenergy_offdiagonal,
+                                          kmesh_coarse.get(),
+                                          kmesh_dense.get(),
+                                          kmap_coarse_to_dense,
+                                          phase_factor.get(),
+                                          phi4_reciprocal);
+    } else {
+        compute_V4_elements_mpi_over_kpoint(v4_service->block(),
+                                            evec_harmonic,
+                                            selfenergy_offdiagonal,
+                                            full_tensor,
+                                            kmesh_coarse.get(),
+                                            kmesh_dense.get(),
+                                            kmap_coarse_to_dense,
+                                            phase_factor.get(),
+                                            phi4_reciprocal);
+    }
+
+    std::vector<unsigned int> knum_of_irred(nk_irred);
+    for (std::size_t ik = 0; ik < nk_irred; ++ik) {
+        knum_of_irred[ik] = kmap_coarse_to_dense[kmesh_coarse->kpoint_irred_all[ik][0].knum];
+    }
+    v4_service->finalize_build(knum_of_irred, writes->getVerbosity());
+}
+
 void ScphQhaCommon::setup_structural_opt_buffers(StructuralOptWorkspace &ws)
 {
     const auto nk = kmesh_dense->nk;
@@ -1133,6 +1220,7 @@ void ScphQhaCommon::setup_structural_opt_buffers(StructuralOptWorkspace &ws)
     ws.structure_state.resize(ns);
 
     ws.del_v0_del_umn_renorm.resize(9);
+    ws.q4_q0.resize(nk_irred_interpolate, ns, ns);
 
     // assume that the atomic forces are zero at the initial structure
     for (auto is = 0; is < ns; is++) {
@@ -1162,33 +1250,12 @@ void ScphQhaCommon::setup_structural_opt_buffers(StructuralOptWorkspace &ws)
                                      mindist_list,
                                      phase_factor.get());
 
-    ws.v4_ref.resize(nk_irred_interpolate * nk, ns * ns, ns * ns);
-
     // initialize optimizer
     relaxation->create_optimizer(ns);
 
-    // Compute matrix elements of the 4-phonon interaction.
-    // This operation is the most expensive part of the calculation.
-    if (selfenergy_offdiagonal && use_band_parallel_v4()) {
-        compute_V4_elements_mpi_over_band(ws.v4_ref,
-                                          evec_harmonic,
-                                          selfenergy_offdiagonal,
-                                          kmesh_coarse.get(),
-                                          kmesh_dense.get(),
-                                          kmap_coarse_to_dense,
-                                          phase_factor.get(),
-                                          phi4_reciprocal);
-    } else {
-        compute_V4_elements_mpi_over_kpoint(ws.v4_ref,
-                                            evec_harmonic,
-                                            selfenergy_offdiagonal,
-                                            ws.relax_mode != RelaxationStrMode::None,
-                                            kmesh_coarse.get(),
-                                            kmesh_dense.get(),
-                                            kmap_coarse_to_dense,
-                                            phase_factor.get(),
-                                            phi4_reciprocal);
-    }
+    // Compute matrix elements of the 4-phonon interaction (row-distributed over the
+    // MPI ranks). This operation is the most expensive part of the calculation.
+    build_v4_service(true, selfenergy_offdiagonal);
 
     ws.v3_ref.resize(nk, ns, ns * ns);
     ws.v3_renorm.resize(nk, ns, ns * ns);

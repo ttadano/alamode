@@ -57,7 +57,7 @@ def test_harmonic_coupling(cu_supercell):
     rows = read_strain_harmonic_in(fname)
     assert [r[0] for r in rows] == ["xx", "xx", "yz", "yz"]  # strain_000 not listed
     assert os.path.exists(os.path.join(work, "results", "strain_000.xml"))
-    assert any("FC2 vs" in l and "max|dPhi2|" in l for l in logs)
+    assert any("FC2 vs" in ln and "max|dPhi2|" in ln for ln in logs)
     st = fcsorder.fc2_difference(
         os.path.join(work, "results", "strain_000.xml"), ref_xml
     )
@@ -73,6 +73,25 @@ def test_harmonic_coupling(cu_supercell):
         work, fcs=ref_h5, fcs_format="h5", results_dir="results_h5", log=QUIET
     )
     assert all(r[3].endswith(".h5") for r in read_strain_harmonic_in(fname))
+    # the strain-coupling container: h5 entries embedded, checked against the reference
+    import h5py
+    from strainkit import strainfile as sf
+
+    cont = os.path.join(root, "cu.strain.h5")
+    with pytest.raises(ValueError, match="fcs-format h5"):
+        wi.collect(work, fcs=ref_h5, fcs_format="xml", results_dir="results_x", strain_file=cont, log=QUIET)
+    wi.collect(work, fcs=ref_h5, fcs_format="h5", results_dir="results_h5c", strain_file=cont, log=QUIET)
+    with h5py.File(cont, "r") as f:
+        rows, entries = sf.read_strain_harmonic(f)
+        assert [r[0] for r in rows] == ["xx", "xx", "yz", "yz"] and len(entries) == 4
+        assert sf.read_cell_group(f["ReferenceCell"]).natom == 32
+        v_emb = f[entries[0]]["ForceConstants/Order2/force_constant_values"][()]
+        with h5py.File(os.path.join(work, "results_h5c", "strain_001.h5"), "r") as s:
+            assert np.array_equal(v_emb, s["ForceConstants/Order2/force_constant_values"][()])
+        assert f[entries[0]].attrs["mode"] == "xx" and f["StrainHarmonic"].attrs["central"] == 1
+    assert sf.check(cont, None, ref_h5, log=QUIET) == []
+    lines = sf.supported_settings(sf.summary(cont))
+    assert any("RENORM_3TO2ND = 2 : no; = 3 : yes" in ln for ln in lines)  # xx and yz only
     # a DFT output with displaced atoms is rejected
     import ase.io
 
@@ -122,8 +141,12 @@ def test_force_coupling(hcp_setup):
     fname = wi.collect(
         work, fcs=ref, anphon_cell=os.path.join(root, "cell_prim.extxyz"), log=QUIET
     )
-    blocks = read_strain_force_in(fname, 2)
+    blocks, ref_cell = read_strain_force_in(fname, 2)
     assert [b[0] for b in blocks] == ["xx", "yy", "zz", "yz", "zx", "xy"]
+    # the &reference_cell header names the anphon primitive cell (here the DFT cell)
+    assert ref_cell is not None and ref_cell.natom == 2
+    assert set(ref_cell.elements) == set(hcp.get_chemical_symbols())
+    assert np.isclose(abs(np.linalg.det(ref_cell.lavec)), hcp.get_volume())
     fxx = blocks[0][3]
     assert np.abs(fxx).max() > 1e-3 and np.allclose(
         fxx[0], -fxx[1]
@@ -137,11 +160,39 @@ def test_force_coupling(hcp_setup):
         results_dir="results_211",
         log=QUIET,
     )
-    b4 = read_strain_force_in(fname, 4)
+    b4, ref4 = read_strain_force_in(fname)  # natmin from the header
+    assert ref4.natom == 4 and np.isclose(
+        abs(np.linalg.det(ref4.lavec)), 2 * hcp.get_volume()
+    )
     assert np.allclose(b4[0][3][:2], fxx) and np.allclose(b4[0][3][2:], fxx)
-    # without --fcs: template order
+    # without --fcs: template order, and no header (the anphon cell is unknown)
     fname = wi.collect(work, results_dir="results_nofcs", log=QUIET)
-    assert np.allclose(read_strain_force_in(fname, 2)[0][3], fxx)
+    b_nofcs, ref_nofcs = read_strain_force_in(fname, 2)
+    assert ref_nofcs is None and np.allclose(b_nofcs[0][3], fxx)
+    # the strain-coupling container: the primitive cell first, then the tiled
+    # 2x1x1 cell updates the same file (nested cells are the same crystal)
+    import h5py
+    from strainkit import strainfile as sf
+
+    cont = os.path.join(root, "hcp.strain.h5")
+    cell_prim = os.path.join(root, "cell_prim.extxyz")
+    wi.collect(work, fcs=ref, anphon_cell=cell_prim, results_dir="results_c", strain_file=cont, log=QUIET)
+    with h5py.File(cont, "r") as f:
+        b, c = sf.read_strain_force(f)
+        assert c.natom == 2 and np.allclose(b[0][3], fxx) and f["StrainForce"].attrs["dft_code"] == "ase"
+    wi.collect(
+        work,
+        fcs=ref,
+        anphon_cell=os.path.join(root, "cell_211.extxyz"),
+        results_dir="results_211c",
+        strain_file=cont,
+        log=QUIET,
+    )
+    with h5py.File(cont, "r") as f:
+        b4, c4 = sf.read_strain_force(f)
+        assert c4.natom == 4 and sf.read_cell_group(f["ReferenceCell"]).natom == 2
+        assert np.allclose(b4[0][3][:2], fxx)
+    assert sf.check(cont, cell_prim, ref, log=QUIET) == []
 
 
 def test_force_coupling_permuted_template(hcp_setup):
@@ -161,10 +212,10 @@ def test_force_coupling_permuted_template(hcp_setup):
     with pytest.raises(ValueError, match="permutation"):
         wi.collect(work, fcs=ref, anphon_cell=cell, log=QUIET)
     fname = wi.collect(work, fcs=ref, anphon_cell=cell, reorder=True, log=QUIET)
-    ref_rows = read_strain_force_in(
+    ref_rows, _ = read_strain_force_in(
         os.path.join(root, "force", "results", "strain_force.in"), 2
     )
-    rows = read_strain_force_in(fname, 2)
+    rows, _ = read_strain_force_in(fname, 2)
     assert np.allclose(
         rows[0][3], ref_rows[0][3]
     )  # rows are in anphon order after --reorder

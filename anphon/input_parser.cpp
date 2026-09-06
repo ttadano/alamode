@@ -951,7 +951,7 @@ void InputParser::parse_relax_vars(PHON *phon)
         "GDIIS_CONTROL", "GDIIS_PLAIN",   "MIXBETA_COORD",    "ALPHA_STDECENT",    "CELL_CONV_TOL",
         "MIXBETA_CELL",  "SET_INIT_STR",  "COOLING_U0_INDEX", "COOLING_U0_THR",    "ADD_HESS_DIAG",
         "STAT_PRESSURE", "RENORM_3TO2ND", "RENORM_2TO1ST",    "RENORM_34TO1ST",    "STRAIN_IFC_DIR",
-        "ELASTIC_CONST"};
+        "ELASTIC_CONST", "STRAINFILE"};
 
     std::map<std::string, std::string> stropt_var_dict;
 
@@ -1015,7 +1015,7 @@ void InputParser::parse_relax_vars(PHON *phon)
     if (relax_vars.elastic_const < 1 || relax_vars.elastic_const > 2) {
         exit("parse_relax_vars",
              "ELASTIC_CONST must be 1 (analytic, computed from the force constants)\n"
-             " or 2 (read from elastic_constants.in).");
+             " or 2 (read from elastic_constants.in or /Elastic of STRAINFILE).");
     }
 
     assign_val(relax_vars.strain_IFC_dir, "STRAIN_IFC_DIR", stropt_var_dict);
@@ -1025,6 +1025,13 @@ void InputParser::parse_relax_vars(PHON *phon)
         relax_vars.strain_IFC_dir = relax_vars.strain_IFC_dir + "/";
     }
 
+    assign_val(relax_vars.strain_file, "STRAINFILE", stropt_var_dict);
+    if (!relax_vars.strain_file.empty() && !relax_vars.strain_IFC_dir.empty()) {
+        exit("parse_relax_vars",
+             "STRAINFILE and STRAIN_IFC_DIR are mutually exclusive: give either the container file\n"
+             " or the directory of the legacy text files.");
+    }
+
     input_setter->set_relax_vars(phon, relax_vars);
 
     stropt_var_dict.clear();
@@ -1032,7 +1039,7 @@ void InputParser::parse_relax_vars(PHON *phon)
 
 void InputParser::check_relax_vars() const
 {
-    std::fstream fin_test;
+    std::ifstream fin_test;
 
     // structural optimization
     if (relax_str != 0) {
@@ -1047,26 +1054,41 @@ void InputParser::check_relax_vars() const
 
         // relax the shape of the unit cell
         if (relax_str == 2 || relax_str == 3) {
-            // strain-force coupling
-            if (relax_vars.renorm_2to1st == 2) {
-                fin_test.open(relax_vars.strain_IFC_dir + "strain_force.in");
-
+            if (!relax_vars.strain_file.empty()) {
+                // The container is validated (schema, required groups, reference
+                // cell) on every rank in Relaxation::setup_relaxation; here only
+                // its existence is checked, keeping HDF5 out of the parser.
+                fin_test.open(relax_vars.strain_file);
                 if (!fin_test) {
-                    exit("check_relax_vars", "strain_force.in is required in STRAIN_IFC_DIR when RENORM_2TO1ST = 2.");
+                    const auto msg = "STRAINFILE " + relax_vars.strain_file + " does not exist or cannot be read.";
+                    exit("check_relax_vars", msg.c_str());
                 }
                 fin_test.close();
-            }
+            } else {
+                // strain-force coupling
+                if (relax_vars.renorm_2to1st == 2) {
+                    fin_test.open(relax_vars.strain_IFC_dir + "strain_force.in");
 
-            // strain-IFC coupling
-            if (relax_vars.renorm_3to2nd == 2 || relax_vars.renorm_3to2nd == 3) {
-                fin_test.open(relax_vars.strain_IFC_dir + "strain_harmonic.in");
-
-                if (!fin_test) {
-                    exit("check_relax_vars",
-                         "strain_harmonic.in is required in STRAIN_IFC_DIR when RENORM_3TO2ND >= 2.");
+                    if (!fin_test) {
+                        exit("check_relax_vars",
+                             "strain_force.in is required in STRAIN_IFC_DIR when RENORM_2TO1ST = 2\n"
+                             " (or give the strain-coupling container as STRAINFILE).");
+                    }
+                    fin_test.close();
                 }
 
-                fin_test.close();
+                // strain-IFC coupling
+                if (relax_vars.renorm_3to2nd == 2 || relax_vars.renorm_3to2nd == 3) {
+                    fin_test.open(relax_vars.strain_IFC_dir + "strain_harmonic.in");
+
+                    if (!fin_test) {
+                        exit("check_relax_vars",
+                             "strain_harmonic.in is required in STRAIN_IFC_DIR when RENORM_3TO2ND >= 2\n"
+                             " (or give the strain-coupling container as STRAINFILE).");
+                    }
+
+                    fin_test.close();
+                }
             }
         }
     }

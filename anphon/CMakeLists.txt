@@ -166,6 +166,9 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/dielec.cpp
             ${PROJECT_SOURCE_DIR}/diis.cpp
             ${PROJECT_SOURCE_DIR}/elastic_tensor.cpp
+            ${PROJECT_SOURCE_DIR}/strain_file_parsers.cpp
+            ${PROJECT_SOURCE_DIR}/strain_reference_cell.cpp
+        ${PROJECT_SOURCE_DIR}/strain_coupling_io.cpp
             ${PROJECT_SOURCE_DIR}/dynamical.cpp
             ${PROJECT_SOURCE_DIR}/ewald.cpp
             ${PROJECT_SOURCE_DIR}/fcs_phonon.cpp
@@ -198,6 +201,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/scph_qha_common.cpp
             ${PROJECT_SOURCE_DIR}/scph_result_io.cpp
             ${PROJECT_SOURCE_DIR}/scph_v3v4_elements.cpp
+            ${PROJECT_SOURCE_DIR}/v4_service.cpp
             ${PROJECT_SOURCE_DIR}/selfenergy.cpp
             ${PROJECT_SOURCE_DIR}/symmetry_core.cpp
             ${PROJECT_SOURCE_DIR}/system.cpp
@@ -214,6 +218,10 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/dielec.h
             ${PROJECT_SOURCE_DIR}/diis.h
             ${PROJECT_SOURCE_DIR}/elastic_tensor.h
+            ${PROJECT_SOURCE_DIR}/strain_file_parsers.h
+            ${PROJECT_SOURCE_DIR}/strain_reference_cell.h
+        ${PROJECT_SOURCE_DIR}/strain_coupling_types.h
+        ${PROJECT_SOURCE_DIR}/strain_coupling_io.h
             ${PROJECT_SOURCE_DIR}/dynamical.h
             ${PROJECT_SOURCE_DIR}/error.h
             ${PROJECT_SOURCE_DIR}/ewald.h
@@ -238,6 +246,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/phonon_velocity.h
             ${PROJECT_SOURCE_DIR}/pointers.h
             ${PROJECT_SOURCE_DIR}/optimizers.h
+            ${PROJECT_SOURCE_DIR}/q0_contraction.h
             ${PROJECT_SOURCE_DIR}/qha.h
             ${PROJECT_SOURCE_DIR}/relaxation.h
             ${PROJECT_SOURCE_DIR}/scph.h
@@ -245,6 +254,9 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/symmetry_core.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/thermodynamics.h
+            ${PROJECT_SOURCE_DIR}/v4_distributed.h
+            ${PROJECT_SOURCE_DIR}/v4_index_transform.h
+            ${PROJECT_SOURCE_DIR}/v4_service.h
             ${PROJECT_SOURCE_DIR}/timer.h
             ${PROJECT_SOURCE_DIR}/write_phonons.h
             ${PROJECT_SOURCE_DIR}/../include/progress_bar.h
@@ -321,4 +333,62 @@ if (BUILD_NDARRAY_TEST)
     add_executable(test_ndarray ${PROJECT_SOURCE_DIR}/../test/test_ndarray.cpp)
     target_compile_options(test_ndarray PRIVATE -Wall -Wextra)
     target_include_directories(test_ndarray PRIVATE ${PROJECT_SOURCE_DIR}/../include)
+endif ()
+
+# Unit test for the parsers of the strain-coupling inputs: the unit tokens of
+# C1_array.in / elastic_constants.in (strain_file_parsers.h) and the
+# &reference_cell header and atom mapping of strain_force.in
+# (strain_reference_cell.h). Standard library and Eigen only; no MPI.
+option(BUILD_STRAIN_PARSER_TEST "Build the strain input parser unit test" ON)
+if (BUILD_STRAIN_PARSER_TEST)
+    add_executable(test_strain_parsers ${PROJECT_SOURCE_DIR}/../test/test_strain_parsers.cpp
+                                       ${PROJECT_SOURCE_DIR}/strain_file_parsers.cpp
+                                       ${PROJECT_SOURCE_DIR}/strain_reference_cell.cpp)
+    target_compile_options(test_strain_parsers PRIVATE -Wall -Wextra)
+    target_include_directories(test_strain_parsers PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include
+                                                           ${eigen_includes})
+    if (eigen_target) # empty with the header-only fallback (-DEIGEN3_INCLUDE); the include dirs above suffice then
+        target_link_libraries(test_strain_parsers ${eigen_target})
+    endif ()
+endif ()
+
+# Unit test for the single sweep over the quartic coefficients that renormalizes
+# v0..v3 by the Gamma-point displacement q0 (q0_contraction.h), compared with the
+# naive loops it replaced. Header-only dependencies plus OpenMP; no MPI.
+option(BUILD_Q0_CONTRACTION_TEST "Build the q0 contraction unit test" ON)
+if (BUILD_Q0_CONTRACTION_TEST)
+    add_executable(test_q0_contraction ${PROJECT_SOURCE_DIR}/../test/test_q0_contraction.cpp)
+    target_compile_options(test_q0_contraction PRIVATE -Wall -Wextra $<$<CONFIG:Release>:-O3>)
+    target_include_directories(test_q0_contraction PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include)
+    target_link_libraries(test_q0_contraction ${openmplibrary})
+endif ()
+
+# Unit test for the row-distributed V4 layout (v4_distributed.h): unit and
+# slice partitions and the row-local SCP self-energy accumulation against the
+# naive formula. Header-only dependencies plus Eigen and OpenMP; no MPI.
+option(BUILD_V4_DISTRIBUTED_TEST "Build the distributed-V4 layout unit test" ON)
+if (BUILD_V4_DISTRIBUTED_TEST)
+    add_executable(test_v4_distributed ${PROJECT_SOURCE_DIR}/../test/test_v4_distributed.cpp)
+    target_compile_options(test_v4_distributed PRIVATE -Wall -Wextra $<$<CONFIG:Release>:-O3>)
+    target_include_directories(test_v4_distributed PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include
+                                                           ${eigen_includes})
+    target_link_libraries(test_v4_distributed ${openmplibrary})
+    if (eigen_target)
+        target_link_libraries(test_v4_distributed ${eigen_target})
+    endif ()
+endif ()
+
+# Unit test for the rotating index-transform GEMM shared by the V4 builders
+# (v4_index_transform.h) against the naive loops, for both column counts, a
+# complex prefactor and several OpenMP thread counts. Needs the BLAS zgemm.
+option(BUILD_V4_INDEX_TRANSFORM_TEST "Build the V4 index-transform unit test" ON)
+if (BUILD_V4_INDEX_TRANSFORM_TEST)
+    add_executable(test_v4_index_transform ${PROJECT_SOURCE_DIR}/../test/test_v4_index_transform.cpp)
+    target_compile_options(test_v4_index_transform PRIVATE -Wall -Wextra $<$<CONFIG:Release>:-O3>)
+    target_include_directories(test_v4_index_transform PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include
+                                                               ${eigen_includes})
+    target_link_libraries(test_v4_index_transform ${openmplibrary} ${lapack_target} ${blas_target})
+    if (eigen_target)
+        target_link_libraries(test_v4_index_transform ${eigen_target})
+    endif ()
 endif ()

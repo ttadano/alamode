@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from strainkit import workflow_elastic as we
+from strainkit import elasticfit as ef
 from strainkit.units import EV_PER_ANG3_TO_GPA
 from strainkit.writers import read_C1_array_in, read_elastic_constants_in
 
@@ -75,15 +76,27 @@ def test_stress_fit_matches_finite_differences(cu_workdir):
     assert summary["symmetrization_max_change_eV_per_A3"]["C2"] * GPA < 0.1
     assert fit.rank == 83
     # files
-    c2f, c3f = read_elastic_constants_in(
+    c2f, c3f, unit = read_elastic_constants_in(
         os.path.join(work, "results", "elastic_constants.in")
     )
-    assert c2f.shape == (9, 9) and c3f.shape == (9, 9, 9)
-    s0 = read_C1_array_in(os.path.join(work, "results", "C1_array.in"))
-    assert (
-        np.abs(s0).max() * 13.605693122994 / summary["volume_dft_A3"] * GPA < 0.05
-    )  # relaxed: sigma0 ~ 0
+    assert unit == "GPa" and c2f.shape == (9, 9) and c3f.shape == (9, 9, 9)
+    assert np.allclose(ef.voigt66(ef.from_9x9(c2f)), c2)  # file holds GPa
+    s0, unit_c1 = read_C1_array_in(os.path.join(work, "results", "C1_array.in"))
+    assert unit_c1 == "GPa" and np.abs(s0).max() < 0.05  # relaxed: sigma0 ~ 0 GPa
+    assert summary["file_unit"] == "GPa" and summary["volume_anphon_over_dft"] is None
     assert os.path.exists(os.path.join(work, "results", "elastic_fit.json"))
+    # the strain-coupling container holds the same constants (GPa, full precision)
+    h5py = pytest.importorskip("h5py")
+    from strainkit import strainfile as sf
+
+    cont = os.path.join(work, "cu.strain.h5")
+    we.fit(work, "stress", strain_file=cont, log=lambda *a: None)
+    with h5py.File(cont, "r") as f:
+        s, a2, a3, attrs = sf.read_elastic(f)
+        assert np.allclose(a2, c2f, rtol=1e-11) and np.allclose(a3, c3f, rtol=1e-11) and np.allclose(s, s0, atol=1e-11)
+        assert attrs["fit_mode"] == "stress" and attrs["rank"] == 83 and attrs["geometry_clamped"] == 1
+        assert sf.read_cell_group(f["ReferenceCell"]).natom == len(atoms)
+    assert sf.check(cont, log=lambda *a: None) == []
 
 
 def test_both_fit_and_show(cu_workdir):
@@ -93,12 +106,25 @@ def test_both_fit_and_show(cu_workdir):
     c2 = np.array(summary["C2_voigt_GPa"])
     c11, c12, c44 = _fd_constants(atoms)
     assert abs(c2[0, 0] - c11) < 1.0 and abs(c2[3, 3] - c44) < 1.0
-    text = we.show(
-        os.path.join(work, "results", "elastic_constants.in"),
-        volume_A3=summary["volume_dft_A3"],
-        c1_path=os.path.join(work, "results", "C1_array.in"),
-    )
+    f_ec = os.path.join(work, "results", "elastic_constants.in")
+    f_c1 = os.path.join(work, "results", "C1_array.in")
+    text = we.show(f_ec, c1_path=f_c1)  # GPa files need no volume
     assert "Second-order elastic constants" in text and f"{c2[0, 0]:.3f}" in text
+    assert we.show(f_ec, volume_A3=summary["volume_dft_A3"], c1_path=f_c1) == text
+    # legacy layout (V*C in Ry, no unit token): the volume is required
+    from strainkit.units import RYD_IN_EV
+    from strainkit.writers import write_elastic_constants_in
+
+    c2f, c3f, _ = read_elastic_constants_in(f_ec)
+    v = summary["volume_dft_A3"]
+    f_ry = os.path.join(work, "results", "elastic_constants_ry.in")
+    write_elastic_constants_in(
+        f_ry, c2f / GPA * v / RYD_IN_EV, c3f / GPA * v / RYD_IN_EV
+    )
+    with pytest.raises(ValueError, match="volume"):
+        we.show(f_ry)
+    text_ry = we.show(f_ry, volume_A3=v)
+    assert text_ry.split("\n")[1:] == text.split("\n")[1 : len(text_ry.split("\n"))]
 
 
 def test_energy_fit_needs_full_set(cu_workdir):

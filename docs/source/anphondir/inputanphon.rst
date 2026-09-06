@@ -46,7 +46,8 @@ List of supported input variables
    :ref:`GDIIS_CONTROL <anphon_gdiis_control>`
    :ref:`GDIIS_PLAIN <anphon_gdiis_plain>`, :ref:`GRADIENT_CONV_TOL <anphon_gradient_conv_tol>`, :ref:`MAX_STR_ITER <anphon_max_str_iter>`, :ref:`MIXBETA_CELL <anphon_mixbeta_cell>`
    :ref:`MIXBETA_COORD <anphon_mixbeta_coord>`, :ref:`RELAX_ALGO <anphon_relax_algo>`, :ref:`RENORM_2TO1ST <anphon_renorm_2to1st>`, :ref:`RENORM_34TO1ST <anphon_renorm_34to1st>`
-   :ref:`RENORM_3TO2ND <anphon_renorm_3to2nd>`, :ref:`SET_INIT_STR <anphon_set_init_str>`, :ref:`STAT_PRESSURE <anphon_stat_pressure>`, :ref:`STRAIN_IFC_DIR <anphon_strain_ifc_dir>`
+   :ref:`RENORM_3TO2ND <anphon_renorm_3to2nd>`, :ref:`SET_INIT_STR <anphon_set_init_str>`, :ref:`STAT_PRESSURE <anphon_stat_pressure>`, :ref:`STRAINFILE <anphon_strainfile>`
+   :ref:`STRAIN_IFC_DIR <anphon_strain_ifc_dir>`
    **&analysis**
    :ref:`ANIME <anphon_anime>`, :ref:`ANIME_CELLSIZE <anphon_anime_cellsize>`, :ref:`ANIME_FORMAT <anphon_anime_format>`, :ref:`ANIME_FRAMES <anphon_anime_frames>`
    :ref:`DIELEC <anphon_dielec>`, :ref:`DOS <anphon_dos>`, :ref:`FC2_EWALD <anphon_fc2_ewald>`, :ref:`GRUNEISEN <anphon_gruneisen>`
@@ -1061,7 +1062,7 @@ Description of input variables
 
  === ==============================================================
   1   Computed from the force constants.
-  2   Read from the file ``elastic_constants.in``.
+  2   Read from ``/Elastic`` of ``STRAINFILE`` (or the file ``elastic_constants.in``).
  === ==============================================================
 
  :Default: 2
@@ -1076,8 +1077,8 @@ Description of input variables
   force constants following Wallace's formulation; the file ``elastic_constants.in`` is not needed.
   The clamped-ion (not relaxed-ion) constants are used because the internal coordinates are
   optimized explicitly. The first-order coefficients (the residual stress of the reference
-  structure) are not contained in the force constants and are still read from ``C1_array.in``
-  when the file exists (set to zero otherwise).
+  structure) are not contained in the force constants and are still taken from
+  ``/Elastic/stress`` of ``STRAINFILE`` or from ``C1_array.in`` when present (set to zero otherwise).
 
   Note that the accuracy of ``ELASTIC_CONST = 1`` is limited by the range and the rotational
   invariance of the fitted force constants; comparing the values printed in the log against
@@ -1090,24 +1091,63 @@ Description of input variables
   recommended for polar materials. The third-order elastic constants remain short-range because
   the strain derivatives of the Born charges are not contained in the force constants.
   This option is used only when ``RELAX_STR = 2, 3``.
-  With ``ELASTIC_CONST = 2``, ``elastic_constants.in`` (and ``C1_array.in``) can be generated from DFT
-  calculations of strained cells with the ``tools/elastic.py`` script, see :ref:`this page <label_strain_tools>`.
+  With ``ELASTIC_CONST = 2``, the constants are generated from DFT calculations of strained cells
+  with the ``tools/elastic.py`` script (see :ref:`this page <label_strain_tools>`) and read from the
+  ``/Elastic`` group of the ``STRAINFILE`` container or, on the legacy route, from
+  ``elastic_constants.in`` (and ``C1_array.in``). The text files hold the constants in GPa when their section labels carry the unit token
+  (``SOEC GPa``, ``TOEC GPa``, ``C1 GPa``); anphon multiplies them by the volume of its
+  primitive cell, so the same files serve any nested ``&cell`` of the same reference structure
+  (the values are not transformed between Cartesian frames). Files without the unit token (the
+  legacy layout) or with an explicit ``Ry`` token hold :math:`V C` and :math:`V \sigma` in Ry
+  for one specific cell, which anphon cannot check: a warning is printed when such a file is
+  used together with a user-defined ``&cell``.
+
+````
+
+.. _anphon_strainfile:
+
+* STRAINFILE-tag: The strain-coupling container.
+
+ :Default: None
+ :Type: String
+
+ :Description: The HDF5 container (schema ``alamode:strain_coupling``) holding every
+   input of the cell relaxation that anphon cannot compute from the force constants:
+   the reference stress and the elastic constants (``/Elastic``, used with
+   ``ELASTIC_CONST = 2``; the stress also with ``ELASTIC_CONST = 1``), the strain–force
+   coupling (``/StrainForce``, ``RENORM_2TO1ST = 2``) and the strain–harmonic-IFC
+   coupling with the force constants of the strained supercells embedded
+   (``/StrainHarmonic``, ``RENORM_3TO2ND = 2, 3``). It is produced by ``elastic.py fit`` and
+   ``strainifc.py collect`` with ``--strain-file``, or from existing text files with
+   ``strainfile.py pack``; see :ref:`this page <label_strain_container>`. anphon verifies the
+   schema, the presence of the groups its settings need (a missing one is reported together
+   with the command that adds it), the units, the reference structure against the ``&cell``
+   field (a nested super- or sub-cell is accepted, the rows of ``/StrainForce`` being tiled or
+   averaged accordingly), and every strained supercell against the supercell of the harmonic
+   force constants. ``STRAINFILE`` and ``STRAIN_IFC_DIR`` are mutually exclusive. The file is
+   read on every MPI rank and must not be modified while anphon runs.
 
 ````
 
 .. _anphon_strain_ifc_dir:
 
-* STRAIN_IFC_DIR-tag: Directory name of the inputs of strain-IFC couplings.
+* STRAIN_IFC_DIR-tag: Directory name of the inputs of strain-IFC couplings (legacy text files).
 
  :Default: None
  :Type: String
 
- :Description: When ``RENORM_2TO1ST = 2`` or ``RENORM_3TO2ND = 2, 3``,
+ :Description: The legacy alternative to ``STRAINFILE`` (anphon prints a note when it is used;
+   ``strainfile.py pack`` converts the directory into a container). When ``RENORM_2TO1ST = 2`` or ``RENORM_3TO2ND = 2, 3``,
    the input files of the strain-IFC couplings (``strain_force.in``, ``strain_harmonic.in`` and the
    force-constant files it lists) must be given in this directory, as well as ``elastic_constants.in``
    when ``ELASTIC_CONST = 2``. Note that ``C1_array.in`` is read from the working directory of anphon,
    not from this directory. See :ref:`this page <label_strain_tools>` for the file formats and the
-   tools that generate them.
+   tools that generate them. When the ``&cell`` field selects a cell different from the one the
+   strain-force calculations were done for (for instance an enlarged cell chosen to condense a
+   zone-boundary instability), ``strain_force.in`` must either carry the ``&reference_cell``
+   header, so that its rows can be mapped onto the atoms of that cell, or already contain one
+   row per atom of that cell in its order; ``elastic_constants.in`` and ``C1_array.in`` in GPa
+   need no change.
 
 
 ````
