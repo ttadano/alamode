@@ -114,6 +114,7 @@ public:
                                           C2_array_renorm_,
                                           C2_array_ZSISA_);
 
+        auto time_stage = qha_.timer->elapsed();
         // Print the structure the QHA forces were evaluated at, together with the
         // stress used for the update (cell relaxation only) and the space group
         // detected by spglib.
@@ -122,6 +123,8 @@ public:
             structure_state,
             ws_.relax_mode == RelaxationStrMode::CoordinatesAndCell ? del_v0_del_umn_QHA_ : nullptr);
         std::cout << '\n';
+        qha_.print_stage_time("structure print + symmetry", time_stage);
+        time_stage = qha_.timer->elapsed();
 
         qha_.relaxation->update_cell_coordinate(structure_state,
                                                 v1_QHA_,
@@ -160,6 +163,7 @@ public:
                                               step_history,
                                               grad_norm,
                                               cell_grad_norm);
+        qha_.print_stage_time("optimizer, step files, gradients", time_stage);
 
         if (du0 < qha_.relaxation->coord_conv_tol && du_tensor < qha_.relaxation->cell_conv_tol) {
             std::cout << "\n\n du0 is smaller than COORD_CONV_TOL = " << std::scientific << std::setw(15)
@@ -655,6 +659,7 @@ void Qha::solve_qha_and_compute_forces(StructuralOptWorkspace &ws, const unsigne
     auto &u_tensor = ws.structure_state.u_tensor;
     auto &eta_tensor = ws.structure_state.eta_tensor;
 
+    auto time_stage = timer->elapsed();
     dynamical->compute_renormalized_harmonic_frequency(omega2_harm_renorm[iT],
                                                        evec_harm_renorm_tmp,
                                                        ws.delta_v2_renorm,
@@ -666,6 +671,8 @@ void Qha::solve_qha_and_compute_forces(StructuralOptWorkspace &ws, const unsigne
                                                        mat_transform_sym,
                                                        mindist_list,
                                                        writes->getVerbosity());
+    print_stage_time("renormalized harmonic frequencies", time_stage);
+    time_stage = timer->elapsed();
 
     dynamical->calc_new_dymat_with_evec(delta_harmonic_dymat_renormalize[iT],
                                         omega2_harm_renorm[iT],
@@ -676,6 +683,8 @@ void Qha::solve_qha_and_compute_forces(StructuralOptWorkspace &ws, const unsigne
     // which is required for postprocess.
 
     compute_cmat(cmat_convert, evec_harm_renorm_tmp);
+    print_stage_time("new dynamical matrix", time_stage);
+    time_stage = timer->elapsed();
 
     // The same functions (compute_anharmonic_v1_array, compute_anharmonic_del_v0_del_umn) as
     // in Scph::exec_scph_relax_cell_coordinate_main can be used for
@@ -688,6 +697,8 @@ void Qha::solve_qha_and_compute_forces(StructuralOptWorkspace &ws, const unsigne
                                 omega2_harm_renorm[iT],
                                 temp,
                                 kmesh_dense.get());
+    print_stage_time("QHA forces", time_stage);
+    time_stage = timer->elapsed();
 
     if (ws.relax_mode == RelaxationStrMode::CoordinatesOnly) {
         for (auto i1 = 0; i1 < 9; i1++) {
@@ -754,6 +765,7 @@ void Qha::solve_qha_and_compute_forces(StructuralOptWorkspace &ws, const unsigne
             }
         }
     }
+    print_stage_time("QHA stress (incl. ZSISA)", time_stage);
 }
 
 

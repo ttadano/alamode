@@ -991,6 +991,18 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
     }
 }
 
+void ScphQhaCommon::print_stage_time(const std::string &label, const double t_start) const
+{
+    if (mympi->my_rank != 0 || writes->getVerbosity() < 2) {
+        return;
+    }
+    // format in a local stream so that the precision does not leak into std::cout
+    std::ostringstream line;
+    line << "  [timer] " << std::left << std::setw(40) << label << std::right << std::fixed << std::setprecision(3)
+         << timer->elapsed() - t_start << " sec.\n";
+    std::cout << line.str();
+}
+
 void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
 {
     auto &q0 = ws.structure_state.q0;
@@ -1001,6 +1013,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
     relaxation->calculate_eta_tensor(eta_tensor, u_tensor);
 
     // calculate IFCs under strain
+    auto time_stage = timer->elapsed();
     relaxation->renormalize_v0_from_umn(ws.v0_with_umn,
                                         ws.v0_ref,
                                         eta_tensor,
@@ -1023,6 +1036,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                         ws.v3_ref,
                                         *ws.del_v_strain,
                                         u_tensor);
+    print_stage_time("strain renormalization v0..v3", time_stage);
 
     // Renormalize the IFCs by the internal displacement q0 (exact Taylor
     // recentering of the quartic PES). The strain-renormalized v1..v3
@@ -1046,13 +1060,8 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                         ws.v3_with_umn,
                                         ws.v3_renorm,
                                         ws.q4_q0);
-    if (mympi->my_rank == 0 && writes->getVerbosity() > 1) {
-        // format in a local stream so that the precision does not leak into std::cout
-        std::ostringstream line;
-        line << "  q0 renormalization: sweep over V4 took " << std::fixed << std::setprecision(3)
-             << timer->elapsed() - time_sweep_start << " sec.\n";
-        std::cout << line.str();
-    }
+    print_stage_time("q0 renormalization: sweep over V4", time_sweep_start);
+    time_stage = timer->elapsed();
 
     relaxation->renormalize_v1_from_q0(omega2_harmonic,
                                        kmesh_dense.get(),
@@ -1081,6 +1090,8 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                        ws.v3_with_umn,
                                        ws.q4_q0[ik_gamma_irred],
                                        q0);
+    print_stage_time("q0 renormalization v0, v1, v2", time_stage);
+    time_stage = timer->elapsed();
 
     // calculate PES gradient by strain
     if (ws.relax_mode == RelaxationStrMode::CoordinatesOnly) {
@@ -1099,6 +1110,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                         ws.pvcell,
                                         kmesh_dense.get());
     }
+    print_stage_time("strain gradient of the PES", time_stage);
 }
 
 void ScphQhaCommon::print_initial_structure(const RelaxationStructureState &state,

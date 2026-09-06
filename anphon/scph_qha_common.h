@@ -166,6 +166,10 @@ protected:
     // for the structure currently held in ws.structure_state.
     void renormalize_ifcs_at_structure(StructuralOptWorkspace &ws);
 
+    // Print the wall-clock time since t_start for one stage of a structure
+    // step (rank 0, VERBOSITY >= 2); t_start is a timer->elapsed() value.
+    void print_stage_time(const std::string &label, double t_start) const;
+
     // Allocate the workspace buffers common to both structural-optimization
     // drivers, compute the reference V3/V4 elements and the strain
     // derivatives of the IFCs, create the optimizer, and detect the optical

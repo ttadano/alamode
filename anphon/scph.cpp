@@ -17,6 +17,7 @@
 #include <complex>
 #include <cstdlib>
 #include <iomanip>
+#include <sstream>
 #include <iostream>
 #include <vector>
 #include "anharmonic_core.h"
@@ -142,6 +143,7 @@ public:
                                            v1_SCP_,
                                            del_v0_del_umn_SCP_);
 
+        auto time_stage = scph_.timer->elapsed();
         // Print the structure the SCP equation was solved at, together with the
         // SCP stress (cell relaxation only) and the space group detected by spglib.
         std::cout << "\n Structure at this step";
@@ -152,6 +154,8 @@ public:
             (ws_.relax_mode == RelaxationStrMode::CoordinatesAndCell && scp_converged_step) ? del_v0_del_umn_SCP_
                                                                                             : nullptr);
         std::cout << '\n';
+        scph_.print_stage_time("structure print + symmetry", time_stage);
+        time_stage = scph_.timer->elapsed();
 
         if (!scp_converged_step) {
             // The forces and stress from an unconverged SCP solution are unreliable.
@@ -241,6 +245,7 @@ public:
                                                step_history,
                                                grad_norm,
                                                cell_grad_norm);
+        scph_.print_stage_time("optimizer, step files, gradients", time_stage);
 
         const bool step_converged =
             (du0 < scph_.relaxation->coord_conv_tol && du_tensor < scph_.relaxation->cell_conv_tol);
@@ -1110,6 +1115,7 @@ void Scph::solve_scp_and_compute_forces(StructuralOptWorkspace &ws, const unsign
                                         std::complex<double> *v1_SCP, std::complex<double> *del_v0_del_umn_SCP)
 {
     // solve SCP equation
+    auto time_stage = timer->elapsed();
     if (imix_scph == 1) {
         compute_anharmonic_frequency_diis(ws.v4_ref,
                                           omega2_anharm[iT],
@@ -1134,6 +1140,9 @@ void Scph::solve_scp_and_compute_forces(StructuralOptWorkspace &ws, const unsign
                                      true);
     }
 
+    print_stage_time("SCP solve", time_stage);
+    time_stage = timer->elapsed();
+
     // SCP convergence of this structure step. converged_prev is reused as the
     // warm-start flag of the next SCP solve, so keep a snapshot here.
     scp_converged_step = converged_prev;
@@ -1145,6 +1154,9 @@ void Scph::solve_scp_and_compute_forces(StructuralOptWorkspace &ws, const unsign
                                         kmesh_coarse.get(),
                                         kmap_coarse_to_dense);
 
+    print_stage_time("new dynamical matrix", time_stage);
+    time_stage = timer->elapsed();
+
     // calculate SCP force
     compute_anharmonic_v1_array(v1_SCP,
                                 ws.v1_renorm,
@@ -1153,6 +1165,9 @@ void Scph::solve_scp_and_compute_forces(StructuralOptWorkspace &ws, const unsign
                                 omega2_anharm[iT],
                                 temp,
                                 kmesh_dense.get());
+
+    print_stage_time("SCP forces", time_stage);
+    time_stage = timer->elapsed();
 
     // calculate SCP stress tensor
     if (ws.relax_mode == RelaxationStrMode::CoordinatesOnly) {
@@ -1170,6 +1185,7 @@ void Scph::solve_scp_and_compute_forces(StructuralOptWorkspace &ws, const unsign
                                           temp,
                                           kmesh_dense.get());
     }
+    print_stage_time("SCP stress", time_stage);
 }
 
 
@@ -1634,6 +1650,8 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all, do
                                         std::complex<double> **delta_v2_renorm, const unsigned int verbosity,
                                         const bool compact_progress)
 {
+    const auto time_setup_start = timer->elapsed();
+
     // This is the main function of the SCPH equation.
     // The detailed algorithm can be found in PRB 92, 054301 (2015).
     // Eigen3 library is used for the compact notation of matrix-matrix products.
@@ -1723,7 +1741,11 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all, do
 
     int icount = 0;
 
+    print_stage_time("SCP solver setup", time_setup_start);
+
     // Main loop
+    const auto time_loop_start = timer->elapsed();
+    double time_fmat = 0.0;
     for (iloop = 0; iloop < maxiter; ++iloop) {
 
         // Compute Qmat and Dmat from current frequencies
@@ -1748,7 +1770,9 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all, do
             knum = kmap_coarse_to_dense[knum_interpolate];
 
             // Update Fmat with V4 contribution
+            const auto time_fmat_start = timer->elapsed();
             update_fmat_with_v4(Fmat0, v4_array_all, dmat_convert, offdiag, ik, Fmat);
+            time_fmat += timer->elapsed() - time_fmat_start;
 
             // Diagonalize and symmetrize
             diagonalize_and_symmetrize(Fmat,
@@ -1789,6 +1813,15 @@ void Scph::compute_anharmonic_frequency(std::complex<double> ***v4_array_all, do
         }
         diff_prev = diff;
     } // end loop iteration
+
+    if (verbosity > 1) {
+        const auto time_loop = timer->elapsed() - time_loop_start;
+        std::ostringstream line;
+        line << "  [timer] SCP iterations: " << std::min(iloop + 1, static_cast<int>(maxiter)) << ", V4 contraction "
+             << std::fixed << std::setprecision(3) << time_fmat << " sec, diagonalization/interpolation/mixing "
+             << time_loop - time_fmat << " sec.\n";
+        std::cout << line.str();
+    }
 
     if (std::sqrt(diff) < conv_tol) {
         if (verbosity > 0) {
@@ -1851,6 +1884,8 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
                                              const bool offdiag, std::complex<double> **delta_v2_renorm,
                                              const unsigned int verbosity, const bool compact_progress)
 {
+    const auto time_setup_start = timer->elapsed();
+
     // SCPH iteration accelerated by Pulay/Anderson (DIIS) mixing.
     //
     // The fixed-point variable is the full set of D matrices on the dense k mesh,
@@ -2005,7 +2040,11 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
     // first iterate of compute_anharmonic_frequency.
     compute_qmat_and_dmat(omega_now, T_in, cmat_convert, dmat_convert);
 
+    print_stage_time("SCP solver setup", time_setup_start);
+
     // Main loop
+    const auto time_loop_start = timer->elapsed();
+    double time_fmat = 0.0;
     for (iloop = 0; iloop < maxiter; ++iloop) {
 
         // Evaluate g(x_n): build F from the current D, diagonalize on the
@@ -2017,7 +2056,9 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
             const unsigned int knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
             knum = kmap_coarse_to_dense[knum_interpolate];
 
+            const auto time_fmat_start = timer->elapsed();
             update_fmat_with_v4(Fmat0, v4_array_all, dmat_convert, offdiag, ik, Fmat);
+            time_fmat += timer->elapsed() - time_fmat_start;
 
             diagonalize_and_symmetrize(Fmat,
                                        evec_initial,
@@ -2121,6 +2162,14 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
             }
         }
     } // end loop iteration
+
+    if (verbosity > 1) {
+        const auto time_loop = timer->elapsed() - time_loop_start;
+        std::ostringstream line;
+        line << "  [timer] SCP iterations: " << std::min(iloop + 1, static_cast<int>(maxiter)) << ", V4 contraction " << std::fixed << std::setprecision(3)
+             << time_fmat << " sec, diagonalization/interpolation/mixing " << time_loop - time_fmat << " sec.\n";
+        std::cout << line.str();
+    }
 
     if (scp_converged) {
         if (verbosity > 0) {
