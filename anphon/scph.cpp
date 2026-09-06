@@ -9,6 +9,7 @@
 */
 
 #include "scph.h"
+#include "dense_hermitian_eigen.h"
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include <algorithm>
@@ -43,6 +44,31 @@
 #include "write_phonons.h"
 
 using namespace PHON_NS;
+
+namespace
+{
+// Hermitian eigensolver for the SCPH iteration. Eigen's tridiagonal QR is the
+// faster choice for small matrices; LAPACK zheevd (threaded MKL/OpenBLAS) wins
+// from a few hundred modes on (n = 432: 0.07 s against 0.10 s single-threaded
+// with OpenBLAS, and MKL threads over the 64 cores of a node). Eigenvectors in
+// columns, eigenvalues ascending in both cases; the SCPH solver is invariant to
+// the eigenvector phases.
+constexpr int lapack_eigen_threshold = 256;
+
+void hermitian_eigen(const Eigen::MatrixXcd &mat, Eigen::VectorXd &eval, Eigen::MatrixXcd *evec)
+{
+    if (mat.rows() >= lapack_eigen_threshold) {
+        PHON_NS::solve_dense_hermitian_dc(mat, eval, evec);
+        return;
+    }
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> saes;
+    saes.compute(mat, evec ? Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly);
+    eval = saes.eigenvalues();
+    if (evec) {
+        *evec = saes.eigenvectors();
+    }
+}
+} // namespace
 
 Scph::Scph(PHON *phon) : ScphQhaCommon(phon)
 {
@@ -1409,9 +1435,9 @@ void Scph::diagonalize_and_symmetrize(const Eigen::MatrixXcd &Fmat, const std::v
     using namespace Eigen;
     const auto ns = dynamical->neval;
 
-    SelfAdjointEigenSolver<MatrixXcd> saes;
-    saes.compute(Fmat);
-    eval_tmp = saes.eigenvalues();
+    // Eigen for small matrices, LAPACK zheevd for large ones (hermitian_eigen)
+    MatrixXcd evec_fmat(ns, ns);
+    hermitian_eigen(Fmat, eval_tmp, &evec_fmat);
 
     for (unsigned int is = 0; is < ns; ++is) {
 
@@ -1460,7 +1486,7 @@ void Scph::diagonalize_and_symmetrize(const Eigen::MatrixXcd &Fmat, const std::v
     }
 
     // New eigenvector matrix E_{new}= E_{old} * C
-    const auto mat_tmp = evec_initial[knum] * saes.eigenvectors();
+    const auto mat_tmp = evec_initial[knum] * evec_fmat;
     MatrixXcd Dymat = mat_tmp * eval_tmp.asDiagonal() * mat_tmp.adjoint();
 
     symmetrize_dynamical_matrix(ik_irred, kmesh_coarse.get(), ns, mat_transform_sym, Dymat);
@@ -1971,6 +1997,16 @@ void Scph::compute_anharmonic_frequency_diis(double **omega2_out,
 
     auto is_positive_semidefinite = [&](const std::vector<MatrixXcd> &dmat) {
         bool ok = true;
+        if (nk == 1) {
+            // one matrix: no k parallelism, use the size-dependent solver (eigenvalues only)
+            VectorXd evals;
+            hermitian_eigen(dmat[0], evals, nullptr);
+            const double emax = evals.cwiseAbs().maxCoeff();
+            if (evals.minCoeff() < -psd_tol * std::max(emax, 1.0e-12)) {
+                ok = false;
+            }
+            return ok;
+        }
 #pragma omp parallel reduction(&& : ok)
         {
             SelfAdjointEigenSolver<MatrixXcd> saes_check;
