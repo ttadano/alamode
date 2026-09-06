@@ -254,6 +254,17 @@ protected:
     // the acoustic modes during the SCPH iteration.
     std::vector<bool> classify_acoustic_modes_from_cmat(const std::complex<double> *const *cmat_at_gamma) const;
 
+    // Occupation-weighted SCP mode matrix at dense k:
+    //   G(a,b) = sum_js C[a][js] f_js conj(C[b][js]),  C = cmat_at_k,
+    // with f_js the displacement-correlation factor of SCP mode js at T_in (zero for the
+    // Gamma acoustic modes, frequency floor eps8). Any Hermitian form
+    // sum_js f_js (C^T M conj(C))(js,js) or sum_js f_js (C^+ M C)(js,js) then reduces to
+    // sum_ab M(a,b) G(a,b) or sum_ab M(a,b) G(b,a): ns^2 per M instead of an ns^3 product.
+    // Returns the number of non-acoustic modes that hit the frequency floor; the
+    // optional is_acoustic_out receives the exclusion mask (empty away from Gamma).
+    int scp_occupation_matrix(int ik, const std::complex<double> *const *cmat_at_k, const double *omega2_at_k,
+                              double T_in, Eigen::MatrixXcd &G, std::vector<bool> *is_acoustic_out = nullptr) const;
+
     void zerofill_elements_acoustic_at_gamma(std::complex<double> ***v_elems, int fc_order, unsigned int nk_dense_in,
                                              unsigned int nk_irred_coarse_in) const;
 

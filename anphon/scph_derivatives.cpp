@@ -181,65 +181,85 @@ void ScphQhaCommon::calculate_del_v0_del_umn_renorm(std::complex<double> *del_v0
 }
 
 
+int ScphQhaCommon::scp_occupation_matrix(const int ik, const std::complex<double> *const *cmat_at_k,
+                                         const double *omega2_at_k, const double T_in, Eigen::MatrixXcd &G,
+                                         std::vector<bool> *is_acoustic_out) const
+{
+    using namespace Eigen;
+    const auto ns = dynamical->neval;
+
+    // The acoustic modes at Gamma are excluded by their eigenvector character
+    // (overlap with the harmonic acoustic subspace), not by frequency magnitude,
+    // so that a soft optical mode with a nearly zero SCP frequency keeps its
+    // contribution.
+    std::vector<bool> is_acoustic_now;
+    if (ik == ik_gamma_dense) {
+        is_acoustic_now = classify_acoustic_modes_from_cmat(cmat_at_k);
+    }
+    if (is_acoustic_out != nullptr) {
+        *is_acoustic_out = is_acoustic_now;
+    }
+
+    VectorXcd fvec(ns);
+    int count_zero = 0;
+    for (auto js = 0; js < ns; js++) {
+        if (ik == ik_gamma_dense && is_acoustic_now[js]) {
+            fvec(js) = 0.0;
+            continue;
+        }
+        auto omega1_tmp = std::sqrt(std::fabs(omega2_at_k[js]));
+        if (omega1_tmp < eps8) {
+            omega1_tmp = eps8;
+            count_zero++;
+        }
+        fvec(js) = std::complex<double>(thermodynamics->disp_corr_factor(omega1_tmp, T_in), 0.0);
+    }
+
+    MatrixXcd Cmat(ns, ns);
+    for (auto a = 0; a < ns; a++) {
+        for (auto js = 0; js < ns; js++) {
+            Cmat(a, js) = cmat_at_k[a][js];
+        }
+    }
+    G.noalias() = Cmat * fvec.asDiagonal() * Cmat.adjoint();
+    return count_zero;
+}
+
 void ScphQhaCommon::compute_anharmonic_v1_array(std::complex<double> *v1_SCP, std::complex<double> *v1_renorm,
                                                 std::complex<double> ***v3_renorm, std::complex<double> ***cmat_convert,
                                                 double **omega2_anharm_T, const double T_in,
                                                 const KpointMeshUniform *kmesh_dense_in)
 {
+    // v1_SCP[is] = v1_renorm[is] + sum_k sum_js f_js (C^T V3_is conj(C))(js,js)
+    //            = v1_renorm[is] + sum_k sum_ab V3_is[a][b] G_k(a,b)
+    // with V3_is[a][b] = v3_renorm[k][is][a*ns+b] and G_k = scp_occupation_matrix.
+    // (The former code formed the full C^T V3_is conj(C) product for every is and
+    // kept its diagonal: nk ns^4; the trace form is nk ns^3.)
     using namespace Eigen;
+    using MatrixXcdRowMajor = Matrix<std::complex<double>, Dynamic, Dynamic, RowMajor>;
 
-    int is;
-    std::complex<double> Qtmp;
     const auto ns = dynamical->neval;
     const auto nk_scph = kmesh_dense_in->nk;
 
-    MatrixXcd Cmat(ns, ns);
-    MatrixXcd v3mat_original_mode(ns, ns), v3mat_tmp(ns, ns);
-
     // get gradient of the BO surface
-    for (is = 0; is < ns; is++) {
+    for (auto is = 0; is < ns; is++) {
         v1_SCP[is] = v1_renorm[is];
     }
 
+    MatrixXcd G(ns, ns);
+
     // calculate SCP renormalization
-    for (is = 0; is < ns; is++) {
-        for (int ik = 0; ik < nk_scph; ik++) {
-            // unitary transform phi3 to SCP mode
-            for (int js1 = 0; js1 < ns; js1++) {
-                for (int js2 = 0; js2 < ns; js2++) {
-                    Cmat(js2, js1) = cmat_convert[ik][js1][js2]; // transpose
-                    v3mat_original_mode(js1, js2) = v3_renorm[ik][is][js1 * ns + js2];
-                }
-            }
-            v3mat_tmp = Cmat * v3mat_original_mode * Cmat.adjoint();
+    for (auto ik = 0; ik < nk_scph; ik++) {
+        const auto count_zero = scp_occupation_matrix(ik, cmat_convert[ik], omega2_anharm_T[ik], T_in, G);
+        if (count_zero != 0) {
+            std::cout << "Warning in compute_anharmonic_v1_array : ";
+            std::cout << count_zero << " non-acoustic zero frequencies are detected at ik = " << ik << ".\n\n";
+        }
 
-            // The acoustic modes at Gamma are excluded by their eigenvector character
-            // (overlap with the harmonic acoustic subspace), not by frequency magnitude,
-            // so that a soft optical mode with a nearly zero SCP frequency keeps its
-            // contribution.
-            std::vector<bool> is_acoustic_now;
-            if (ik == ik_gamma_dense) {
-                is_acoustic_now = classify_acoustic_modes_from_cmat(cmat_convert[ik]);
-            }
-
-            // update v1_SCP
-            int count_zero = 0;
-            for (int js = 0; js < ns; js++) {
-                if (ik == ik_gamma_dense && is_acoustic_now[js]) continue;
-                double omega1_tmp = std::sqrt(std::fabs(omega2_anharm_T[ik][js]));
-                if (omega1_tmp < eps8) {
-                    omega1_tmp = eps8;
-                    count_zero++;
-                }
-                const auto factor = thermodynamics->disp_corr_factor(omega1_tmp, T_in);
-                Qtmp = std::complex<double>(factor, 0.0);
-
-                v1_SCP[is] += v3mat_tmp(js, js) * Qtmp;
-            }
-            if (count_zero != 0) {
-                std::cout << "Warning in compute_anharmonic_v1_array : ";
-                std::cout << count_zero << " non-acoustic zero frequencies are detected at ik = " << ik << ".\n\n";
-            }
+#pragma omp parallel for
+        for (int is = 0; is < ns; is++) {
+            Map<const MatrixXcdRowMajor> V3(v3_renorm[ik][is], ns, ns);
+            v1_SCP[is] += V3.cwiseProduct(G).sum();
         }
     }
 }
@@ -252,85 +272,68 @@ void ScphQhaCommon::compute_anharmonic_del_v0_del_umn(std::complex<double> *del_
                                                       std::complex<double> ***cmat_convert, double **omega2_anharm_T,
                                                       const double T_in, const KpointMeshUniform *kmesh_dense_in)
 {
-
     using namespace Eigen;
+    using MatrixXcdRowMajor = Matrix<std::complex<double>, Dynamic, Dynamic, RowMajor>;
 
-    int nk = kmesh_dense_in->nk;
-    int ns = dynamical->neval;
-    double factor = 4.0 * static_cast<double>(nk);
-    double factor2 = 1.0 / factor;
-    std::vector<Eigen::MatrixXcd> del_v2_del_umn_renorm(9, Eigen::MatrixXcd::Zero(nk, ns * ns));
+    const int nk = kmesh_dense_in->nk;
+    const int ns = dynamical->neval;
+    const auto ns2 = static_cast<std::size_t>(ns) * ns;
+    const double factor = 4.0 * static_cast<double>(nk);
+    const double factor2 = 1.0 / factor;
 
-    int i1, i2;
-    int ik;
-    int is1, is2, is3, js, js1, js2;
-    double omega1_tmp;
-    std::complex<double> Qtmp;
+    // del_v2_del_umn_renorm[i1 * nk + ik](is1, is2): strain derivative of the harmonic IFCs
+    // renormalized by the strain (del2_v2) and by the displacement q0 (del_v3)
+    std::vector<MatrixXcdRowMajor> del_v2_del_umn_renorm(9 * nk, MatrixXcdRowMajor(ns, ns));
 
-    MatrixXcd Cmat(ns, ns);
-    MatrixXcd del_v2_strain_mat_original_mode(ns, ns), del_v2_strain_mat(ns, ns);
+    VectorXcd q0c(ns);
+    for (auto is = 0; is < ns; is++) {
+        q0c(is) = std::complex<double>(q0[is], 0.0);
+    }
 
-    // calculate del_v2_del_umn_renorm
-    for (i1 = 0; i1 < 9; i1++) {
-        for (ik = 0; ik < nk; ik++) {
-            for (is1 = 0; is1 < ns; is1++) {
-                for (is2 = 0; is2 < ns; is2++) {
-                    del_v2_del_umn_renorm[i1](ik, is1 * ns + is2) = del_v_strain.del_v2[i1](ik, is1 * ns + is2);
-                    // renormalization by strain
-                    for (i2 = 0; i2 < 9; i2++) {
-                        del_v2_del_umn_renorm[i1](ik, is1 * ns + is2) +=
-                            del_v_strain.del2_v2[i1 * 9 + i2](ik, is1 * ns + is2) * u_tensor[i2 / 3][i2 % 3];
-                    }
-                    // renormalization by displace
-                    for (is3 = 0; is3 < ns; is3++) {
-                        del_v2_del_umn_renorm[i1](ik, is1 * ns + is2) +=
-                            factor * del_v_strain.del_v3[i1][ik](is3, is2 * ns + is1) * q0[is3];
-                    }
-                }
+#pragma omp parallel for collapse(2)
+    for (int i1 = 0; i1 < 9; i1++) {
+        for (int ik = 0; ik < nk; ik++) {
+            auto &mat = del_v2_del_umn_renorm[i1 * nk + ik];
+            // the (is1, is2) rows of del_v2 / del2_v2 are contiguous in is1*ns+is2 order
+            Map<VectorXcd> flat(mat.data(), ns2);
+            flat = del_v_strain.del_v2[i1].row(ik).transpose();
+            // renormalization by strain
+            for (auto i2 = 0; i2 < 9; i2++) {
+                flat += u_tensor[i2 / 3][i2 % 3] * del_v_strain.del2_v2[i1 * 9 + i2].row(ik).transpose();
             }
+            // renormalization by displacement: sum_is3 del_v3[i1][ik](is3, is2*ns+is1) q0[is3],
+            // accumulated in the (is2, is1) order of del_v3 and added transposed
+            const VectorXcd acc = factor * (del_v_strain.del_v3[i1][ik].transpose() * q0c);
+            Map<const MatrixXcdRowMajor> acc_mat(acc.data(), ns, ns); // acc_mat(is2, is1)
+            mat += acc_mat.transpose();
         }
     }
 
     // potential energy term
-    for (i1 = 0; i1 < 9; i1++) {
+    for (auto i1 = 0; i1 < 9; i1++) {
         del_v0_del_umn_SCP[i1] = del_v0_del_umn_renorm[i1];
     }
 
-    // SCP renormalization
-    for (i1 = 0; i1 < 9; i1++) {
-        for (ik = 0; ik < nk; ik++) {
-            // unitary transform the derivative of harmonic IFCs to SCP mode
-            for (js1 = 0; js1 < ns; js1++) {
-                for (js2 = 0; js2 < ns; js2++) {
-                    Cmat(js1, js2) = cmat_convert[ik][js1][js2];
-                    del_v2_strain_mat_original_mode(js1, js2) = del_v2_del_umn_renorm[i1](ik, js1 * ns + js2);
-                }
+    // SCP renormalization: sum_js f_js (C^+ M C)(js,js) = sum_ab M(a,b) G(b,a)
+    // with M = del_v2_del_umn_renorm[i1 * nk + ik] and G = scp_occupation_matrix
+    // (the former code formed the full C^+ M C product for each of the 9 strain
+    // components and kept its diagonal).
+    MatrixXcd G(ns, ns);
+    std::vector<bool> is_acoustic_now;
+    for (auto ik = 0; ik < nk; ik++) {
+        scp_occupation_matrix(ik, cmat_convert[ik], omega2_anharm_T[ik], T_in, G, &is_acoustic_now);
+        for (auto js = 0; js < ns; js++) {
+            if (ik == ik_gamma_dense && is_acoustic_now[js]) {
+                continue;
             }
-            del_v2_strain_mat = Cmat.adjoint() * del_v2_strain_mat_original_mode * Cmat;
-
-            // Eigenvector-based exclusion of the Gamma acoustic modes (see
-            // compute_anharmonic_v1_array).
-            std::vector<bool> is_acoustic_now;
-            if (ik == ik_gamma_dense) {
-                is_acoustic_now = classify_acoustic_modes_from_cmat(cmat_convert[ik]);
+            if (omega2_anharm_T[ik][js] < 0.0 && std::sqrt(std::fabs(omega2_anharm_T[ik][js])) >= eps8) {
+                std::cout << "Warning in compute_anharmonic_del_v0_del_umn: squared SCP frequency is negative. ik = "
+                          << ik << '\n';
             }
-
-            // update del_v0_del_umn_SCP
-            for (js = 0; js < ns; js++) {
-                if (ik == ik_gamma_dense && is_acoustic_now[js]) continue;
-                omega1_tmp = std::sqrt(std::fabs(omega2_anharm_T[ik][js]));
-                if (omega1_tmp < eps8) {
-                    omega1_tmp = eps8;
-                } else if (omega2_anharm_T[ik][js] < 0.0) {
-                    std::cout
-                        << "Warning in compute_anharmonic_del_v0_del_umn: squared SCP frequency is negative. ik = "
-                        << ik << '\n';
-                }
-                const auto factor = thermodynamics->disp_corr_factor(omega1_tmp, T_in);
-                Qtmp = std::complex<double>(factor, 0.0);
-
-                del_v0_del_umn_SCP[i1] += factor2 * del_v2_strain_mat(js, js) * Qtmp;
-            }
+        }
+        const MatrixXcd GT = G.transpose();
+        for (auto i1 = 0; i1 < 9; i1++) {
+            del_v0_del_umn_SCP[i1] += factor2 * del_v2_del_umn_renorm[i1 * nk + ik].cwiseProduct(GT).sum();
         }
     }
 }
