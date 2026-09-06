@@ -2044,7 +2044,7 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
 
     // Main loop
     const auto time_loop_start = timer->elapsed();
-    double time_fmat = 0.0;
+    double time_fmat = 0.0, time_diag = 0.0, time_interp = 0.0, time_dmat = 0.0;
     for (iloop = 0; iloop < maxiter; ++iloop) {
 
         // Evaluate g(x_n): build F from the current D, diagonalize on the
@@ -2060,6 +2060,7 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
             update_fmat_with_v4(Fmat0, v4_array_all, dmat_convert, offdiag, ik, Fmat);
             time_fmat += timer->elapsed() - time_fmat_start;
 
+            const auto time_diag_start = timer->elapsed();
             diagonalize_and_symmetrize(Fmat,
                                        evec_initial,
                                        v4_array_all,
@@ -2073,8 +2074,10 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
                                        eval_tmp,
                                        dymat_q,
                                        &eval_repaired);
+            time_diag += timer->elapsed() - time_diag_start;
         }
 
+        const auto time_interp_start = timer->elapsed();
         interpolate_to_dense_mesh(dymat_q,
                                   dymat_q_HA,
                                   evec_initial,
@@ -2082,9 +2085,12 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
                                   evec_new,
                                   cmat_convert,
                                   omega_now);
+        time_interp += timer->elapsed() - time_interp_start;
 
         // g(x_n) expressed in D space and the residual r_n = g(x_n) - x_n.
+        const auto time_dmat_start = timer->elapsed();
         compute_qmat_and_dmat(omega_now, T_in, cmat_convert, dmat_new);
+        time_dmat += timer->elapsed() - time_dmat_start;
 
         flatten_dmat(dmat_convert, xvec);
         flatten_dmat(dmat_new, gvec);
@@ -2166,8 +2172,10 @@ void Scph::compute_anharmonic_frequency_diis(std::complex<double> ***v4_array_al
     if (verbosity > 1) {
         const auto time_loop = timer->elapsed() - time_loop_start;
         std::ostringstream line;
-        line << "  [timer] SCP iterations: " << std::min(iloop + 1, static_cast<int>(maxiter)) << ", V4 contraction " << std::fixed << std::setprecision(3)
-             << time_fmat << " sec, diagonalization/interpolation/mixing " << time_loop - time_fmat << " sec.\n";
+        line << "  [timer] SCP iterations: " << std::min(iloop + 1, static_cast<int>(maxiter)) << ", V4 contraction "
+             << std::fixed << std::setprecision(3) << time_fmat << " sec, diagonalization+symmetrization " << time_diag
+             << " sec, interpolation " << time_interp << " sec, D matrices " << time_dmat << " sec, DIIS/PSD/rest "
+             << time_loop - time_fmat - time_diag - time_interp - time_dmat << " sec.\n";
         std::cout << line.str();
     }
 
