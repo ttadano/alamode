@@ -1363,12 +1363,22 @@ void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic, const KpointMe
                                         const std::complex<double> *const *q4_gamma,
                                         const std::vector<double> &q0) const
 {
-    int is1, is2;
+    int is1;
     const auto ns = dynamical->neval;
     const auto factor = 0.5 * 4.0 * kmesh_dense->nk;
     const auto factor2 = 1.0 / 6.0 * 4.0 * kmesh_dense->nk;
 
+    // w[is1*ns+is2] = q0[is1] q0[is2] (real; Eigen's dot conjugates its left operand, which is
+    // harmless for the real w, so w is the left operand and the complex v3 row the right one)
+    Eigen::VectorXcd w(ns * ns);
+    for (is1 = 0; is1 < ns; is1++) {
+        for (int is2 = 0; is2 < ns; is2++) {
+            w(is1 * ns + is2) = std::complex<double>(q0[is1] * q0[is2], 0.0);
+        }
+    }
+
     // renormalize v1 array
+#pragma omp parallel for private(is1)
     for (int is = 0; is < ns; is++) {
 
         v1_renorm[is] = v1_ref[is];
@@ -1378,11 +1388,9 @@ void Relaxation::renormalize_v1_from_q0(double **omega2_harmonic, const KpointMe
             v1_renorm[is] += delta_v2_array_original[0][is * ns + is1] * q0[is1];
         }
 
-        for (is1 = 0; is1 < ns; is1++) {
-            for (is2 = 0; is2 < ns; is2++) {
-                v1_renorm[is] += factor * v3_ref[0][is][is1 * ns + is2] * q0[is1] * q0[is2];
-            }
-        }
+        // cubic term sum_{is1,is2} v3[Gamma][is][is1,is2] q0[is1] q0[is2] = (row is of V3) . w
+        // (w on the conjugating side of dot(): it is real, the v3 row must not be conjugated)
+        v1_renorm[is] += factor * w.dot(Eigen::Map<const Eigen::VectorXcd>(v3_ref[0][is], ns * ns));
 
         // quartic term sum_{is1,is2,is3} v4[Gamma][is,is1][is2,is3] q0[is1] q0[is2] q0[is3],
         // with the (is2,is3) sum precomputed in q4_gamma (q0_contraction.h).
@@ -1403,16 +1411,15 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic, c
                                         const std::vector<double> &q0) const
 {
     using namespace Eigen;
+    using MatrixXcdRowMajor = Matrix<std::complex<double>, Dynamic, Dynamic, RowMajor>;
 
     int ik;
-    int is1, is2, js1;
+    int is1, is2;
     unsigned int knum, knum_interpolate;
     const auto nk_scph = kmesh_dense->nk;
     const auto nk_interpolate = kmesh_coarse->nk;
     const auto factor = 4.0 * nk_scph;
     const auto factor2 = 4.0 * nk_scph * 0.5;
-
-    constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     const auto ns = dynamical->neval;
     const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
@@ -1422,19 +1429,22 @@ void Relaxation::renormalize_v2_from_q0(std::complex<double> ***evec_harmonic, c
     MatrixXcd evec_tmp(ns, ns);
     dymat_q.resize(ns, ns, nk_interpolate);
 
+    VectorXcd q0c(ns);
+    for (is1 = 0; is1 < ns; is1++) {
+        q0c(is1) = std::complex<double>(q0[is1], 0.0);
+    }
+
     for (ik = 0; ik < nk_irred_interpolate; ik++) {
 
         knum_interpolate = kmesh_coarse->kpoint_irred_all[ik][0].knum;
         knum = kmap_coarse_to_dense[knum_interpolate];
 
         // calculate renormalization
+        // cubic: t[is2*ns+is1] = sum_js1 v3[knum][js1][is2,is1] q0[js1]  (one GEMV V3^T q0)
+        const VectorXcd t = Map<const MatrixXcdRowMajor>(v3_ref[knum][0], ns, ns * ns).transpose() * q0c;
         for (is1 = 0; is1 < ns; is1++) {
             for (is2 = 0; is2 < ns; is2++) {
-                Dymat(is1, is2) = complex_zero;
-                // cubic renormalization
-                for (js1 = 0; js1 < ns; js1++) {
-                    Dymat(is1, is2) += factor * v3_ref[knum][js1][is2 * ns + is1] * q0[js1];
-                }
+                Dymat(is1, is2) = factor * t(is2 * ns + is1);
                 // quartic renormalization sum_{js1,js2} v4[ik][is1,is2][js1,js2] q0[js1] q0[js2],
                 // precomputed in q4_q0 (q0_contraction.h)
                 Dymat(is1, is2) += factor2 * q4_q0[ik][is1][is2];
@@ -1516,14 +1526,23 @@ void Relaxation::renormalize_v0_from_q0(double **omega2_harmonic, const KpointMe
             v0_renorm_tmp += factor2 * delta_v2_array_original[0][is1 * ns + is2] * q0[is1] * q0[is2];
         }
     }
-    // renormalize from the cubic, quartic IFC
+    // renormalize from the cubic IFC: sum_{is1,is2,is3} v3[Gamma][is1][is2,is3] q0 q0 q0 = q0^T (V3 w)
+    {
+        using MatrixXcdRowMajor = Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+        Eigen::VectorXcd q0c(ns), w(ns * ns);
+        for (is1 = 0; is1 < ns; is1++) {
+            q0c(is1) = std::complex<double>(q0[is1], 0.0);
+            for (is2 = 0; is2 < ns; is2++) {
+                w(is1 * ns + is2) = std::complex<double>(q0[is1] * q0[is2], 0.0);
+            }
+        }
+        const Eigen::VectorXcd v3w = Eigen::Map<const MatrixXcdRowMajor>(v3_ref[0][0], ns, ns * ns) * w;
+        v0_renorm_tmp += factor3 * q0c.dot(v3w);
+    }
+    // renormalize from the quartic IFC: sum_{is3,is4} v4[Gamma][is2,is1][is3,is4] q0[is3] q0[is4] = q4_gamma[is2][is1]
+    // (q0_contraction.h)
     for (is1 = 0; is1 < ns; is1++) {
         for (is2 = 0; is2 < ns; is2++) {
-            for (int is3 = 0; is3 < ns; is3++) {
-                v0_renorm_tmp += factor3 * v3_ref[0][is1][is2 * ns + is3] * q0[is1] * q0[is2] * q0[is3];
-            }
-            // quartic term sum_{is3,is4} v4[Gamma][is2,is1][is3,is4] q0[is3] q0[is4] = q4_gamma[is2][is1]
-            // (q0_contraction.h)
             v0_renorm_tmp += factor4 * q4_gamma[is2][is1] * q0[is1] * q0[is2];
         }
     }

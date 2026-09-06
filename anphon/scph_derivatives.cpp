@@ -62,7 +62,7 @@ void ScphQhaCommon::calculate_del_v0_del_umn_renorm(std::complex<double> *del_v0
 
     const double factor = 1.0 / 6.0 * 4.0 * nk;
     int i1, i2, i3, ixyz1, ixyz2, ixyz3, ixyz4;
-    int is1, is2, is3;
+    int is1, is2;
 
 
     // calculate the derivative of eta_tensor by u_tensor
@@ -158,17 +158,29 @@ void ScphQhaCommon::calculate_del_v0_del_umn_renorm(std::complex<double> *del_v0
     }
 
     // calculate del_v0_del_umn_renorm
-    for (i1 = 0; i1 < 9; i1++) {
-        del_v0_del_umn_renorm[i1] = del_v0_strain_with_strain[i1];
+    // cubic term sum_{is1,is2,is3} del_v3[i1](is1, is2*ns+is3) q0[is1] q0[is2] q0[is3]
+    // = q0^T (D3 w) with w = q0 (x) q0: one GEMV per strain component instead of a
+    // single-threaded ns^3 loop
+    {
+        Eigen::VectorXcd q0c(ns), w(ns * ns);
         for (is1 = 0; is1 < ns; is1++) {
-            del_v0_del_umn_renorm[i1] += del_v1_del_umn_with_umn[i1][is1] * q0[is1];
+            q0c(is1) = std::complex<double>(q0[is1], 0.0);
+        }
+        for (is1 = 0; is1 < ns; is1++) {
             for (is2 = 0; is2 < ns; is2++) {
-                del_v0_del_umn_renorm[i1] += 0.5 * del_v2_del_umn_with_umn[i1][is1][is2] * q0[is1] * q0[is2];
-                for (is3 = 0; is3 < ns; is3++) {
-                    del_v0_del_umn_renorm[i1] +=
-                        factor * del_v_strain.del_v3[i1][0](is1, is2 * ns + is3) * q0[is1] * q0[is2] * q0[is3];
+                w(is1 * ns + is2) = std::complex<double>(q0[is1] * q0[is2], 0.0);
+            }
+        }
+        for (i1 = 0; i1 < 9; i1++) {
+            del_v0_del_umn_renorm[i1] = del_v0_strain_with_strain[i1];
+            for (is1 = 0; is1 < ns; is1++) {
+                del_v0_del_umn_renorm[i1] += del_v1_del_umn_with_umn[i1][is1] * q0[is1];
+                for (is2 = 0; is2 < ns; is2++) {
+                    del_v0_del_umn_renorm[i1] += 0.5 * del_v2_del_umn_with_umn[i1][is1][is2] * q0[is1] * q0[is2];
                 }
             }
+            const Eigen::VectorXcd d3w = del_v_strain.del_v3[i1][0] * w; // (ns x ns^2) * ns^2
+            del_v0_del_umn_renorm[i1] += factor * q0c.dot(d3w); // q0 is real: dot() conjugates nothing
         }
     }
 
