@@ -255,6 +255,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/thermodynamics.h
             ${PROJECT_SOURCE_DIR}/v4_distributed.h
+            ${PROJECT_SOURCE_DIR}/v4_index_transform.h
             ${PROJECT_SOURCE_DIR}/v4_service.h
             ${PROJECT_SOURCE_DIR}/timer.h
             ${PROJECT_SOURCE_DIR}/write_phonons.h
@@ -374,5 +375,20 @@ if (BUILD_V4_DISTRIBUTED_TEST)
     target_link_libraries(test_v4_distributed ${openmplibrary})
     if (eigen_target)
         target_link_libraries(test_v4_distributed ${eigen_target})
+    endif ()
+endif ()
+
+# Unit test for the rotating index-transform GEMM shared by the V4 builders
+# (v4_index_transform.h) against the naive loops, for both column counts, a
+# complex prefactor and several OpenMP thread counts. Needs the BLAS zgemm.
+option(BUILD_V4_INDEX_TRANSFORM_TEST "Build the V4 index-transform unit test" ON)
+if (BUILD_V4_INDEX_TRANSFORM_TEST)
+    add_executable(test_v4_index_transform ${PROJECT_SOURCE_DIR}/../test/test_v4_index_transform.cpp)
+    target_compile_options(test_v4_index_transform PRIVATE -Wall -Wextra $<$<CONFIG:Release>:-O3>)
+    target_include_directories(test_v4_index_transform PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include
+                                                               ${eigen_includes})
+    target_link_libraries(test_v4_index_transform ${openmplibrary} ${lapack_target} ${blas_target})
+    if (eigen_target)
+        target_link_libraries(test_v4_index_transform ${eigen_target})
     endif ()
 endif ()

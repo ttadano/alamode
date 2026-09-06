@@ -25,8 +25,10 @@
 #include "scph.h"
 #include "timer.h"
 #include "v4_distributed.h"
+#include "v4_index_transform.h"
 #include "write_phonons.h"
 using namespace PHON_NS;
+using PHON_NS::v4_index_transform::transform_index_gemm;
 
 namespace
 {
@@ -44,35 +46,6 @@ struct SparsePhi4Skeleton
     std::vector<size_t> slot_of_group;     // group g -> slot in row/val
     std::vector<std::complex<double>> val; // size nnz, refilled per k-pair
 };
-
-// One V4 index transform as a complex GEMM (zgemm via blas_wrapper.h, cf.
-// dynamical.cpp). All buffers are row-major contiguous: the input viewed as
-// (ns x ns^3) is contracted over its OUTERMOST mode index with E[out][in], and
-// the result is written as (ns^3 x ns) with the new index innermost, i.e. the
-// flat layout rotates [a b c d] -> [b c d out]. In column-major BLAS terms this
-// is C(ns x ns^3) = E_buf^T * In_buf^T.
-inline void transform_v4_index_gemm(const std::complex<double> *evec_row_major, const std::complex<double> *buf_in,
-                                    std::complex<double> *buf_out, const size_t ns, const std::complex<double> alpha_in)
-{
-    int m = static_cast<int>(ns);
-    int n = static_cast<int>(ns * ns * ns);
-    int k = static_cast<int>(ns);
-    auto alpha = alpha_in;
-    auto beta = std::complex<double>(0.0, 0.0);
-    zgemm_cpx("T",
-              "T",
-              &m,
-              &n,
-              &k,
-              &alpha,
-              const_cast<std::complex<double> *>(evec_row_major),
-              &m,
-              const_cast<std::complex<double> *>(buf_in),
-              &n,
-              &beta,
-              buf_out,
-              &m);
-}
 
 auto build_phi4_skeleton(const int *const *evec_index, const long int ngroup, const size_t ns) -> SparsePhi4Skeleton
 {
@@ -718,17 +691,18 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(v4_distributed::V4RowBlo
             constexpr auto complex_one = std::complex<double>(1.0, 0.0);
 
             // transform the second index (v4_tmp1 -> v4_tmp2)
-            transform_v4_index_gemm(&evec_in[knum][0][0], &v4_tmp1[0][0], &v4_tmp2[0][0], ns, complex_one);
+            transform_index_gemm(&evec_in[knum][0][0], &v4_tmp1[0][0], &v4_tmp2[0][0], ns, ns * ns2, complex_one);
 
             // transform the third index (v4_tmp2 -> v4_tmp1)
-            transform_v4_index_gemm(&evec_in[jk][0][0], &v4_tmp2[0][0], &v4_tmp1[0][0], ns, complex_one);
+            transform_index_gemm(&evec_in[jk][0][0], &v4_tmp2[0][0], &v4_tmp1[0][0], ns, ns * ns2, complex_one);
 
             // transform the fourth index and store to the final matrix (v4_tmp1 -> v4 rows)
-            transform_v4_index_gemm(&evec_conj[jk][0][0],
-                                    &v4_tmp1[0][0],
-                                    v4_block.row(ik_prod * ns, 0), // the ns^2 owned rows of this slice are contiguous
-                                    ns,
-                                    std::complex<double>(factor, 0.0));
+            transform_index_gemm(&evec_conj[jk][0][0],
+                                 &v4_tmp1[0][0],
+                                 v4_block.row(ik_prod * ns, 0), // the ns^2 owned rows of this slice are contiguous
+                                 ns,
+                                 ns * ns2,
+                                 std::complex<double>(factor, 0.0));
 
         } else {
 
@@ -802,9 +776,7 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock
     const size_t nk_reduced_interpolate = kmesh_coarse_in->nk_irred;
     const size_t ns = dynamical->neval;
     const size_t ns2 = ns * ns;
-    int is, js, ks, ls;
-    size_t is2_1, is2_2;
-    size_t is2;
+    int is, js;
     unsigned int knum;
 
     const auto nk_scph = kmesh_dense_in->nk;
@@ -868,6 +840,9 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock
 
     int ik_old = -1;
     int jk_old = -1;
+    // conj(E_j) as a contiguous ns x ns matrix for the fourth index transform;
+    // filled on the first owned set and whenever the (ik, jk) pair changes
+    std::vector<std::complex<double>> evec_conj_jk(ns2);
 
     if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
         std::cout << " Total number of sets to compute : " << nset_each << '\n';
@@ -896,14 +871,18 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock
             for (i = 0; i < ngroup_v4; ++i) {
                 phi4_skeleton.val[phi4_skeleton.slot_of_group[i]] = phi4_reciprocal_inout[i] * invmass_v4[i];
             }
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    evec_conj_jk[is * ns + js] = std::conj(evec_in[jk_now][is][js]);
+                }
+            }
             ik_old = ik_now;
             jk_old = jk_now;
         }
 
         ik_prod = ik_now * nk_scph + jk_now;
 
-        // initialize the target of the first transform; the remaining transforms
-        // overwrite every element of their target buffer.
+        // initialize the target of the scatter (it accumulates with +=)
 #pragma omp parallel for private(js)
         for (is = 0; is < ns; ++is) {
             for (js = 0; js < ns2; ++js) {
@@ -911,8 +890,9 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock
             }
         }
 
-        // transform the first index (sparse phi4 -> v4_tmp1); threads own distinct
-        // columns, so the shared (row%ns, col) targets never race across threads
+        // scatter phi4 and transform the first index in one sparse pass
+        // (-> v4_tmp1[a2][(a3 a4)]); threads own distinct columns, so the shared
+        // (row%ns, col) targets never race across threads
 #pragma omp parallel for
         for (long int col = 0; col < static_cast<long int>(ns2); ++col) {
             for (size_t p = phi4_skeleton.col_ptr[col]; p < phi4_skeleton.col_ptr[col + 1]; ++p) {
@@ -922,56 +902,20 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock
             }
         }
 
-        // transform the second index (v4_tmp1 -> v4_tmp2)
-#pragma omp parallel for private(is, js)
-        for (is2_2 = 0; is2_2 < ns2; ++is2_2) {
-            for (is = 0; is < ns; ++is) {
-                auto accumulator = complex_zero;
-                for (js = 0; js < ns; ++js) {
-                    accumulator += v4_tmp1[js][is2_2] * evec_in[knum][is][js];
-                }
-                v4_tmp2[is][is2_2] = accumulator;
-            }
-        }
-
-        // transform the third index (v4_tmp2 -> v4_tmp1)
-#pragma omp parallel for private(is, js, ks, ls)
-        for (is2_1 = 0; is2_1 < ns2; ++is2_1) {
-            is = is2_1 / ns;
-            js = is2_1 % ns;
-
-            for (ks = 0; ks < ns; ++ks) {
-                auto accumulator = complex_zero;
-                for (ls = 0; ls < ns; ++ls) {
-                    accumulator += v4_tmp2[is][ls * ns + js] * evec_in[jk_now][ks][ls];
-                }
-                v4_tmp1[is][ks * ns + js] = accumulator;
-            }
-        }
-
-        // transform the fourth index (v4_tmp1 -> v4_tmp2)
-#pragma omp parallel for private(is, js, ks, ls)
-        for (is2_1 = 0; is2_1 < ns2; ++is2_1) {
-            is = is2_1 / ns;
-            js = is2_1 % ns;
-
-            for (ks = 0; ks < ns; ++ks) {
-                auto accumulator = complex_zero;
-                for (ls = 0; ls < ns; ++ls) {
-                    accumulator += v4_tmp1[is][js * ns + ls] * std::conj(evec_in[jk_now][ks][ls]);
-                }
-                v4_tmp2[is][js * ns + ks] = accumulator;
-            }
-        }
-
-        // copy to the final matrix: the ns rows (is_now, is2) of the owned unit
-        // (the loop index is2 must be private to each thread)
-#pragma omp parallel for
-        for (long int col = 0; col < static_cast<long int>(ns2); ++col) {
-            for (size_t is2 = 0; is2 < ns; is2++) {
-                v4_block.row(ik_prod * ns + is_now, is2)[col] = factor * v4_tmp2[is2][col];
-            }
-        }
+        // The remaining transforms are matrix products on the (ns x ns^2) view of
+        // the buffer: each contracts the outermost mode index and appends the new
+        // index innermost, so the layout rotates [a2 a3 a4] -> [a3 a4 j] -> [a4 j k]
+        // -> [j k l]. The last one writes, with the prefactor, straight into the ns
+        // contiguous rows (is_now, j) of the owned unit, columns k*ns + l.
+        constexpr auto complex_one = std::complex<double>(1.0, 0.0);
+        transform_index_gemm(&evec_in[knum][0][0], &v4_tmp1[0][0], &v4_tmp2[0][0], ns, ns2, complex_one);
+        transform_index_gemm(&evec_in[jk_now][0][0], &v4_tmp2[0][0], &v4_tmp1[0][0], ns, ns2, complex_one);
+        transform_index_gemm(evec_conj_jk.data(),
+                             &v4_tmp1[0][0],
+                             v4_block.row(ik_prod * ns + is_now, 0), // the ns rows of the unit are contiguous
+                             ns,
+                             ns2,
+                             std::complex<double>(factor, 0.0));
 
         // Report progress roughly 20 times over the whole loop.
         if (mympi->my_rank == 0) {
