@@ -253,6 +253,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/symmetry_core.h
             ${PROJECT_SOURCE_DIR}/system.h
             ${PROJECT_SOURCE_DIR}/thermodynamics.h
+            ${PROJECT_SOURCE_DIR}/v4_distributed.h
             ${PROJECT_SOURCE_DIR}/timer.h
             ${PROJECT_SOURCE_DIR}/write_phonons.h
             ${PROJECT_SOURCE_DIR}/../include/progress_bar.h
@@ -357,4 +358,19 @@ if (BUILD_Q0_CONTRACTION_TEST)
     target_compile_options(test_q0_contraction PRIVATE -Wall -Wextra $<$<CONFIG:Release>:-O3>)
     target_include_directories(test_q0_contraction PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include)
     target_link_libraries(test_q0_contraction ${openmplibrary})
+endif ()
+
+# Unit test for the row-distributed V4 layout (v4_distributed.h): unit and
+# slice partitions and the row-local SCP self-energy accumulation against the
+# naive formula. Header-only dependencies plus Eigen and OpenMP; no MPI.
+option(BUILD_V4_DISTRIBUTED_TEST "Build the distributed-V4 layout unit test" ON)
+if (BUILD_V4_DISTRIBUTED_TEST)
+    add_executable(test_v4_distributed ${PROJECT_SOURCE_DIR}/../test/test_v4_distributed.cpp)
+    target_compile_options(test_v4_distributed PRIVATE -Wall -Wextra $<$<CONFIG:Release>:-O3>)
+    target_include_directories(test_v4_distributed PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/../include
+                                                           ${eigen_includes})
+    target_link_libraries(test_v4_distributed ${openmplibrary})
+    if (eigen_target)
+        target_link_libraries(test_v4_distributed ${eigen_target})
+    endif ()
 endif ()

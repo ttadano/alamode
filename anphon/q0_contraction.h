@@ -20,8 +20,15 @@
  from DRAM a single time. (Before this kernel the four renormalizations swept
  v4 nk_dense + nk_irred_coarse + 2 times, three of them single-threaded.)
 
- Layout of the sweep: an owner unit is one (jk, b) pair, i.e. the ns rows
- (a, b), a = 0..ns-1, of the slice (g, jk). The columns are processed in tiles
+ Distributed layout: v4 may be split over MPI ranks by contiguous ranges of
+ units u = ik_prod * ns + a (the ns rows (a, b) of one slice). Options::unit_begin /
+ unit_end restrict the sweep to the rows this process owns; the outputs of the
+ ranks then add up to the single-process result (v3_with_umn is seeded on one
+ rank only, Options::seed_v3_with_umn; q4_q0 is reset on every rank and filled
+ for the owned units only). The kernel itself stays MPI-free.
+
+ Layout of the sweep: a thread's owner unit is one (jk, b) pair, i.e. the rows
+ (a, b), a over the owned range, of the slice (g, jk). The columns are processed in tiles
  so that the accumulator segment of v3_renorm[jk][b] and the segment of
  w[c*ns+d] = q0[c] q0[d] stay in cache across the a-loop, and the row segment
  is used for both outputs from a single load. Every unit writes its own
@@ -37,6 +44,7 @@
 #include <algorithm>
 #include <complex>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 namespace PHON_NS::q0_contraction {
@@ -45,16 +53,56 @@ namespace PHON_NS::q0_contraction {
 // accumulator segment (64 KB) and w segment (32 KB) fit in L2.
 constexpr std::size_t default_tile = 4096;
 
-// v4 may be nullptr (no quartic terms): v3_renorm = v3_with_umn, q4_q0 = 0.
+struct Options {
+    std::size_t tile = default_tile;
+    // owned units [unit_begin, unit_end) of u = ik_prod * ns + a; the default is everything
+    std::size_t unit_begin = 0;
+    std::size_t unit_end = std::numeric_limits<std::size_t>::max();
+    // false on the ranks that must not add v3_with_umn (it is added exactly once)
+    bool seed_v3_with_umn = true;
+};
+
+// v4 may be nullptr (no quartic terms): v3_renorm = v3_with_umn (or zero), q4_q0 = 0.
 // The same fast path is taken when every q0 component is exactly zero.
 inline void contract_v4_with_q0(const std::size_t ns, const std::size_t nk_dense, const std::size_t nk_irred_coarse,
                                 const std::size_t ik_gamma_irred, const std::size_t jk_gamma_dense,
                                 const std::complex<double> *const *const *v4, const double *q0,
                                 const std::complex<double> *const *const *v3_with_umn,
                                 std::complex<double> ***v3_renorm, std::complex<double> ***q4_q0,
-                                const std::size_t tile = default_tile)
+                                const Options &opt = Options{})
 {
     const std::size_t ns2 = ns * ns;
+    const std::size_t tile = opt.tile;
+    constexpr std::complex<double> czero(0.0, 0.0);
+
+    const std::size_t nunits = nk_irred_coarse * nk_dense * ns;
+    const std::size_t unit_begin = std::min(opt.unit_begin, nunits);
+    const std::size_t unit_end = std::min(opt.unit_end, nunits);
+
+    // owned rows a of slice ik_prod: [a0, a1)
+    auto owned_a_range = [&](const std::size_t ik_prod, std::size_t &a0, std::size_t &a1) {
+        const std::size_t base = ik_prod * ns;
+        a0 = unit_begin > base ? std::min(unit_begin - base, ns) : 0;
+        a1 = unit_end > base ? std::min(unit_end - base, ns) : 0;
+        if (a1 < a0) {
+            a1 = a0;
+        }
+    };
+
+    auto seed_row = [&](const std::size_t jk, const std::size_t b) {
+        if (opt.seed_v3_with_umn) {
+            std::copy(v3_with_umn[jk][b], v3_with_umn[jk][b] + ns2, v3_renorm[jk][b]);
+        } else {
+            std::fill(v3_renorm[jk][b], v3_renorm[jk][b] + ns2, czero);
+        }
+    };
+
+    // q4_q0 is rebuilt from scratch on every call: unowned entries stay zero
+    for (std::size_t ik = 0; ik < nk_irred_coarse; ++ik) {
+        for (std::size_t a = 0; a < ns; ++a) {
+            std::fill(q4_q0[ik][a], q4_q0[ik][a] + ns, czero);
+        }
+    }
 
     auto q0_is_zero = true;
     for (std::size_t a = 0; a < ns; ++a) {
@@ -67,12 +115,7 @@ inline void contract_v4_with_q0(const std::size_t ns, const std::size_t nk_dense
     if (v4 == nullptr || q0_is_zero) {
         for (std::size_t jk = 0; jk < nk_dense; ++jk) {
             for (std::size_t b = 0; b < ns; ++b) {
-                std::copy(v3_with_umn[jk][b], v3_with_umn[jk][b] + ns2, v3_renorm[jk][b]);
-            }
-        }
-        for (std::size_t ik = 0; ik < nk_irred_coarse; ++ik) {
-            for (std::size_t a = 0; a < ns; ++a) {
-                std::fill(q4_q0[ik][a], q4_q0[ik][a] + ns, std::complex<double>(0.0, 0.0));
+                seed_row(jk, b);
             }
         }
         return;
@@ -91,7 +134,7 @@ inline void contract_v4_with_q0(const std::size_t ns, const std::size_t nk_dense
     //      (re, im) doubles of the rows so that they vectorize as plain
     //      real axpy / dot operations (std::complex<double> is layout-
     //      compatible with double[2]).
-    const long nunits = static_cast<long>(nk_dense * ns);
+    const long nthread_units = static_cast<long>(nk_dense * ns);
 
 #pragma omp parallel
     {
@@ -99,16 +142,19 @@ inline void contract_v4_with_q0(const std::size_t ns, const std::size_t nk_dense
 
         // dynamic: the units of the slice (g, jg) do twice the work of the others
 #pragma omp for schedule(dynamic, 1)
-        for (long iu = 0; iu < nunits; ++iu) {
+        for (long iu = 0; iu < nthread_units; ++iu) {
             const std::size_t jk = static_cast<std::size_t>(iu) / ns;
             const std::size_t b = static_cast<std::size_t>(iu) % ns;
-            const auto slice = v4[ik_gamma_irred * nk_dense + jk];
+            const std::size_t ik_prod = ik_gamma_irred * nk_dense + jk;
+            const auto slice = v4[ik_prod];
             const bool at_gamma = (jk == jk_gamma_dense);
+            std::size_t a0, a1;
+            owned_a_range(ik_prod, a0, a1);
 
             std::complex<double> *acc_row = v3_renorm[jk][b];
-            std::copy(v3_with_umn[jk][b], v3_with_umn[jk][b] + ns2, acc_row);
+            seed_row(jk, b);
             if (at_gamma) {
-                std::fill(q4_local.begin(), q4_local.end(), std::complex<double>(0.0, 0.0));
+                std::fill(q4_local.begin(), q4_local.end(), czero);
             }
 
             for (std::size_t c0 = 0; c0 < ns2; c0 += tile) {
@@ -116,7 +162,7 @@ inline void contract_v4_with_q0(const std::size_t ns, const std::size_t nk_dense
                 auto *acc = reinterpret_cast<double *>(acc_row + c0);
                 const double *wt = w.data() + c0;
 
-                for (std::size_t a = 0; a < ns; ++a) {
+                for (std::size_t a = a0; a < a1; ++a) {
                     const double qa = q0[a];
                     const auto *row = reinterpret_cast<const double *>(slice[a * ns + b] + c0);
 
@@ -140,22 +186,27 @@ inline void contract_v4_with_q0(const std::size_t ns, const std::size_t nk_dense
             }
 
             if (at_gamma) {
-                for (std::size_t a = 0; a < ns; ++a) {
+                for (std::size_t a = a0; a < a1; ++a) {
                     q4_q0[ik_gamma_irred][a][b] = q4_local[a];
                 }
             }
         }
     }
 
-    // ---- Column-Gamma slices (ik, jg), ik != g: q4_q0[ik] only.
+    // ---- Column-Gamma slices (ik, jg), ik != g: q4_q0[ik] only, owned rows only.
     for (std::size_t ik = 0; ik < nk_irred_coarse; ++ik) {
         if (ik == ik_gamma_irred) {
             continue;
         }
-        const auto slice = v4[ik * nk_dense + jk_gamma_dense];
+        const std::size_t ik_prod = ik * nk_dense + jk_gamma_dense;
+        const auto slice = v4[ik_prod];
+        std::size_t a0, a1;
+        owned_a_range(ik_prod, a0, a1);
+        const long r_begin = static_cast<long>(a0 * ns);
+        const long r_end = static_cast<long>(a1 * ns);
 
 #pragma omp parallel for schedule(static)
-        for (long r = 0; r < static_cast<long>(ns2); ++r) {
+        for (long r = r_begin; r < r_end; ++r) {
             const auto *row = reinterpret_cast<const double *>(slice[r]);
             double dot_re = 0.0, dot_im = 0.0;
             for (std::size_t c = 0; c < ns2; ++c) {
