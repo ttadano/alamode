@@ -1023,7 +1023,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
 
     // Renormalize the IFCs by the internal displacement q0 (exact Taylor
     // recentering of the quartic PES). The strain-renormalized v1..v3
-    // (_with_umn) enter here; v4 enters through ws.v4_for_renorm because its
+    // (_with_umn) enter here; v4 enters unrenormalized (v4_ref) because its
     // strain renormalization would require d(v4)/du IFC data, which
     // del_v_strain does not include (it stops at d(v3)/du) -- within this
     // truncation the strain-renormalized v4 equals the reference v4.
@@ -1034,7 +1034,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                        ws.v1_with_umn,
                                        ws.delta_v2_with_umn,
                                        ws.v3_with_umn,
-                                       ws.v4_for_renorm,
+                                       ws.v4_ref,
                                        q0);
     relaxation->renormalize_v2_from_q0(evec_harmonic,
                                        kmesh_coarse.get(),
@@ -1044,13 +1044,13 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                        ws.delta_v2_renorm,
                                        ws.delta_v2_with_umn,
                                        ws.v3_with_umn,
-                                       ws.v4_for_renorm,
+                                       ws.v4_ref,
                                        q0);
     relaxation->renormalize_v3_from_q0(kmesh_dense.get(),
                                        kmesh_coarse.get(),
                                        ws.v3_renorm,
                                        ws.v3_with_umn,
-                                       ws.v4_for_renorm,
+                                       ws.v4_ref,
                                        q0);
     relaxation->renormalize_v0_from_q0(omega2_harmonic,
                                        kmesh_dense.get(),
@@ -1059,7 +1059,7 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                        ws.v1_with_umn,
                                        ws.delta_v2_with_umn,
                                        ws.v3_with_umn,
-                                       ws.v4_for_renorm,
+                                       ws.v4_ref,
                                        q0);
 
     // calculate PES gradient by strain

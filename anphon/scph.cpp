@@ -968,10 +968,6 @@ void Scph::exec_scph_relax_cell_coordinate_main(std::complex<double> ****dymat_a
     v1_SCP.resize(ns);
     del_v0_del_umn_SCP.resize(9);
 
-    // SCPH feeds the reference v4 directly into the q0 renormalization (its
-    // strain renormalization is not available; see renormalize_ifcs_at_structure).
-    ws.v4_for_renorm = v4_ref;
-
     if (mympi->my_rank == 0) {
         dynamical->precompute_dymat_harm(kmesh_dense->nk,
                                          kmesh_dense->xk,

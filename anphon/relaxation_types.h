@@ -159,11 +159,6 @@ struct StructuralOptWorkspace
     NDArray<std::complex<double>, 3> v3_renorm;
     double v0_renorm = 0.0;
 
-    // v4 entering the q0 renormalization: v4_ref in SCPH, the (numerically
-    // identical) v4_with_umn copy in QHA. Strain renormalization of v4 would
-    // need d(v4)/du IFC data, which del_v_strain does not provide.
-    std::complex<double> ***v4_for_renorm{};
-
     // strain derivatives of the IFCs and elastic constants
     DelVStrainData *del_v_strain{};
     NDArray<double, 1> C1_array;

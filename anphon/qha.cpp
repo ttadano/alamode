@@ -43,7 +43,6 @@ public:
     QhaRelaxationModel(Qha &qha, StructuralOptWorkspace &ws, std::complex<double> ****dymat_anharm,
                        std::complex<double> ****delta_harmonic_dymat_renormalize, std::complex<double> ***cmat_convert,
                        double ***omega2_harm_renorm, std::complex<double> ***evec_harm_renorm_tmp,
-                       std::complex<double> ***v4_renorm, std::complex<double> ***v4_with_umn,
                        std::complex<double> *v1_QHA, std::complex<double> *del_v0_del_umn_QHA,
                        std::complex<double> *del_v0_del_umn_ZSISA, std::complex<double> *del_v0_del_umn_vZSISA,
                        std::complex<double> **del_v1_del_umn_renorm, double **delq_delu_ZSISA, double **C2_array_renorm,
@@ -51,8 +50,8 @@ public:
                        std::ofstream &fout_step_q0, std::ofstream &fout_step_u0, std::ofstream &fout_step_u_tensor) :
         qha_(qha), ws_(ws), dymat_anharm_(dymat_anharm),
         delta_harmonic_dymat_renormalize_(delta_harmonic_dymat_renormalize), cmat_convert_(cmat_convert),
-        omega2_harm_renorm_(omega2_harm_renorm), evec_harm_renorm_tmp_(evec_harm_renorm_tmp), v4_renorm_(v4_renorm),
-        v4_with_umn_(v4_with_umn), v1_QHA_(v1_QHA), del_v0_del_umn_QHA_(del_v0_del_umn_QHA),
+        omega2_harm_renorm_(omega2_harm_renorm), evec_harm_renorm_tmp_(evec_harm_renorm_tmp), v1_QHA_(v1_QHA),
+        del_v0_del_umn_QHA_(del_v0_del_umn_QHA),
         del_v0_del_umn_ZSISA_(del_v0_del_umn_ZSISA), del_v0_del_umn_vZSISA_(del_v0_del_umn_vZSISA),
         del_v1_del_umn_renorm_(del_v1_del_umn_renorm), delq_delu_ZSISA_(delq_delu_ZSISA),
         C2_array_renorm_(C2_array_renorm), C2_array_ZSISA_(C2_array_ZSISA), del_v_strain_(del_v_strain),
@@ -71,40 +70,17 @@ public:
     StructOptStepStatus do_structure_step(const unsigned int iT, const double temp, const int i_str_loop,
                                           std::vector<StructOptStepRecord> &step_history) override
     {
-        const auto nk = qha_.kmesh_dense->nk;
         const auto ns = qha_.dynamical->neval;
-        const auto nk_irred_interpolate = qha_.kmesh_coarse->nk_irred;
         const auto complex_zero = std::complex<double>(0.0, 0.0);
         auto &structure_state = ws_.structure_state;
         auto &q0 = structure_state.q0;
         auto &u_tensor = structure_state.u_tensor;
-        auto &v4_ref = ws_.v4_ref;
         auto &C2_array = ws_.C2_array;
         auto &harm_optical_modes = ws_.harm_optical_modes;
-
-        // Strain renormalization of v4 is not available; the identity
-        // copy keeps the historical bookkeeping (ws.v4_for_renorm
-        // points at v4_with_umn).
-        for (auto ik = 0; ik < nk_irred_interpolate * nk; ik++) {
-            for (auto is = 0; is < ns * ns; is++) {
-                for (auto is1 = 0; is1 < ns * ns; is1++) {
-                    v4_with_umn_[ik][is][is1] = v4_ref[ik][is][is1];
-                }
-            }
-        }
 
         // recompute the strain- and q0-renormalized IFCs at the
         // current structure
         qha_.renormalize_ifcs_at_structure(ws_);
-
-        // copy v4_ref to v4_renorm
-        for (auto ik = 0; ik < nk_irred_interpolate * qha_.kmesh_dense->nk; ik++) {
-            for (auto is1 = 0; is1 < ns * ns; is1++) {
-                for (auto is2 = 0; is2 < ns * ns; is2++) {
-                    v4_renorm_[ik][is1][is2] = v4_ref[ik][is1][is2];
-                }
-            }
-        }
 
         // QHA-only: strain-force coupling entering the ZSISA and
         // v-ZSISA stress corrections.
@@ -242,8 +218,6 @@ private:
     std::complex<double> ***cmat_convert_;
     double ***omega2_harm_renorm_;
     std::complex<double> ***evec_harm_renorm_tmp_;
-    std::complex<double> ***v4_renorm_;
-    std::complex<double> ***v4_with_umn_;
     std::complex<double> *v1_QHA_;
     std::complex<double> *del_v0_del_umn_QHA_;
     std::complex<double> *del_v0_del_umn_ZSISA_;
@@ -445,7 +419,6 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
 
     const auto nk = kmesh_dense->nk;
     const auto ns = dynamical->neval;
-    const auto nk_irred_interpolate = kmesh_coarse->nk_irred;
     const auto Tmin = system->Tmin;
     const auto Tmax = system->Tmax;
     const auto dT = system->dT;
@@ -468,8 +441,6 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     auto &v3_renorm = ws.v3_renorm;
     auto &v3_with_umn = ws.v3_with_umn;
     auto &v4_ref = ws.v4_ref;
-    NDArray<std::complex<double>, 3> v4_renorm;
-    NDArray<std::complex<double>, 3> v4_with_umn;
     auto &v0_ref = ws.v0_ref;
     v0_ref = 0.0; // set original ground state energy as zero
 
@@ -523,11 +494,6 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     delq_delu_ZSISA.resize(ns, 9);
     C2_array_renorm.resize(9, 9);
 
-    v4_renorm.resize(nk_irred_interpolate * kmesh_dense->nk, ns * ns, ns * ns);
-    v4_with_umn.resize(nk_irred_interpolate * kmesh_dense->nk, ns * ns, ns * ns);
-    // QHA feeds the (numerically identical) v4_with_umn copy into the q0
-    // renormalization; see renormalize_ifcs_at_structure.
-    ws.v4_for_renorm = v4_with_umn;
 
     if (mympi->my_rank == 0) {
 
@@ -596,8 +562,6 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
                                  cmat_convert,
                                  omega2_harm_renorm,
                                  evec_harm_renorm_tmp,
-                                 v4_renorm,
-                                 v4_with_umn,
                                  v1_QHA,
                                  del_v0_del_umn_QHA,
                                  del_v0_del_umn_ZSISA,
@@ -661,8 +625,6 @@ void Qha::exec_QHA_relax_main(std::complex<double> ****dymat_anharm,
     v3_with_umn.clear();
 
     v4_ref.clear();
-    v4_renorm.clear();
-    v4_with_umn.clear();
 
     v1_QHA.clear();
     del_v1_del_umn_renorm.clear();
