@@ -105,9 +105,6 @@ void ScphQhaCommon::compute_V3_elements_mpi_over_kpoint(
     NDArray<unsigned int, 2> ind;
     unsigned int i, j;
 
-    size_t js2_1, js2_2;
-    size_t is2, js2, ks2;
-
     std::complex<double> ret;
     long int ii;
 
@@ -120,7 +117,7 @@ void ScphQhaCommon::compute_V3_elements_mpi_over_kpoint(
     NDArray<std::complex<double>, 2> v3_tmp0;
     NDArray<std::complex<double>, 2> v3_tmp1;
     NDArray<std::complex<double>, 2> v3_tmp2;
-    NDArray<std::complex<double>, 2> v3_tmp3;
+    std::vector<std::complex<double>> evec_conj_ik(ns2);
 
     if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
         if (self_offdiag) {
@@ -136,7 +133,6 @@ void ScphQhaCommon::compute_V3_elements_mpi_over_kpoint(
     v3_tmp0.resize(ns, ns2);
     v3_tmp1.resize(ns, ns2);
     v3_tmp2.resize(ns, ns2);
-    v3_tmp3.resize(ns, ns2);
 
     // v3_out may come from STL-backed storage via pointer bridges and is not guaranteed
     // to be contiguous across the k-point dimension, so the MPI reduction cannot happen
@@ -165,18 +161,14 @@ void ScphQhaCommon::compute_V3_elements_mpi_over_kpoint(
             // All matrix elements will be calculated when considering the off-diagonal
             // elements of the phonon self-energy (i.e., when considering polarization mixing).
 
-            // initialize temporary matrices
+            // v3_tmp0 holds the (alpha,mu)-representation Phi(a,b,c), row-major [a][b*ns+c].
 #pragma omp parallel for private(js)
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns2; ++js) {
                     v3_tmp0[is][js] = complex_zero;
-                    v3_tmp1[is][js] = complex_zero;
-                    v3_tmp2[is][js] = complex_zero;
-                    v3_tmp3[is][js] = complex_zero;
                 }
             }
 
-            // copy v3 in (alpha,mu) representation to the temporary matrix
 #pragma omp parallel for private(is, js)
             for (ii = 0; ii < ngroup_v3; ++ii) {
 
@@ -185,54 +177,26 @@ void ScphQhaCommon::compute_V3_elements_mpi_over_kpoint(
                 v3_tmp0[is][js] = v3_array_at_kpair[ii];
             }
 
-            // transform the first index
-#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
-            for (ii = 0; ii < ns3; ++ii) {
-                is = ii / ns2;
-                js2_1 = ii % ns2;
-
-                for (is2 = 0; is2 < ns; ++is2) {
-                    v3_tmp1[is][js2_1] += v3_tmp0[is2][js2_1] * evec_in[0][is][is2];
+            // Three rotating index-transform GEMMs (v4_index_transform.h), each contracting
+            // the outermost index: [a b c] -> [b c i] -> [c i j] -> [i j k], with
+            // evec[0][i][a], evec[ik][j][b] and conj(evec[ik][k][c]). The last one writes
+            // the ik slice of the reduction buffer directly, scaled by the prefactor.
+            // evec_in[ik] must be a contiguous ns x ns row-major block (NDArray storage).
+#pragma omp parallel for private(js)
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    evec_conj_ik[is * ns + js] = std::conj(evec_in[ik][is][js]);
                 }
             }
-
-            // transform the second index
-#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
-            for (ii = 0; ii < ns3; ++ii) {
-                is = ii / ns2;
-                js2_1 = ii % ns2;
-                js = js2_1 / ns; // second index
-                ks = js2_1 % ns; // third index
-
-                for (js2 = 0; js2 < ns; ++js2) {
-                    js2_2 = js2 * ns + ks;
-                    v3_tmp2[is][js2_1] += v3_tmp1[is][js2_2] * evec_in[ik][js][js2];
-                }
-            }
-
-            // transform the third index
-#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
-            for (ii = 0; ii < ns3; ++ii) {
-                is = ii / ns2;
-                js2_1 = ii % ns2;
-                js = js2_1 / ns; // third index
-                ks = js2_1 % ns; // fourth index
-
-                for (ks2 = 0; ks2 < ns; ++ks2) {
-                    js2_2 = js * ns + ks2;
-                    v3_tmp3[is][js2_1] += v3_tmp2[is][js2_2] * std::conj(evec_in[ik][ks][ks2]);
-                }
-            }
-
-            // copy to the reduction buffer
-#pragma omp parallel for private(is, js2_1)
-            for (ii = 0; ii < ns3; ++ii) {
-                is = ii / ns2;
-                js2_1 = ii % ns2;
-
-                v3_allreduce_buffer[(static_cast<std::size_t>(ik) * ns + is) * ns2 + js2_1] =
-                    factor * v3_tmp3[is][js2_1];
-            }
+            constexpr auto complex_one = std::complex<double>(1.0, 0.0);
+            transform_index_gemm(&evec_in[0][0][0], &v3_tmp0[0][0], &v3_tmp1[0][0], ns, ns2, complex_one);
+            transform_index_gemm(&evec_in[ik][0][0], &v3_tmp1[0][0], &v3_tmp2[0][0], ns, ns2, complex_one);
+            transform_index_gemm(evec_conj_ik.data(),
+                                 &v3_tmp2[0][0],
+                                 v3_allreduce_buffer.data() + static_cast<std::size_t>(ik) * ns3,
+                                 ns,
+                                 ns2,
+                                 std::complex<double>(factor, 0.0));
 
         } else {
 
@@ -307,7 +271,6 @@ void ScphQhaCommon::compute_V3_elements_mpi_over_kpoint(
     v3_tmp0.clear();
     v3_tmp1.clear();
     v3_tmp2.clear();
-    v3_tmp3.clear();
 
 
     zerofill_elements_acoustic_at_gamma(v3_out, 3, kmesh_dense_in->nk, kmesh_coarse_in->nk_irred);
@@ -336,9 +299,6 @@ void PHON_NS::compute_V3_elements_for_given_IFCs(
     unsigned int is, js, ks;
     NDArray<unsigned int, 2> ind;
     unsigned int i, j;
-    size_t js2_1, js2_2;
-    size_t is2, js2, ks2;
-
     std::complex<double> ret;
     long int ii;
 
@@ -351,7 +311,7 @@ void PHON_NS::compute_V3_elements_for_given_IFCs(
     NDArray<std::complex<double>, 2> v3_tmp0;
     NDArray<std::complex<double>, 2> v3_tmp1;
     NDArray<std::complex<double>, 2> v3_tmp2;
-    NDArray<std::complex<double>, 2> v3_tmp3;
+    std::vector<std::complex<double>> evec_conj_ik(ns2);
 
     if (ngroup_v3_in == 0) {
 #pragma omp parallel for collapse(3) schedule(static)
@@ -378,7 +338,6 @@ void PHON_NS::compute_V3_elements_for_given_IFCs(
     v3_tmp0.resize(ns, ns2);
     v3_tmp1.resize(ns, ns2);
     v3_tmp2.resize(ns, ns2);
-    v3_tmp3.resize(ns, ns2);
 
     // v3_out may come from STL-backed storage via pointer bridges and is not guaranteed
     // to be contiguous across the k-point dimension, so the MPI reduction cannot happen
@@ -409,18 +368,14 @@ void PHON_NS::compute_V3_elements_for_given_IFCs(
             // All matrix elements will be calculated when considering the off-diagonal
             // elements of the phonon self-energy (i.e., when considering polarization mixing).
 
-            // initialize temporary matrices
+            // v3_tmp0 holds the (alpha,mu)-representation Phi(a,b,c), row-major [a][b*ns+c].
 #pragma omp parallel for private(js)
             for (is = 0; is < ns; ++is) {
                 for (js = 0; js < ns2; ++js) {
                     v3_tmp0[is][js] = complex_zero;
-                    v3_tmp1[is][js] = complex_zero;
-                    v3_tmp2[is][js] = complex_zero;
-                    v3_tmp3[is][js] = complex_zero;
                 }
             }
 
-            // copy v3 in (alpha,mu) representation to the temporary matrix
 #pragma omp parallel for private(is, js)
             for (ii = 0; ii < ngroup_v3_in; ++ii) {
 
@@ -429,54 +384,26 @@ void PHON_NS::compute_V3_elements_for_given_IFCs(
                 v3_tmp0[is][js] = v3_array_at_kpair[ii];
             }
 
-            // transform the first index
-#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
-            for (ii = 0; ii < ns3; ++ii) {
-                is = ii / ns2;
-                js2_1 = ii % ns2;
-
-                for (is2 = 0; is2 < ns; ++is2) {
-                    v3_tmp1[is][js2_1] += v3_tmp0[is2][js2_1] * evec_in[0][is][is2];
+            // Three rotating index-transform GEMMs (v4_index_transform.h), each contracting
+            // the outermost index: [a b c] -> [b c i] -> [c i j] -> [i j k], with
+            // evec[0][i][a], evec[ik][j][b] and conj(evec[ik][k][c]). The last one writes
+            // the ik slice of the reduction buffer directly, scaled by the prefactor.
+            // evec_in[ik] must be a contiguous ns x ns row-major block (NDArray storage).
+#pragma omp parallel for private(js)
+            for (is = 0; is < ns; ++is) {
+                for (js = 0; js < ns; ++js) {
+                    evec_conj_ik[is * ns + js] = std::conj(evec_in[ik][is][js]);
                 }
             }
-
-            // transform the second index
-#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
-            for (ii = 0; ii < ns3; ++ii) {
-                is = ii / ns2;
-                js2_1 = ii % ns2;
-                js = js2_1 / ns; // second index
-                ks = js2_1 % ns; // third index
-
-                for (js2 = 0; js2 < ns; ++js2) {
-                    js2_2 = js2 * ns + ks;
-                    v3_tmp2[is][js2_1] += v3_tmp1[is][js2_2] * evec_in[ik][js][js2];
-                }
-            }
-
-            // transform the third index
-#pragma omp parallel for private(js2_1, is, js, ks, js2_2, is2, js2, ks2)
-            for (ii = 0; ii < ns3; ++ii) {
-                is = ii / ns2;
-                js2_1 = ii % ns2;
-                js = js2_1 / ns; // third index
-                ks = js2_1 % ns; // fourth index
-
-                for (ks2 = 0; ks2 < ns; ++ks2) {
-                    js2_2 = js * ns + ks2;
-                    v3_tmp3[is][js2_1] += v3_tmp2[is][js2_2] * std::conj(evec_in[ik][ks][ks2]);
-                }
-            }
-
-            // copy to the reduction buffer
-#pragma omp parallel for private(is, js2_1)
-            for (ii = 0; ii < ns3; ++ii) {
-                is = ii / ns2;
-                js2_1 = ii % ns2;
-
-                v3_allreduce_buffer[(static_cast<std::size_t>(ik) * ns + is) * ns2 + js2_1] =
-                    factor * v3_tmp3[is][js2_1];
-            }
+            constexpr auto complex_one = std::complex<double>(1.0, 0.0);
+            transform_index_gemm(&evec_in[0][0][0], &v3_tmp0[0][0], &v3_tmp1[0][0], ns, ns2, complex_one);
+            transform_index_gemm(&evec_in[ik][0][0], &v3_tmp1[0][0], &v3_tmp2[0][0], ns, ns2, complex_one);
+            transform_index_gemm(evec_conj_ik.data(),
+                                 &v3_tmp2[0][0],
+                                 v3_allreduce_buffer.data() + static_cast<std::size_t>(ik) * ns3,
+                                 ns,
+                                 ns2,
+                                 std::complex<double>(factor, 0.0));
 
         } else {
 
@@ -551,7 +478,6 @@ void PHON_NS::compute_V3_elements_for_given_IFCs(
     v3_tmp0.clear();
     v3_tmp1.clear();
     v3_tmp2.clear();
-    v3_tmp3.clear();
 
     zerofill_elements_acoustic_at_gamma(is_acoustic_gamma_in,
                                         v3_out,
