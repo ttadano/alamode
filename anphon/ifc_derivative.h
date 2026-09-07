@@ -52,6 +52,9 @@ public:
                   const Dynamical &dynamical_in, AnharmonicCore &anharmonic_core_in, int my_rank_in, int nprocs_in);
     ~DerivativeIFC() = default;
 
+    // VERBOSITY of the run; >= 2 prints the stage timers on rank 0.
+    void set_verbosity(const unsigned int verbosity) { verbosity_ = verbosity; }
+
     // Single-pass computation of the m-th strain derivative of the IFCs in real
     // space for ALL 9^m strain-tensor components at once. One scan over
     // fcs_aligned replaces the 9^m per-component scans; use
@@ -209,6 +212,9 @@ private:
     AnharmonicCore &anharmonic_core_; // phi3(k) evaluation in the V3 kernel
     const int my_rank_;
     const int nprocs_;
+    unsigned int verbosity_ = 0;
+
+    void print_stage(const std::string &label, double t_start, bool newline_first = false) const;
 
     void read_del_v2_del_umn_in_kspace(double **omega2_harmonic,
                                        const std::complex<double> *const *const *const evec_harmonic,

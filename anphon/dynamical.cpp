@@ -315,7 +315,8 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 }
 
 void Dynamical::eval_k(const double *xk_in, const double *kvec_in, const std::vector<FcsArrayWithCell> &fc2,
-                       double *eval_out, std::complex<double> **evec_out, const bool require_evec) const
+                       double *eval_out, std::complex<double> **evec_out, const bool require_evec,
+                       int *info_out) const
 {
     // Calculate phonon energy for the specific k-point given in fractional basis
 
@@ -362,12 +363,17 @@ void Dynamical::eval_k(const double *xk_in, const double *kvec_in, const std::ve
         }
     }
 
-    solve_dense_hermitian(neval,
+    const auto info = solve_dense_hermitian_info(neval,
                           dymat_k,
-                          eval_out,
-                          (require_eigenvectors && require_evec) ? evec_out : nullptr,
-                          require_evec,
-                          UPLO);
+                                                 eval_out,
+                                                 (require_eigenvectors && require_evec) ? evec_out : nullptr,
+                                                 require_evec,
+                                                 UPLO);
+    if (info_out) {
+        *info_out = info;
+    } else if (info != 0) {
+        exit("eval_k", "zheev failed to diagonalize the dynamical matrix (INFO != 0).");
+    }
     dymat_k.clear();
 }
 
@@ -385,7 +391,8 @@ void Dynamical::diagonalize_gamma_analytic(double *eval_out, std::complex<double
 }
 
 void Dynamical::eval_k_ewald(const double *xk_in, const double *kvec_in, const std::vector<FcsArrayWithCell> &fc2_in,
-                             double *eval_out, std::complex<double> **evec_out, const bool require_evec) const
+                             double *eval_out, std::complex<double> **evec_out, const bool require_evec,
+                             int *info_out) const
 {
     //
     // Calculate phonon energy for the specific k-point given in fractional basis
@@ -436,12 +443,17 @@ void Dynamical::eval_k_ewald(const double *xk_in, const double *kvec_in, const s
         }
     }
 
-    solve_dense_hermitian(neval,
+    const auto info = solve_dense_hermitian_info(neval,
                           dymat_k,
-                          eval_out,
-                          (require_eigenvectors && require_evec) ? evec_out : nullptr,
-                          require_evec,
-                          UPLO);
+                                                 eval_out,
+                                                 (require_eigenvectors && require_evec) ? evec_out : nullptr,
+                                                 require_evec,
+                                                 UPLO);
+    if (info_out) {
+        *info_out = info;
+    } else if (info != 0) {
+        exit("eval_k_ewald", "zheev failed to diagonalize the dynamical matrix (INFO != 0).");
+    }
     dymat_k.clear();
 }
 
@@ -864,24 +876,37 @@ void Dynamical::get_eigenvalues_dymat(const unsigned int nk_in, const double *co
         exit("get_eigenvalues_dymat", "The number of k points must be larger than 0.");
     }
 
-    // Calculate phonon eigenvalues and eigenvectors for all k-points
-    // We should not use OpenMP parallelization for this part because
-    // LAPACK is called inside each function, which also used thread parallelization.
-    for (int ik = 0; ik < nk_in; ++ik) {
+    // One k-point per thread, one single-threaded LAPACK call each (MKL and the
+    // OpenMP build of OpenBLAS run one thread per call inside a parallel region;
+    // pthreads OpenBLAS / Accelerate must be pinned, see v4_index_transform.h).
+    // For a single k-point the region is inactive and LAPACK keeps its threads.
+    const auto nk = static_cast<int>(nk_in);
+    int nfail = 0;
+#pragma omp parallel for schedule(dynamic) reduction(+ : nfail) if (nk > 1)
+    for (int ik = 0; ik < nk; ++ik) {
+        int info = 0;
         if (nonanalytic == 3) {
             eval_k_ewald(&xk_in[ik][0],
                          &kvec_na_in[ik][0],
                          fc2_without_dipole_in,
                          eval_ret[ik],
                          evec_ret[ik],
-                         require_evec);
+                         require_evec,
+                         &info);
         } else {
-            eval_k(&xk_in[ik][0], &kvec_na_in[ik][0], fc2, eval_ret[ik], evec_ret[ik], require_evec);
+            eval_k(&xk_in[ik][0], &kvec_na_in[ik][0], fc2, eval_ret[ik], evec_ret[ik], require_evec, &info);
+        }
+        if (info != 0) {
+            ++nfail;
+            continue;
         }
         // Phonon energy is the square-root of the eigenvalue
         for (unsigned int is = 0; is < neval; ++is) {
             eval_ret[ik][is] = freq(eval_ret[ik][is]);
         }
+    }
+    if (nfail != 0) {
+        exit("get_eigenvalues_dymat", "zheev failed to diagonalize the dynamical matrix (INFO != 0).");
     }
 }
 
@@ -1696,74 +1721,55 @@ void Dynamical::exec_interpolation(const unsigned int kmesh_orig[3], std::comple
                                    const std::vector<Eigen::MatrixXcd> &dymat_long, MinimumDistList ***mindist_list_in,
                                    const bool use_precomputed_dymat, const bool return_sqrt) const
 {
-    unsigned int i, j, is;
     const auto ns = dynamical->neval;
     const auto nk1 = kmesh_orig[0];
     const auto nk2 = kmesh_orig[1];
     const auto nk3 = kmesh_orig[2];
+    const auto nk = static_cast<int>(nk_dense);
+    int nfail = 0;
 
-    std::vector<double> eval_vec(ns);
+    // One k-point per thread with its own scratch and one single-threaded LAPACK
+    // call (MKL and the OpenMP build of OpenBLAS run one thread per call inside a
+    // parallel region; pthreads OpenBLAS / Accelerate must be pinned, see
+    // v4_index_transform.h). r2q and the Ewald routines have their own parallel
+    // regions, which run serially when nested. For a single k-point the region is
+    // inactive and LAPACK keeps its threads. A failed diagonalization is reported
+    // after the region (exit() aborts through MPI); the remaining fatal paths
+    // inside (allocation failure, the Ewald geometry check) abort from the worker.
+#pragma omp parallel for schedule(dynamic) reduction(+ : nfail) if (nk > 1)
+    for (int ik = 0; ik < nk; ++ik) {
+        NDArray<std::complex<double>, 2> mat_tmp(ns, ns);
+        NDArray<double, 1> eval_real(ns);
 
-    NDArray<std::complex<double>, 2> mat_tmp(ns, ns);
-    NDArray<double, 1> eval_real(ns);
+        r2q(xk_dense[ik], nk1, nk2, nk3, ns, mindist_list_in, dymat_r, mat_tmp);
 
-    if (use_precomputed_dymat) {
-
-        for (int ik = 0; ik < nk_dense; ++ik) {
-
-            r2q(xk_dense[ik], nk1, nk2, nk3, ns, mindist_list_in, dymat_r, mat_tmp);
-
-            for (i = 0; i < ns; ++i) {
-                for (j = 0; j < ns; ++j) {
+        if (use_precomputed_dymat) {
+            for (unsigned int i = 0; i < ns; ++i) {
+                for (unsigned int j = 0; j < ns; ++j) {
                     mat_tmp[i][j] += dymat_short[ik](i, j);
                 }
             }
-
             if (nonanalytic) {
-                for (i = 0; i < ns; ++i) {
-                    for (j = 0; j < ns; ++j) {
+                for (unsigned int i = 0; i < ns; ++i) {
+                    for (unsigned int j = 0; j < ns; ++j) {
                         mat_tmp[i][j] += dymat_long[ik](i, j);
                     }
                 }
             }
-            diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
-
-            if (return_sqrt) {
-                for (is = 0; is < ns; ++is) {
-                    const auto eval_tmp = eval_real[is];
-                    if (eval_tmp < 0.0) {
-                        eval_vec[is] = -std::sqrt(-eval_tmp);
-                    } else {
-                        eval_vec[is] = std::sqrt(eval_tmp);
-                    }
-                }
-                for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
-            } else {
-                for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_real[is];
-            }
-        }
-
-    } else {
-
-        NDArray<std::complex<double>, 2> mat_harmonic(ns, ns);
-        NDArray<std::complex<double>, 2> mat_harmonic_na;
-        if (nonanalytic) {
-            mat_harmonic_na.resize(ns, ns);
-        }
-
-        for (int ik = 0; ik < nk_dense; ++ik) {
+        } else {
+            NDArray<std::complex<double>, 2> mat_harmonic(ns, ns);
             if (nonanalytic == 3) {
                 calc_analytic_k(xk_dense[ik], ewald->fc2_without_dipole, mat_harmonic);
             } else {
                 calc_analytic_k(xk_dense[ik], fcs_phonon->force_constant_with_cell[0], mat_harmonic);
             }
-            r2q(xk_dense[ik], nk1, nk2, nk3, ns, mindist_list_in, dymat_r, mat_tmp);
-            for (i = 0; i < ns; ++i) {
-                for (j = 0; j < ns; ++j) {
+            for (unsigned int i = 0; i < ns; ++i) {
+                for (unsigned int j = 0; j < ns; ++j) {
                     mat_tmp[i][j] += mat_harmonic[i][j];
                 }
             }
             if (nonanalytic) {
+                NDArray<std::complex<double>, 2> mat_harmonic_na(ns, ns);
                 if (nonanalytic == 1) {
                     calc_nonanalytic_k_parlinski(xk_dense[ik], kvec_dense[ik], mat_harmonic_na);
                 } else if (nonanalytic == 2) {
@@ -1771,36 +1777,31 @@ void Dynamical::exec_interpolation(const unsigned int kmesh_orig[3], std::comple
                 } else if (nonanalytic == 3) {
                     ewald->add_longrange_matrix(xk_dense[ik], kvec_dense[ik], mat_harmonic_na);
                 }
-                for (i = 0; i < ns; ++i) {
-                    for (j = 0; j < ns; ++j) {
+                for (unsigned int i = 0; i < ns; ++i) {
+                    for (unsigned int j = 0; j < ns; ++j) {
                         mat_tmp[i][j] += mat_harmonic_na[i][j];
                     }
                 }
             }
-            diagonalize_interpolated_matrix(mat_tmp, eval_real, evec_out[ik], true);
+        }
 
+        if (solve_dense_hermitian_info(ns, mat_tmp, eval_real, evec_out[ik], true, 'U') != 0) {
+            ++nfail;
+            continue;
+        }
+
+        for (unsigned int is = 0; is < ns; ++is) {
+            const auto eval_tmp = eval_real[is];
             if (return_sqrt) {
-                for (is = 0; is < ns; ++is) {
-                    const auto eval_tmp = eval_real[is];
-                    if (eval_tmp < 0.0) {
-                        eval_vec[is] = -std::sqrt(-eval_tmp);
-                    } else {
-                        eval_vec[is] = std::sqrt(eval_tmp);
-                    }
-                }
-                for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_vec[is];
+                eval_out[ik][is] = (eval_tmp < 0.0) ? -std::sqrt(-eval_tmp) : std::sqrt(eval_tmp);
             } else {
-                for (is = 0; is < ns; ++is) eval_out[ik][is] = eval_real[is];
+                eval_out[ik][is] = eval_tmp;
             }
         }
     }
-}
-
-
-void Dynamical::diagonalize_interpolated_matrix(std::complex<double> **mat_in, double *eval_out,
-                                                std::complex<double> **evec_out, const bool require_evec) const
-{
-    solve_dense_hermitian(dynamical->neval, mat_in, eval_out, require_evec ? evec_out : nullptr, require_evec, 'U');
+    if (nfail != 0) {
+        exit("exec_interpolation", "zheev failed to diagonalize the interpolated dynamical matrix (INFO != 0).");
+    }
 }
 
 

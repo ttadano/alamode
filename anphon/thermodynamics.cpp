@@ -731,7 +731,6 @@ auto Thermodynamics::FE_scph_correction(unsigned int iT, double **eval, std::com
 {
     // The correction term to the free energy within SCPH theory.
     // This term is necessary to result in S =
-    using namespace Eigen;
     const auto nk = kmesh_dos_in.nk;
     const auto ns = ns_in;
     const auto temp = system_in.Tmin + static_cast<double>(iT) * system_in.dT;
@@ -746,28 +745,22 @@ auto Thermodynamics::FE_scph_correction(unsigned int iT, double **eval, std::com
         const auto omega = eval[ik][is];
         if (std::abs(omega) < eps8) continue;
 
-        MatrixXcd Cmat(ns, ns);
-
-        // calculate Cmat
-        for (int js = 0; js < ns; js++) {
-            for (int ks = 0; ks < ns; ks++) {
-                Cmat(js, ks) = 0.0;
-                for (int ls = 0; ls < ns; ls++) {
-                    Cmat(js, ks) += std::conj(evec_harm_renormalized[ik][js][ls]) * evec[ik][ks][ls];
-                }
-            }
-        }
-
+        // Only the overlaps of mode `is` with the renormalized-harmonic modes are
+        // needed: c(js) = <e_harm(js) | e(is)>, ns^2 work per (ik, is).
         auto tmp_c = std::complex<double>(0.0, 0.0);
         double omega2_harm;
 
         for (int js = 0; js < ns; js++) {
+            auto c = std::complex<double>(0.0, 0.0);
+            for (int ls = 0; ls < ns; ls++) {
+                c += std::conj(evec_harm_renormalized[ik][js][ls]) * evec[ik][is][ls];
+            }
             if (eval_harm_renormalized[ik][js] < 0.0) {
                 omega2_harm = -pow2(eval_harm_renormalized[ik][js]);
             } else {
                 omega2_harm = pow2(eval_harm_renormalized[ik][js]);
             }
-            tmp_c += std::conj(Cmat(js, is)) * omega2_harm * Cmat(js, is);
+            tmp_c += std::conj(c) * omega2_harm * c;
         }
 
         if (classical) {

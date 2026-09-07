@@ -1,4 +1,5 @@
 #include "ifc_derivative.h"
+#include "stage_timer.h"
 #include <algorithm>
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include <cmath>
@@ -128,6 +129,11 @@ DerivativeIFC::DerivativeIFC(const System &system_in, const Symmetry &symmetry_i
     system_(system_in), symmetry_(symmetry_in), fcs_phonon_(fcs_phonon_in), dynamical_(dynamical_in),
     anharmonic_core_(anharmonic_core_in), my_rank_(my_rank_in), nprocs_(nprocs_in)
 {}
+
+void DerivativeIFC::print_stage(const std::string &label, const double t_start, const bool newline_first) const
+{
+    print_stage_line(label, stage_clock() - t_start, my_rank_, verbosity_, newline_first);
+}
 
 void DerivativeIFC::compute_dV1_dumn(MatrixXcdRowMajor &del_v1_del_umn,
                                      const std::complex<double> *const *const *const evec_harmonic) const
@@ -564,6 +570,8 @@ void DerivativeIFC::compute_dV3_dumn(std::vector<std::vector<MatrixXcdRowMajor>>
 
     const auto is_acoustic_gamma = dynamical_.detect_acoustic_modes_at_gamma(evec_harmonic[0], 0.9, false);
 
+    double t_v3_build = 0.0;
+
     for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
         for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
 
@@ -616,6 +624,7 @@ void DerivativeIFC::compute_dV3_dumn(std::vector<std::vector<MatrixXcdRowMajor>>
                 kptr_view[ik] = row_ptrs.data() + static_cast<std::size_t>(ik) * ns;
             }
 
+            const auto t_build = stage_clock();
             compute_V3_elements_for_given_IFCs(kptr_view.data(),
                                                is_acoustic_gamma,
                                                ngroup_tmp,
@@ -632,6 +641,7 @@ void DerivativeIFC::compute_dV3_dumn(std::vector<std::vector<MatrixXcdRowMajor>>
                                                anharmonic_core_,
                                                my_rank_,
                                                nprocs_);
+            t_v3_build += stage_clock() - t_build;
 
             fcs_group_tmp.clear();
             invmass_v3_tmp.clear();
@@ -640,6 +650,7 @@ void DerivativeIFC::compute_dV3_dumn(std::vector<std::vector<MatrixXcdRowMajor>>
         }
     }
     invsqrt_mass_p.clear();
+    print_stage_line("dV3/du: 9 x V3 build", t_v3_build, my_rank_, verbosity_, true);
 }
 
 void DerivativeIFC::compute_dV_dumn_all_real_space(const std::vector<FcsArrayWithCell> &fcs_aligned,
@@ -1022,6 +1033,7 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
         exit("set_del_v_relax_cell", "inconsistent dimensions between input sizes and DelVStrainData.");
     }
 
+    auto t_stage = stage_clock();
     switch (renorm_2to1st) {
     case 0:
         if (my_rank_ == 0) std::cout << "  - first-order derivatives of first-order IFCs (set as zero) ... ";
@@ -1043,6 +1055,9 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
         break;
     }
 
+    print_stage("dV1/du", t_stage);
+
+    t_stage = stage_clock();
     switch (renorm_34to1st) {
     case 0:
         if (my_rank_ == 0) std::cout << "  - second-order derivatives of first-order IFCs (set zero) ... ";
@@ -1070,6 +1085,9 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
         break;
     }
 
+    print_stage("d2V1/du2, d3V1/du3", t_stage);
+
+    t_stage = stage_clock();
     switch (renorm_3to2nd) {
     case 1:
         if (my_rank_ == 0)
@@ -1122,22 +1140,29 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
         break;
     }
     if (my_rank_ == 0) std::cout << "  done!\n";
+    print_stage("dV2/du (total)", t_stage);
 
     if (my_rank_ == 0)
         std::cout << "  - second-order derivatives of harmonic IFCs (from quartic IFCs) ... " << std::flush;
 
+    t_stage = stage_clock();
     compute_d2V2_dumn2(del_v_strain.del2_v2, evec_harmonic, nk, kmesh_dense->xk);
 
     if (my_rank_ == 0) {
         std::cout << "  done!\n";
+    }
+    print_stage("d2V2/du2 (from quartic IFCs)", t_stage);
+    if (my_rank_ == 0) {
         std::cout << "  - first-order derivatives of cubic IFCs (from quartic IFCs) ... " << std::flush;
     }
 
+    t_stage = stage_clock();
     compute_dV3_dumn(del_v_strain.del_v3, evec_harmonic, kmesh_coarse, kmesh_dense, phase_cache_in);
 
     if (my_rank_ == 0) {
         std::cout << "  done!\n";
     }
+    print_stage("dV3/du (from quartic IFCs, total)", t_stage);
 }
 
 void DerivativeIFC::set_del_v_relax_cell_linearQHA(const KpointMeshUniform *kmesh_coarse,
@@ -1638,7 +1663,6 @@ void DerivativeIFC::process_strain_harmonic_set(const std::vector<strain_couplin
 
     int ixyz1, ixyz2, ixyz3, ixyz4;
     int ixyz1_2, ixyz2_2, ixyz3_2, ixyz4_2;
-    int ixyz_comb1, ixyz_comb2;
     int i1, i2;
     int iat1, iat2, iat1_2, iat2_2, iat2_2_prim;
     int itran1, itran2;
@@ -1769,6 +1793,7 @@ void DerivativeIFC::process_strain_harmonic_set(const std::vector<strain_couplin
         }
     }
 
+    const auto t_symm = stage_clock();
     symm_mapping_s.resize(symmetry_.SymmListWithMap_ref.size(), nat);
     symmetry_.make_supercell_mapping_by_symmetry_operations(symm_mapping_s);
 
@@ -1778,42 +1803,53 @@ void DerivativeIFC::process_strain_harmonic_set(const std::vector<strain_couplin
     symmetry_.make_inverse_translation_mapping(inv_translation_mapping);
 
     if (renorm_3to2nd == 2) {
-        for (isymm = 0; isymm < symmetry_.SymmListWithMap_ref.size(); isymm++) {
-            for (iat1 = 0; iat1 < natmin; iat1++) {
-                for (ixyz_comb1 = 0; ixyz_comb1 < 81; ixyz_comb1++) {
-                    ixyz1 = ixyz_comb1 / 27;
-                    ixyz2 = (ixyz_comb1 / 9) % 3;
-                    ixyz3 = (ixyz_comb1 / 3) % 3;
-                    ixyz4 = ixyz_comb1 % 3;
-                    for (ixyz_comb2 = 0; ixyz_comb2 < 81; ixyz_comb2++) {
-                        ixyz1_2 = ixyz_comb2 / 27;
-                        ixyz2_2 = (ixyz_comb2 / 9) % 3;
-                        ixyz3_2 = (ixyz_comb2 / 3) % 3;
-                        ixyz4_2 = ixyz_comb2 % 3;
+        // Symmetrize dphi2/du over the reference-structure operations. For a fixed
+        // operation the first atom is mapped by a permutation of the primitive atoms,
+        // so different iat1 write disjoint rows of dphi2_dumn_realspace_symm and the
+        // iat1 loop is parallel; the operations stay sequential. Per output element
+        // the contributions arrive in the same order as in the serial loop
+        // (operation, then the input components), so the result is unchanged for
+        // finite inputs; terms with an exactly zero factor are skipped (most of the
+        // 81 x 81 products vanish for axis-aligned rotations).
+        const auto nsymm = static_cast<int>(symmetry_.SymmListWithMap_ref.size());
+        const auto &map_p2s = system_.get_map_p2s(0);
+        const auto &map_s2p = system_.get_map_s2p(0);
+        for (int isym = 0; isym < nsymm; isym++) {
+            const auto &symop = symmetry_.SymmListWithMap_ref[isym];
+            const double *rot = symop.rot.data();
+#pragma omp parallel for schedule(dynamic)
+            for (int iatom1 = 0; iatom1 < natmin; iatom1++) {
+                const int iatom1_2 = symop.mapping[iatom1];
+                int itr1 = 0;
+                for (int i = 0; i < ntran; i++) {
+                    if (map_p2s[iatom1_2][i] == symm_mapping_s[isym][map_p2s[iatom1][0]]) itr1 = i;
+                }
+                for (int iatom2 = 0; iatom2 < nat; iatom2++) {
+                    const int iatom2_s = symm_mapping_s[isym][iatom2];
+                    const int iatom2_2 = map_p2s[map_s2p[iatom2_s].atom_num]
+                                                [inv_translation_mapping[itr1][map_s2p[iatom2_s].tran_num]];
 
-                        iat1_2 = symmetry_.SymmListWithMap_ref[isymm].mapping[iat1];
+                    for (int comb1 = 0; comb1 < 81; comb1++) {
+                        const int a1 = comb1 / 27;
+                        const int a2 = (comb1 / 9) % 3;
+                        const int a3 = (comb1 / 3) % 3;
+                        const int a4 = comb1 % 3;
+                        const auto val = dphi2_dumn_realspace_in[a1][a2][iatom1 * 3 + a3][iatom2 * 3 + a4];
+                        if (val == 0.0) continue;
 
-                        for (i1 = 0; i1 < ntran; i1++) {
-                            if (system_.get_map_p2s(0)[iat1_2][i1] ==
-                                symm_mapping_s[isymm][system_.get_map_p2s(0)[iat1][0]])
-                            {
-                                itran1 = i1;
-                            }
-                        }
+                        for (int comb2 = 0; comb2 < 81; comb2++) {
+                            const int b1 = comb2 / 27;
+                            const int b2 = (comb2 / 9) % 3;
+                            const int b3 = (comb2 / 3) % 3;
+                            const int b4 = comb2 % 3;
+                            const auto r1 = rot[b1 * 3 + a1];
+                            const auto r2 = rot[b2 * 3 + a2];
+                            const auto r3 = rot[b3 * 3 + a3];
+                            const auto r4 = rot[b4 * 3 + a4];
+                            if (r1 == 0.0 || r2 == 0.0 || r3 == 0.0 || r4 == 0.0) continue;
 
-                        for (iat2 = 0; iat2 < nat; iat2++) {
-                            iat2_2 = symm_mapping_s[isymm][iat2];
-                            iat2_2_prim = system_.get_map_s2p(0)[iat2_2].atom_num;
-                            itran2 = system_.get_map_s2p(0)[iat2_2].tran_num;
-
-                            iat2_2 = system_.get_map_p2s(0)[iat2_2_prim][inv_translation_mapping[itran1][itran2]];
-
-                            dphi2_dumn_realspace_symm[ixyz1_2][ixyz2_2][iat1_2 * 3 + ixyz3_2][iat2_2 * 3 + ixyz4_2] +=
-                                dphi2_dumn_realspace_in[ixyz1][ixyz2][iat1 * 3 + ixyz3][iat2 * 3 + ixyz4] *
-                                symmetry_.SymmListWithMap_ref[isymm].rot[ixyz1_2 * 3 + ixyz1] *
-                                symmetry_.SymmListWithMap_ref[isymm].rot[ixyz2_2 * 3 + ixyz2] *
-                                symmetry_.SymmListWithMap_ref[isymm].rot[ixyz3_2 * 3 + ixyz3] *
-                                symmetry_.SymmListWithMap_ref[isymm].rot[ixyz4_2 * 3 + ixyz4];
+                            dphi2_dumn_realspace_symm[b1][b2][iatom1_2 * 3 + b3][iatom2_2 * 3 + b4] +=
+                                val * r1 * r2 * r3 * r4;
                         }
                     }
                 }
@@ -1918,6 +1954,8 @@ void DerivativeIFC::process_strain_harmonic_set(const std::vector<strain_couplin
             }
         }
     }
+
+    print_stage("dV2/du: symmetrization", t_symm, true);
 
     symm_mapping_s.clear();
     inv_translation_mapping.clear();

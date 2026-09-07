@@ -106,13 +106,15 @@ public:
 
     void setup_dynamical();
 
+    // info_out: when given, the LAPACK INFO is stored there instead of exiting on
+    // failure (for calls inside OpenMP regions).
     void eval_k(const double *, const double *, const std::vector<FcsArrayWithCell> &, double *,
-                std::complex<double> **, const bool) const;
+                std::complex<double> **, const bool, int *info_out = nullptr) const;
 
     void modify_eigenvectors() const;
 
     void eval_k_ewald(const double *, const double *, const std::vector<FcsArrayWithCell> &, double *,
-                      std::complex<double> **, const bool) const;
+                      std::complex<double> **, const bool, int *info_out = nullptr) const;
 
     // Diagonalize the analytic dynamical matrix at Gamma (kvec = 0, so no
     // directional nonanalytic term).  Dispatches to eval_k_ewald with the
@@ -156,7 +158,6 @@ public:
         const std::vector<int> &kmap_interpolate_to_scph, std::complex<double> ****mat_transform_sym,
         MinimumDistList ***mindist_list, const unsigned int verbosity);
 
-    void diagonalize_interpolated_matrix(std::complex<double> **, double *, std::complex<double> **, bool) const;
 
     const double *const *get_xrs_image() const;
 
