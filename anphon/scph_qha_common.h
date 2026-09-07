@@ -171,6 +171,7 @@ protected:
     // Print the wall-clock time since t_start for one stage of a structure
     // step (rank 0, VERBOSITY >= 2); t_start is a timer->elapsed() value.
     void print_stage_time(const std::string &label, double t_start) const;
+    void print_stage_value(const std::string &label, double seconds) const;
 
     // Allocate the workspace buffers common to both structural-optimization
     // drivers, compute the reference V3/V4 elements and the strain

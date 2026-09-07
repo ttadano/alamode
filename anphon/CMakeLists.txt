@@ -256,6 +256,7 @@ set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
             ${PROJECT_SOURCE_DIR}/thermodynamics.h
             ${PROJECT_SOURCE_DIR}/v4_distributed.h
             ${PROJECT_SOURCE_DIR}/v4_index_transform.h
+            ${PROJECT_SOURCE_DIR}/stage_timer.h
             ${PROJECT_SOURCE_DIR}/v4_service.h
             ${PROJECT_SOURCE_DIR}/timer.h
             ${PROJECT_SOURCE_DIR}/write_phonons.h

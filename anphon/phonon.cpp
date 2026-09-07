@@ -31,6 +31,7 @@
 #include "relaxation.h"
 #include "scph.h"
 #include "selfenergy.h"
+#include "stage_timer.h"
 #include "symmetry_core.h"
 #include "system.h"
 #include "thermodynamics.h"
@@ -306,9 +307,13 @@ void PHON::execute_self_consistent_phonon() const
         }
     }
 
+    auto t_stage = timer->elapsed();
     setup_base();
+    print_stage_line("setup (IFCs, symmetry, k points, ...)", timer->elapsed() - t_stage, mympi->my_rank, get_verbosity());
 
+    t_stage = timer->elapsed();
     dynamical->diagonalize_dynamical_all();
+    print_stage_line("harmonic diagonalization, all k", timer->elapsed() - t_stage, mympi->my_rank, get_verbosity());
     relaxation->setup_relaxation();
 
     if (mode == "SCPH") {

@@ -27,6 +27,8 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "memory.h"
 #include "mpi_common.h"
 #include "phonon.h"
+#include "stage_timer.h"
+#include "timer.h"
 #include "system.h"
 #include "thermodynamics.h"
 #include "write_phonons.h"
@@ -110,7 +112,9 @@ void Fcs_phonon::setup(const std::string &mode)
 
     if (mympi->my_rank == 0) {
 
+        const auto t_stage = timer->elapsed();
         load_fcs_from_file(maxorder);
+        print_stage_line("IFCs: read from file", timer->elapsed() - t_stage, mympi->my_rank, writes->getVerbosity());
 
         if (writes->getVerbosity() > 0) {
             for (auto i = 0; i < maxorder; ++i) {
@@ -132,8 +136,13 @@ void Fcs_phonon::setup(const std::string &mode)
         if (writes->getVerbosity() > 0) std::cout << '\n';
     }
 
+    auto t_stage = timer->elapsed();
     MPI_Bcast_fcs_array(maxorder);
+    print_stage_line("IFCs: MPI broadcast", timer->elapsed() - t_stage, mympi->my_rank, writes->getVerbosity());
+    t_stage = timer->elapsed();
     replicate_force_constants(maxorder);
+    print_stage_line("IFCs: replicate to the unit cell", timer->elapsed() - t_stage, mympi->my_rank,
+                     writes->getVerbosity());
 }
 
 void Fcs_phonon::replicate_force_constants(const int maxorder_in)

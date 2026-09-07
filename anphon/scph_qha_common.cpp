@@ -9,6 +9,7 @@
 */
 
 #include "scph_qha_common.h"
+#include "stage_timer.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -477,8 +478,11 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
         if (dos->kmesh_dos.get()) {
             eval_update.resize(NT, dos->kmesh_dos->nk, ns);
             evec_tmp.resize(dos->kmesh_dos->nk, ns, ns);
-            eval_harm_renorm.resize(NT, dos->kmesh_dos->nk, ns);
-            evec_harm_renorm.resize(dos->kmesh_dos->nk, ns, ns);
+            if (!is_qha) {
+                // Renormalized-harmonic branch, used only by the SCPH free-energy correction.
+                eval_harm_renorm.resize(NT, dos->kmesh_dos->nk, ns);
+                evec_harm_renorm.resize(dos->kmesh_dos->nk, ns, ns);
+            }
 
             if (dos->compute_dos) {
                 dos_update.resize(NT, dos->n_energy);
@@ -547,10 +551,18 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
                 }
                 emax_now += dos->delta_e;
                 dos->update_dos_energy_grid(emin_now, emax_now);
+                // The grid update changes n_energy; the DOS arrays were sized with the old value.
+                dos_update.resize(NT, dos->n_energy);
+                if (dos->projected_dos) {
+                    pdos_update.resize(NT, ns, dos->n_energy);
+                }
             }
+
+            double t_interp = 0.0, t_dos = 0.0, t_fe = 0.0, t_rest = 0.0;
 
             for (auto iT = 0; iT < NT; ++iT) {
                 auto temperature = Tmin + dT * static_cast<double>(iT);
+                auto t_stage = timer->elapsed();
 
                 // Interpolate SCPH-renormalized frequencies/eigenvectors onto DOS mesh.
                 dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
@@ -565,19 +577,25 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
                                               mindist_list_in,
                                               true);
 
-                // when is_qha = true, eval_harm_renorm is same as eval_update.
-                // Interpolate renormalized harmonic branch needed for SCPH free-energy correction.
-                dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
-                                              delta_harmonic_dymat_renormalize[iT],
-                                              dos->kmesh_dos->nk,
-                                              dos->kmesh_dos->xk,
-                                              dos->kmesh_dos->kvec_na,
-                                              eval_harm_renorm[iT],
-                                              evec_harm_renorm,
-                                              dymat_harm_short,
-                                              dymat_harm_long,
-                                              mindist_list_in,
-                                              true);
+                // Interpolate the renormalized harmonic branch needed for the SCPH free-energy
+                // correction. In QHA mode the correction is not used (compute_FE_total ignores
+                // it), so the interpolation and the correction are skipped.
+                if (!is_qha) {
+                    dynamical->exec_interpolation(kmesh_coarse_in->nk_i,
+                                                  delta_harmonic_dymat_renormalize[iT],
+                                                  dos->kmesh_dos->nk,
+                                                  dos->kmesh_dos->xk,
+                                                  dos->kmesh_dos->kvec_na,
+                                                  eval_harm_renorm[iT],
+                                                  evec_harm_renorm,
+                                                  dymat_harm_short,
+                                                  dymat_harm_long,
+                                                  mindist_list_in,
+                                                  true);
+                }
+
+                t_interp += timer->elapsed() - t_stage;
+                t_stage = timer->elapsed();
 
                 if (dos->compute_dos) {
                     // Compute total DOS from interpolated frequencies via tetrahedron integration.
@@ -587,6 +605,9 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
                                                        dos->tetra_nodes_dos->get_tetras(),
                                                        dos_update[iT]);
                 }
+
+                t_dos += timer->elapsed() - t_stage;
+                t_stage = timer->elapsed();
 
                 heat_capacity[iT] = thermodynamics->Cv_tot(temperature,
                                                            dos->kmesh_dos->nk_irred,
@@ -602,15 +623,24 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
                                                              dos->kmesh_dos->weight_k.data(),
                                                              eval_update[iT]);
 
-                // when is_qha is true, this value is zero.
-                dFE_scph[iT] = thermodynamics->FE_scph_correction(iT,
-                                                                  eval_update[iT],
-                                                                  evec_tmp,
-                                                                  eval_harm_renorm[iT],
-                                                                  evec_harm_renorm,
-                                                                  *dos->kmesh_dos.get(),
-                                                                  ns,
-                                                                  *system);
+                t_rest += timer->elapsed() - t_stage;
+                t_stage = timer->elapsed();
+
+                if (is_qha) {
+                    dFE_scph[iT] = 0.0;
+                } else {
+                    dFE_scph[iT] = thermodynamics->FE_scph_correction(iT,
+                                                                      eval_update[iT],
+                                                                      evec_tmp,
+                                                                      eval_harm_renorm[iT],
+                                                                      evec_harm_renorm,
+                                                                      *dos->kmesh_dos.get(),
+                                                                      ns,
+                                                                      *system);
+                }
+
+                t_fe += timer->elapsed() - t_stage;
+                t_stage = timer->elapsed();
 
                 FE_total[iT] = thermodynamics->compute_FE_total(iT,
                                                                 FE_QHA[iT],
@@ -663,25 +693,7 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
                     }
                 }
 
-                if (compute_Cv_anharmonic == 1) {
-
-                    if (iT >= 1 and iT <= NT - 2) {
-                        get_derivative_central_diff(dT,
-                                                    dos->kmesh_dos->nk,
-                                                    eval_update[iT - 1],
-                                                    eval_update[iT + 1],
-                                                    domega_dt);
-
-                        heat_capacity_correction[iT] =
-                            thermodynamics->Cv_anharm_correction(temperature,
-                                                                 dos->kmesh_dos->nk_irred,
-                                                                 ns,
-                                                                 dos->kmesh_dos->kpoint_irred_all,
-                                                                 dos->kmesh_dos->weight_k.data(),
-                                                                 eval_update[iT],
-                                                                 domega_dt);
-                    }
-                }
+                t_rest += timer->elapsed() - t_stage;
 
                 if (writes->getVerbosity() > 0) {
                     std::cout << '.' << std::flush;
@@ -692,6 +704,36 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
                 }
             }
             if (writes->getVerbosity() > 0) std::cout << "\n\n";
+
+            if (compute_Cv_anharmonic == 1) {
+                // The central difference needs the frequencies at iT-1 and iT+1, so it
+                // runs after the temperature loop (inside the loop, eval_update[iT+1]
+                // was read before it was computed).
+                const auto t_stage = timer->elapsed();
+                for (unsigned int iT = 1; iT + 1 < NT; ++iT) {
+                    const auto temperature = Tmin + dT * static_cast<double>(iT);
+                    get_derivative_central_diff(dT,
+                                                dos->kmesh_dos->nk,
+                                                eval_update[iT - 1],
+                                                eval_update[iT + 1],
+                                                domega_dt);
+
+                    heat_capacity_correction[iT] = thermodynamics->Cv_anharm_correction(temperature,
+                                                                                        dos->kmesh_dos->nk_irred,
+                                                                                        ns,
+                                                                                        dos->kmesh_dos->kpoint_irred_all,
+                                                                                        dos->kmesh_dos->weight_k.data(),
+                                                                                        eval_update[iT],
+                                                                                        domega_dt);
+                }
+                t_rest += timer->elapsed() - t_stage;
+            }
+            // Totals over the temperature loop (the DOS energy-grid pre-pass and the
+            // bubble branch are not included).
+            print_stage_value("post: interpolation to the DOS mesh", t_interp);
+            print_stage_value("post: DOS", t_dos);
+            print_stage_value("post: SCPH free-energy correction", t_fe);
+            print_stage_value("post: Cv, F, S, MSD, ucorr", t_rest);
 
             if (dos->compute_dos) {
                 writes->writePhononDos(dos_update, is_qha, 0);
@@ -750,6 +792,10 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
                     }
                     emax_now += dos->delta_e;
                     dos->update_dos_energy_grid(emin_now, emax_now);
+                    dos_update.resize(NT, dos->n_energy);
+                    if (dos->projected_dos) {
+                        pdos_update.resize(NT, ns, dos->n_energy);
+                    }
                 }
 
                 for (auto iT = 0; iT < NT; ++iT) {
@@ -992,14 +1038,12 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
 
 void ScphQhaCommon::print_stage_time(const std::string &label, const double t_start) const
 {
-    if (mympi->my_rank != 0 || writes->getVerbosity() < 2) {
-        return;
-    }
-    // format in a local stream so that the precision does not leak into std::cout
-    std::ostringstream line;
-    line << "  [timer] " << std::left << std::setw(40) << label << std::right << std::fixed << std::setprecision(3)
-         << timer->elapsed() - t_start << " sec.\n";
-    std::cout << line.str();
+    print_stage_value(label, timer->elapsed() - t_start);
+}
+
+void ScphQhaCommon::print_stage_value(const std::string &label, const double seconds) const
+{
+    print_stage_line(label, seconds, mympi->my_rank, writes->getVerbosity());
 }
 
 void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
@@ -1241,6 +1285,7 @@ void ScphQhaCommon::setup_structural_opt_buffers(StructuralOptWorkspace &ws)
 
     // Precompute the strain derivatives of v1 (1st..3rd order), v2 (1st and
     // 2nd order), and v3 (1st order).
+    auto t_stage = timer->elapsed();
     relaxation->compute_del_v_strain(kmesh_coarse.get(),
                                      kmesh_dense.get(),
                                      *ws.del_v_strain,
@@ -1249,18 +1294,22 @@ void ScphQhaCommon::setup_structural_opt_buffers(StructuralOptWorkspace &ws)
                                      ws.relax_mode,
                                      mindist_list,
                                      phase_factor.get());
+    print_stage_time("strain derivatives of the IFCs (total)", t_stage);
 
     // initialize optimizer
     relaxation->create_optimizer(ns);
 
     // Compute matrix elements of the 4-phonon interaction (row-distributed over the
     // MPI ranks). This operation is the most expensive part of the calculation.
+    t_stage = timer->elapsed();
     build_v4_service(true, selfenergy_offdiagonal);
+    print_stage_time("V4 build", t_stage);
 
     ws.v3_ref.resize(nk, ns, ns * ns);
     ws.v3_renorm.resize(nk, ns, ns * ns);
     ws.v3_with_umn.resize(nk, ns, ns * ns);
 
+    t_stage = timer->elapsed();
     compute_V3_elements_mpi_over_kpoint(ws.v3_ref,
                                         evec_harmonic,
                                         selfenergy_offdiagonal,
@@ -1268,6 +1317,7 @@ void ScphQhaCommon::setup_structural_opt_buffers(StructuralOptWorkspace &ws)
                                         kmesh_dense.get(),
                                         phase_factor.get(),
                                         phi3_reciprocal);
+    print_stage_time("V3 build", t_stage);
 
     // get indices of optical modes at the Gamma point (the complement of the
     // eigenvector-based acoustic assignment)

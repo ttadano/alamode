@@ -1,4 +1,5 @@
 #include "ifc_derivative.h"
+#include "stage_timer.h"
 #include <algorithm>
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include <cmath>
@@ -128,6 +129,11 @@ DerivativeIFC::DerivativeIFC(const System &system_in, const Symmetry &symmetry_i
     system_(system_in), symmetry_(symmetry_in), fcs_phonon_(fcs_phonon_in), dynamical_(dynamical_in),
     anharmonic_core_(anharmonic_core_in), my_rank_(my_rank_in), nprocs_(nprocs_in)
 {}
+
+void DerivativeIFC::print_stage(const std::string &label, const double t_start, const bool newline_first) const
+{
+    print_stage_line(label, stage_clock() - t_start, my_rank_, verbosity_, newline_first);
+}
 
 void DerivativeIFC::compute_dV1_dumn(MatrixXcdRowMajor &del_v1_del_umn,
                                      const std::complex<double> *const *const *const evec_harmonic) const
@@ -564,6 +570,8 @@ void DerivativeIFC::compute_dV3_dumn(std::vector<std::vector<MatrixXcdRowMajor>>
 
     const auto is_acoustic_gamma = dynamical_.detect_acoustic_modes_at_gamma(evec_harmonic[0], 0.9, false);
 
+    double t_v3_build = 0.0;
+
     for (ixyz1 = 0; ixyz1 < 3; ixyz1++) {
         for (ixyz2 = 0; ixyz2 < 3; ixyz2++) {
 
@@ -616,6 +624,7 @@ void DerivativeIFC::compute_dV3_dumn(std::vector<std::vector<MatrixXcdRowMajor>>
                 kptr_view[ik] = row_ptrs.data() + static_cast<std::size_t>(ik) * ns;
             }
 
+            const auto t_build = stage_clock();
             compute_V3_elements_for_given_IFCs(kptr_view.data(),
                                                is_acoustic_gamma,
                                                ngroup_tmp,
@@ -632,6 +641,7 @@ void DerivativeIFC::compute_dV3_dumn(std::vector<std::vector<MatrixXcdRowMajor>>
                                                anharmonic_core_,
                                                my_rank_,
                                                nprocs_);
+            t_v3_build += stage_clock() - t_build;
 
             fcs_group_tmp.clear();
             invmass_v3_tmp.clear();
@@ -640,6 +650,7 @@ void DerivativeIFC::compute_dV3_dumn(std::vector<std::vector<MatrixXcdRowMajor>>
         }
     }
     invsqrt_mass_p.clear();
+    print_stage_line("dV3/du: 9 x V3 build", t_v3_build, my_rank_, verbosity_, true);
 }
 
 void DerivativeIFC::compute_dV_dumn_all_real_space(const std::vector<FcsArrayWithCell> &fcs_aligned,
@@ -1022,6 +1033,7 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
         exit("set_del_v_relax_cell", "inconsistent dimensions between input sizes and DelVStrainData.");
     }
 
+    auto t_stage = stage_clock();
     switch (renorm_2to1st) {
     case 0:
         if (my_rank_ == 0) std::cout << "  - first-order derivatives of first-order IFCs (set as zero) ... ";
@@ -1043,6 +1055,9 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
         break;
     }
 
+    print_stage("dV1/du", t_stage);
+
+    t_stage = stage_clock();
     switch (renorm_34to1st) {
     case 0:
         if (my_rank_ == 0) std::cout << "  - second-order derivatives of first-order IFCs (set zero) ... ";
@@ -1070,6 +1085,9 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
         break;
     }
 
+    print_stage("d2V1/du2, d3V1/du3", t_stage);
+
+    t_stage = stage_clock();
     switch (renorm_3to2nd) {
     case 1:
         if (my_rank_ == 0)
@@ -1122,22 +1140,29 @@ void DerivativeIFC::set_del_v_relax_cell(const KpointMeshUniform *kmesh_coarse, 
         break;
     }
     if (my_rank_ == 0) std::cout << "  done!\n";
+    print_stage("dV2/du (total)", t_stage);
 
     if (my_rank_ == 0)
         std::cout << "  - second-order derivatives of harmonic IFCs (from quartic IFCs) ... " << std::flush;
 
+    t_stage = stage_clock();
     compute_d2V2_dumn2(del_v_strain.del2_v2, evec_harmonic, nk, kmesh_dense->xk);
 
     if (my_rank_ == 0) {
         std::cout << "  done!\n";
+    }
+    print_stage("d2V2/du2 (from quartic IFCs)", t_stage);
+    if (my_rank_ == 0) {
         std::cout << "  - first-order derivatives of cubic IFCs (from quartic IFCs) ... " << std::flush;
     }
 
+    t_stage = stage_clock();
     compute_dV3_dumn(del_v_strain.del_v3, evec_harmonic, kmesh_coarse, kmesh_dense, phase_cache_in);
 
     if (my_rank_ == 0) {
         std::cout << "  done!\n";
     }
+    print_stage("dV3/du (from quartic IFCs, total)", t_stage);
 }
 
 void DerivativeIFC::set_del_v_relax_cell_linearQHA(const KpointMeshUniform *kmesh_coarse,
@@ -1769,6 +1794,7 @@ void DerivativeIFC::process_strain_harmonic_set(const std::vector<strain_couplin
         }
     }
 
+    const auto t_symm = stage_clock();
     symm_mapping_s.resize(symmetry_.SymmListWithMap_ref.size(), nat);
     symmetry_.make_supercell_mapping_by_symmetry_operations(symm_mapping_s);
 
@@ -1918,6 +1944,8 @@ void DerivativeIFC::process_strain_harmonic_set(const std::vector<strain_couplin
             }
         }
     }
+
+    print_stage("dV2/du: symmetrization", t_symm, true);
 
     symm_mapping_s.clear();
     inv_translation_mapping.clear();

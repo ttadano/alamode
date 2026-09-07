@@ -1129,6 +1129,8 @@ void Relaxation::compute_del_v_strain(const KpointMeshUniform *kmesh_coarse, con
     const auto ns = dynamical->neval;
     const auto nk = kmesh_dense->nk;
 
+    derivative_ifc->set_verbosity(writes->getVerbosity());
+
     // CoordinatesOnly: keep the unit cell fixed and relax internal coordinates
     // set renormalization from strain as zero
     if (relax_mode == RelaxationStrMode::CoordinatesOnly) {

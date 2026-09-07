@@ -9,6 +9,7 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "anharmonic_core.h"
+#include "stage_timer.h"
 #include <algorithm>
 #include <array>
 #include <boost/lexical_cast.hpp>
@@ -97,8 +98,14 @@ void AnharmonicCore::setup()
     use_tuned_ver = true;
     MPI_Bcast(&use_tuned_ver, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 
+    auto t_stage = timer->elapsed();
     if (fcs_phonon->maxorder >= 2) setup_cubic();
+    print_stage_line("IFCs: cubic index groups", timer->elapsed() - t_stage, mympi->my_rank,
+                     writes->getVerbosity());
+    t_stage = timer->elapsed();
     if (fcs_phonon->maxorder >= 3) setup_quartic();
+    print_stage_line("IFCs: quartic index groups", timer->elapsed() - t_stage, mympi->my_rank,
+                     writes->getVerbosity());
 
     if (mympi->my_rank == 0 && writes->getVerbosity() > 0 && fcs_phonon->maxorder >= 2) {
         std::cout << "  Number of distinct index groups of the anharmonic IFCs:\n";
