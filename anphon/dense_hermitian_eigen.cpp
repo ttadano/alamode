@@ -27,6 +27,14 @@ using namespace PHON_NS;
 void PHON_NS::solve_dense_hermitian(int n, const std::complex<double> *const *mat_in, double *eval_out,
                                     std::complex<double> **evec_out, bool compute_evec, char uplo)
 {
+    if (solve_dense_hermitian_info(n, mat_in, eval_out, evec_out, compute_evec, uplo) != 0) {
+        exit("solve_dense_hermitian", "zheev failed to diagonalize the Hermitian matrix (INFO != 0).");
+    }
+}
+
+int PHON_NS::solve_dense_hermitian_info(int n, const std::complex<double> *const *mat_in, double *eval_out,
+                                        std::complex<double> **evec_out, bool compute_evec, char uplo)
+{
     int INFO;
     int LWORK = (2 * n - 1) * 10;
     NDArray<std::complex<double>, 1> amat(n * n);
@@ -43,9 +51,7 @@ void PHON_NS::solve_dense_hermitian(int n, const std::complex<double> *const *ma
     char JOBZ = compute_evec ? 'V' : 'N';
 
     zheev_(&JOBZ, &uplo, &n, amat, &n, eval_out, WORK, &LWORK, RWORK, &INFO);
-    if (INFO != 0) {
-        exit("solve_dense_hermitian", "zheev failed to diagonalize the Hermitian matrix (INFO != 0).");
-    }
+    if (INFO != 0) return INFO;
 
     if (evec_out) {
         for (int j = 0; j < n; ++j) {
@@ -54,6 +60,7 @@ void PHON_NS::solve_dense_hermitian(int n, const std::complex<double> *const *ma
             }
         }
     }
+    return 0;
 }
 
 void PHON_NS::solve_dense_hermitian_dc(const Eigen::MatrixXcd &mat_in, Eigen::VectorXd &eval_out,

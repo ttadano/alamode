@@ -30,6 +30,12 @@ namespace PHON_NS
 void solve_dense_hermitian(int n, const std::complex<double> *const *mat_in, double *eval_out,
                            std::complex<double> **evec_out, bool compute_evec, char uplo = 'U');
 
+// The same call returning the LAPACK INFO (0 on success) instead of exiting, for
+// use inside OpenMP regions: exit() aborts through MPI and must be called from
+// the master thread after the region.
+int solve_dense_hermitian_info(int n, const std::complex<double> *const *mat_in, double *eval_out,
+                               std::complex<double> **evec_out, bool compute_evec, char uplo = 'U');
+
 // Divide-and-conquer variant (LAPACK zheevd, workspace queried) on Eigen
 // matrices, for the SCPH solver: eigenvalues ascending in eval_out; the
 // eigenvectors, when evec_out is given, in its columns (the convention of
