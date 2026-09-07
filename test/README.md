@@ -31,6 +31,10 @@ Silicon ANPHON --> pass
 - `test_kpmode0.py` covers SCPH postprocess on a general k-point list
   (KPMODE = 0) with the non-analytic correction enabled — the only fixture
   exercising the kpoint_general branch.
+- `test_dfc2_fold.py` covers `DFC2FILE` from an SCPH run whose `&cell` is an
+  integer supercell of the primitive cell (BaTiO3 1x1x2 cell, 2 2 1 meshes):
+  the folded correction must reproduce a primitive-cell SCPH with the same q
+  sampling (2 2 2 / 2 2 2).
 - Known gap: the SCP-failure rescue path in the SCPH structural loop
   (`Relaxation::rescue_step_after_scp_failure`, called from the driver in
   scph.cpp) is not exercised by any fixture; none of the test systems fails

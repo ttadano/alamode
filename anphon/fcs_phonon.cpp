@@ -15,6 +15,8 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <iomanip>
+#include <map>
+#include <tuple>
 #include <iostream>
 #include <string>
 #include "anharmonic_core.h"
@@ -633,8 +635,13 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
         }
     }
 
-    // The correction rows are indexed in the primitive cell of the SCPH run;
-    // it must be the same primitive cell as the present calculation.
+    // The correction rows are indexed in the cell that the SCPH run used as its
+    // primitive cell. That cell may be the present primitive cell or an integer
+    // supercell of it (e.g. an SCPH run with &cell = conventional cell so that
+    // KMESH_INTERPOLATE matches the DFT supercell): every atom of the SCPH cell is
+    // folded onto a present primitive atom and translationally equivalent rows
+    // are added once.
+    std::vector<int> map_dfc2_to_prim;
     {
         Eigen::Matrix3d lavec_dfc2;
         Eigen::MatrixXd xf_dfc2;
@@ -642,12 +649,38 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
         std::vector<std::string> elems_dfc2;
         get_structures_from_h5(file, "PrimitiveCell", lavec_dfc2, xf_dfc2, kinds_dfc2, elems_dfc2);
         const auto &primcell = system->get_primcell();
-        if (static_cast<size_t>(xf_dfc2.rows()) != primcell.number_of_atoms) {
-            exit("append_delta_fc2_from_scph", "The primitive cell of DFC2FILE differs from the present one.");
+        const Eigen::Matrix3d lavec_prim_inv = primcell.lattice_vector.inverse();
+        const Eigen::Matrix3d transmat = lavec_prim_inv * lavec_dfc2;
+        const Eigen::Matrix3d transmat_int = transmat.unaryExpr(
+            [](const double x) { return static_cast<double>(nint(x)); });
+        if ((transmat - transmat_int).cwiseAbs().maxCoeff() > eps4) {
+            exit("append_delta_fc2_from_scph",
+                 "The cell of DFC2FILE is not an integer supercell of the present primitive cell.");
         }
-        if ((lavec_dfc2 - primcell.lattice_vector).cwiseAbs().maxCoeff() > eps4) {
-            warn("append_delta_fc2_from_scph",
-                 "The primitive lattice vectors of DFC2FILE differ from the present ones.");
+        const auto ncopy = nint(std::abs(transmat_int.determinant()));
+        if (static_cast<size_t>(xf_dfc2.rows()) != ncopy * primcell.number_of_atoms) {
+            exit("append_delta_fc2_from_scph",
+                 "The number of atoms in the DFC2FILE cell is inconsistent with the present primitive cell.");
+        }
+        map_dfc2_to_prim.assign(xf_dfc2.rows(), -1);
+        for (Eigen::Index i = 0; i < xf_dfc2.rows(); ++i) {
+            const Eigen::Vector3d xf = lavec_prim_inv * (lavec_dfc2 * xf_dfc2.row(i).transpose());
+            for (size_t p = 0; p < primcell.number_of_atoms; ++p) {
+                Eigen::Vector3d xdiff = xf - primcell.x_fractional.row(p).transpose();
+                xdiff = xdiff.unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
+                if ((primcell.lattice_vector * xdiff).norm() < 1.0e-3) {
+                    map_dfc2_to_prim[i] = static_cast<int>(p);
+                    break;
+                }
+            }
+            if (map_dfc2_to_prim[i] < 0) {
+                exit("append_delta_fc2_from_scph",
+                     "An atom of the DFC2FILE cell has no counterpart in the present primitive cell.");
+            }
+        }
+        if (ncopy > 1 && writes->getVerbosity() > 0) {
+            std::cout << "\n  DFC2FILE: the SCPH cell holds " << ncopy
+                      << " copies of the present primitive cell; corrections are folded.";
         }
     }
 
@@ -681,16 +714,36 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
     std::vector<unsigned int> atoms_s_pair(2);
     std::vector<Eigen::Vector3d> relvecs_pair(1);
 
-    size_t nadded = 0;
+    // Translationally equivalent rows (copies of the primitive cell inside the SCPH
+    // cell) are keyed by (atom1, coord1, atom2, coord2, relvec) and added once.
+    std::map<std::tuple<int, int, int, int, long, long, long>, double> seen;
+
+    size_t nadded = 0, nfolded = 0;
     for (Eigen::Index irow = 0; irow < delta.size(); ++irow) {
         if (std::abs(delta[irow]) < eps) continue;
 
-        const auto iat = atom_indices(irow, 0);
-        const auto jat = atom_indices(irow, 1);
+        const auto iat = map_dfc2_to_prim[atom_indices(irow, 0)];
+        const auto jat = map_dfc2_to_prim[atom_indices(irow, 1)];
         const auto atom1_s = map_p2s[iat][0];
 
         Eigen::Vector3d relvec;
         for (auto k = 0; k < 3; ++k) relvec[k] = shift_vectors(irow, k);
+
+        const auto key = std::make_tuple(iat, coord_indices(irow, 0), jat, coord_indices(irow, 1),
+                                         static_cast<long>(nint(relvec[0] * 1.0e4)),
+                                         static_cast<long>(nint(relvec[1] * 1.0e4)),
+                                         static_cast<long>(nint(relvec[2] * 1.0e4)));
+        const auto it = seen.find(key);
+        if (it != seen.end()) {
+            if (std::abs(it->second - delta[irow]) > 1.0e-8 * std::max(1.0, std::abs(it->second))) {
+                exit("append_delta_fc2_from_scph",
+                     "Translationally equivalent correction rows of DFC2FILE carry different values;\n"
+                     " the SCPH cell does not respect the primitive translations.");
+            }
+            ++nfolded;
+            continue;
+        }
+        seen.emplace(key, delta[irow]);
 
         const Eigen::Vector3d target = scell.x_cartesian.row(atom1_s).transpose() + relvec;
         const Eigen::Vector3d xf_target = lavec_super_inv * target;
@@ -724,9 +777,12 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
         ++nadded;
     }
 
-    if (writes->getVerbosity() > 0)
+    if (writes->getVerbosity() > 0) {
         std::cout << "\n  DFC2FILE: added " << nadded << " anharmonic FC2 correction rows at " << fc2_temperature
-                  << " K from " << fname_dfc2 << "\n  ";
+                  << " K from " << fname_dfc2;
+        if (nfolded > 0) std::cout << " (" << nfolded << " translational duplicates folded)";
+        std::cout << "\n  ";
+    }
 }
 
 
