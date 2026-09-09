@@ -9,7 +9,6 @@
 */
 
 #include "scph.h"
-#include "dense_hermitian_eigen.h"
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include <algorithm>
@@ -18,11 +17,12 @@
 #include <complex>
 #include <cstdlib>
 #include <iomanip>
-#include <sstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include "anharmonic_core.h"
 #include "constants.h"
+#include "dense_hermitian_eigen.h"
 #include "dielec.h"
 #include "diis.h"
 #include "dynamical.h"
@@ -1620,11 +1620,10 @@ bool Scph::check_convergence(const Eigen::MatrixXd &omega_now, const Eigen::Matr
     return false;
 }
 
-void Scph::compute_anharmonic_frequency(double **omega2_out,
-                                        std::complex<double> ***evec_anharm_scph, const double temp,
-                                        bool &flag_converged, std::complex<double> ***cmat_convert, const bool offdiag,
-                                        std::complex<double> **delta_v2_renorm, const unsigned int verbosity,
-                                        const bool compact_progress)
+void Scph::compute_anharmonic_frequency(double **omega2_out, std::complex<double> ***evec_anharm_scph,
+                                        const double temp, bool &flag_converged, std::complex<double> ***cmat_convert,
+                                        const bool offdiag, std::complex<double> **delta_v2_renorm,
+                                        const unsigned int verbosity, const bool compact_progress)
 {
     const auto time_setup_start = timer->elapsed();
 
@@ -1860,11 +1859,11 @@ void Scph::compute_anharmonic_frequency(double **omega2_out,
 }
 
 
-void Scph::compute_anharmonic_frequency_diis(double **omega2_out,
-                                             std::complex<double> ***evec_anharm_scph, const double temp,
-                                             bool &flag_converged, std::complex<double> ***cmat_convert,
-                                             const bool offdiag, std::complex<double> **delta_v2_renorm,
-                                             const unsigned int verbosity, const bool compact_progress)
+void Scph::compute_anharmonic_frequency_diis(double **omega2_out, std::complex<double> ***evec_anharm_scph,
+                                             const double temp, bool &flag_converged,
+                                             std::complex<double> ***cmat_convert, const bool offdiag,
+                                             std::complex<double> **delta_v2_renorm, const unsigned int verbosity,
+                                             const bool compact_progress)
 {
     const auto time_setup_start = timer->elapsed();
 

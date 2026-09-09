@@ -9,13 +9,13 @@
 */
 
 #include "strain_reference_cell.h"
-#include "constants.h"
 #include <Eigen/Dense> // inverse() and determinant() are defined in Eigen/LU
 #include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
+#include "constants.h"
 
 namespace PHON_NS
 {

@@ -5,11 +5,11 @@
 */
 
 #include "v4_service.h"
-#include <mpi.h>
 #include <algorithm>
 #include <climits>
 #include <iomanip>
 #include <iostream>
+#include <mpi.h>
 #include <sstream>
 #include "error.h"
 #include "q0_contraction.h"
@@ -106,8 +106,12 @@ void V4Service::finalize_build(const std::vector<unsigned int> &knum_of_irred, c
         }
     }
     if (distributed()) {
-        MPI_Allreduce(MPI_IN_PLACE, &v4_diag_[0][0], mpi_count(nk_irred_ * ns, "the V4 diagonal exceeds INT_MAX elements"),
-                      MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(MPI_IN_PLACE,
+                      &v4_diag_[0][0],
+                      mpi_count(nk_irred_ * ns, "the V4 diagonal exceeds INT_MAX elements"),
+                      MPI_DOUBLE,
+                      MPI_SUM,
+                      MPI_COMM_WORLD);
     }
 
     double bytes_min = block_.bytes_local(), bytes_max = block_.bytes_local();
@@ -158,9 +162,12 @@ void V4Service::fmat(const std::complex<double> *dvec, std::complex<double> ***f
 {
     if (distributed()) {
         broadcast_opcode(OP_FMAT);
-        MPI_Bcast(const_cast<std::complex<double> *>(dvec),
-                  mpi_count(nk_dense_ * ns2_, "the D matrices exceed INT_MAX elements; the FMAT broadcast needs chunking"),
-                  mpi_complex_type, 0, MPI_COMM_WORLD);
+        MPI_Bcast(
+            const_cast<std::complex<double> *>(dvec),
+            mpi_count(nk_dense_ * ns2_, "the D matrices exceed INT_MAX elements; the FMAT broadcast needs chunking"),
+            mpi_complex_type,
+            0,
+            MPI_COMM_WORLD);
     }
     fmat_local_and_reduce(dvec, fmat_inout);
 }
@@ -172,8 +179,17 @@ void V4Service::q0_local_and_reduce(const double *q0, const std::complex<double>
     opt.unit_begin = block_.unit_begin;
     opt.unit_end = block_.unit_end;
     opt.seed_v3_with_umn = (my_rank_ == 0);
-    q0_contraction::contract_v4_with_q0(ns_, nk_dense_, nk_irred_, ik_gamma_irred_, jk_gamma_dense_, row_table(), q0,
-                                        v3_with_umn, v3_renorm, q4_q0, opt);
+    q0_contraction::contract_v4_with_q0(ns_,
+                                        nk_dense_,
+                                        nk_irred_,
+                                        ik_gamma_irred_,
+                                        jk_gamma_dense_,
+                                        row_table(),
+                                        q0,
+                                        v3_with_umn,
+                                        v3_renorm,
+                                        q4_q0,
+                                        opt);
     if (distributed()) {
         reduce_to_root(&v3_renorm[0][0][0], nk_dense_ * ns_ * ns2_);
         reduce_to_root(&q4_q0[0][0][0], nk_irred_ * ns2_);
@@ -194,13 +210,31 @@ void V4Service::q0_sweep(const double *q0, const std::complex<double> *const *co
         // local fast path (no quartic terms) or single process: the kernel does everything
         q0_contraction::Options opt;
         if (q0_is_zero) {
-            q0_contraction::contract_v4_with_q0(ns_, nk_dense_, nk_irred_, ik_gamma_irred_, jk_gamma_dense_, nullptr,
-                                                q0, v3_with_umn, v3_renorm, q4_q0, opt);
+            q0_contraction::contract_v4_with_q0(ns_,
+                                                nk_dense_,
+                                                nk_irred_,
+                                                ik_gamma_irred_,
+                                                jk_gamma_dense_,
+                                                nullptr,
+                                                q0,
+                                                v3_with_umn,
+                                                v3_renorm,
+                                                q4_q0,
+                                                opt);
         } else {
             opt.unit_begin = block_.unit_begin;
             opt.unit_end = block_.unit_end;
-            q0_contraction::contract_v4_with_q0(ns_, nk_dense_, nk_irred_, ik_gamma_irred_, jk_gamma_dense_,
-                                                row_table(), q0, v3_with_umn, v3_renorm, q4_q0, opt);
+            q0_contraction::contract_v4_with_q0(ns_,
+                                                nk_dense_,
+                                                nk_irred_,
+                                                ik_gamma_irred_,
+                                                jk_gamma_dense_,
+                                                row_table(),
+                                                q0,
+                                                v3_with_umn,
+                                                v3_renorm,
+                                                q4_q0,
+                                                opt);
         }
         return;
     }
@@ -234,8 +268,11 @@ void V4Service::worker_loop()
         }
         if (code == OP_FMAT) {
             MPI_Bcast(dvec_buf_.data(),
-                      mpi_count(dvec_buf_.size(), "the D matrices exceed INT_MAX elements; the FMAT broadcast needs chunking"),
-                      mpi_complex_type, 0, MPI_COMM_WORLD);
+                      mpi_count(dvec_buf_.size(),
+                                "the D matrices exceed INT_MAX elements; the FMAT broadcast needs chunking"),
+                      mpi_complex_type,
+                      0,
+                      MPI_COMM_WORLD);
             std::fill(&fmat_buf_[0][0][0], &fmat_buf_[0][0][0] + fmat_buf_.size(), czero);
             fmat_local_and_reduce(dvec_buf_.data(), fmat_buf_);
         } else if (code == OP_Q0) {

@@ -15,10 +15,10 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <iomanip>
-#include <map>
-#include <tuple>
 #include <iostream>
+#include <map>
 #include <string>
+#include <tuple>
 #include "anharmonic_core.h"
 #include "constants.h"
 #include "dynamical.h"
@@ -30,9 +30,9 @@ or http://opensource.org/licenses/mit-license.php for information.
 #include "mpi_common.h"
 #include "phonon.h"
 #include "stage_timer.h"
-#include "timer.h"
 #include "system.h"
 #include "thermodynamics.h"
+#include "timer.h"
 #include "write_phonons.h"
 
 using namespace PHON_NS;
@@ -143,7 +143,9 @@ void Fcs_phonon::setup(const std::string &mode)
     print_stage_line("IFCs: MPI broadcast", timer->elapsed() - t_stage, mympi->my_rank, writes->getVerbosity());
     t_stage = timer->elapsed();
     replicate_force_constants(maxorder);
-    print_stage_line("IFCs: replicate to the unit cell", timer->elapsed() - t_stage, mympi->my_rank,
+    print_stage_line("IFCs: replicate to the unit cell",
+                     timer->elapsed() - t_stage,
+                     mympi->my_rank,
                      writes->getVerbosity());
 }
 
@@ -651,8 +653,8 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
         const auto &primcell = system->get_primcell();
         const Eigen::Matrix3d lavec_prim_inv = primcell.lattice_vector.inverse();
         const Eigen::Matrix3d transmat = lavec_prim_inv * lavec_dfc2;
-        const Eigen::Matrix3d transmat_int = transmat.unaryExpr(
-            [](const double x) { return static_cast<double>(nint(x)); });
+        const Eigen::Matrix3d transmat_int =
+            transmat.unaryExpr([](const double x) { return static_cast<double>(nint(x)); });
         if ((transmat - transmat_int).cwiseAbs().maxCoeff() > eps4) {
             exit("append_delta_fc2_from_scph",
                  "The cell of DFC2FILE is not an integer supercell of the present primitive cell.");
@@ -729,7 +731,10 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
         Eigen::Vector3d relvec;
         for (auto k = 0; k < 3; ++k) relvec[k] = shift_vectors(irow, k);
 
-        const auto key = std::make_tuple(iat, coord_indices(irow, 0), jat, coord_indices(irow, 1),
+        const auto key = std::make_tuple(iat,
+                                         coord_indices(irow, 0),
+                                         jat,
+                                         coord_indices(irow, 1),
                                          static_cast<long>(nint(relvec[0] * 1.0e4)),
                                          static_cast<long>(nint(relvec[1] * 1.0e4)),
                                          static_cast<long>(nint(relvec[2] * 1.0e4)));

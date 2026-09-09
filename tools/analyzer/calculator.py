@@ -49,7 +49,9 @@ class Calculator:
         if file_kappa_h5 is not None:
             info = probe_kappa_h5(file_kappa_h5)
             self.has_4ph_h5 = info["has_4ph"]
-            self.has_isotope_h5 = info["has_isotope"]  # refined after loading (validity flag)
+            self.has_isotope_h5 = info[
+                "has_isotope"
+            ]  # refined after loading (validity flag)
             self.temperature_resolved_h5 = info["temperature_resolved"]
             self.temperatures_h5 = info["temperatures"]
         self.omega = None  # Frequency array
@@ -91,7 +93,9 @@ class Calculator:
             self.set_variables_4ph()
             self.interpol_gamma4()
 
-        if self.file_isotope is not None or (self.has_isotope_h5 and self.use_isotope_from_h5):
+        if self.file_isotope is not None or (
+            self.has_isotope_h5 and self.use_isotope_from_h5
+        ):
             self.set_variables_iso()
 
     @property
@@ -102,11 +106,15 @@ class Calculator:
     @property
     def has_isotope(self):
         """True when isotope linewidths are available (text file or kappa.h5 group)."""
-        return self.file_isotope is not None or (self.has_isotope_h5 and self.use_isotope_from_h5)
+        return self.file_isotope is not None or (
+            self.has_isotope_h5 and self.use_isotope_from_h5
+        )
 
     def _load_h5(self, channel):
         """Reads one scattering channel of the kappa.h5 file."""
-        result = ParseKappaH5(self.file_kappa_h5, channel=channel, temperature=self.temperature_h5)
+        result = ParseKappaH5(
+            self.file_kappa_h5, channel=channel, temperature=self.temperature_h5
+        )
         self.has_4ph_h5 = result.has_4ph
         self.has_isotope_h5 = result.has_isotope
         return result
@@ -123,12 +131,15 @@ class Calculator:
             )
         if self.temperatures is not None and result.temperatures is not None:
             if len(result.temperatures) != len(self.temperatures) or np.any(
-                np.abs(np.asarray(result.temperatures) - np.asarray(self.temperatures)) > 1.0e-6
+                np.abs(np.asarray(result.temperatures) - np.asarray(self.temperatures))
+                > 1.0e-6
             ):
                 warnings.warn(
                     "{}: temperature grid {} differs from the 3ph data {}; the nearest "
                     "temperature is used for each request".format(
-                        what, np.asarray(result.temperatures).tolist(), np.asarray(self.temperatures).tolist()
+                        what,
+                        np.asarray(result.temperatures).tolist(),
+                        np.asarray(self.temperatures).tolist(),
                     )
                 )
         if abs(result.volume - self.volume) > 1.0e-6 * max(1.0, abs(self.volume)):
@@ -193,16 +204,22 @@ class Calculator:
                 warnings.warn(
                     "{} does not store the atomic kinds; detecting the symmetry with all "
                     "atoms treated as one species (use the kappa.h5 file for exact kinds)".format(
-                        self.file_result_4ph if self.file_result_4ph is not None else self.file_kappa_h5
+                        self.file_result_4ph
+                        if self.file_result_4ph is not None
+                        else self.file_kappa_h5
                     )
                 )
                 kinds = np.ones(len(result.x_fractional), dtype=int)
             cell = (result.lattice_vector.T, result.x_fractional, kinds)
             dataset = spglib.get_symmetry_dataset(cell, symprec=self.tolerance)
             if dataset is None:
-                raise RuntimeError("spglib could not determine the symmetry of the cell stored in the 4ph data")
+                raise RuntimeError(
+                    "spglib could not determine the symmetry of the cell stored in the 4ph data"
+                )
             self.rotations = np.asarray(
-                dataset.rotations if hasattr(dataset, "rotations") else dataset["rotations"]
+                dataset.rotations
+                if hasattr(dataset, "rotations")
+                else dataset["rotations"]
             )
 
     def set_variables_iso(self):
@@ -229,7 +246,9 @@ class Calculator:
                 return
             gamma = self._gamma_iso_h5[:, :, None]
             if self.average_gamma:
-                self.gamma_iso = self.average_gamma_at_degenerate_point(self.omega, gamma)[:, :, 0]
+                self.gamma_iso = self.average_gamma_at_degenerate_point(
+                    self.omega, gamma
+                )[:, :, 0]
             else:
                 self.gamma_iso = gamma[:, :, 0]
             return
@@ -268,7 +287,9 @@ class Calculator:
             )
         self.gamma4_interpolated = np.zeros(self.gamma3.shape, dtype=float)
         for i, xq in enumerate(self.qpoints):
-            self.gamma4_interpolated[i, :, :] = interpol.run2(self.gamma4, xq)[:, col_map]
+            self.gamma4_interpolated[i, :, :] = interpol.run2(self.gamma4, xq)[
+                :, col_map
+            ]
 
     def check_data_load(self, four_phonon, isotope):
         """
@@ -545,7 +566,9 @@ class Calculator:
         with np.errstate(divide="ignore", invalid="ignore"):
             tau = self._factor_gamma_to_tau / gamma
         bad = ~np.isfinite(tau)
-        if np.any(bad & np.isnan(gamma)) and not getattr(self, "_warned_missing", False):
+        if np.any(bad & np.isnan(gamma)) and not getattr(
+            self, "_warned_missing", False
+        ):
             warnings.warn(
                 "{} phonon modes have no computed linewidth (incomplete run); they are "
                 "excluded from the transport sums".format(int(np.sum(np.isnan(gamma))))
@@ -681,7 +704,11 @@ class Calculator:
             if isotope:
                 total += gamma_iso
 
-            if omega_q <= 1.0e-8 or not np.isfinite(gamma3[itemp]) or gamma3[itemp] <= 1.0e-12:
+            if (
+                omega_q <= 1.0e-8
+                or not np.isfinite(gamma3[itemp])
+                or gamma3[itemp] <= 1.0e-12
+            ):
                 tau_3ph = 0.0
             else:
                 tau_3ph = self._factor_gamma_to_tau / gamma3[itemp]
@@ -898,7 +925,9 @@ class Calculator:
             )
         finite = np.isfinite(mfp) & (mfp > 1.0e-6)
         if not np.any(finite):
-            raise RuntimeError("No phonon mode with a finite, non-zero mean free path; cannot build the length grid")
+            raise RuntimeError(
+                "No phonon mode with a finite, non-zero mean free path; cannot build the length grid"
+            )
         max_mfp = np.max(mfp[finite])
         min_mfp = np.min(mfp[finite])
 

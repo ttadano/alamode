@@ -7,7 +7,11 @@ import numpy as np
 import pytest
 
 from strainkit import strainfile as sf
-from strainkit.units import BOHR_IN_ANGSTROM, gpa_to_ry_per_cell, legacy_ry_per_cell_to_gpa
+from strainkit.units import (
+    BOHR_IN_ANGSTROM,
+    gpa_to_ry_per_cell,
+    legacy_ry_per_cell_to_gpa,
+)
 from strainkit.writers import (
     ReferenceCell,
     write_C1_array_in,
@@ -25,7 +29,14 @@ QUIET = lambda *a: None  # noqa: E731
 
 def _cell(a=3.0, c=5.0):
     lav = np.array([[a, 0.0, 0.0], [-a / 2, a * np.sqrt(3) / 2, 0.0], [0.0, 0.0, c]])
-    xf = np.array([[1 / 3, 2 / 3, 0.0], [2 / 3, 1 / 3, 0.5], [1 / 3, 2 / 3, 0.38], [2 / 3, 1 / 3, 0.88]])
+    xf = np.array(
+        [
+            [1 / 3, 2 / 3, 0.0],
+            [2 / 3, 1 / 3, 0.5],
+            [1 / 3, 2 / 3, 0.38],
+            [2 / 3, 1 / 3, 0.88],
+        ]
+    )
     return ReferenceCell(lav, ["Zn", "Zn", "O", "O"], xf)
 
 
@@ -39,7 +50,10 @@ def _doubled(cell):
 
 def _blocks(natom, seed=0):
     rng = np.random.default_rng(seed)
-    return [(m, 0.005, 1.0, rng.normal(size=(natom, 3))) for m in ("xx", "yy", "zz", "yz", "zx", "xy")]
+    return [
+        (m, 0.005, 1.0, rng.normal(size=(natom, 3)))
+        for m in ("xx", "yy", "zz", "yz", "zx", "xy")
+    ]
 
 
 def test_cell_group_round_trip(tmp_path):
@@ -49,13 +63,25 @@ def test_cell_group_round_trip(tmp_path):
         sf.write_cell_group(f.create_group("X"), cell.lavec, cell.xf, cell.elements)
         g = f["X"]
         assert g["lattice_vector"].attrs["unit"] == "bohr"
-        assert g["atomic_kinds"].dtype == np.int32 and g["number_of_atoms"].dtype == np.uint64
-        assert g["number_of_atoms"][()] == 4 and [sf._decode(e) for e in g["elements"][()]] == ["Zn", "O"]
-        assert g["mapping_table"].shape == (4, 1) and g["number_of_primitive_translations"][()] == 1
+        assert (
+            g["atomic_kinds"].dtype == np.int32
+            and g["number_of_atoms"].dtype == np.uint64
+        )
+        assert g["number_of_atoms"][()] == 4 and [
+            sf._decode(e) for e in g["elements"][()]
+        ] == ["Zn", "O"]
+        assert (
+            g["mapping_table"].shape == (4, 1)
+            and g["number_of_primitive_translations"][()] == 1
+        )
         # rows of the file are the lattice vectors (in bohr): no transpose on the Python side
         assert np.allclose(g["lattice_vector"][()] * BOHR_IN_ANGSTROM, cell.lavec)
         back = sf.read_cell_group(g)
-    assert np.allclose(back.lavec, cell.lavec) and back.elements == cell.elements and np.allclose(back.xf, cell.xf)
+    assert (
+        np.allclose(back.lavec, cell.lavec)
+        and back.elements == cell.elements
+        and np.allclose(back.xf, cell.xf)
+    )
 
 
 def test_container_round_trip(tmp_path):
@@ -66,22 +92,39 @@ def test_container_round_trip(tmp_path):
     c3 = np.random.default_rng(2).normal(size=(9, 9, 9))
     blocks = _blocks(4)
     with sf.update(p, cell, sf.provenance_record("Elastic"), source="test") as f:
-        sf.write_elastic(f, stress, c2, c3, {"source": "test", "rank": 83, "rms_energy_GPa": float("nan")})
+        sf.write_elastic(
+            f,
+            stress,
+            c2,
+            c3,
+            {"source": "test", "rank": 83, "rms_energy_GPa": float("nan")},
+        )
     with sf.update(p, cell, sf.provenance_record("StrainForce")) as f:
         sf.write_strain_force(f, blocks, cell, {"central": False})
     with h5py.File(p, "r") as f:
         assert sf._decode(f.attrs["schema"]) == sf.SCHEMA
-        assert f.attrs["format_version"] == 1 and f.attrs["format_version"].dtype == np.int32
+        assert (
+            f.attrs["format_version"] == 1
+            and f.attrs["format_version"].dtype == np.int32
+        )
         assert set(f) == {"ReferenceCell", "Elastic", "StrainForce"}
         s, a2, a3, attrs = sf.read_elastic(f)
         assert np.allclose(s, stress) and np.allclose(a2, c2) and np.allclose(a3, c3)
-        assert attrs["rank"] == 83 and "rms_energy_GPa" not in attrs  # NaN attributes are skipped
-        assert f["Elastic/stress"].attrs["unit"] == "GPa" and f["Elastic/toec"].shape == (9, 9, 9)
+        assert (
+            attrs["rank"] == 83 and "rms_energy_GPa" not in attrs
+        )  # NaN attributes are skipped
+        assert f["Elastic/stress"].attrs["unit"] == "GPa" and f[
+            "Elastic/toec"
+        ].shape == (9, 9, 9)
         b, c = sf.read_strain_force(f)
-        assert [x[0] for x in b] == [x[0] for x in blocks] and np.allclose(b[3][3], blocks[3][3])
+        assert [x[0] for x in b] == [x[0] for x in blocks] and np.allclose(
+            b[3][3], blocks[3][3]
+        )
         assert f["StrainForce/forces"].attrs["unit"] == "eV/angstrom" and c.natom == 4
         u = f["StrainForce/displacement_gradient"][()]
-        assert np.allclose(u[3], [[0, 0, 0], [0, 0, 0.0025], [0, 0.0025, 0]]) and np.allclose(u[0], np.diag([0.005, 0, 0]))
+        assert np.allclose(
+            u[3], [[0, 0, 0], [0, 0, 0.0025], [0, 0.0025, 0]]
+        ) and np.allclose(u[0], np.diag([0.005, 0, 0]))
         prov = json.loads(sf._decode(f.attrs["provenance"]))
         assert [r["group"] for r in prov] == ["Elastic", "StrainForce"]
     lines = sf.supported_settings(sf.summary(p))
@@ -111,12 +154,17 @@ def test_update_is_transactional_and_checks_the_crystal(tmp_path):
     with sf.update(p, big) as f:
         sf.write_strain_force(f, _blocks(8), big)
     with h5py.File(p, "r") as f:
-        assert sf.read_cell_group(f["ReferenceCell"]).natom == 4 and sf.read_strain_force(f)[1].natom == 8
+        assert (
+            sf.read_cell_group(f["ReferenceCell"]).natom == 4
+            and sf.read_strain_force(f)[1].natom == 8
+        )
     # --force rebuilds the file with the new reference cell and drops the old groups
     with sf.update(p, other, force=True) as f:
         sf.write_elastic(f, np.zeros((3, 3)))
     with h5py.File(p, "r") as f:
-        assert "StrainForce" not in f and np.isclose(sf.read_cell_group(f["ReferenceCell"]).lavec[0, 0], 3.1)
+        assert "StrainForce" not in f and np.isclose(
+            sf.read_cell_group(f["ReferenceCell"]).lavec[0, 0], 3.1
+        )
 
 
 def test_mode_table_validation(tmp_path):
@@ -136,9 +184,15 @@ def test_mode_table_validation(tmp_path):
 def test_legacy_conversion_is_anphon_inverse():
     v = 319.7193027516895  # ZnO tutorial cell, bohr^3
     x = np.array([1.0, -2.5, 100.0])
-    assert np.allclose(legacy_ry_per_cell_to_gpa(x * gpa_to_ry_per_cell(v), v), x, rtol=1e-14)
+    assert np.allclose(
+        legacy_ry_per_cell_to_gpa(x * gpa_to_ry_per_cell(v), v), x, rtol=1e-14
+    )
     # anphon: 1e9 * V[m^3] / Ryd with Ryd = 4.35974394e-18 / 2 J
-    assert np.isclose(gpa_to_ry_per_cell(v), 1.0e9 * v * (0.52917721092e-10) ** 3 / (4.35974394e-18 / 2), rtol=1e-15)
+    assert np.isclose(
+        gpa_to_ry_per_cell(v),
+        1.0e9 * v * (0.52917721092e-10) ** 3 / (4.35974394e-18 / 2),
+        rtol=1e-15,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -174,28 +228,51 @@ def test_xml_to_fc2_group_matches_alm_h5(cu_fc2, tmp_path):
     with h5py.File(p, "r") as f, h5py.File(h5, "r") as ref:
         a = _fc2_rows(f["entry/ForceConstants/Order2"])
         b = _fc2_rows(ref["ForceConstants/Order2"])
-        assert len(a) == len(b) and set(a) == set(b)  # no unmatched rows in either direction
+        assert len(a) == len(b) and set(a) == set(
+            b
+        )  # no unmatched rows in either direction
         for k in a:
             assert np.allclose(a[k][0], b[k][0], atol=1e-8)
             assert np.isclose(a[k][1], b[k][1], rtol=1e-10, atol=1e-12)
-        for name in ("lattice_vector", "fractional_coordinate", "atomic_kinds", "mapping_table"):
-            assert np.allclose(f["entry/SuperCell"][name][()], ref["SuperCell"][name][()])
+        for name in (
+            "lattice_vector",
+            "fractional_coordinate",
+            "atomic_kinds",
+            "mapping_table",
+        ):
+            assert np.allclose(
+                f["entry/SuperCell"][name][()], ref["SuperCell"][name][()]
+            )
         o2 = f["entry/ForceConstants/Order2"]
-        assert o2["shift_vectors"].attrs["basis"] == "Cartesian" and o2["shift_vectors"].attrs["unit"] == "bohr"
+        assert (
+            o2["shift_vectors"].attrs["basis"] == "Cartesian"
+            and o2["shift_vectors"].attrs["unit"] == "bohr"
+        )
         assert o2["force_constant_values"].attrs["unit"] == "Ry/bohr^2"
-        assert o2["atom_indices"].dtype == np.int32 and o2["shift_vectors"].compression == "gzip"
+        assert (
+            o2["atom_indices"].dtype == np.int32
+            and o2["shift_vectors"].compression == "gzip"
+        )
 
 
 def test_pack_from_legacy_text(cu_fc2, tmp_path):
     sc, xml, h5, root = cu_fc2
     d = tmp_path / "strain_IFC"
     d.mkdir()
-    cell = sf.cell_from_atoms(sc)  # /PrimitiveCell of the h5 reference is the supercell itself
+    cell = sf.cell_from_atoms(
+        sc
+    )  # /PrimitiveCell of the h5 reference is the supercell itself
     vol_bohr3 = sc.get_volume() / BOHR_IN_ANGSTROM**3
     rng = np.random.default_rng(3)
-    c2, c3, s0 = rng.normal(size=(9, 9)), rng.normal(size=(9, 9, 9)), np.diag([0.5, 0.5, 0.5])
+    c2, c3, s0 = (
+        rng.normal(size=(9, 9)),
+        rng.normal(size=(9, 9, 9)),
+        np.diag([0.5, 0.5, 0.5]),
+    )
     fac = gpa_to_ry_per_cell(vol_bohr3)
-    write_elastic_constants_in(str(d / "elastic_constants.in"), c2 * fac, c3 * fac)  # legacy Ry layout
+    write_elastic_constants_in(
+        str(d / "elastic_constants.in"), c2 * fac, c3 * fac
+    )  # legacy Ry layout
     write_C1_array_in(str(d / "C1_array.in"), s0, unit="GPa")
     blocks = _blocks(32)
     write_strain_force_in(str(d / "strain_force.in"), blocks, reference_cell=cell)
@@ -209,10 +286,18 @@ def test_pack_from_legacy_text(cu_fc2, tmp_path):
     sf.pack(out, str(d), None, h5, log=QUIET)
     with h5py.File(out, "r") as f:
         s, a2, a3, attrs = sf.read_elastic(f)
-        assert np.allclose(s, s0) and np.allclose(a2, c2, rtol=1e-12) and np.allclose(a3, c3, rtol=1e-12)
-        assert attrs["stress_source"] == "C1_array.in" and np.isclose(attrs["legacy_volume_bohr3"], vol_bohr3)
+        assert (
+            np.allclose(s, s0)
+            and np.allclose(a2, c2, rtol=1e-12)
+            and np.allclose(a3, c3, rtol=1e-12)
+        )
+        assert attrs["stress_source"] == "C1_array.in" and np.isclose(
+            attrs["legacy_volume_bohr3"], vol_bohr3
+        )
         b, c = sf.read_strain_force(f)
-        assert c.natom == 32 and np.allclose(b[0][3], blocks[0][3], atol=1e-14)  # text precision .15f
+        assert c.natom == 32 and np.allclose(
+            b[0][3], blocks[0][3], atol=1e-14
+        )  # text precision .15f
         rows, entries = sf.read_strain_harmonic(f)
         assert [r[0] for r in rows] == ["xx", "xx"] and len(entries) == 2
         assert "PrimitiveCell" in f[entries[1]] and "PrimitiveCell" not in f[entries[0]]
@@ -231,4 +316,6 @@ def test_pack_from_legacy_text(cu_fc2, tmp_path):
     with h5py.File(out2, "r") as f:
         s, a2, a3, _ = sf.read_elastic(f)
         assert np.allclose(s, s0) and a2 is None
-    assert any("no /Elastic/soec" in ln for ln in sf.supported_settings(sf.summary(out2)))
+    assert any(
+        "no /Elastic/soec" in ln for ln in sf.supported_settings(sf.summary(out2))
+    )

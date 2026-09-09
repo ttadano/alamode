@@ -1,5 +1,4 @@
 #include "ifc_derivative.h"
-#include "stage_timer.h"
 #include <algorithm>
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include <cmath>
@@ -18,6 +17,7 @@
 #include "mpi_common.h"
 #include "relaxation.h"
 #include "scph_v3v4_elements.h"
+#include "stage_timer.h"
 #include "strain_coupling_io.h"
 #include "strain_file_parsers.h"
 #include "strain_reference_cell.h"
@@ -1405,8 +1405,8 @@ void DerivativeIFC::process_strain_force_set(const strain_coupling::StrainForceS
                       << "    Current cell   : " << natmin << " atoms,  V = " << pcell.volume
                       << " (a.u.)^3   (V(current) / V(reference) = " << std::fixed << std::setprecision(4)
                       << atom_match.ratio << ")\n"
-                      << "    The " << set.natom_rows << " force rows per strain mode are mapped onto the "
-                      << natmin << " atoms of the current primitive cell.\n"
+                      << "    The " << set.natom_rows << " force rows per strain mode are mapped onto the " << natmin
+                      << " atoms of the current primitive cell.\n"
                       << "    The file on disk is not modified.\n";
             std::cout.flags(flags);
             std::cout.precision(prec);
@@ -1826,8 +1826,8 @@ void DerivativeIFC::process_strain_harmonic_set(const std::vector<strain_couplin
                 }
                 for (int iatom2 = 0; iatom2 < nat; iatom2++) {
                     const int iatom2_s = symm_mapping_s[isym][iatom2];
-                    const int iatom2_2 = map_p2s[map_s2p[iatom2_s].atom_num]
-                                                [inv_translation_mapping[itr1][map_s2p[iatom2_s].tran_num]];
+                    const int iatom2_2 =
+                        map_p2s[map_s2p[iatom2_s].atom_num][inv_translation_mapping[itr1][map_s2p[iatom2_s].tran_num]];
 
                     for (int comb1 = 0; comb1 < 81; comb1++) {
                         const int a1 = comb1 / 27;

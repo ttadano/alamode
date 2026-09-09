@@ -9,7 +9,6 @@
 */
 
 #include "scph_qha_common.h"
-#include "stage_timer.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -23,6 +22,7 @@
 #include "interpolation.h"
 #include "phonon_dos.h"
 #include "relaxation.h"
+#include "stage_timer.h"
 #include "thermodynamics.h"
 #include "timer.h"
 #include "write_phonons.h"
@@ -718,13 +718,14 @@ void ScphQhaCommon::postprocess(std::complex<double> ****delta_dymat,
                                                 eval_update[iT + 1],
                                                 domega_dt);
 
-                    heat_capacity_correction[iT] = thermodynamics->Cv_anharm_correction(temperature,
-                                                                                        dos->kmesh_dos->nk_irred,
-                                                                                        ns,
-                                                                                        dos->kmesh_dos->kpoint_irred_all,
-                                                                                        dos->kmesh_dos->weight_k.data(),
-                                                                                        eval_update[iT],
-                                                                                        domega_dt);
+                    heat_capacity_correction[iT] =
+                        thermodynamics->Cv_anharm_correction(temperature,
+                                                             dos->kmesh_dos->nk_irred,
+                                                             ns,
+                                                             dos->kmesh_dos->kpoint_irred_all,
+                                                             dos->kmesh_dos->weight_k.data(),
+                                                             eval_update[iT],
+                                                             domega_dt);
                 }
                 t_rest += timer->elapsed() - t_stage;
             }
@@ -1216,7 +1217,13 @@ void ScphQhaCommon::build_v4_service(const bool full_tensor, const bool offdiag_
     }
 
     v4_service = std::make_unique<V4Service>(mympi->my_rank, mympi->nprocs);
-    v4_service->setup(ns, nk, nk_irred, ik_gamma_irred, jk_gamma_dense, full_tensor, offdiag_fmat,
+    v4_service->setup(ns,
+                      nk,
+                      nk_irred,
+                      ik_gamma_irred,
+                      jk_gamma_dense,
+                      full_tensor,
+                      offdiag_fmat,
                       band ? V4Service::Partition::Units : V4Service::Partition::Slices);
 
     if (band) {

@@ -83,8 +83,19 @@ void PHON_NS::solve_dense_hermitian_dc(const Eigen::MatrixXcd &mat_in, Eigen::Ve
     double rwork_query;
     int iwork_query;
     int LWORK = -1, LRWORK = -1, LIWORK = -1;
-    zheevd_(&JOBZ, &UPLO, &n, amat.data(), &n, eval_out.data(), &work_query, &LWORK, &rwork_query, &LRWORK,
-            &iwork_query, &LIWORK, &INFO);
+    zheevd_(&JOBZ,
+            &UPLO,
+            &n,
+            amat.data(),
+            &n,
+            eval_out.data(),
+            &work_query,
+            &LWORK,
+            &rwork_query,
+            &LRWORK,
+            &iwork_query,
+            &LIWORK,
+            &INFO);
     if (INFO != 0) {
         exit("solve_dense_hermitian_dc", "zheevd workspace query failed (INFO != 0).");
     }
@@ -95,8 +106,7 @@ void PHON_NS::solve_dense_hermitian_dc(const Eigen::MatrixXcd &mat_in, Eigen::Ve
     NDArray<double, 1> RWORK(LRWORK);
     NDArray<int, 1> IWORK(LIWORK);
 
-    zheevd_(&JOBZ, &UPLO, &n, amat.data(), &n, eval_out.data(), WORK, &LWORK, RWORK, &LRWORK, IWORK, &LIWORK,
-            &INFO);
+    zheevd_(&JOBZ, &UPLO, &n, amat.data(), &n, eval_out.data(), WORK, &LWORK, RWORK, &LRWORK, IWORK, &LIWORK, &INFO);
     if (INFO != 0) {
         exit("solve_dense_hermitian_dc", "zheevd failed to diagonalize the Hermitian matrix (INFO != 0).");
     }

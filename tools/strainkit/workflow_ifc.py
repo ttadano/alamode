@@ -444,11 +444,18 @@ def collect_harmonic(
         rec = sfile.provenance_record(
             "StrainHarmonic", manifest=os.path.join(outdir, IFC_MANIFEST), results=rdir
         )
-        with sfile.update(strain_file, sfile.cell_from_primitive(prim), rec, force, prim.source) as f:
+        with sfile.update(
+            strain_file, sfile.cell_from_primitive(prim), rec, force, prim.source
+        ) as f:
             sfile.write_strain_harmonic(
-                f, [r[:3] for r in rows], [os.path.join(rdir, r[3]) for r in rows], attrs
+                f,
+                [r[:3] for r in rows],
+                [os.path.join(rdir, r[3]) for r in rows],
+                attrs,
             )
-        log(f"  written: {strain_file} (/StrainHarmonic: {len(rows)} strained supercells embedded)")
+        log(
+            f"  written: {strain_file} (/StrainHarmonic: {len(rows)} strained supercells embedded)"
+        )
         log("  give it to anphon as STRAINFILE in the &relax field")
     else:
         log(anphon_file_locations())
@@ -583,7 +590,9 @@ def collect_force(
         )
         with sfile.update(strain_file, cell, rec, force, source) as f:
             sfile.write_strain_force(f, blocks, cell, attrs)
-        log(f"  written: {strain_file} (/StrainForce: {len(blocks)} blocks x {cell.natom} atoms)")
+        log(
+            f"  written: {strain_file} (/StrainForce: {len(blocks)} blocks x {cell.natom} atoms)"
+        )
         log("  give it to anphon as STRAINFILE in the &relax field")
     else:
         log(anphon_file_locations())
@@ -634,7 +643,16 @@ def collect(
             log,
         )
     return collect_force(
-        outdir, manifest, fcs, anphon_cell, results_dir, last, reorder, strain_file, force, log
+        outdir,
+        manifest,
+        fcs,
+        anphon_cell,
+        results_dir,
+        last,
+        reorder,
+        strain_file,
+        force,
+        log,
     )
 
 

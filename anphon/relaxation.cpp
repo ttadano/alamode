@@ -9,24 +9,23 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "relaxation.h"
-#include "strain_coupling_io.h"
-#include "strain_reference_cell.h"
-#include "hdf5_parser.h"
-#include <iomanip>
-#include <stdexcept>
 #include <Eigen/Core>
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include <fstream>
 #include <iomanip>
+#include <stdexcept>
 #include "dynamical.h"
 #include "elastic_tensor.h"
 #include "error.h"
 #include "ewald.h"
+#include "hdf5_parser.h"
 #include "ifc_derivative.h"
 #include "interpolation.h"
 #include "memory.h"
 #include "optimizers.h"
 #include "scph.h"
+#include "strain_coupling_io.h"
+#include "strain_reference_cell.h"
 #include "symmetry_core.h"
 #include "system.h"
 #include "timer.h"
@@ -159,10 +158,13 @@ void Relaxation::validate_strain_file() const
                       << "    schema " << h5_schema_strain_coupling << " v" << summary.format_version;
             if (!summary.writer.empty()) std::cout << ", written by strainkit " << summary.writer;
             if (!summary.created_date.empty()) std::cout << " on " << summary.created_date;
-            std::cout << "\n    Reference cell : " << ref.natom() << " atoms;  V(current) / V(reference) = "
-                      << std::fixed << std::setprecision(4) << match.ratio << "\n"
+            std::cout << "\n    Reference cell : " << ref.natom()
+                      << " atoms;  V(current) / V(reference) = " << std::fixed << std::setprecision(4) << match.ratio
+                      << "\n"
                       << "    Elastic        : "
-                      << (summary.has_c2c3 ? "C2, C3" : summary.has_elastic ? "no C2/C3" : "absent")
+                      << (summary.has_c2c3      ? "C2, C3"
+                          : summary.has_elastic ? "no C2/C3"
+                                                : "absent")
                       << (summary.has_stress ? " + reference stress" : ", no reference stress") << "\n"
                       << "    StrainForce    : " << (summary.has_strain_force ? "present" : "absent") << "\n"
                       << "    StrainHarmonic : " << (summary.has_strain_harmonic ? "present" : "absent") << "\n\n";
@@ -246,8 +248,9 @@ void Relaxation::set_elastic_constants(double *C1_array, double **C2_array, doub
                 exit("set_elastic_constants", msg.c_str());
             }
             if (!es.has_stress) {
-                std::cout << "  " << strain_file
-                          << " has no /Elastic/stress dataset: the stress tensor at the reference structure is set to zero.\n";
+                std::cout
+                    << "  " << strain_file
+                    << " has no /Elastic/stress dataset: the stress tensor at the reference structure is set to zero.\n";
             }
             elastic.set_reference_stress_from_set(es, C1_array);
             elastic.set_elastic_constants_from_set(es, C2_array, C3_array);

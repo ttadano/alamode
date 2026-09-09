@@ -66,8 +66,8 @@ struct Case
 // Naive reference: the pre-fusion loops (relaxation.cpp before the sweep).
 struct Reference
 {
-    NDArray<cplx, 3> v3_renorm; // [nk_dense][ns][ns^2]
-    NDArray<cplx, 3> q4;        // [nk_irred][ns][ns]
+    NDArray<cplx, 3> v3_renorm;   // [nk_dense][ns][ns^2]
+    NDArray<cplx, 3> q4;          // [nk_irred][ns][ns]
     std::vector<cplx> v1_quartic; // sum_{b,c,d} v4[g][a,b][c,d] q0[b] q0[c] q0[d]
     cplx v0_quartic;              // sum_{a,b,c,d} v4[g][b,a][c,d] q0[a] q0[b] q0[c] q0[d]
 };
@@ -170,8 +170,9 @@ void run_case(const Case &cs, const std::string &label)
             for (std::size_t b = 0; b < ns; ++b) {
                 for (std::size_t cd = 0; cd < ns2; ++cd) {
                     if (!close(v3_renorm[jk][b][cd], ref.v3_renorm[jk][b][cd], tol)) {
-                        check(false, label + tag + ": v3_renorm mismatch at jk=" + std::to_string(jk) +
-                                     " b=" + std::to_string(b) + " cd=" + std::to_string(cd));
+                        check(false,
+                              label + tag + ": v3_renorm mismatch at jk=" + std::to_string(jk) +
+                                  " b=" + std::to_string(b) + " cd=" + std::to_string(cd));
                         return;
                     }
                 }
@@ -181,8 +182,9 @@ void run_case(const Case &cs, const std::string &label)
             for (std::size_t a = 0; a < ns; ++a) {
                 for (std::size_t b = 0; b < ns; ++b) {
                     if (!close(q4[ik][a][b], ref.q4[ik][a][b], tol)) {
-                        check(false, label + tag + ": q4 mismatch at ik=" + std::to_string(ik) +
-                                     " a=" + std::to_string(a) + " b=" + std::to_string(b));
+                        check(false,
+                              label + tag + ": q4 mismatch at ik=" + std::to_string(ik) + " a=" + std::to_string(a) +
+                                  " b=" + std::to_string(b));
                         return;
                     }
                 }
@@ -209,14 +211,34 @@ void run_case(const Case &cs, const std::string &label)
     };
 
     // 1. against the naive loops
-    contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, v4, q0.data(), v3_with_umn, v3_renorm, q4, Options{cs.tile});
+    contract_v4_with_q0(ns,
+                        cs.nk_dense,
+                        cs.nk_irred,
+                        cs.g,
+                        cs.jg,
+                        v4,
+                        q0.data(),
+                        v3_with_umn,
+                        v3_renorm,
+                        q4,
+                        Options{cs.tile});
     compare(compute_reference(cs, v4, q0, v3_with_umn), " [first call]");
 
     // 2. a second call with a different q0 must not accumulate on the previous outputs
     for (auto &q: q0) {
         q = dist(rng);
     }
-    contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, v4, q0.data(), v3_with_umn, v3_renorm, q4, Options{cs.tile});
+    contract_v4_with_q0(ns,
+                        cs.nk_dense,
+                        cs.nk_irred,
+                        cs.g,
+                        cs.jg,
+                        v4,
+                        q0.data(),
+                        v3_with_umn,
+                        v3_renorm,
+                        q4,
+                        Options{cs.tile});
     compare(compute_reference(cs, v4, q0, v3_with_umn), " [second call]");
 
 #ifdef _OPENMP
@@ -225,10 +247,29 @@ void run_case(const Case &cs, const std::string &label)
     NDArray<cplx, 3> q4_1(cs.nk_irred, ns, ns);
     const int nthreads_saved = omp_get_max_threads();
     omp_set_num_threads(1);
-    contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, v4, q0.data(), v3_with_umn, v3_renorm_1, q4_1,
+    contract_v4_with_q0(ns,
+                        cs.nk_dense,
+                        cs.nk_irred,
+                        cs.g,
+                        cs.jg,
+                        v4,
+                        q0.data(),
+                        v3_with_umn,
+                        v3_renorm_1,
+                        q4_1,
                         Options{cs.tile});
     omp_set_num_threads(std::max(nthreads_saved, 4));
-    contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, v4, q0.data(), v3_with_umn, v3_renorm, q4, Options{cs.tile});
+    contract_v4_with_q0(ns,
+                        cs.nk_dense,
+                        cs.nk_irred,
+                        cs.g,
+                        cs.jg,
+                        v4,
+                        q0.data(),
+                        v3_with_umn,
+                        v3_renorm,
+                        q4,
+                        Options{cs.tile});
     omp_set_num_threads(nthreads_saved);
     // bitwise comparison of the double representations (a numerical == would
     // also accept e.g. differently signed zeros)
@@ -256,14 +297,32 @@ void run_case(const Case &cs, const std::string &label)
             }
         }
     };
-    contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, nullptr, q0.data(), v3_with_umn, v3_renorm, q4,
+    contract_v4_with_q0(ns,
+                        cs.nk_dense,
+                        cs.nk_irred,
+                        cs.g,
+                        cs.jg,
+                        nullptr,
+                        q0.data(),
+                        v3_with_umn,
+                        v3_renorm,
+                        q4,
                         Options{cs.tile});
     expect_trivial(" [v4 == nullptr]");
     // poison the outputs, then the zero-q0 path must overwrite them
     fill_random(v3_renorm, rng);
     fill_random(q4, rng);
     std::vector<double> q0_zero(ns, 0.0);
-    contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, v4, q0_zero.data(), v3_with_umn, v3_renorm, q4,
+    contract_v4_with_q0(ns,
+                        cs.nk_dense,
+                        cs.nk_irred,
+                        cs.g,
+                        cs.jg,
+                        v4,
+                        q0_zero.data(),
+                        v3_with_umn,
+                        v3_renorm,
+                        q4,
                         Options{cs.tile});
     expect_trivial(" [q0 == 0]");
 
@@ -275,7 +334,16 @@ void run_case(const Case &cs, const std::string &label)
     }
     NDArray<cplx, 3> v3_full(cs.nk_dense, ns, ns2);
     NDArray<cplx, 3> q4_full(cs.nk_irred, ns, ns);
-    contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, v4, q0.data(), v3_with_umn, v3_full, q4_full,
+    contract_v4_with_q0(ns,
+                        cs.nk_dense,
+                        cs.nk_irred,
+                        cs.g,
+                        cs.jg,
+                        v4,
+                        q0.data(),
+                        v3_with_umn,
+                        v3_full,
+                        q4_full,
                         Options{cs.tile});
     const std::size_t nunits = cs.nk_irred * cs.nk_dense * ns;
     for (const int nparts: {1, 2, 3, 5}) {
@@ -298,8 +366,17 @@ void run_case(const Case &cs, const std::string &label)
             opt.seed_v3_with_umn = (ip == 0);
             fill_random(v3_renorm, rng); // poisoned outputs must be overwritten
             fill_random(q4, rng);
-            contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, v4, q0.data(), v3_with_umn, v3_renorm,
-                                q4, opt);
+            contract_v4_with_q0(ns,
+                                cs.nk_dense,
+                                cs.nk_irred,
+                                cs.g,
+                                cs.jg,
+                                v4,
+                                q0.data(),
+                                v3_with_umn,
+                                v3_renorm,
+                                q4,
+                                opt);
             for (std::size_t i = 0; i < v3_sum.size(); ++i) {
                 (&v3_sum[0][0][0])[i] += (&v3_renorm[0][0][0])[i];
             }
@@ -320,10 +397,10 @@ void run_case(const Case &cs, const std::string &label)
     // (it ends inside the very first slice), the cuts go through the Gamma-Gamma slice and
     // through a column-Gamma slice, one part is a whole slice
     if (cs.nk_irred > 1 && cs.nk_dense > 1) {
-        const std::size_t u_gg = (cs.g * cs.nk_dense + cs.jg) * ns + ns / 2;                // inside (g, jg)
+        const std::size_t u_gg = (cs.g * cs.nk_dense + cs.jg) * ns + ns / 2; // inside (g, jg)
         const std::size_t ik_other = cs.g == 0 ? 1 : 0;
-        const std::size_t u_cg = (ik_other * cs.nk_dense + cs.jg) * ns + ns / 3 + 1;        // inside (ik_other, jg)
-        std::vector<std::size_t> bounds{0, ns / 2, ns, u_gg, u_cg, nunits};                // [ns/2, ns) and [0,ns/2): no Gamma rows
+        const std::size_t u_cg = (ik_other * cs.nk_dense + cs.jg) * ns + ns / 3 + 1; // inside (ik_other, jg)
+        std::vector<std::size_t> bounds{0, ns / 2, ns, u_gg, u_cg, nunits}; // [ns/2, ns) and [0,ns/2): no Gamma rows
         std::sort(bounds.begin(), bounds.end());
         NDArray<cplx, 3> v3_sum(cs.nk_dense, ns, ns2);
         NDArray<cplx, 3> q4_sum(cs.nk_irred, ns, ns);
@@ -336,8 +413,17 @@ void run_case(const Case &cs, const std::string &label)
             opt.seed_v3_with_umn = (ip == 0);
             fill_random(v3_renorm, rng);
             fill_random(q4, rng);
-            contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, v4, q0.data(), v3_with_umn, v3_renorm,
-                                q4, opt);
+            contract_v4_with_q0(ns,
+                                cs.nk_dense,
+                                cs.nk_irred,
+                                cs.g,
+                                cs.jg,
+                                v4,
+                                q0.data(),
+                                v3_with_umn,
+                                v3_renorm,
+                                q4,
+                                opt);
 #ifdef _OPENMP
             // the restricted sweep must not depend on the thread count (bitwise)
             {
@@ -345,8 +431,17 @@ void run_case(const Case &cs, const std::string &label)
                 NDArray<cplx, 3> q4_1(cs.nk_irred, ns, ns);
                 const int nthreads_saved = omp_get_max_threads();
                 omp_set_num_threads(1);
-                contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, v4, q0.data(), v3_with_umn, v3_1,
-                                    q4_1, opt);
+                contract_v4_with_q0(ns,
+                                    cs.nk_dense,
+                                    cs.nk_irred,
+                                    cs.g,
+                                    cs.jg,
+                                    v4,
+                                    q0.data(),
+                                    v3_with_umn,
+                                    v3_1,
+                                    q4_1,
+                                    opt);
                 omp_set_num_threads(nthreads_saved);
                 check(std::memcmp(&v3_1[0][0][0], &v3_renorm[0][0][0], v3_1.size() * sizeof(cplx)) == 0 &&
                           std::memcmp(&q4_1[0][0][0], &q4[0][0][0], q4_1.size() * sizeof(cplx)) == 0,
@@ -375,7 +470,16 @@ void run_case(const Case &cs, const std::string &label)
         opt.seed_v3_with_umn = false;
         fill_random(v3_renorm, rng);
         fill_random(q4, rng);
-        contract_v4_with_q0(ns, cs.nk_dense, cs.nk_irred, cs.g, cs.jg, nullptr, q0.data(), v3_with_umn, v3_renorm, q4,
+        contract_v4_with_q0(ns,
+                            cs.nk_dense,
+                            cs.nk_irred,
+                            cs.g,
+                            cs.jg,
+                            nullptr,
+                            q0.data(),
+                            v3_with_umn,
+                            v3_renorm,
+                            q4,
                             opt);
         bool zero = true;
         for (std::size_t i = 0; i < v3_renorm.size() && zero; ++i) {

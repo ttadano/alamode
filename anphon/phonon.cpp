@@ -309,7 +309,10 @@ void PHON::execute_self_consistent_phonon() const
 
     auto t_stage = timer->elapsed();
     setup_base();
-    print_stage_line("setup (IFCs, symmetry, k points, ...)", timer->elapsed() - t_stage, mympi->my_rank, get_verbosity());
+    print_stage_line("setup (IFCs, symmetry, k points, ...)",
+                     timer->elapsed() - t_stage,
+                     mympi->my_rank,
+                     get_verbosity());
 
     t_stage = timer->elapsed();
     dynamical->diagonalize_dynamical_all();

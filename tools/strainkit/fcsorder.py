@@ -536,7 +536,16 @@ def fc2_difference(path_a, path_b):
 
 
 # ------------------------------------------------------- crystal identity
-def same_crystal(lavec_a, xf_a, elements_a, lavec_b, xf_b, elements_b, tol_bohr=1.0e-3, tol_lattice=1.0e-5):
+def same_crystal(
+    lavec_a,
+    xf_a,
+    elements_a,
+    lavec_b,
+    xf_b,
+    elements_b,
+    tol_bohr=1.0e-3,
+    tol_lattice=1.0e-5,
+):
     """anphon's strain_parsers::match_atoms: two cells describe the same crystal.
 
     The lattices (rows, Angstrom) must be nested (one an integer supercell of

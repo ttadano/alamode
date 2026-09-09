@@ -315,8 +315,7 @@ void Dynamical::prepare_mindist_list(std::vector<int> **mindist_out) const
 }
 
 void Dynamical::eval_k(const double *xk_in, const double *kvec_in, const std::vector<FcsArrayWithCell> &fc2,
-                       double *eval_out, std::complex<double> **evec_out, const bool require_evec,
-                       int *info_out) const
+                       double *eval_out, std::complex<double> **evec_out, const bool require_evec, int *info_out) const
 {
     // Calculate phonon energy for the specific k-point given in fractional basis
 
@@ -364,7 +363,7 @@ void Dynamical::eval_k(const double *xk_in, const double *kvec_in, const std::ve
     }
 
     const auto info = solve_dense_hermitian_info(neval,
-                          dymat_k,
+                                                 dymat_k,
                                                  eval_out,
                                                  (require_eigenvectors && require_evec) ? evec_out : nullptr,
                                                  require_evec,
@@ -444,7 +443,7 @@ void Dynamical::eval_k_ewald(const double *xk_in, const double *kvec_in, const s
     }
 
     const auto info = solve_dense_hermitian_info(neval,
-                          dymat_k,
+                                                 dymat_k,
                                                  eval_out,
                                                  (require_eigenvectors && require_evec) ? evec_out : nullptr,
                                                  require_evec,

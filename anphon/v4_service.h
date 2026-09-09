@@ -30,11 +30,17 @@
 #include "ndarray.h"
 #include "v4_distributed.h"
 
-namespace PHON_NS {
+namespace PHON_NS
+{
 
-class V4Service {
+class V4Service
+{
 public:
-    enum class Partition { Units, Slices };
+    enum class Partition
+    {
+        Units,
+        Slices
+    };
 
     V4Service(int my_rank, int nprocs);
     ~V4Service() = default;
@@ -106,7 +112,12 @@ public:
     }
 
 private:
-    enum Opcode : int { OP_FMAT = 1, OP_Q0 = 2, OP_DONE = 3 };
+    enum Opcode : int
+    {
+        OP_FMAT = 1,
+        OP_Q0 = 2,
+        OP_DONE = 3
+    };
 
     void broadcast_opcode(int op) const;
     void reduce_to_root(std::complex<double> *buf, std::size_t count) const;

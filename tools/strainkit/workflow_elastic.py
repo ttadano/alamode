@@ -328,8 +328,21 @@ def fit(
             )
         else:
             _write_container(
-                strain_file, force, ref_atoms, prim, s0, c2, c3, fit_res, manifest, mode,
-                symmetrize, geometry_ok, outdir, rdir, log,
+                strain_file,
+                force,
+                ref_atoms,
+                prim,
+                s0,
+                c2,
+                c3,
+                fit_res,
+                manifest,
+                mode,
+                symmetrize,
+                geometry_ok,
+                outdir,
+                rdir,
+                log,
             )
     else:
         log(anphon_file_locations())
@@ -341,8 +354,23 @@ def fit(
     return fit_res, summary
 
 
-def _write_container(strain_file, force, ref_atoms, prim, s0, c2, c3, fit_res, manifest, mode,
-                     symmetrize, geometry_ok, outdir, rdir, log):
+def _write_container(
+    strain_file,
+    force,
+    ref_atoms,
+    prim,
+    s0,
+    c2,
+    c3,
+    fit_res,
+    manifest,
+    mode,
+    symmetrize,
+    geometry_ok,
+    outdir,
+    rdir,
+    log,
+):
     """Add /Elastic to the strain-coupling container (create it if needed)."""
     from . import strainfile as sfile
 
@@ -350,14 +378,19 @@ def _write_container(strain_file, force, ref_atoms, prim, s0, c2, c3, fit_res, m
         # The DFT reference structure must be the crystal of the anphon cell
         # before the container is labeled with the anphon cell.
         try:
-            sfile.same_crystal(sfile.cell_from_atoms(ref_atoms), sfile.cell_from_primitive(prim))
+            sfile.same_crystal(
+                sfile.cell_from_atoms(ref_atoms), sfile.cell_from_primitive(prim)
+            )
         except ValueError as exc:
             raise ValueError(
                 f"the DFT reference structure is not the crystal of the anphon cell: {exc}"
             ) from None
         reference, ref_source = sfile.cell_from_primitive(prim), prim.source
     else:
-        reference, ref_source = sfile.cell_from_atoms(ref_atoms), "DFT reference structure"
+        reference, ref_source = (
+            sfile.cell_from_atoms(ref_atoms),
+            "DFT reference structure",
+        )
     g = EV_PER_ANG3_TO_GPA
     attrs = {
         "source": "elastic.py fit",

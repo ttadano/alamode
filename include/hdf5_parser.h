@@ -251,8 +251,7 @@ inline auto resolve_h5_cell_name(const std::string &celltype) -> std::string
 // sub-group of a larger file is read with the same code as a standalone file.
 inline auto get_structures_from_h5(const H5Easy::File &file, const std::string &celltype, Eigen::Matrix3d &lavec,
                                    Eigen::MatrixXd &x_fractional, std::vector<int> &kind_index,
-                                   std::vector<std::string> &element_names,
-                                   std::string *length_unit_detected = nullptr,
+                                   std::vector<std::string> &element_names, std::string *length_unit_detected = nullptr,
                                    const std::string &group_prefix = "") -> void
 {
     using namespace H5Easy;
@@ -342,7 +341,8 @@ inline auto validate_fc_order_group_h5(const H5Easy::File &file, const std::stri
         if (dset.hasAttribute("basis")) {
             std::string basis;
             dset.getAttribute("basis").read(basis);
-            if (basis != "Cartesian") fail("shift_vectors are stored in the \"" + basis + "\" basis; Cartesian is required.");
+            if (basis != "Cartesian")
+                fail("shift_vectors are stored in the \"" + basis + "\" basis; Cartesian is required.");
         }
         const auto check_bounds = [&](const std::string &cell, const Eigen::MatrixXi &idx, const char *what) {
             const std::string path = group_prefix + "/" + cell + "/number_of_atoms";
@@ -362,8 +362,7 @@ inline auto get_force_constants_from_h5(const H5Easy::File &file, const int orde
                                         Eigen::MatrixXi &atom_indices_super, Eigen::MatrixXi &coord_indices,
                                         Eigen::MatrixXd &shift_vectors, Eigen::ArrayXd &fcs_values,
                                         std::string *shift_unit_detected = nullptr,
-                                        std::string *fc_unit_detected = nullptr,
-                                        const int temperature_index = -1,
+                                        std::string *fc_unit_detected = nullptr, const int temperature_index = -1,
                                         const std::string &group_prefix = "") -> void
 {
     using namespace H5Easy;
@@ -382,7 +381,8 @@ inline auto get_force_constants_from_h5(const H5Easy::File &file, const int orde
                       << "(harmonic FC2), not " << str_ordername << ".\n";
             exit(1);
         }
-        path_values = group_prefix + "/ForceConstants/" + str_ordername + "_temperature_dependent/force_constant_values";
+        path_values =
+            group_prefix + "/ForceConstants/" + str_ordername + "_temperature_dependent/force_constant_values";
         if (!file.exist(path_values)) {
             std::cout << "Error: file " << file.getName() << " does not contain temperature-dependent force constants ("
                       << path_values << ").\n";
@@ -407,8 +407,15 @@ inline auto get_force_constants_from_h5(const H5Easy::File &file, const int orde
         fcs_values = load<Eigen::ArrayXd>(file, path_values);
     }
 
-    validate_fc_order_group_h5(file, group_path, order, atom_indices, atom_indices_super, coord_indices,
-                               shift_vectors, fcs_values, group_prefix);
+    validate_fc_order_group_h5(file,
+                               group_path,
+                               order,
+                               atom_indices,
+                               atom_indices_super,
+                               coord_indices,
+                               shift_vectors,
+                               fcs_values,
+                               group_prefix);
 
     // Convert into the internal units (bohr, Ry/bohr^m) if the file declares
     // other units; datasets without the attribute are assumed to already be in

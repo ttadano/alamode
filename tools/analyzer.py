@@ -149,13 +149,19 @@ def main():
 
     # Temperature-resolved kappa.h5 files (FC2_TEMPERATURE runs) hold one phonon basis per
     # temperature; the Calculator works with one basis at a time.
-    if options.file_kappa is not None and options.file_3ph is None and options.temp is None:
+    if (
+        options.file_kappa is not None
+        and options.file_3ph is None
+        and options.temp is None
+    ):
         info = probe_kappa_h5(options.file_kappa)
         if info["temperature_resolved"] and len(info["temperatures"]) > 1:
             if calc != "kappa":
                 raise RuntimeError(
                     "{} holds temperature-dependent phonons at {} temperatures; please "
-                    "specify --temp".format(options.file_kappa, len(info["temperatures"]))
+                    "specify --temp".format(
+                        options.file_kappa, len(info["temperatures"])
+                    )
                 )
             print("# Thermal conductivity (W/mK), temperature-resolved phonon basis")
             print("# temperature, xx, xy, xz, yx, yy, yz, zx, zy, zz")
@@ -170,10 +176,19 @@ def main():
                 )
                 kappa = np.asarray(
                     calc_t.get_thermal_conductivity(
-                        four_phonon=calc_t.has_4ph, isotope=calc_t.has_isotope, len_boundary=options.size
+                        four_phonon=calc_t.has_4ph,
+                        isotope=calc_t.has_isotope,
+                        len_boundary=options.size,
                     )
                 ).reshape((-1, 3, 3))[0]
-                print("{:12.2f}".format(temp) + "".join("{:15.3f}".format(kappa[i, j]) for i in range(3) for j in range(3)))
+                print(
+                    "{:12.2f}".format(temp)
+                    + "".join(
+                        "{:15.3f}".format(kappa[i, j])
+                        for i in range(3)
+                        for j in range(3)
+                    )
+                )
             return
 
     postproc = Calculator(

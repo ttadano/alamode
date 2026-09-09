@@ -56,7 +56,8 @@ void require_dims(const HighFive::File &file, const std::string &path, const std
         std::string want, have;
         for (const auto d: expected) want += (want.empty() ? "" : ",") + std::to_string(d);
         for (const auto d: dims) have += (have.empty() ? "" : ",") + std::to_string(d);
-        throw std::runtime_error(path + " of " + file.getName() + " has shape (" + have + "), expected (" + want + ").");
+        throw std::runtime_error(path + " of " + file.getName() + " has shape (" + have + "), expected (" + want +
+                                 ").");
     }
 }
 
@@ -93,7 +94,8 @@ std::vector<double> load_doubles(const HighFive::File &file, const std::string &
     std::vector<double> values(n);
     if (n > 0) file.getDataSet(path).read(values.data());
     for (const auto v: values) {
-        if (!std::isfinite(v)) throw std::runtime_error(path + " of " + file.getName() + " contains non-finite values.");
+        if (!std::isfinite(v))
+            throw std::runtime_error(path + " of " + file.getName() + " contains non-finite values.");
     }
     return values;
 }
@@ -381,7 +383,7 @@ StrainHarmonicSet StrainCouplingFile::read_strain_harmonic() const
 }
 
 void StrainCouplingFile::load_harmonic_fc2(const StrainHarmonicEntry &entry, const Fcs_phonon &fcs_phonon,
-                                          std::vector<FcsArrayWithCell> &fc2_out) const
+                                           std::vector<FcsArrayWithCell> &fc2_out) const
 {
     fcs_phonon.parse_fcs_from_h5(*impl->file, entry.label, 0, fc2_out);
 }

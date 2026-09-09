@@ -6,12 +6,12 @@
 // overwrite whatever the output holds. The team size actually obtained is
 // checked, so a build without OpenMP (or a thread limit) reports the missing
 // parallel coverage instead of passing silently.
-#include "v4_index_transform.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <random>
 #include <vector>
+#include "v4_index_transform.h"
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -54,8 +54,14 @@ int main()
                 for (std::size_t i = 0; i < out.size(); ++i) maxdiff = std::max(maxdiff, std::abs(out[i] - ref[i]));
                 const bool ok = maxdiff < 1e-13;
                 const bool covered = (nt_actual == nt);
-                std::printf("ns=%zu ncols=%zu threads=%d (got %d) max|diff|=%.2e %s%s\n", ns, ncols, nt, nt_actual,
-                            maxdiff, ok ? "ok" : "FAILED", covered ? "" : " [team size not obtained: slab coverage missing]");
+                std::printf("ns=%zu ncols=%zu threads=%d (got %d) max|diff|=%.2e %s%s\n",
+                            ns,
+                            ncols,
+                            nt,
+                            nt_actual,
+                            maxdiff,
+                            ok ? "ok" : "FAILED",
+                            covered ? "" : " [team size not obtained: slab coverage missing]");
                 if (!ok || !covered) ++nfail;
             }
         }

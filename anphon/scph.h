@@ -116,11 +116,10 @@ private:
                              std::complex<double> ***fmat_all) const;
 
     void diagonalize_and_symmetrize(const Eigen::MatrixXcd &Fmat, const std::vector<Eigen::MatrixXcd> &evec_initial,
-                                    const double *const *v4_diag, const unsigned int ik_irred,
-                                    const unsigned int knum, const unsigned int knum_interpolate,
-                                    const bool flag_converged, double **omega2_out, const unsigned int verbosity,
-                                    int &icount, Eigen::VectorXd &eval_tmp, std::complex<double> ***dymat_q,
-                                    bool *eval_repaired = nullptr);
+                                    const double *const *v4_diag, const unsigned int ik_irred, const unsigned int knum,
+                                    const unsigned int knum_interpolate, const bool flag_converged, double **omega2_out,
+                                    const unsigned int verbosity, int &icount, Eigen::VectorXd &eval_tmp,
+                                    std::complex<double> ***dymat_q, bool *eval_repaired = nullptr);
 
     void interpolate_to_dense_mesh(std::complex<double> ***dymat_q,
                                    const std::complex<double> *const *const *dymat_q_HA,

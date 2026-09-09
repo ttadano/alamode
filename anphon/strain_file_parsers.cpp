@@ -160,9 +160,10 @@ strain_coupling::StrainForceSet parse_strain_force(std::istream &fin, const std:
         block.forces.resize(set.natom_rows * 3);
         for (auto &v: block.forces) {
             if (!(fin >> v)) {
-                throw std::runtime_error(fname + " ended in the middle of a block. Every block must consist of a\n"
-                                         " 'mode smag weight' line followed by one line of three force components per atom\n"
-                                         " of the cell the file describes.");
+                throw std::runtime_error(
+                    fname + " ended in the middle of a block. Every block must consist of a\n"
+                            " 'mode smag weight' line followed by one line of three force components per atom\n"
+                            " of the cell the file describes.");
             }
         }
         set.blocks.push_back(std::move(block));

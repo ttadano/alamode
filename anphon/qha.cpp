@@ -9,8 +9,8 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "qha.h"
-#include <algorithm>
 #include <Eigen/Core>
+#include <algorithm>
 #include <array>
 #include <iomanip>
 #include "constants.h"
@@ -52,12 +52,11 @@ public:
         qha_(qha), ws_(ws), dymat_anharm_(dymat_anharm),
         delta_harmonic_dymat_renormalize_(delta_harmonic_dymat_renormalize), cmat_convert_(cmat_convert),
         omega2_harm_renorm_(omega2_harm_renorm), evec_harm_renorm_tmp_(evec_harm_renorm_tmp), v1_QHA_(v1_QHA),
-        del_v0_del_umn_QHA_(del_v0_del_umn_QHA),
-        del_v0_del_umn_ZSISA_(del_v0_del_umn_ZSISA), del_v0_del_umn_vZSISA_(del_v0_del_umn_vZSISA),
-        del_v1_del_umn_renorm_(del_v1_del_umn_renorm), delq_delu_ZSISA_(delq_delu_ZSISA),
-        C2_array_renorm_(C2_array_renorm), C2_array_ZSISA_(C2_array_ZSISA), del_v_strain_(del_v_strain),
-        converged_prev_(converged_prev), str_diverged_(str_diverged), fout_step_q0_(fout_step_q0),
-        fout_step_u0_(fout_step_u0), fout_step_u_tensor_(fout_step_u_tensor)
+        del_v0_del_umn_QHA_(del_v0_del_umn_QHA), del_v0_del_umn_ZSISA_(del_v0_del_umn_ZSISA),
+        del_v0_del_umn_vZSISA_(del_v0_del_umn_vZSISA), del_v1_del_umn_renorm_(del_v1_del_umn_renorm),
+        delq_delu_ZSISA_(delq_delu_ZSISA), C2_array_renorm_(C2_array_renorm), C2_array_ZSISA_(C2_array_ZSISA),
+        del_v_strain_(del_v_strain), converged_prev_(converged_prev), str_diverged_(str_diverged),
+        fout_step_q0_(fout_step_q0), fout_step_u0_(fout_step_u0), fout_step_u_tensor_(fout_step_u_tensor)
     {}
 
     void before_init_structure(unsigned int, unsigned int, double, bool) override
@@ -795,7 +794,7 @@ void Qha::exec_perturbative_QHA(std::complex<double> ****dymat_anharm,
     NDArray<std::complex<double>, 3> evec_harm_renorm_tmp;
     // original and renormalized IFCs
     NDArray<std::complex<double>, 1> v1_ref, v1_renorm, v1_with_umn;
-    NDArray<std::complex<double>, 3> v3_ref;         // We fix cubic IFCs in perturbative QHA.
+    NDArray<std::complex<double>, 3> v3_ref; // We fix cubic IFCs in perturbative QHA.
 
     // elastic constants
     NDArray<double, 1> C1_array;

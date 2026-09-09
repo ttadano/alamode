@@ -180,7 +180,7 @@ void ScphQhaCommon::calculate_del_v0_del_umn_renorm(std::complex<double> *del_v0
                 }
             }
             const Eigen::VectorXcd d3w = del_v_strain.del_v3[i1][0] * w; // (ns x ns^2) * ns^2
-            del_v0_del_umn_renorm[i1] += factor * q0c.dot(d3w); // q0 is real: dot() conjugates nothing
+            del_v0_del_umn_renorm[i1] += factor * q0c.dot(d3w);          // q0 is real: dot() conjugates nothing
         }
     }
 

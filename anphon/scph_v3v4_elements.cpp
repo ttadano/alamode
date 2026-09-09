@@ -489,9 +489,8 @@ void PHON_NS::compute_V3_elements_for_given_IFCs(
 
 
 void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(v4_distributed::V4RowBlock &v4_block,
-                                                        std::complex<double> ***evec_in,
-                                                        const bool self_offdiag, const bool relax,
-                                                        const KpointMeshUniform *kmesh_coarse_in,
+                                                        std::complex<double> ***evec_in, const bool self_offdiag,
+                                                        const bool relax, const KpointMeshUniform *kmesh_coarse_in,
                                                         const KpointMeshUniform *kmesh_dense_in,
                                                         const std::vector<int> &kmap_coarse_to_dense,
                                                         const PhaseFactorCache *phase_storage_in,
@@ -688,8 +687,8 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(v4_distributed::V4RowBlo
 }
 
 void ScphQhaCommon::compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock &v4_block,
-                                                      std::complex<double> ***evec_in,
-                                                      const bool self_offdiag, const KpointMeshUniform *kmesh_coarse_in,
+                                                      std::complex<double> ***evec_in, const bool self_offdiag,
+                                                      const KpointMeshUniform *kmesh_coarse_in,
                                                       const KpointMeshUniform *kmesh_dense_in,
                                                       const std::vector<int> &kmap_coarse_to_dense,
                                                       const PhaseFactorCache *phase_storage_in,
@@ -726,7 +725,8 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock
     if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
         std::cout << " IALGO = 1 : Use different algorithm efficient when nbands >> nk_3ph\n";
         const auto nsize_dble =
-            static_cast<double>((v4_block.nrows_local() * ns2 + 2 * ns * ns2) * sizeof(std::complex<double>)) / 1000000000.0;
+            static_cast<double>((v4_block.nrows_local() * ns2 + 2 * ns * ns2) * sizeof(std::complex<double>)) /
+            1000000000.0;
         std::cout << " Estimated memory usage for the V4 arrays on this process: " << std::setw(10) << std::fixed
                   << std::setprecision(4) << nsize_dble << " GByte.\n";
         std::cout << " Calculating all components of v4_array ... \n";
@@ -891,8 +891,9 @@ void PHON_NS::zerofill_elements_acoustic_at_gamma(const std::vector<bool> &is_ac
     constexpr auto complex_zero = std::complex<double>(0.0, 0.0);
 
     if (fc_order != 3) {
-        exit("zerofill_elements_acoustic_at_gamma",
-             "Only the cubic elements use this function; the quartic ones are row-distributed (zerofill_v4_acoustic_at_gamma_block).");
+        exit(
+            "zerofill_elements_acoustic_at_gamma",
+            "Only the cubic elements use this function; the quartic ones are row-distributed (zerofill_v4_acoustic_at_gamma_block).");
     }
 
     if (std::count(is_acoustic.begin(), is_acoustic.end(), true) != 3) {
@@ -926,7 +927,6 @@ void PHON_NS::zerofill_elements_acoustic_at_gamma(const std::vector<bool> &is_ac
                 }
             }
         }
-
     }
 }
 

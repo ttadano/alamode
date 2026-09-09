@@ -308,8 +308,7 @@ int main()
         const auto set = parse_strain_force(ss, 2, "f");
         check(set.blocks.size() == 1 && set.trailing_data, "strain_force: an unreadable block line is trailing data");
         std::istringstream at_eof("xx 0.005 1.0\n1 2 3\n4 5 6\nyy 0.005\n");
-        check(!parse_strain_force(at_eof, 2, "f").trailing_data,
-              "strain_force: a partial line at EOF is not reported");
+        check(!parse_strain_force(at_eof, 2, "f").trailing_data, "strain_force: a partial line at EOF is not reported");
     }
     {
         std::istringstream ss("xx 0.005 1.0\n1 2 3\n4 5\n");

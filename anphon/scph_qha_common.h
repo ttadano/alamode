@@ -22,8 +22,6 @@
 #include "anharmonic_core.h"
 #include "constants.h"
 #include "dynamical.h"
-#include "v4_distributed.h"
-#include "v4_service.h"
 #include "error.h"
 #include "fcs_phonon.h"
 #include "kpoint.h"
@@ -36,6 +34,8 @@
 #include "scph_result_io.h"
 #include "symmetry_core.h"
 #include "system.h"
+#include "v4_distributed.h"
+#include "v4_service.h"
 
 namespace PHON_NS
 {

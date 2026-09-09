@@ -43,7 +43,9 @@ def _h5py():
     try:
         import h5py
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError("the strain-coupling container needs the h5py package") from exc
+        raise RuntimeError(
+            "the strain-coupling container needs the h5py package"
+        ) from exc
     return h5py
 
 
@@ -96,7 +98,9 @@ def write_cell_group(g, lavec_rows_ang, xf, symbols, source=None, mapping_table=
     symbols = [str(s) for s in symbols]
     natom = len(symbols)
     if xf.shape[0] != natom or natom == 0:
-        raise ValueError("cell group: one symbol per atom of fractional_coordinate is required")
+        raise ValueError(
+            "cell group: one symbol per atom of fractional_coordinate is required"
+        )
     if not (np.all(np.isfinite(lavec)) and np.all(np.isfinite(xf))):
         raise ValueError("cell group: non-finite lattice or coordinates")
     if abs(np.linalg.det(lavec)) < 1.0e-8:
@@ -112,12 +116,16 @@ def write_cell_group(g, lavec_rows_ang, xf, symbols, source=None, mapping_table=
     g.create_dataset("number_of_elements", data=np.uint64(len(elements)))
     g.create_dataset("fractional_coordinate", data=xf)
     g.create_dataset("atomic_kinds", data=np.asarray(kinds, dtype=np.int32))
-    g.create_dataset("elements", data=np.array(elements, dtype=object), dtype=h5py.string_dtype())
+    g.create_dataset(
+        "elements", data=np.array(elements, dtype=object), dtype=h5py.string_dtype()
+    )
     g.create_dataset("spin_polarized", data=np.int32(0))
     if mapping_table is None:
         mapping_table = np.arange(natom, dtype=np.int32).reshape(natom, 1)
     mapping_table = np.asarray(mapping_table, dtype=np.int32)
-    g.create_dataset("number_of_primitive_translations", data=np.uint64(mapping_table.shape[1]))
+    g.create_dataset(
+        "number_of_primitive_translations", data=np.uint64(mapping_table.shape[1])
+    )
     g.create_dataset("mapping_table", data=mapping_table)
     if source:
         g.attrs["source"] = str(source)
@@ -175,10 +183,14 @@ def stamp_root(f, provenance=None):
 
 def check_schema(f):
     if "schema" not in f.attrs or _decode(f.attrs["schema"]) != SCHEMA:
-        raise ValueError(f"{f.filename}: not a strain-coupling container (schema {SCHEMA} expected)")
+        raise ValueError(
+            f"{f.filename}: not a strain-coupling container (schema {SCHEMA} expected)"
+        )
     version = int(f.attrs.get("format_version", 0))
     if version > FORMAT_VERSION:
-        raise ValueError(f"{f.filename}: format_version {version} is newer than this strainkit ({FORMAT_VERSION})")
+        raise ValueError(
+            f"{f.filename}: format_version {version} is newer than this strainkit ({FORMAT_VERSION})"
+        )
     if REFERENCE not in f:
         raise ValueError(f"{f.filename}: /{REFERENCE} is missing")
     return version
@@ -244,8 +256,13 @@ def update(path, reference_cell, record=None, force=False, source=None):
                 dropped = [k for k in (ELASTIC, FORCE, HARMONIC) if k in old]
         f = h5py.File(part, "w")
         stamp_root(f)
-        write_cell_group(f.create_group(REFERENCE), reference_cell.lavec, reference_cell.xf,
-                         reference_cell.elements, source=source)
+        write_cell_group(
+            f.create_group(REFERENCE),
+            reference_cell.lavec,
+            reference_cell.xf,
+            reference_cell.elements,
+            source=source,
+        )
     try:
         yield f
         if record is not None:
@@ -258,7 +275,9 @@ def update(path, reference_cell, record=None, force=False, source=None):
             os.remove(part)
         raise
     if dropped:
-        print(f"  NOTE: {path} was recreated; the groups {', '.join('/' + d for d in dropped)} of the old file were dropped")
+        print(
+            f"  NOTE: {path} was recreated; the groups {', '.join('/' + d for d in dropped)} of the old file were dropped"
+        )
 
 
 # ------------------------------------------------------------------ modes
@@ -268,7 +287,9 @@ def _validate_modes(modes, smag, weight, where):
     weight = np.asarray(weight, dtype=float)
     n = len(modes)
     if n == 0 or smag.shape != (n,) or weight.shape != (n,):
-        raise ValueError(f"{where}: modes, smag and weight must be non-empty and of equal length")
+        raise ValueError(
+            f"{where}: modes, smag and weight must be non-empty and of equal length"
+        )
     for m, s, w in zip(modes, smag, weight):
         if m not in MODE_NAMES:
             raise ValueError(f"{where}: invalid strain mode {m!r}")
@@ -279,12 +300,16 @@ def _validate_modes(modes, smag, weight, where):
 
 def _write_mode_table(g, modes, smag, weight):
     h5py = _h5py()
-    g.create_dataset("modes", data=np.array(modes, dtype=object), dtype=h5py.string_dtype())
+    g.create_dataset(
+        "modes", data=np.array(modes, dtype=object), dtype=h5py.string_dtype()
+    )
     g.create_dataset("smag", data=np.asarray(smag, dtype=float))
     g.create_dataset("weight", data=np.asarray(weight, dtype=float))
     g.create_dataset(
         "displacement_gradient",
-        data=np.array([mode_tensor(m) * s for m, s in zip(modes, smag)], dtype=float).reshape(len(modes), 3, 3),
+        data=np.array(
+            [mode_tensor(m) * s for m, s in zip(modes, smag)], dtype=float
+        ).reshape(len(modes), 3, 3),
     )
 
 
@@ -349,7 +374,9 @@ def read_elastic(f):
         stress = np.asarray(g["stress"][()], dtype=float).reshape(3, 3)
     if "soec" in g or "toec" in g:
         if "soec" not in g or "toec" not in g:
-            raise ValueError(f"{f.filename}: /Elastic must contain both soec and toec or neither")
+            raise ValueError(
+                f"{f.filename}: /Elastic must contain both soec and toec or neither"
+            )
         _require_unit(g["soec"], "GPa")
         _require_unit(g["toec"], "GPa")
         soec = np.asarray(g["soec"][()], dtype=float).reshape(9, 9)
@@ -367,14 +394,20 @@ def _require_unit(dset, expected):
 def write_strain_force(f, blocks, cell, attrs=None):
     """Replace /StrainForce.  blocks: (mode, smag, weight, forces (natom, 3) eV/A);
     cell: the ReferenceCell whose atoms the rows follow."""
-    modes, smag, weight = _validate_modes([b[0] for b in blocks], [b[1] for b in blocks],
-                                          [b[2] for b in blocks], "/StrainForce")
+    modes, smag, weight = _validate_modes(
+        [b[0] for b in blocks],
+        [b[1] for b in blocks],
+        [b[2] for b in blocks],
+        "/StrainForce",
+    )
     natom = cell.natom
     forces = np.zeros((len(blocks), natom, 3))
     for k, b in enumerate(blocks):
         fk = np.asarray(b[3], dtype=float)
         if fk.shape != (natom, 3) or not np.all(np.isfinite(fk)):
-            raise ValueError(f"/StrainForce: block {k + 1} must hold finite forces of shape ({natom}, 3)")
+            raise ValueError(
+                f"/StrainForce: block {k + 1} must hold finite forces of shape ({natom}, 3)"
+            )
         forces[k] = fk
     if FORCE in f:
         del f[FORCE]
@@ -397,9 +430,14 @@ def read_strain_force(f):
     _require_unit(g["forces"], UNIT_FORCE)
     forces = np.asarray(g["forces"][()], dtype=float)
     if forces.shape != (len(modes), cell.natom, 3):
-        raise ValueError(f"{f.filename}: /StrainForce/forces has shape {forces.shape}, expected "
-                         f"({len(modes)}, {cell.natom}, 3)")
-    blocks = [(m, float(s), float(w), forces[k]) for k, (m, s, w) in enumerate(zip(modes, smag, weight))]
+        raise ValueError(
+            f"{f.filename}: /StrainForce/forces has shape {forces.shape}, expected "
+            f"({len(modes)}, {cell.natom}, 3)"
+        )
+    blocks = [
+        (m, float(s), float(w), forces[k])
+        for k, (m, s, w) in enumerate(zip(modes, smag, weight))
+    ]
     return blocks, cell
 
 
@@ -433,7 +471,9 @@ def xml_to_fc2_group(xml_path, eg):
         root = etree.parse(xml_path, parser=etree.XMLParser(recover=True)).getroot()
     fcs = root.findall("ForceConstants/HARMONIC/FC2")
     if not fcs:
-        raise ValueError(f"{xml_path}: no harmonic force constants (ForceConstants/HARMONIC/FC2)")
+        raise ValueError(
+            f"{xml_path}: no harmonic force constants (ForceConstants/HARMONIC/FC2)"
+        )
     lat_bohr = st.lavec / BOHR_IN_ANGSTROM  # rows
     xc = st.xf @ lat_bohr
     images = _image_shifts() @ lat_bohr
@@ -455,7 +495,13 @@ def xml_to_fc2_group(xml_path, eg):
         coord_indices[i] = (xyz1, xyz2)
         shift[i] = xc[a2] + images[icell] - xc[a1]
         values[i] = float(fc.text)
-    write_cell_group(eg.create_group("SuperCell"), st.lavec, st.xf, st.elements, mapping_table=st.map_p2s.T)
+    write_cell_group(
+        eg.create_group("SuperCell"),
+        st.lavec,
+        st.xf,
+        st.elements,
+        mapping_table=st.map_p2s.T,
+    )
     g = eg.create_group("ForceConstants/Order2")
     opts = dict(compression="gzip", compression_opts=4)
     g.create_dataset("atom_indices", data=atom_indices, **opts)
@@ -473,9 +519,13 @@ def _copy_fc_h5(src_path, eg):
     with h5py.File(src_path, "r") as src:
         for name in ("SuperCell", "ForceConstants"):
             if name not in src:
-                raise ValueError(f"{src_path}: no /{name} group (an alm force-constant file is expected)")
+                raise ValueError(
+                    f"{src_path}: no /{name} group (an alm force-constant file is expected)"
+                )
         if "ForceConstants/Order2" not in src:
-            raise ValueError(f"{src_path}: no harmonic force constants (/ForceConstants/Order2)")
+            raise ValueError(
+                f"{src_path}: no harmonic force constants (/ForceConstants/Order2)"
+            )
         for name in ("PrimitiveCell", "SuperCell", "ForceConstants"):
             if name in src:
                 src.copy(src[name], eg, name=name)
@@ -486,8 +536,12 @@ def write_strain_harmonic(f, rows, fc_paths, attrs=None):
     force-constant file (.h5 copied group-wise, .xml converted) of every row."""
     if len(rows) != len(fc_paths):
         raise ValueError("/StrainHarmonic: one force-constant file per row is required")
-    modes, smag, weight = _validate_modes([r[0] for r in rows], [r[1] for r in rows],
-                                          [r[2] for r in rows], "/StrainHarmonic")
+    modes, smag, weight = _validate_modes(
+        [r[0] for r in rows],
+        [r[1] for r in rows],
+        [r[2] for r in rows],
+        "/StrainHarmonic",
+    )
     if HARMONIC in f:
         del f[HARMONIC]
     g = f.create_group(HARMONIC)
@@ -504,7 +558,9 @@ def write_strain_harmonic(f, rows, fc_paths, attrs=None):
         elif ext == ".xml":
             xml_to_fc2_group(path, eg)
         else:
-            raise ValueError(f"{path}: unknown force-constant file extension (.xml or .h5)")
+            raise ValueError(
+                f"{path}: unknown force-constant file extension (.xml or .h5)"
+            )
     _set_attrs(g, attrs)
     return g
 
@@ -531,18 +587,28 @@ def summary(path):
     out = {"path": path}
     with h5py.File(path, "r") as f:
         out["format_version"] = check_schema(f)
-        out["attrs"] = {k: _decode(v) if isinstance(v, (bytes, str)) else _plain(v) for k, v in f.attrs.items()}
+        out["attrs"] = {
+            k: _decode(v) if isinstance(v, (bytes, str)) else _plain(v)
+            for k, v in f.attrs.items()
+        }
         out["reference_cell"] = read_cell_group(f[REFERENCE])
         out["reference_source"] = _decode(f[REFERENCE].attrs.get("source", ""))
         out["elastic"] = read_elastic(f) if ELASTIC in f else None
         out["strain_force"] = read_strain_force(f) if FORCE in f else None
-        out["strain_force_attrs"] = {k: _plain(v) for k, v in f[FORCE].attrs.items()} if FORCE in f else {}
+        out["strain_force_attrs"] = (
+            {k: _plain(v) for k, v in f[FORCE].attrs.items()} if FORCE in f else {}
+        )
         if HARMONIC in f:
             rows, entries = read_strain_harmonic(f)
             cells = [read_cell_group(f[e]["SuperCell"]) for e in entries]
-            nrows = [int(f[e]["ForceConstants/Order2/force_constant_values"].shape[0]) for e in entries]
+            nrows = [
+                int(f[e]["ForceConstants/Order2/force_constant_values"].shape[0])
+                for e in entries
+            ]
             out["strain_harmonic"] = (rows, entries, cells, nrows)
-            out["strain_harmonic_attrs"] = {k: _plain(v) for k, v in f[HARMONIC].attrs.items()}
+            out["strain_harmonic_attrs"] = {
+                k: _plain(v) for k, v in f[HARMONIC].attrs.items()
+            }
         else:
             out["strain_harmonic"] = None
     return out
@@ -550,31 +616,56 @@ def summary(path):
 
 def supported_settings(info):
     """Which anphon settings the container supports, as text lines."""
-    from .strain import check_weight_sums, StrainPoint
 
     lines = []
     el = info["elastic"]
-    lines.append("ELASTIC_CONST = 2 : " + ("yes (C2, C3 present)" if el and el[1] is not None else "no (no /Elastic/soec,toec)"))
-    lines.append("reference stress  : " + ("present" if el and el[0] is not None else "absent (sigma0 = 0)"))
+    lines.append(
+        "ELASTIC_CONST = 2 : "
+        + (
+            "yes (C2, C3 present)"
+            if el and el[1] is not None
+            else "no (no /Elastic/soec,toec)"
+        )
+    )
+    lines.append(
+        "reference stress  : "
+        + ("present" if el and el[0] is not None else "absent (sigma0 = 0)")
+    )
     sf = info["strain_force"]
     if sf:
         w = weight_sum_matrix([b[0] for b in sf[0]], [b[2] for b in sf[0]])
         ok = np.allclose(w, 1.0, atol=1.0e-6)
-        lines.append("RENORM_2TO1ST = 2 : " + ("yes" if ok else f"no (weight sums are not 1 for every component:\n{w})"))
+        lines.append(
+            "RENORM_2TO1ST = 2 : "
+            + ("yes" if ok else f"no (weight sums are not 1 for every component:\n{w})")
+        )
     else:
         lines.append("RENORM_2TO1ST = 2 : no (no /StrainForce)")
     sh = info["strain_harmonic"]
     if sh:
         w = weight_sum_matrix([r[0] for r in sh[0]], [r[2] for r in sh[0]])
         full = np.allclose(w, 1.0, atol=1.0e-6)
-        partial = np.all(np.isclose(w, 1.0, atol=1.0e-6) | np.isclose(w, 0.0, atol=1.0e-6))
+        partial = np.all(
+            np.isclose(w, 1.0, atol=1.0e-6) | np.isclose(w, 0.0, atol=1.0e-6)
+        )
         if full:
             lines.append("RENORM_3TO2ND = 2 : yes (all components covered); = 3 : yes")
         elif partial:
-            covered = [f"{'xyz'[i]}{'xyz'[j]}" for i in range(3) for j in range(3) if abs(w[i, j] - 1.0) < 1.0e-6]
-            lines.append("RENORM_3TO2ND = 2 : no; = 3 : yes (covered components: " + ", ".join(covered) + ")")
+            covered = [
+                f"{'xyz'[i]}{'xyz'[j]}"
+                for i in range(3)
+                for j in range(3)
+                if abs(w[i, j] - 1.0) < 1.0e-6
+            ]
+            lines.append(
+                "RENORM_3TO2ND = 2 : no; = 3 : yes (covered components: "
+                + ", ".join(covered)
+                + ")"
+            )
         else:
-            lines.append(f"RENORM_3TO2ND = 2, 3 : no (weight sums must be 1 or 0 per component):\n{w}")
+            lines.append(
+                f"RENORM_3TO2ND = 2, 3 : no (weight sums must be 1 or 0 per component):\n{w}"
+            )
     else:
         lines.append("RENORM_3TO2ND = 2, 3 : no (no /StrainHarmonic)")
     return lines
@@ -590,13 +681,26 @@ def _read_elastic_lenient(path, log=print):
     c2, u2, k = _read_section(tok, 0, "SOEC", 81, path)
     c3, u3, k = _read_section(tok, k, "TOEC", 729, path)
     if k != len(tok):
-        log(f"  WARNING: {path}: {len(tok) - k} trailing tokens ignored (as anphon does)")
+        log(
+            f"  WARNING: {path}: {len(tok) - k} trailing tokens ignored (as anphon does)"
+        )
     if u2 != u3:
-        log(f"  WARNING: {path}: SOEC ({u2}) and TOEC ({u3}) use different units; each converted separately")
+        log(
+            f"  WARNING: {path}: SOEC ({u2}) and TOEC ({u3}) use different units; each converted separately"
+        )
     return c2.reshape(9, 9), u2, c3.reshape(9, 9, 9), u3
 
 
-def pack(out, strain_ifc_dir=None, c1=None, fcs=None, anphon_cell=None, legacy_cell=None, force=False, log=print):
+def pack(
+    out,
+    strain_ifc_dir=None,
+    c1=None,
+    fcs=None,
+    anphon_cell=None,
+    legacy_cell=None,
+    force=False,
+    log=print,
+):
     """Build a container from the legacy text files.
 
     ``fcs`` (the FC2FILE/FCSFILE of the anphon run) and, for an xml file,
@@ -609,11 +713,15 @@ def pack(out, strain_ifc_dir=None, c1=None, fcs=None, anphon_cell=None, legacy_c
     from .writers import read_C1_array_in, read_strain_force_in, read_strain_harmonic_in
 
     if fcs is None:
-        raise ValueError("--fcs (the force-constant file of the anphon run) is required to define the reference cell")
+        raise ValueError(
+            "--fcs (the force-constant file of the anphon run) is required to define the reference cell"
+        )
     if os.path.exists(out) and not force:
         raise ValueError(f"{out} exists; use --force to overwrite it")
     fcs_struct = read_fcs_structure(fcs)
-    prim = anphon_primitive_cell(fcs_struct, read_anphon_cell(anphon_cell) if anphon_cell else None)
+    prim = anphon_primitive_cell(
+        fcs_struct, read_anphon_cell(anphon_cell) if anphon_cell else None
+    )
     reference = cell_from_primitive(prim)
     log(f"  reference cell: {reference.natom} atoms ({prim.source})")
 
@@ -623,7 +731,9 @@ def pack(out, strain_ifc_dir=None, c1=None, fcs=None, anphon_cell=None, legacy_c
         legacy_note = f"volume of {legacy_cell}"
     else:
         legacy_volume = abs(np.linalg.det(reference.lavec)) / BOHR_IN_ANGSTROM**3
-        legacy_note = "volume of the reference cell (assumed; give --legacy-cell to be explicit)"
+        legacy_note = (
+            "volume of the reference cell (assumed; give --legacy-cell to be explicit)"
+        )
 
     sdir = strain_ifc_dir
     f_elastic = os.path.join(sdir, "elastic_constants.in") if sdir else None
@@ -661,19 +771,37 @@ def pack(out, strain_ifc_dir=None, c1=None, fcs=None, anphon_cell=None, legacy_c
         if legacy_used:
             eattrs["legacy_ry_conversion"] = legacy_note
             eattrs["legacy_volume_bohr3"] = legacy_volume
-            log(f"  legacy Ry values converted to GPa with the {legacy_note} ({legacy_volume:.4f} bohr^3)")
+            log(
+                f"  legacy Ry values converted to GPa with the {legacy_note} ({legacy_volume:.4f} bohr^3)"
+            )
         if stress is not None or soec is not None:
             eattrs["stress_source"] = "C1_array.in" if stress is not None else "absent"
             write_elastic(f, stress, soec, toec, eattrs)
-            written.append("/Elastic" + (" (stress only)" if soec is None else "" if stress is not None else " (no stress)"))
+            written.append(
+                "/Elastic"
+                + (
+                    " (stress only)"
+                    if soec is None
+                    else ""
+                    if stress is not None
+                    else " (no stress)"
+                )
+            )
         # ---- strain-force coupling
         if exists(f_force):
-            blocks, ref = read_strain_force_in(f_force, natmin=None if _has_header(f_force) else reference.natom)
+            blocks, ref = read_strain_force_in(
+                f_force, natmin=None if _has_header(f_force) else reference.natom
+            )
             cell = ref if ref is not None else reference
-            write_strain_force(f, blocks, cell, {"source": "strainfile.py pack (strain_force.in)"})
+            write_strain_force(
+                f, blocks, cell, {"source": "strainfile.py pack (strain_force.in)"}
+            )
             sources["strain_force.in"] = os.path.abspath(f_force)
-            written.append(f"/StrainForce ({len(blocks)} blocks x {cell.natom} atoms; cell from the "
-                           + ("&reference_cell header" if ref is not None else "reference cell") + ")")
+            written.append(
+                f"/StrainForce ({len(blocks)} blocks x {cell.natom} atoms; cell from the "
+                + ("&reference_cell header" if ref is not None else "reference cell")
+                + ")"
+            )
         # ---- strain-harmonic coupling
         if exists(f_harm):
             rows = read_strain_harmonic_in(f_harm)
@@ -681,14 +809,30 @@ def pack(out, strain_ifc_dir=None, c1=None, fcs=None, anphon_cell=None, legacy_c
             for p in paths:
                 if not os.path.exists(p):
                     raise FileNotFoundError(f"{p} (listed in {f_harm}) not found")
-            write_strain_harmonic(f, [r[:3] for r in rows], paths, {"source": "strainfile.py pack (strain_harmonic.in)"})
+            write_strain_harmonic(
+                f,
+                [r[:3] for r in rows],
+                paths,
+                {"source": "strainfile.py pack (strain_harmonic.in)"},
+            )
             sources["strain_harmonic.in"] = os.path.abspath(f_harm)
-            written.append(f"/StrainHarmonic ({len(rows)} strained supercells embedded)")
+            written.append(
+                f"/StrainHarmonic ({len(rows)} strained supercells embedded)"
+            )
         if not written:
-            raise ValueError("nothing to pack: no elastic_constants.in, C1_array.in, strain_force.in or strain_harmonic.in found")
-        _append_provenance(f, provenance_record("pack", sources=sources, fcs=os.path.abspath(fcs),
-                                                anphon_cell=anphon_cell and os.path.abspath(anphon_cell),
-                                                legacy_volume_bohr3=legacy_volume if legacy_used else None))
+            raise ValueError(
+                "nothing to pack: no elastic_constants.in, C1_array.in, strain_force.in or strain_harmonic.in found"
+            )
+        _append_provenance(
+            f,
+            provenance_record(
+                "pack",
+                sources=sources,
+                fcs=os.path.abspath(fcs),
+                anphon_cell=anphon_cell and os.path.abspath(anphon_cell),
+                legacy_volume_bohr3=legacy_volume if legacy_used else None,
+            ),
+        )
     log(f"  written: {out}")
     for w in written:
         log(f"    {w}")
@@ -709,10 +853,14 @@ def show(path, min_c3=0.5, log=print):
 
     info = summary(path)
     a = info["attrs"]
-    log(f"{path}: schema {a.get('schema')} v{info['format_version']}, written by strainkit "
-        f"{a.get('strainkit_version', '?')} on {a.get('created_date', '?')}")
+    log(
+        f"{path}: schema {a.get('schema')} v{info['format_version']}, written by strainkit "
+        f"{a.get('strainkit_version', '?')} on {a.get('created_date', '?')}"
+    )
     ref = info["reference_cell"]
-    log(f"  /ReferenceCell: {ref.natom} atoms, V = {abs(np.linalg.det(ref.lavec)):.4f} A^3 ({info['reference_source']})")
+    log(
+        f"  /ReferenceCell: {ref.natom} atoms, V = {abs(np.linalg.det(ref.lavec)):.4f} A^3 ({info['reference_source']})"
+    )
     for v in ref.lavec:
         log("    " + " ".join(f"{x:14.8f}" for x in v))
     for s, x in zip(ref.elements, ref.xf):
@@ -720,7 +868,10 @@ def show(path, min_c3=0.5, log=print):
     el = info["elastic"]
     if el:
         stress, c2, c3, eattrs = el
-        log("  /Elastic: " + ", ".join(f"{k}={v}" for k, v in eattrs.items() if k not in ("eta_list",)))
+        log(
+            "  /Elastic: "
+            + ", ".join(f"{k}={v}" for k, v in eattrs.items() if k not in ("eta_list",))
+        )
         if stress is not None:
             log("    reference stress (GPa):")
             for row in stress:
@@ -731,27 +882,45 @@ def show(path, min_c3=0.5, log=print):
             # the elasticfit report helpers take eV/A^3 and print GPa
             c2_ev = ef.from_9x9(c2) / EV_PER_ANG3_TO_GPA
             c3_ev = ef.from_9x9x9(c3) / EV_PER_ANG3_TO_GPA
-            log("    " + ef.voigt_table_gpa(c2_ev, "second-order elastic constants (GPa, Voigt):").replace("\n", "\n    "))
+            log(
+                "    "
+                + ef.voigt_table_gpa(
+                    c2_ev, "second-order elastic constants (GPa, Voigt):"
+                ).replace("\n", "\n    ")
+            )
             log(f"    third-order elastic constants (GPa, |C| >= {min_c3}):")
-            log("    " + ef.format_c3_gpa(ef.full3_to_voigt(c3_ev), min_c3).replace("\n", "\n    "))
+            log(
+                "    "
+                + ef.format_c3_gpa(ef.full3_to_voigt(c3_ev), min_c3).replace(
+                    "\n", "\n    "
+                )
+            )
     else:
         log("  /Elastic: absent")
     sf = info["strain_force"]
     if sf:
         blocks, cell = sf
-        log(f"  /StrainForce: {len(blocks)} blocks x {cell.natom} atoms (eV/A); "
-            + ", ".join(f"{k}={v}" for k, v in info["strain_force_attrs"].items()))
+        log(
+            f"  /StrainForce: {len(blocks)} blocks x {cell.natom} atoms (eV/A); "
+            + ", ".join(f"{k}={v}" for k, v in info["strain_force_attrs"].items())
+        )
         for m, s, w, fr in blocks:
-            log(f"    {m:3s} smag {s:+.6f} weight {w:.4f}  max|F| = {np.abs(fr).max():.3e}")
+            log(
+                f"    {m:3s} smag {s:+.6f} weight {w:.4f}  max|F| = {np.abs(fr).max():.3e}"
+            )
     else:
         log("  /StrainForce: absent")
     sh = info["strain_harmonic"]
     if sh:
         rows, entries, cells, nrows = sh
-        log(f"  /StrainHarmonic: {len(rows)} strained supercells; "
-            + ", ".join(f"{k}={v}" for k, v in info["strain_harmonic_attrs"].items()))
+        log(
+            f"  /StrainHarmonic: {len(rows)} strained supercells; "
+            + ", ".join(f"{k}={v}" for k, v in info["strain_harmonic_attrs"].items())
+        )
         for (m, s, w), e, c, n in zip(rows, entries, cells, nrows):
-            log(f"    {e:30s} {m:3s} smag {s:+.6f} weight {w:.4f}  {c.natom} atoms, {n} FC2 rows")
+            log(
+                f"    {e:30s} {m:3s} smag {s:+.6f} weight {w:.4f}  {c.natom} atoms, {n} FC2 rows"
+            )
     else:
         log("  /StrainHarmonic: absent")
     log("  supports:")
@@ -775,74 +944,119 @@ def check(path, anphon_cell=None, fcs=None, log=print):
     if fcs:
         fcs_struct = read_fcs_structure(fcs)
         try:
-            prim = anphon_primitive_cell(fcs_struct, read_anphon_cell(anphon_cell) if anphon_cell else None)
+            prim = anphon_primitive_cell(
+                fcs_struct, read_anphon_cell(anphon_cell) if anphon_cell else None
+            )
         except ValueError as exc:
             problems.append(str(exc))
     if prim is not None:
         pcell = cell_from_primitive(prim)
         try:
             ratio = same_crystal(ref, pcell)
-            log(f"  /ReferenceCell vs anphon primitive cell: same crystal, V(anphon)/V(reference) = {1.0 / ratio:.4f}")
+            log(
+                f"  /ReferenceCell vs anphon primitive cell: same crystal, V(anphon)/V(reference) = {1.0 / ratio:.4f}"
+            )
         except ValueError as exc:
-            problems.append(f"/ReferenceCell does not describe the crystal of the anphon run: {exc}")
+            problems.append(
+                f"/ReferenceCell does not describe the crystal of the anphon run: {exc}"
+            )
     sf = info["strain_force"]
     if sf:
         blocks, cell = sf
         try:
             same_crystal(cell, ref)
         except ValueError as exc:
-            problems.append(f"/StrainForce/Cell is not the crystal of /ReferenceCell: {exc}")
+            problems.append(
+                f"/StrainForce/Cell is not the crystal of /ReferenceCell: {exc}"
+            )
         if prim is not None:
             try:
                 same_crystal(cell, cell_from_primitive(prim))
-                log(f"  /StrainForce: {len(blocks)} blocks, rows mapped onto the anphon cell OK")
+                log(
+                    f"  /StrainForce: {len(blocks)} blocks, rows mapped onto the anphon cell OK"
+                )
             except ValueError as exc:
-                problems.append(f"/StrainForce/Cell cannot be mapped onto the anphon primitive cell: {exc}")
+                problems.append(
+                    f"/StrainForce/Cell cannot be mapped onto the anphon primitive cell: {exc}"
+                )
         w = weight_sum_matrix([b[0] for b in blocks], [b[2] for b in blocks])
         if not np.allclose(w, 1.0, atol=1.0e-6):
-            problems.append(f"/StrainForce: the weight sums are not 1 for every component:\n{w}")
+            problems.append(
+                f"/StrainForce: the weight sums are not 1 for every component:\n{w}"
+            )
     sh = info["strain_harmonic"]
     if sh:
         rows, entries, cells, nrows = sh
         w = weight_sum_matrix([r[0] for r in rows], [r[2] for r in rows])
-        if not np.all(np.isclose(w, 1.0, atol=1.0e-6) | np.isclose(w, 0.0, atol=1.0e-6)):
-            problems.append(f"/StrainHarmonic: the weight sums must be 1 or 0 per component:\n{w}")
+        if not np.all(
+            np.isclose(w, 1.0, atol=1.0e-6) | np.isclose(w, 0.0, atol=1.0e-6)
+        ):
+            problems.append(
+                f"/StrainHarmonic: the weight sums must be 1 or 0 per component:\n{w}"
+            )
         if fcs_struct is not None:
             for (m, s, wt), e, c in zip(rows, entries, cells):
                 F = np.eye(3) + mode_tensor(m) * s
                 expected = fcs_struct.lavec @ F.T
                 bad = []
                 if np.abs(c.lavec - expected).max() > 1.0e-4:
-                    bad.append(f"lattice differs from the strained reference supercell by {np.abs(c.lavec - expected).max():.2e} A")
+                    bad.append(
+                        f"lattice differs from the strained reference supercell by {np.abs(c.lavec - expected).max():.2e} A"
+                    )
                 if c.natom != fcs_struct.nat:
                     bad.append(f"{c.natom} atoms vs {fcs_struct.nat} in {fcs}")
                 else:
-                    if [x.lower() for x in c.elements] != [x.lower() for x in fcs_struct.elements]:
+                    if [x.lower() for x in c.elements] != [
+                        x.lower() for x in fcs_struct.elements
+                    ]:
                         bad.append("species order differs from the reference supercell")
                     d = c.xf - fcs_struct.xf
                     d -= np.round(d)
                     if np.abs(d).max() > 1.0e-5:
-                        bad.append(f"fractional coordinates differ by up to {np.abs(d).max():.2e}")
+                        bad.append(
+                            f"fractional coordinates differ by up to {np.abs(d).max():.2e}"
+                        )
                 if bad:
                     problems.append(f"{e}: " + "; ".join(bad))
             if not any(p.startswith("/StrainHarmonic/entry") for p in problems):
-                log(f"  /StrainHarmonic: {len(rows)} entries match the supercell of {fcs} (index-wise)")
+                log(
+                    f"  /StrainHarmonic: {len(rows)} entries match the supercell of {fcs} (index-wise)"
+                )
         with h5py.File(path, "r") as f:
             for e, c in zip(entries, cells):
                 g = f[e]["ForceConstants/Order2"]
                 n = g["force_constant_values"].shape[0]
-                shapes = {k: g[k].shape for k in ("atom_indices", "atom_indices_supercell", "coord_indices", "shift_vectors")}
-                if shapes["atom_indices"] != (n, 2) or shapes["atom_indices_supercell"] != (n, 2) or \
-                        shapes["coord_indices"] != (n, 2) or shapes["shift_vectors"] != (n, 3):
-                    problems.append(f"{e}: inconsistent force-constant dataset shapes {shapes}")
+                shapes = {
+                    k: g[k].shape
+                    for k in (
+                        "atom_indices",
+                        "atom_indices_supercell",
+                        "coord_indices",
+                        "shift_vectors",
+                    )
+                }
+                if (
+                    shapes["atom_indices"] != (n, 2)
+                    or shapes["atom_indices_supercell"] != (n, 2)
+                    or shapes["coord_indices"] != (n, 2)
+                    or shapes["shift_vectors"] != (n, 3)
+                ):
+                    problems.append(
+                        f"{e}: inconsistent force-constant dataset shapes {shapes}"
+                    )
                     continue
                 ci = g["coord_indices"][()]
                 ais = g["atom_indices_supercell"][()]
                 if ci.min() < 0 or ci.max() > 2:
                     problems.append(f"{e}: coord_indices outside 0..2")
                 if ais.min() < 0 or ais.max() >= c.natom:
-                    problems.append(f"{e}: atom_indices_supercell outside the SuperCell")
-                if _decode(g["shift_vectors"].attrs.get("basis", "Cartesian")) != "Cartesian":
+                    problems.append(
+                        f"{e}: atom_indices_supercell outside the SuperCell"
+                    )
+                if (
+                    _decode(g["shift_vectors"].attrs.get("basis", "Cartesian"))
+                    != "Cartesian"
+                ):
                     problems.append(f"{e}: shift_vectors are not Cartesian")
     el = info["elastic"]
     if el and el[0] is not None:

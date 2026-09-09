@@ -24,7 +24,9 @@ A = 7.53159676409  # Bohr, cubic BaTiO3 fixture
 
 def run_anphon(anphonbin, input_file, logfile):
     with open(logfile, "w") as f:
-        return subprocess.run([anphonbin, input_file], stdout=f, stderr=subprocess.STDOUT).returncode
+        return subprocess.run(
+            [anphonbin, input_file], stdout=f, stderr=subprocess.STDOUT
+        ).returncode
 
 
 def read_eval(prefix):
@@ -44,20 +46,34 @@ def read_eval(prefix):
 
 
 def write_inputs():
-    cell_doubled = "&cell\n 1.0\n %.10f 0.0 0.0\n 0.0 %.10f 0.0\n 0.0 0.0 %.10f\n/\n" % (A, A, 2 * A)
+    cell_doubled = (
+        "&cell\n 1.0\n %.10f 0.0 0.0\n 0.0 %.10f 0.0\n 0.0 0.0 %.10f\n/\n"
+        % (A, A, 2 * A)
+    )
     with open("scph_x2.in", "w") as f:
-        f.write("&general\n PREFIX = bto_x2; MODE = SCPH; FCSFILE = cBTO222.h5; TMIN = 300; TMAX = 300; DT = 100\n/\n")
+        f.write(
+            "&general\n PREFIX = bto_x2; MODE = SCPH; FCSFILE = cBTO222.h5; TMIN = 300; TMAX = 300; DT = 100\n/\n"
+        )
         f.write(cell_doubled)
-        f.write("&scph\n KMESH_INTERPOLATE = 2 2 1; KMESH_SCPH = 2 2 1; SELF_OFFDIAG = 1; MAXITER = 500; MIXALPHA = 0.2\n/\n")
+        f.write(
+            "&scph\n KMESH_INTERPOLATE = 2 2 1; KMESH_SCPH = 2 2 1; SELF_OFFDIAG = 1; MAXITER = 500; MIXALPHA = 0.2\n/\n"
+        )
         f.write("&kpoint\n 2\n 2 2 1\n/\n&analysis\n QUARTIC = 1\n/\n")
     with open("scph_p.in", "w") as f:
-        f.write("&general\n PREFIX = bto_p; MODE = SCPH; FCSFILE = cBTO222.h5; TMIN = 300; TMAX = 300; DT = 100\n/\n")
-        f.write("&scph\n KMESH_INTERPOLATE = 2 2 2; KMESH_SCPH = 2 2 2; SELF_OFFDIAG = 1; MAXITER = 500; MIXALPHA = 0.2\n/\n")
+        f.write(
+            "&general\n PREFIX = bto_p; MODE = SCPH; FCSFILE = cBTO222.h5; TMIN = 300; TMAX = 300; DT = 100\n/\n"
+        )
+        f.write(
+            "&scph\n KMESH_INTERPOLATE = 2 2 2; KMESH_SCPH = 2 2 2; SELF_OFFDIAG = 1; MAXITER = 500; MIXALPHA = 0.2\n/\n"
+        )
         f.write("&kpoint\n 2\n 2 2 2\n/\n&analysis\n QUARTIC = 1\n/\n")
     kpts = "&kpoint\n 0\n 0.0 0.0 0.0\n 0.0 0.0 0.5\n 0.5 0.0 0.0\n 0.5 0.0 0.5\n 0.25 0.0 0.5\n/\n&analysis\n PRINTEVAL = 1\n/\n"
     for prefix, state in (("ph_fold", "bto_x2"), ("ph_same", "bto_p")):
         with open(prefix + ".in", "w") as f:
-            f.write("&general\n PREFIX = %s; MODE = phonons; FCSFILE = cBTO222.h5; DFC2FILE = %s.scph.h5;" % (prefix, state))
+            f.write(
+                "&general\n PREFIX = %s; MODE = phonons; FCSFILE = cBTO222.h5; DFC2FILE = %s.scph.h5;"
+                % (prefix, state)
+            )
             f.write(" FC2_TEMPERATURE = 300; FILE_FORMAT = text\n/\n")
             f.write(kpts)
 
@@ -97,7 +113,10 @@ def main():
         scale = max(np.abs(b).max(), 1e-12)
         # both SCPH runs are iterated to TOL_SCPH = 1e-10 on the same q set
         if not np.allclose(a, b, atol=1e-6 * scale):
-            print("mismatch at k point %d: max |diff| = %.3e (scale %.3e)" % (ik, np.abs(a - b).max(), scale))
+            print(
+                "mismatch at k point %d: max |diff| = %.3e (scale %.3e)"
+                % (ik, np.abs(a - b).max(), scale)
+            )
             ok = False
     print("BaTiO3 DFC2FILE fold --> %s" % ("pass" if ok else "fail"))
     return 0 if ok else 1

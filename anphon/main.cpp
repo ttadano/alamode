@@ -8,9 +8,9 @@
  or http://opensource.org/licenses/mit-license.php for information.
 */
 
-#include "phonon_cui.h"
 #include "error.h"
 #include "ndarray.h"
+#include "phonon_cui.h"
 
 using namespace PHON_NS;
 

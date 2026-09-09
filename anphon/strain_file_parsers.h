@@ -87,8 +87,7 @@ bool is_strain_mode_name(const std::string &mode);
 // does not start a block; the latter is recorded in trailing_data for the
 // caller to report. Throws std::runtime_error on an invalid mode name, a
 // malformed header, or a block that ends early.
-strain_coupling::StrainForceSet parse_strain_force(std::istream &fin, std::size_t natom_default,
-                                                   const char *filename);
+strain_coupling::StrainForceSet parse_strain_force(std::istream &fin, std::size_t natom_default, const char *filename);
 
 // strain_harmonic.in: rows 'mode smag weight filename'. Same stop and error
 // rules as parse_strain_force.

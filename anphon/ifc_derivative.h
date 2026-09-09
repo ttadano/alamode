@@ -53,7 +53,10 @@ public:
     ~DerivativeIFC() = default;
 
     // VERBOSITY of the run; >= 2 prints the stage timers on rank 0.
-    void set_verbosity(const unsigned int verbosity) { verbosity_ = verbosity; }
+    void set_verbosity(const unsigned int verbosity)
+    {
+        verbosity_ = verbosity;
+    }
 
     // Single-pass computation of the m-th strain derivative of the IFCs in real
     // space for ALL 9^m strain-tensor components at once. One scan over

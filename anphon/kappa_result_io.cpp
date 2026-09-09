@@ -222,7 +222,8 @@ struct KappaResultIOH5::Impl
         const auto nt = nt_file();
 
         if (tdep) {
-            auto dset_freq = h5_create_dataset_prealloc<double>(fh, path + "/frequencies", {nt, cmeta.nk_irred, cmeta.ns});
+            auto dset_freq =
+                h5_create_dataset_prealloc<double>(fh, path + "/frequencies", {nt, cmeta.nk_irred, cmeta.ns});
             dset_freq.createAttribute("unit", std::string("cm^-1"));
             // Marks files whose temperature slices are written in the row-major
             // (nk_irred, ns) order; files without this attribute were written by
@@ -297,8 +298,7 @@ struct KappaResultIOH5::Impl
         }
         // cmeta.frequencies is a column-major Eigen matrix; the raw HDF5 write expects the
         // row-major (nk_irred, ns) layout of the dataset, so write a row-major copy.
-        const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> freq_rowmajor =
-            cmeta.frequencies;
+        const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> freq_rowmajor = cmeta.frequencies;
         for (const auto col: run_cols) {
             dset_freq.select({col, 0, 0}, {1, cmeta.nk_irred, cmeta.ns}).write_raw(freq_rowmajor.data());
             dset_vel.select({col, 0, 0, 0}, {1, nequiv_total, cmeta.ns, 3}).write_raw(cmeta.velocities.data());
@@ -600,14 +600,15 @@ struct KappaResultIOH5::Impl
                         const auto offsets = H5Easy::load<std::vector<int>>(oldfile, opath + "/equiv_offsets");
                         const auto knum = H5Easy::load<std::vector<int>>(oldfile, opath + "/equiv_knum");
                         {
-                            bool ok = offsets.size() == static_cast<size_t>(cmeta.nk_irred) + 1 && offsets.front() == 0 &&
-                                      offsets.back() == static_cast<int>(knum.size());
+                            bool ok = offsets.size() == static_cast<size_t>(cmeta.nk_irred) + 1 &&
+                                      offsets.front() == 0 && offsets.back() == static_cast<int>(knum.size());
                             for (size_t i = 0; ok && i + 1 < offsets.size(); ++i) {
                                 if (offsets[i + 1] <= offsets[i]) ok = false;
                             }
                             const auto fdims = oldfile.getDataSet(opath + "/frequencies").getDimensions();
                             if (fdims.size() != 3 || fdims[0] != nt_old || fdims[1] != cmeta.nk_irred ||
-                                fdims[2] != cmeta.ns) {
+                                fdims[2] != cmeta.ns)
+                            {
                                 ok = false;
                             }
                             if (!ok) {

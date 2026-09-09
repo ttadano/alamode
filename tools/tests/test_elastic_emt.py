@@ -93,8 +93,16 @@ def test_stress_fit_matches_finite_differences(cu_workdir):
     we.fit(work, "stress", strain_file=cont, log=lambda *a: None)
     with h5py.File(cont, "r") as f:
         s, a2, a3, attrs = sf.read_elastic(f)
-        assert np.allclose(a2, c2f, rtol=1e-11) and np.allclose(a3, c3f, rtol=1e-11) and np.allclose(s, s0, atol=1e-11)
-        assert attrs["fit_mode"] == "stress" and attrs["rank"] == 83 and attrs["geometry_clamped"] == 1
+        assert (
+            np.allclose(a2, c2f, rtol=1e-11)
+            and np.allclose(a3, c3f, rtol=1e-11)
+            and np.allclose(s, s0, atol=1e-11)
+        )
+        assert (
+            attrs["fit_mode"] == "stress"
+            and attrs["rank"] == 83
+            and attrs["geometry_clamped"] == 1
+        )
         assert sf.read_cell_group(f["ReferenceCell"]).natom == len(atoms)
     assert sf.check(cont, log=lambda *a: None) == []
 

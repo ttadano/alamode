@@ -41,7 +41,9 @@ class ParseResult:
                     try:
                         lattice = np.zeros((3, 3), dtype=float)
                         for i in range(3):
-                            lattice[i, :] = np.array([float(t) for t in f.readline().strip().split()])
+                            lattice[i, :] = np.array(
+                                [float(t) for t in f.readline().strip().split()]
+                            )
                         kinds = np.zeros(self.nat, dtype=int)
                         xf = np.zeros((self.nat, 3), dtype=float)
                         has_kinds = None
@@ -163,7 +165,9 @@ def probe_kappa_h5(filename):
         return {
             "format_version": version,
             "temperature_resolved": tdep,
-            "temperatures": np.array(f["metadata/temperatures"][...], dtype=float).ravel(),
+            "temperatures": np.array(
+                f["metadata/temperatures"][...], dtype=float
+            ).ravel(),
             "has_4ph": "scattering/4ph" in f,
             # isotope linewidths are written when kappa is finalized: require /kappa/valid
             "has_isotope": "scattering/isotope/gamma" in f
@@ -236,7 +240,9 @@ class ParseKappaH5:
         self.n_missing = 0
 
         with h5py.File(filename, "r") as f:
-            self.format_version, self.temperature_resolved = _check_kappa_h5_header(f, filename)
+            self.format_version, self.temperature_resolved = _check_kappa_h5_header(
+                f, filename
+            )
 
             cell = f["metadata/PrimitiveCell"]
             self.nat = int(cell["number_of_atoms"][()])
@@ -245,24 +251,38 @@ class ParseKappaH5:
             # Calculator, which transposes before calling spglib) store them as columns.
             self.lattice_vector = np.array(cell["lattice_vector"][...], dtype=float).T
             self.atomic_kinds = np.array(cell["atomic_kinds"][...], dtype=int)
-            self.x_fractional = np.array(cell["fractional_coordinate"][...], dtype=float)
-            self.classical = int(f["metadata/classical"][()]) if "metadata/classical" in f else 0
+            self.x_fractional = np.array(
+                cell["fractional_coordinate"][...], dtype=float
+            )
+            self.classical = (
+                int(f["metadata/classical"][()]) if "metadata/classical" in f else 0
+            )
             temps_all = np.array(f["metadata/temperatures"][...], dtype=float).ravel()
             if temps_all.size == 0:
-                raise RuntimeError("{}: the file contains no temperatures".format(filename))
+                raise RuntimeError(
+                    "{}: the file contains no temperatures".format(filename)
+                )
             if not np.all(np.isfinite(temps_all)):
-                raise RuntimeError("{}: the temperature grid contains non-finite values".format(filename))
+                raise RuntimeError(
+                    "{}: the temperature grid contains non-finite values".format(
+                        filename
+                    )
+                )
             self.temperatures_all = temps_all
             self.has_4ph = "scattering/4ph" in f
             if "scattering/{}".format(channel) not in f:
                 raise RuntimeError(
-                    "{} does not contain the '{}' scattering channel".format(filename, channel)
+                    "{} does not contain the '{}' scattering channel".format(
+                        filename, channel
+                    )
                 )
 
             # ---- temperature selection ----
             nt = temps_all.size
             if temperature is not None and not np.isfinite(temperature):
-                raise ValueError("temperature must be a finite number, got {}".format(temperature))
+                raise ValueError(
+                    "temperature must be a finite number, got {}".format(temperature)
+                )
             if temperature is None:
                 if self.temperature_resolved and nt > 1:
                     raise ValueError(
@@ -273,7 +293,11 @@ class ParseKappaH5:
                 it = 0
             else:
                 it = int(np.argmin(np.abs(temps_all - temperature)))
-                if verbose and abs(temps_all[it] - temperature) > 0 and self.temperature_resolved:
+                if (
+                    verbose
+                    and abs(temps_all[it] - temperature) > 0
+                    and self.temperature_resolved
+                ):
                     print(
                         "# Warning: {} K is not on the temperature grid of {}; using {} K".format(
                             temperature, filename, temps_all[it]
@@ -314,9 +338,16 @@ class ParseKappaH5:
             self.q_coord = np.array(g["xk_irred"][...], dtype=float).reshape((nk, 3))
             offsets = np.array(g["equiv_offsets"][...], dtype=int).ravel()
             knum = np.array(g["equiv_knum"][...], dtype=int).ravel()
-            if offsets.size != nk + 1 or offsets[0] != 0 or np.any(np.diff(offsets) <= 0) or offsets[-1] != knum.size:
+            if (
+                offsets.size != nk + 1
+                or offsets[0] != 0
+                or np.any(np.diff(offsets) <= 0)
+                or offsets[-1] != knum.size
+            ):
                 raise RuntimeError(
-                    "{}: inconsistent equiv_offsets/equiv_knum in the {} channel".format(filename, channel)
+                    "{}: inconsistent equiv_offsets/equiv_knum in the {} channel".format(
+                        filename, channel
+                    )
                 )
             self.multiplicity = np.diff(offsets).astype(float)
 
@@ -325,7 +356,9 @@ class ParseKappaH5:
             if self.temperature_resolved:
                 if freq.ndim != 3 or vel.ndim != 4:
                     raise RuntimeError(
-                        "{}: unexpected frequency/velocity layout for a temperature-resolved file".format(filename)
+                        "{}: unexpected frequency/velocity layout for a temperature-resolved file".format(
+                            filename
+                        )
                     )
                 freq = freq[it]
                 vel = vel[it]
@@ -369,7 +402,11 @@ class ParseKappaH5:
             else:
                 done = np.ones(gamma.shape, dtype=bool)
                 if verbose:
-                    print("# Warning: {} has no gamma_computed flags; all entries assumed computed".format(filename))
+                    print(
+                        "# Warning: {} has no gamma_computed flags; all entries assumed computed".format(
+                            filename
+                        )
+                    )
             if self.temperature_resolved:
                 gamma = gamma[:, :, it : it + 1]
                 done = done[:, :, it : it + 1]

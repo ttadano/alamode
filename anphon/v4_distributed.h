@@ -39,7 +39,8 @@
 #include <vector>
 #include "ndarray.h"
 
-namespace PHON_NS::v4_distributed {
+namespace PHON_NS::v4_distributed
+{
 
 // Contiguous partition of weighted units over nprocs ranks. Returns the
 // nprocs + 1 boundaries; rank r owns [bounds[r], bounds[r+1]). The boundary
@@ -114,7 +115,8 @@ inline std::vector<double> unit_weights(const std::size_t ns, const std::size_t 
     return weight;
 }
 
-struct V4RowBlock {
+struct V4RowBlock
+{
     std::size_t ns = 0, ns2 = 0, nk_dense = 0, nk_irred = 0;
     std::size_t unit_begin = 0, unit_end = 0; // owned units [unit_begin, unit_end)
     NDArray<std::complex<double>, 2> rows;    // (unit_end - unit_begin) * ns rows of ns2 complex
@@ -257,7 +259,9 @@ inline void accumulate_fmat(const V4RowBlock &blk, const std::complex<double> *d
                 if (!blk.owns_unit(u)) {
                     continue;
                 }
-                sum += Map<const VectorXcd>(blk.row(u, b), ns2).cwiseProduct(Map<const VectorXcd>(dvec + jk * ns2, ns2)).sum();
+                sum += Map<const VectorXcd>(blk.row(u, b), ns2)
+                           .cwiseProduct(Map<const VectorXcd>(dvec + jk * ns2, ns2))
+                           .sum();
             }
             fmat_inout[ik_irred][a][b] += sum;
         }

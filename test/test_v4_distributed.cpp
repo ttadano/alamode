@@ -241,7 +241,8 @@ void test_fmat(const std::size_t ns, const std::size_t nk, const std::size_t nk_
             for (std::size_t a = 0; a < ns; ++a) {
                 for (std::size_t jk = 0; jk < nk; ++jk) {
                     for (std::size_t ks = 0; ks < ns; ++ks) {
-                        f_legacy[ik][a][a] += v4[ik * nk + jk][(ns + 1) * a][(ns + 1) * ks] * dvec[jk * ns2 + (ns + 1) * ks];
+                        f_legacy[ik][a][a] +=
+                            v4[ik * nk + jk][(ns + 1) * a][(ns + 1) * ks] * dvec[jk * ns2 + (ns + 1) * ks];
                     }
                 }
             }
