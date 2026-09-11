@@ -1443,7 +1443,10 @@ void System::get_minimum_distances(const unsigned int nsize[3], NDArray<MinimumD
                 for (i = 0; i < ncell_s; ++i) {
                     dist = dist_tmp[i].dist;
 
-                    if (std::abs(dist_min - dist) < eps8) {
+                    // Same tie tolerance (bohr) as ALM's PairDistances and prepare_mindist_list. A tighter one
+                    // splits exact ties by input round-off (e.g. a 1e-9 relative lattice-scale mismatch), keeping
+                    // one image for an atom but the opposite one for its translational partner.
+                    if (std::abs(dist_min - dist) < 1.0e-3) {
 
                         shift_tmp.sx = shift_cell[icell][0] + nkx * shift_cell_super[dist_tmp[i].cell_s][0];
                         shift_tmp.sy = shift_cell[icell][1] + nky * shift_cell_super[dist_tmp[i].cell_s][1];

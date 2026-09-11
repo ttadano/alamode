@@ -128,10 +128,13 @@ void Fcs_phonon::setup(const std::string &mode)
             std::cout << "  Maximum deviation from the translational invariance: \n";
         }
         for (auto i = 0; i < maxorder; ++i) {
-            const auto maxdev = examine_translational_invariance(i,
-                                                                 system->get_supercell(i).number_of_atoms,
-                                                                 system->get_primcell().number_of_atoms,
-                                                                 force_constant_with_cell[i]);
+            // Before replication, the first atom index runs over the primitive cell of
+            // the FCS file, which can be larger than the &cell primitive cell.
+            const auto maxdev =
+                examine_translational_invariance(i,
+                                                 system->get_supercell(i).number_of_atoms,
+                                                 system->get_mapping_super_alm(i).from_true_primitive.size(),
+                                                 force_constant_with_cell[i]);
             if (writes->getVerbosity() > 0)
                 std::cout << "   Order " << i + 2 << " : " << std::setw(12) << std::scientific << maxdev << '\n';
         }
@@ -710,7 +713,19 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
     // the two supercells are commensurate).
     const auto &scell = system->get_supercell(0);
     const auto &map_p2s = system->get_map_p2s(0);
+    const auto &map_s2p = system->get_map_s2p(0);
+    const auto &map_alm = system->get_mapping_super_alm(0);
     const Eigen::Matrix3d lavec_super_inv = scell.lattice_vector.inverse();
+
+    // Like the rows read from the FCS file, the correction rows start at the reference
+    // atoms of the FCS file's primitive cell, because replicate_force_constant() spreads
+    // them with the translations of that cell. Starting at every atom of the present
+    // primitive cell instead would count the correction natmin(present) / natmin(FCS file)
+    // times when the present cell is the larger one.
+    std::vector<std::vector<unsigned int>> atoms1_s(map_p2s.size());
+    for (const auto &images: map_alm.from_true_primitive) {
+        atoms1_s[map_s2p[images[0]].atom_num].push_back(images[0]);
+    }
 
     std::vector<AtomCellSuper> ivec_pair(2);
     std::vector<unsigned int> atoms_s_pair(2);
@@ -726,7 +741,6 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
 
         const auto iat = map_dfc2_to_prim[atom_indices(irow, 0)];
         const auto jat = map_dfc2_to_prim[atom_indices(irow, 1)];
-        const auto atom1_s = map_p2s[iat][0];
 
         Eigen::Vector3d relvec;
         for (auto k = 0; k < 3; ++k) relvec[k] = shift_vectors(irow, k);
@@ -750,36 +764,39 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
         }
         seen.emplace(key, delta[irow]);
 
-        const Eigen::Vector3d target = scell.x_cartesian.row(atom1_s).transpose() + relvec;
-        const Eigen::Vector3d xf_target = lavec_super_inv * target;
+        for (const auto atom1_s: atoms1_s[iat]) {
+            const Eigen::Vector3d target = scell.x_cartesian.row(atom1_s).transpose() + relvec;
+            const Eigen::Vector3d xf_target = lavec_super_inv * target;
 
-        int atom2_s = -1;
-        for (const auto &cand: map_p2s[jat]) {
-            Eigen::Vector3d xdiff = xf_target - scell.x_fractional.row(cand).transpose();
-            xdiff = xdiff.unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
-            if ((scell.lattice_vector * xdiff).norm() < 1.0e-3) {
-                atom2_s = static_cast<int>(cand);
-                break;
+            int atom2_s = -1;
+            for (const auto &cand: map_p2s[jat]) {
+                Eigen::Vector3d xdiff = xf_target - scell.x_fractional.row(cand).transpose();
+                xdiff = xdiff.unaryExpr([](const double x) { return x - static_cast<double>(nint(x)); });
+                if ((scell.lattice_vector * xdiff).norm() < 1.0e-3) {
+                    atom2_s = static_cast<int>(cand);
+                    break;
+                }
             }
-        }
-        if (atom2_s == -1) {
-            exit("append_delta_fc2_from_scph",
-                 "A correction row of DFC2FILE has no matching atom in the present supercell.\n"
-                 " The supercells of DFC2FILE and the harmonic FC2 file are probably incommensurate.");
-        }
+            if (atom2_s == -1) {
+                exit("append_delta_fc2_from_scph",
+                     "A correction row of DFC2FILE has no matching atom in the present supercell.\n"
+                     " The supercells of DFC2FILE and the harmonic FC2 file are probably incommensurate.");
+            }
 
-        ivec_pair[0].index = 3 * iat + coord_indices(irow, 0);
-        ivec_pair[0].cell_s = 0;
-        ivec_pair[0].tran = 0;
-        ivec_pair[1].index = 3 * jat + coord_indices(irow, 1);
-        ivec_pair[1].cell_s = 0;
-        ivec_pair[1].tran = 0;
-        atoms_s_pair[0] = atom1_s;
-        atoms_s_pair[1] = static_cast<unsigned int>(atom2_s);
-        relvecs_pair[0] = relvec;
+            // Same atom index space as the rows read from the FCS file (its primitive cell).
+            ivec_pair[0].index = 3 * map_alm.to_true_primitive[atom1_s].atom_num + coord_indices(irow, 0);
+            ivec_pair[0].cell_s = 0;
+            ivec_pair[0].tran = 0;
+            ivec_pair[1].index = 3 * map_alm.to_true_primitive[atom2_s].atom_num + coord_indices(irow, 1);
+            ivec_pair[1].cell_s = 0;
+            ivec_pair[1].tran = 0;
+            atoms_s_pair[0] = atom1_s;
+            atoms_s_pair[1] = static_cast<unsigned int>(atom2_s);
+            relvecs_pair[0] = relvec;
 
-        fcs_out.emplace_back(delta[irow], ivec_pair, atoms_s_pair, relvecs_pair);
-        ++nadded;
+            fcs_out.emplace_back(delta[irow], ivec_pair, atoms_s_pair, relvecs_pair);
+            ++nadded;
+        }
     }
 
     if (writes->getVerbosity() > 0) {
