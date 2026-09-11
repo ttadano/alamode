@@ -287,6 +287,18 @@ if language == "ja":
     # use makeindex instead -- it ships with TeX Live (and is what the English
     # pdflatex build already uses), keeping the CI TeX install self-contained.
     latex_use_xindy = False
+else:
+    # pdflatex only knows the Unicode characters that inputenc declares; a
+    # stray math symbol in the prose (as opposed to a :math: role) otherwise
+    # aborts the English PDF build. Map the ones that tend to slip in.
+    latex_elements["preamble"] += r"""
+\DeclareUnicodeCharacter{2212}{\ensuremath{-}}
+\DeclareUnicodeCharacter{2264}{\ensuremath{\leq}}
+\DeclareUnicodeCharacter{2265}{\ensuremath{\geq}}
+\DeclareUnicodeCharacter{2192}{\ensuremath{\rightarrow}}
+\DeclareUnicodeCharacter{221E}{\ensuremath{\infty}}
+\DeclareUnicodeCharacter{2225}{\ensuremath{\parallel}}
+"""
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,

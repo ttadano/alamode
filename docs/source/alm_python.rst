@@ -192,7 +192,7 @@ Model (from the example input): ``NORDER = 3``, ``NBODY = 2 3 3``, cutoff radii
 
 .. note::
 
-   The CLI input supplies the **supercell** plus ``PRIMCELL`` (super→prim).  The
+   The CLI input supplies the **supercell** plus ``PRIMCELL`` (super to prim).  The
    Python wrapper instead takes the **primitive** cell and maps it to the
    supercell with ``set_supercell`` (``transmat_to_super = diag(2, 2, 2)``).
    Both describe the same 40-atom system.

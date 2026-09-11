@@ -326,7 +326,7 @@ with VASP 6.5.1 (PBEsol, PAW_PBE Zn/O and Ba_sv/Ti_sv/O, ENCUT 600/550 eV, the t
 
 * ``strain_force.in`` (ZnO, one-sided, smag 0.005) reproduces the tutorial file to 1e-6 eV/Å; the
   harmonic force constants of the undeformed 4×4×2 (ZnO) and 2×2×2 (BaTiO\ :sub:`3`) supercells
-  (``--with-reference``) agree with the tutorial ``FC2FILE`` to ≤ 7e-5 Ry/bohr\ :sup:`2` (0.05 %), and
+  (``--with-reference``) agree with the tutorial ``FC2FILE`` to at most 7e-5 Ry/bohr\ :sup:`2` (0.05 %), and
   the strain derivatives of the harmonic force constants to 0.2–1 % (RMS).
 * Clamped-ion SOEC from ``elastic.py fit --fit stress`` (85 primitive-cell runs, smag 0.01): ZnO
   C11/C12/C13/C33/C44 = 276.6/95.7/67.8/302.6/55.2 GPa vs 277.8/96.3/68.0/303.9/56.1 in the tutorial
@@ -338,13 +338,13 @@ with VASP 6.5.1 (PBEsol, PAW_PBE Zn/O and Ba_sv/Ti_sv/O, ENCUT 600/550 eV, the t
 * The one-sided finite difference of the strain–force coupling (the scheme of the original data)
   biases the c-axis expansion of ZnO at 1000 K by about +12 % relative to central differences
   (``--central``, 13 instead of 7 primitive-cell runs) — use ``--central`` for this coupling.
-* ``C1_array.in`` from the residual stress of the reference (−0.04 GPa for ZnO) shifts the 0 K cell
-  by −C\ :sup:`-1` σ\ :sub:`0` as expected (up to 4 % of the thermal strain); ``ELASTIC_CONST = 1``
+* ``C1_array.in`` from the residual stress of the reference (-0.04 GPa for ZnO) shifts the 0 K cell
+  by :math:`-C^{-1}\sigma_0` as expected (up to 4 % of the thermal strain); ``ELASTIC_CONST = 1``
   overestimates u\ :sub:`zz` of ZnO by 33 % at 1000 K because of its C13/C33 error (see above).
   With the dipole correction (``NONANALYTIC = 3`` and the ``BORNINFO`` of ``example/ZnO/qha_relax``,
-  PBEsol DFPT: ε∞ = 6.61/5.95, Z*(Zn) = 2.14/2.17) the IFC-derived C13/C33 move from 25/374 to 52/323 GPa
+  PBEsol DFPT: :math:`\varepsilon_\infty` = 6.61/5.95, Z*(Zn) = 2.14/2.17) the IFC-derived C13/C33 move from 25/374 to 52/323 GPa
   (DFT 68/303) and the u\ :sub:`zz` error drops to 25 %. For cubic BaTiO\ :sub:`3` (``BORNINFO`` of
-  ``example/BaTiO3/scph_relax``: ε∞ = 6.79, Z*(Ti) = 7.40, Z*(O∥) = −5.86) the IFC route gives
+  ``example/BaTiO3/scph_relax``: :math:`\varepsilon_\infty` = 6.79, Z*(Ti) = 7.40, :math:`Z^{*}(\mathrm{O}_{\parallel})` = -5.86) the IFC route gives
   C11/C12/C44 = 391/216/123 GPa uncorrected and 346/71/125 GPa with the dipole correction, vs 317/110/127 GPa
   from ``elastic.py`` when the tutorial 2×2×2 harmonic cell is used. The IFC route does converge with the
   size of the harmonic supercell given as ``FC2FILE``: with the dipole correction, 3×3×3 gives
