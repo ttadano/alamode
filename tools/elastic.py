@@ -77,7 +77,11 @@ def main(argv=None):
         "--force", action="store_true", help="overwrite existing strain_* directories"
     )
 
-    f = sub.add_parser("fit", help="fit the elastic constants from the DFT outputs")
+    f = sub.add_parser(
+        "fit",
+        help="fit the elastic constants from the DFT outputs (also writes the strain-force "
+        "coupling from the single-mode runs)",
+    )
     f.add_argument(
         "--outdir", default=".", help="working directory of the generate step"
     )
@@ -85,13 +89,14 @@ def main(argv=None):
     f.add_argument(
         "--fcs",
         default=None,
-        help="reference force-constant file (.xml/.h5) used by anphon (only to report the cell relation)",
+        help="reference force-constant file (.xml/.h5) used by anphon (cell relation; "
+        "atom order of strain_force.in)",
     )
     f.add_argument(
         "--anphon-cell",
         default=None,
         help="anphon input with the &cell field (or a structure file) defining the anphon primitive cell "
-        "(only to report the cell relation; the files are cell-independent)",
+        "(cell relation; the elastic files are cell-independent)",
     )
     f.add_argument(
         "--allow-relaxed",

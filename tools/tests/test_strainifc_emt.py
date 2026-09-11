@@ -305,3 +305,42 @@ def test_verify_generated_fcs_detects_corruption(cu_supercell, tmp_path):
         xf[0, 0] = xf[0, 0] + 0.01
     with pytest.raises(ValueError, match="PrimitiveCell"):
         fcsorder.verify_generated_fcs(bad5, fcsorder.read_fcs_structure(ref_h5))
+
+
+def test_elastic_fit_writes_the_same_strain_force(hcp_setup):
+    """elastic.py fit derives /StrainForce from its k = +-1 singles; it must equal
+    strainifc.py --coupling force --central at the same smag."""
+    h5py = pytest.importorskip("h5py")
+    from strainkit import strainfile as sf
+    from strainkit import workflow_elastic as we
+
+    hcp, tmpl, ptmpl, ref, root = hcp_setup
+    cell_prim = os.path.join(root, "cell_prim.extxyz")
+    wf = os.path.join(root, "force_central")
+    wi.generate("force", "ase", tmpl, wf, smag=0.005, central=True, log=QUIET)
+    assert run_emt(wf) == 13
+    f_ifc = wi.collect(wf, fcs=ref, anphon_cell=cell_prim, log=QUIET)
+    b_ifc, _ = read_strain_force_in(f_ifc, 2)
+
+    wel = os.path.join(root, "elastic")
+    we.generate("ase", tmpl, wel, smag=0.005, nmag=1, log=QUIET)
+    assert run_emt(wel) == 43
+    cont = os.path.join(root, "hcp_elastic.strain.h5")
+    we.fit(wel, "stress", fcs=ref, anphon_cell=cell_prim, strain_file=cont, log=QUIET)
+    b_el, cell_el = read_strain_force_in(os.path.join(wel, "results", "strain_force.in"), 2)
+    assert cell_el is not None and cell_el.natom == 2
+    key = lambda b: (b[0], round(b[1], 8))  # noqa: E731
+    d_ifc = {key(b): b for b in b_ifc}
+    assert len(b_el) == 12 and set(d_ifc) == {key(b) for b in b_el}
+    for b in b_el:
+        r = d_ifc[key(b)]
+        assert b[2] == r[2] == 0.5 and np.allclose(b[3], r[3], atol=1e-10)
+    assert np.abs(b_el[0][3]).max() > 1e-3  # xx: internal relaxation of hcp
+    with h5py.File(cont, "r") as f:
+        blocks, cell = sf.read_strain_force(f)
+        assert len(blocks) == 12 and cell.natom == 2
+        assert f["StrainForce"].attrs["source"] == "elastic.py fit"
+        assert bool(f["StrainForce"].attrs["central"])
+        assert "Elastic" in f
+    assert sf.check(cont, anphon_cell=cell_prim, fcs=ref, log=QUIET) == []
+    assert "RENORM_2TO1ST = 2 : yes" in "\n".join(sf.supported_settings(sf.summary(cont)))

@@ -97,8 +97,9 @@ same quantities, with the units as attributes and the reference structure once.
   rotational invariance of the fitted force constants, so comparing the values printed in the
   log against DFT elastic constants (``elastic.py fit --compare anphon.log``) is recommended.
 
-* The strain-force coupling is obtained from the forces in strained primitive cells
-  (``strainifc.py generate --coupling force`` / ``strainifc.py collect``).
+* The strain-force coupling is obtained from the forces in strained primitive cells.
+  ``elastic.py fit`` writes it from the runs it already has (``ELASTIC_CONST = 2``); with
+  ``ELASTIC_CONST = 1`` use ``strainifc.py generate --coupling force`` / ``strainifc.py collect``.
 
   Suppose the strain-force coupling is zero, i.e., the atomic force is zero when we apply finite strain with fixed fractional atomic coordinates.
   In that case you can set ``RENORM_2TO1ST=0`` and omit the corresponding input file.

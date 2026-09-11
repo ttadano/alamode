@@ -394,7 +394,7 @@ std::string StrainCouplingFile::missing_group_hint(const std::string &group)
         return "Add it with: elastic.py fit --strain-file FILE (or strainfile.py pack for existing text files).";
     }
     if (group == "/StrainForce") {
-        return "Add it with: strainifc.py collect --coupling force --strain-file FILE (or strainfile.py pack).";
+        return "Add it with: elastic.py fit --strain-file FILE, strainifc.py collect --coupling force --strain-file FILE, or strainfile.py pack.";
     }
     if (group == "/StrainHarmonic") {
         return "Add it with: strainifc.py collect --coupling harmonic --strain-file FILE (or strainfile.py pack).";

@@ -60,12 +60,18 @@ the pieces belong together and to the cell of the run:
        deformed by the entry's own strain, atom by atom.
 
 The producing commands write into the container directly; the same file can
-be updated by all three, each replacing only its own group and refusing a
-reference structure that is not the crystal already stored::
+be updated by each, replacing only its own groups and refusing a reference
+structure that is not the crystal already stored::
 
     elastic.py fit ... --fcs FC2FILE --anphon-cell anphon.in --strain-file ZnO.strain.h5
-    strainifc.py collect --coupling force    ... --fcs FC2FILE --anphon-cell anphon.in --strain-file ZnO.strain.h5
     strainifc.py collect --coupling harmonic ... --fcs FC2FILE --anphon-cell anphon.in --fcs-format h5 --strain-file ZnO.strain.h5
+
+``elastic.py fit`` writes ``/Elastic`` **and** ``/StrainForce``: its single-mode runs at
+:math:`\pm s` are exactly the strained primitive cells of the strain–force coupling, so no
+separate ``strainifc.py --coupling force`` calculations are needed. That route remains for
+``ELASTIC_CONST = 1`` runs (no ``elastic.py``)::
+
+    strainifc.py collect --coupling force    ... --fcs FC2FILE --anphon-cell anphon.in --strain-file ZnO.strain.h5
 
 and the anphon input needs a single line::
 
@@ -149,9 +155,10 @@ Two Python scripts in the ``tools/`` directory prepare these files from DFT calc
 needs the ``alm`` Python package built from the ``python/`` directory):
 
 * ``elastic.py`` — finite-strain workflow for :math:`\sigma`, :math:`C^{(2)}` and :math:`C^{(3)}`
-  (``elastic_constants.in``, ``C1_array.in``).
-* ``strainifc.py`` — strain–force and strain–harmonic-IFC couplings
-  (``strain_force.in``, ``strain_harmonic.in``). This is a port of the
+  (``elastic_constants.in``, ``C1_array.in``); the same runs also give the strain–force
+  coupling (``strain_force.in``).
+* ``strainifc.py`` — strain–harmonic-IFC coupling (``strain_harmonic.in``) and, for runs
+  without ``elastic.py``, the strain–force coupling (``strain_force.in``). This is a port of the
   `strainIFCcoupling <https://github.com/r-masuki/strainIFCcoupling>`_ scripts by Ryota Masuki
   [Masuki2022]_ [Masuki2023]_ onto the in-tree ``alm`` package.
 
@@ -256,10 +263,14 @@ cell; when given, the two cells must be commensurate in the same Cartesian frame
 an integer combination of the lattice vectors of the other (a conventional anphon cell and a
 primitive DFT cell, or the reverse); rotated settings are rejected. ``--compare`` prints the
 difference to the clamped-ion constants that anphon prints with ``ELASTIC_CONST = 1``.
-``--strain-file`` additionally writes the reference stress and the constants into the
-strain-coupling container (``/Elastic``); with ``--fcs``/``--anphon-cell`` the container is
-labeled with the anphon primitive cell after the DFT reference structure has been verified to
-be that crystal. ``show`` prints any ``elastic_constants.in`` in GPa; ``--structure``/``--volume``
+The forces of the reference and of the single-mode runs at :math:`k = \pm 1` are the
+central-difference strain–force coupling (weights 1/2), written as ``strain_force.in`` next to
+the elastic files (rows in anphon's order with the ``&reference_cell`` header when ``--fcs`` is
+given, as ``strainifc.py collect --coupling force`` does). ``--strain-file`` additionally writes
+the reference stress and the constants (``/Elastic``) and the strain–force coupling
+(``/StrainForce``) into the strain-coupling container; with ``--fcs``/``--anphon-cell`` the
+container is labeled with the anphon primitive cell after the DFT reference structure has been
+verified to be that crystal. ``show`` prints any ``elastic_constants.in`` in GPa; ``--structure``/``--volume``
 are needed only for legacy files holding :math:`V C` in Ry.
 
 strainifc.py
@@ -282,7 +293,8 @@ written in the order of the template, which must then be anphon's order.
 ``--anphon-cell`` is required with an XML ``--fcs`` (anphon needs ``&cell`` for
 XML force-constant files).
 
-* ``--coupling force``: the template is the primitive cell. ``strain_000/primitive`` (reference)
+* ``--coupling force`` (only needed when ``elastic.py fit`` is not run, e.g. with
+  ``ELASTIC_CONST = 1``): the template is the primitive cell. ``strain_000/primitive`` (reference)
   and ``strain_NNN/primitive`` (strained cells) are generated; ``collect`` subtracts the reference
   forces and writes ``strain_force.in`` in anphon's atom order, with the ``&reference_cell``
   header when ``--fcs`` is given (and ``/StrainForce`` of the container with ``--strain-file``). All six strain modes are required

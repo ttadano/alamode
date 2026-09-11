@@ -11,12 +11,14 @@ from . import elasticfit as ef
 from .dftio import check_geometry, read_dft_output
 from .fcsorder import (
     anphon_primitive_cell,
+    describe_ordering,
     lattice_relation,
+    match_primitive_atoms,
     read_anphon_cell,
     read_fcs_structure,
 )
 from .manifest import ELASTIC_MANIFEST, load_manifest, save_manifest
-from .strain import deform, deformation_gradient, voigt_from_sym
+from .strain import MODE_NAMES, deform, deformation_gradient, voigt_from_sym
 from .structure import OUTPUT_FILENAME, normalize_code, read_template, write_structure
 from .symmetry import (
     cartesian_rotations,
@@ -32,6 +34,7 @@ from .writers import (
     anphon_file_locations,
     write_C1_array_in,
     write_elastic_constants_in,
+    write_strain_force_in,
 )
 from .jobscript import render_job_script, write_run_all
 
@@ -193,6 +196,7 @@ def fit(
     ref_atoms = _reference_atoms(manifest, outdir)
     v_dft = float(abs(np.linalg.det(ref_atoms.cell[:])))
     data = []
+    forces = {}  # "reference" and (mode, +-1) -> forces of the strained primitive cell
     n_missing = 0
     geometry_ok = True
     for e in manifest["entries"]:
@@ -224,6 +228,10 @@ def fit(
             s6 = voigt_from_sym(ef.second_pk_from_cauchy(r.stress, F))
         label = f"{e['label']} k={e['k']:+d}" if e["index"] else "reference"
         data.append(ef.FitData(label, eta6, r.energy, s6))
+        if e["index"] == 0:
+            forces["reference"] = r.forces
+        elif e["label"] in MODE_NAMES and abs(e["k"]) == 1:
+            forces[(e["label"], e["k"])] = r.forces
     if n_missing:
         log(f"  WARNING: {n_missing} calculations have no output yet and were skipped")
     log(f"  {len(data)} configurations read; fitting with mode '{mode}'")
@@ -288,6 +296,11 @@ def fit(
         unit="GPa",
     )
     write_C1_array_in(f_c1, s0 * EV_PER_ANG3_TO_GPA, unit="GPa")
+    blocks = _strain_force_blocks(forces, manifest["smag"], ref_atoms, prim, log)
+    f_sf = None
+    if blocks:
+        f_sf = os.path.join(rdir, "strain_force.in" + suffix)
+        write_strain_force_in(f_sf, blocks, reference_cell=prim)
     summary = {
         "fit_mode": mode,
         "rank": fit_res.rank,
@@ -312,6 +325,7 @@ def fit(
         json.dump(summary, f, indent=2)
     log(
         f"  written: {f_ec}\n           {f_c1}\n           {os.path.join(rdir, 'elastic_fit.json')}"
+        + (f"\n           {f_sf} (strain-force coupling, central difference)" if f_sf else "")
     )
     log(
         "  units: GPa (cell-independent; anphon multiplies by the volume of its own primitive cell)"
@@ -340,6 +354,7 @@ def fit(
                 mode,
                 symmetrize,
                 geometry_ok,
+                blocks,
                 outdir,
                 rdir,
                 log,
@@ -347,11 +362,52 @@ def fit(
     else:
         log(anphon_file_locations())
         log(
-            f"  e.g.:  cp {f_ec} <STRAIN_IFC_DIR>/ ;  cp {f_c1} <anphon working directory>/"
+            f"  e.g.:  cp {f_ec} {f_sf or ''} <STRAIN_IFC_DIR>/ ;  cp {f_c1} <anphon working directory>/"
         )
     if compare:
         log(compare_with_anphon_log(compare, c2))
     return fit_res, summary
+
+
+def _strain_force_blocks(forces, smag, ref_atoms, prim, log):
+    """strain_force.in blocks (mode, +-smag, 1/2, F - F0) from the k = +-1 single-mode runs.
+
+    The single-mode points of every direction set are exactly the strained
+    primitive cells of ``strainifc.py --coupling force --central``, so the
+    strain-force coupling comes for free.  Returns None (with a note) when a
+    needed run is missing or has no forces.
+    """
+    need = ["reference"] + [(m, k) for m in MODE_NAMES for k in (1, -1)]
+    missing = [k for k in need if forces.get(k) is None]
+    if missing:
+        log(
+            "  NOTE: strain-force coupling not written (no forces for "
+            + ", ".join(str(k) for k in missing[:4])
+            + (", ..." if len(missing) > 4 else "")
+            + ")"
+        )
+        return None
+    f0 = np.asarray(forces["reference"])
+    fmax = float(np.abs(f0).max())
+    log(f"  reference (unstrained) forces: max |F| = {fmax:.3e} eV/A (subtracted)")
+    if fmax > 1.0e-3:
+        warnings.warn(
+            "the reference structure is not well relaxed (max |F| > 1e-3 eV/A); "
+            "the strain-force coupling then depends on the residual forces",
+            stacklevel=3,
+        )
+    mapping = None
+    if prim is not None:
+        mapping = match_primitive_atoms(ref_atoms, prim)
+        log(describe_ordering(prim, mapping, ref_atoms))
+    blocks = []
+    for m in MODE_NAMES:
+        for k in (1, -1):
+            df = np.asarray(forces[(m, k)]) - f0
+            if mapping is not None:
+                df = df[mapping]
+            blocks.append((m, k * float(smag), 0.5, df))
+    return blocks
 
 
 def _write_container(
@@ -367,11 +423,12 @@ def _write_container(
     mode,
     symmetrize,
     geometry_ok,
+    blocks,
     outdir,
     rdir,
     log,
 ):
-    """Add /Elastic to the strain-coupling container (create it if needed)."""
+    """Add /Elastic (and /StrainForce) to the strain-coupling container."""
     from . import strainfile as sfile
 
     if prim is not None:
@@ -409,13 +466,30 @@ def _write_container(
         "stress_source": "fit",
     }
     rec = sfile.provenance_record(
-        "Elastic", manifest=os.path.join(outdir, ELASTIC_MANIFEST), results=rdir
+        "Elastic+StrainForce" if blocks else "Elastic",
+        manifest=os.path.join(outdir, ELASTIC_MANIFEST),
+        results=rdir,
     )
     with sfile.update(strain_file, reference, rec, force, ref_source) as f:
         sfile.write_elastic(
             f, s0 * g, ef.full2_to_9x9(c2) * g, ef.full3_to_9x9x9(c3) * g, attrs
         )
-    log(f"  written: {strain_file} (/Elastic: reference stress, C2, C3 in GPa)")
+        if blocks:
+            sfile.write_strain_force(
+                f,
+                blocks,
+                reference,
+                {
+                    "source": "elastic.py fit",
+                    "dft_code": manifest["code"],
+                    "central": True,
+                },
+            )
+    log(
+        f"  written: {strain_file} (/Elastic: reference stress, C2, C3 in GPa"
+        + ("; /StrainForce: 12 blocks" if blocks else "")
+        + ")"
+    )
     log("  give it to anphon as STRAINFILE in the &relax field")
 
 

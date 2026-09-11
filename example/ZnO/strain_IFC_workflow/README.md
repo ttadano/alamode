@@ -13,14 +13,17 @@ Pseudopotentials are not included: edit `pseudo_dir` in the `pw.in` files.
 * `job.sh`, `DFT_command.sh`    : optional PBS job-script template for QE (`--job-template`, `--dft-command`)
 * `job_slurm.sh`, `DFT_command_vasp.sh` : the same for VASP on a Slurm cluster (edit modules/paths)
 
-## 1. Elastic constants (elastic_constants.in, C1_array.in)
+## 1. Elastic constants and strain-force coupling (elastic_constants.in, C1_array.in, strain_force.in)
 
     elastic.py generate --code QE --template template_primitive_QE --outdir elastic --smag 0.01 --nmag 2
     (run pw.x in elastic/strain_*/ ; single-point, fixed cell and ions)
     elastic.py fit --outdir elastic --fit stress --fcs ../qha_relax/ZnO442_harmonic.xml \
                --anphon-cell ../qha_relax/ZnO_qha_thermo.in
 
-## 2. Strain-force coupling (strain_force.in)
+## 2. Strain-force coupling without elastic.py (ELASTIC_CONST = 1)
+
+`elastic.py fit` already writes `strain_force.in` from its single-mode runs (central difference,
+smag 0.01). Only when the elastic constants come from the IFCs (`ELASTIC_CONST = 1`):
 
     strainifc.py generate --coupling force --code QE --template template_primitive_QE --outdir force
     (run pw.x in force/strain_*/primitive/)
@@ -39,7 +42,7 @@ by ~10 % (see the validation notes in the anphon documentation).
 
 ## 4. One container for anphon (recommended)
 
-Add `--strain-file ZnO.strain.h5` (and `--fcs-format h5` for the harmonic coupling) to the three
+Add `--strain-file ZnO.strain.h5` (and `--fcs-format h5` for the harmonic coupling) to the
 `fit`/`collect` commands above: each writes its own group into the same HDF5 file, and anphon
 reads it with `STRAINFILE = ZnO.strain.h5` in the `&relax` field. Inspect and verify it before
 submitting the run:
