@@ -327,7 +327,9 @@ def test_elastic_fit_writes_the_same_strain_force(hcp_setup):
     assert run_emt(wel) == 43
     cont = os.path.join(root, "hcp_elastic.strain.h5")
     we.fit(wel, "stress", fcs=ref, anphon_cell=cell_prim, strain_file=cont, log=QUIET)
-    b_el, cell_el = read_strain_force_in(os.path.join(wel, "results", "strain_force.in"), 2)
+    b_el, cell_el = read_strain_force_in(
+        os.path.join(wel, "results", "strain_force.in"), 2
+    )
     assert cell_el is not None and cell_el.natom == 2
     key = lambda b: (b[0], round(b[1], 8))  # noqa: E731
     d_ifc = {key(b): b for b in b_ifc}
@@ -343,4 +345,6 @@ def test_elastic_fit_writes_the_same_strain_force(hcp_setup):
         assert bool(f["StrainForce"].attrs["central"])
         assert "Elastic" in f
     assert sf.check(cont, anphon_cell=cell_prim, fcs=ref, log=QUIET) == []
-    assert "RENORM_2TO1ST = 2 : yes" in "\n".join(sf.supported_settings(sf.summary(cont)))
+    assert "RENORM_2TO1ST = 2 : yes" in "\n".join(
+        sf.supported_settings(sf.summary(cont))
+    )

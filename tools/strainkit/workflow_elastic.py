@@ -325,7 +325,11 @@ def fit(
         json.dump(summary, f, indent=2)
     log(
         f"  written: {f_ec}\n           {f_c1}\n           {os.path.join(rdir, 'elastic_fit.json')}"
-        + (f"\n           {f_sf} (strain-force coupling, central difference)" if f_sf else "")
+        + (
+            f"\n           {f_sf} (strain-force coupling, central difference)"
+            if f_sf
+            else ""
+        )
     )
     log(
         "  units: GPa (cell-independent; anphon multiplies by the volume of its own primitive cell)"
