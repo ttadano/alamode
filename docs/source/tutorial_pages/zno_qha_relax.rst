@@ -46,8 +46,9 @@ to calculate the :math:`T`-dependence of the shape of the unit cell.
 The recommended way to hand them to :red:`anphon` is the strain-coupling container, one HDF5 file
 given as ``STRAINFILE`` in the ``&relax`` field: :red:`strain_IFC/ZnO.strain.h5` of this example holds
 all of them, and :red:`ZnO_qha_thermo_strainfile.in` is the input using it. The container is written by
-the Python tools :red:`elastic.py` and :red:`strainifc.py` (``--strain-file``) from DFT calculations of
-strained cells, or packed from the text files with :red:`strainfile.py`; ``strainfile.py show`` and
+the Python tools :red:`elastic.py` (elastic constants and, from the same strained primitive cells, the
+strain-force coupling) and :red:`strainifc.py` (strain-harmonic-IFC coupling) with ``--strain-file``
+from DFT calculations of strained cells, or packed from the text files with :red:`strainfile.py`; ``strainfile.py show`` and
 ``strainfile.py check`` inspect it and verify it against the planned run. See
 :ref:`this page <label_strain_tools>` for the full description and ``example/ZnO/strain_IFC_workflow``
 for template inputs. All quantities are the clamped-ion ones (fixed fractional coordinates), because
@@ -120,8 +121,8 @@ same quantities, with the units as attributes and the reference structure once.
     0.000000  0.039854  0.022224
 
   The rows follow the atom order of the primitive cell of :red:`anphon` (the ``&cell`` field); the meaning of
-  the weight ``1.0`` is similar to that in the next paragraph. Files written by ``strainifc.py collect --fcs``
-  start with an ``&reference_cell ... /`` header recording the lattice vectors and atoms the rows belong to;
+  the weight ``1.0`` is similar to that in the next paragraph. Files written by ``elastic.py fit --fcs`` or
+  ``strainifc.py collect --fcs`` start with an ``&reference_cell ... /`` header recording the lattice vectors and atoms the rows belong to;
   with it, :red:`anphon` matches the atoms by position and can also use the file in a run whose ``&cell`` is
   an enlarged supercell of that cell (the rows are copied onto the translation images), see
   :ref:`this page <label_strain_tools>`.

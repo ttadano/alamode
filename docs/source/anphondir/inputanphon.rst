@@ -1117,9 +1117,10 @@ Description of input variables
    ``ELASTIC_CONST = 2``; the stress also with ``ELASTIC_CONST = 1``), the strain–force
    coupling (``/StrainForce``, ``RENORM_2TO1ST = 2``) and the strain–harmonic-IFC
    coupling with the force constants of the strained supercells embedded
-   (``/StrainHarmonic``, ``RENORM_3TO2ND = 2, 3``). It is produced by ``elastic.py fit`` and
-   ``strainifc.py collect`` with ``--strain-file``, or from existing text files with
-   ``strainfile.py pack``; see :ref:`this page <label_strain_container>`. anphon verifies the
+   (``/StrainHarmonic``, ``RENORM_3TO2ND = 2, 3``). It is produced with ``--strain-file`` by
+   ``elastic.py fit`` (``/Elastic`` and ``/StrainForce``, the latter from the same strained
+   primitive cells) and ``strainifc.py collect`` (``/StrainHarmonic``; ``--coupling force``
+   for runs without ``elastic.py``), or from existing text files with ``strainfile.py pack``; see :ref:`this page <label_strain_container>`. anphon verifies the
    schema, the presence of the groups its settings need (a missing one is reported together
    with the command that adds it), the units, the reference structure against the ``&cell``
    field (a nested super- or sub-cell is accepted, the rows of ``/StrainForce`` being tiled or

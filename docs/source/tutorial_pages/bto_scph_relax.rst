@@ -193,4 +193,5 @@ of the crystal structure.
   The strain-force coupling is not necessary for BaTiO\ :sub:`3` because they are zero from symmetry.
 
   Please see the :ref:`Tutorial 7.8 <label_tutorial_zno_qha_relax>` for the details of the preparation of these inputs;
-  the ``tools/elastic.py`` and ``tools/strainifc.py`` scripts generate them from DFT calculations of strained cells.
+  the ``tools/elastic.py`` and ``tools/strainifc.py`` scripts generate them from DFT calculations of strained cells
+  and collect them in one HDF5 file given as ``STRAINFILE`` in the ``&relax`` field.
