@@ -45,6 +45,9 @@ auto ALMCUI::run(const int narg, char **arg) const -> void
         std::cout << " +                             Ver.";
         std::cout << std::setw(7) << ALAMODE_VERSION;
         std::cout << "                         +\n";
+        const std::string commit = std::string("Commit: ") + ALAMODE_GIT_COMMIT;
+        const auto npad = commit.size() < 65 ? 65 - commit.size() : 0;
+        std::cout << " +" << std::string(npad / 2, ' ') << commit << std::string(npad - npad / 2, ' ') << "+\n";
         std::cout << " +-----------------------------------------------------------------+\n\n";
 #ifdef _OPENMP
         std::cout << " Number of OpenMP threads = " << omp_get_max_threads() << "\n\n";

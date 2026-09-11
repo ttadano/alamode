@@ -70,6 +70,7 @@ inline auto stamp_h5_schema(HighFive::File &file, const std::string &schema_name
     file.createAttribute("format_version", format_version);
     replace_string_attr("schema", schema_name);
     replace_string_attr("alamode_version", ALAMODE_VERSION);
+    replace_string_attr("alamode_git_commit", ALAMODE_GIT_COMMIT);
 
     const std::time_t now = std::time(nullptr);
     char time_str[100];

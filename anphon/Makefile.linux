@@ -35,7 +35,8 @@ LIBS = ${LAPACK}
 
 PROG = anphon
 
-CXXSRC = $(wildcard *.cpp)
+vpath %.cpp ../include
+CXXSRC = $(wildcard *.cpp) git_commit.cpp
 
 OBJS= ${CXXSRC:.cpp=.o}
 

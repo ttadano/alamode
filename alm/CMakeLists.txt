@@ -229,7 +229,8 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/alm.cpp
         ${PROJECT_SOURCE_DIR}/smith.cpp
         ${PROJECT_SOURCE_DIR}/svd.cpp
         ${PROJECT_SOURCE_DIR}/least_squares.cpp
-        ${PROJECT_SOURCE_DIR}/accelerate_solver.cpp)
+        ${PROJECT_SOURCE_DIR}/accelerate_solver.cpp
+        ${PROJECT_SOURCE_DIR}/../include/git_commit.cpp)
 
 set(HEADERS ${PROJECT_SOURCE_DIR}/alm.h
         ${PROJECT_SOURCE_DIR}/cluster.h
@@ -293,6 +294,9 @@ target_link_libraries(alm
         ${hdf5library}
 )
 
+include(${PROJECT_SOURCE_DIR}/../cmake/git_commit.cmake)
+alamode_git_commit(alm)
+
 install(TARGETS alm RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 if (BUILD_LIBRARIES)
@@ -314,8 +318,11 @@ if (BUILD_LIBRARIES)
     set_property(TARGET almcxx PROPERTY SOVERSION ${soserial})
     install(TARGETS almcxx LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
+    alamode_git_commit(almcxx)
+
     # Static link library
     add_library(almcxx_static STATIC ${SOURCES})
+    alamode_git_commit(almcxx_static)
     target_compile_definitions(almcxx_static PRIVATE _HDF5)
     target_include_directories(almcxx_static PRIVATE
         ${PROJECT_SOURCE_DIR}/../include

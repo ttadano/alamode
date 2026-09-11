@@ -43,6 +43,9 @@ void PhononCUI::run(const int narg, char **arg, MPI_Comm comm) const
         std::cout << " +                             Ver.";
         std::cout << std::setw(7) << ALAMODE_VERSION;
         std::cout << "                         +\n";
+        const std::string commit = std::string("Commit: ") + ALAMODE_GIT_COMMIT;
+        const auto npad = commit.size() < 65 ? 65 - commit.size() : 0;
+        std::cout << " +" << std::string(npad / 2, ' ') << commit << std::string(npad - npad / 2, ' ') << "+\n";
         std::cout << " +-----------------------------------------------------------------+\n\n";
         std::cout << " Job started at " << phon->timer->DateAndTime() << '\n';
         std::cout << " The number of MPI processes: " << phon->mympi->nprocs << '\n';

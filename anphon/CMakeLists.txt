@@ -209,6 +209,7 @@ set(SOURCES ${PROJECT_SOURCE_DIR}/anharmonic_core.cpp
             ${PROJECT_SOURCE_DIR}/timer.cpp
             ${PROJECT_SOURCE_DIR}/write_phonons.cpp
             ${PROJECT_SOURCE_DIR}/../external/niggli.c
+            ${PROJECT_SOURCE_DIR}/../include/git_commit.cpp
             )
 
 set(HEADERS ${PROJECT_SOURCE_DIR}/anharmonic_core.h
@@ -323,6 +324,9 @@ target_link_libraries(anphon
     ${hdf5library}
     ${filesystem_library}
 )
+
+include(${PROJECT_SOURCE_DIR}/../cmake/git_commit.cmake)
+alamode_git_commit(anphon)
 
 install(TARGETS anphon RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

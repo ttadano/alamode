@@ -17,6 +17,7 @@ tests/results/*
 ### CMake build files
 cmake-build*
 _build*/
+alamode_git_commit.h
 ### C++ ###
 # Prerequisites
 *.d

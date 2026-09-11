@@ -2751,7 +2751,8 @@ void Writes::writeKappa() const
             ofs_kl.open(file_kappa_coherent.c_str(), std::ios::out);
             if (!ofs_kl) exit("writeKappa", "Could not open file_kappa_coherent");
 
-            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity (xx, yy, zz) [W/mK]\n";
+            ofs_kl << "# Temperature [K], Coherent part of the lattice thermal Conductivity "
+                      "(xx, yy, zz, xy, xz, yx, yz, zx, zy) [W/mK]\n";
 
             if (isotope->include_isotope) {
                 ofs_kl << "# Isotope effects are included.\n";
@@ -2760,9 +2761,17 @@ void Writes::writeKappa() const
             for (i = 0; i < conductivity->ntemp; ++i) {
                 ofs_kl << std::setw(10) << std::right << std::fixed << std::setprecision(2)
                        << conductivity->temperature[i];
+                // Diagonal elements keep columns 2-4 of the original format; off-diagonal ones are appended.
                 for (j = 0; j < 3; ++j) {
                     ofs_kl << std::setw(15) << std::fixed << std::setprecision(4)
                            << conductivity->kappa_coherent[i][j][j];
+                }
+                for (j = 0; j < 3; ++j) {
+                    for (k = 0; k < 3; ++k) {
+                        if (j == k) continue;
+                        ofs_kl << std::setw(15) << std::fixed << std::setprecision(4)
+                               << conductivity->kappa_coherent[i][j][k];
+                    }
                 }
                 ofs_kl << '\n';
             }

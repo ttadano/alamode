@@ -172,7 +172,8 @@ set(ALM_SOURCES
     ${ALM_SRC_DIR}/smith.cpp
     ${ALM_SRC_DIR}/svd.cpp
     ${ALM_SRC_DIR}/least_squares.cpp
-    ${ALM_SRC_DIR}/accelerate_solver.cpp)
+    ${ALM_SRC_DIR}/accelerate_solver.cpp
+    ${ALM_INC_DIR}/git_commit.cpp)
 
 # NB_STATIC: link the nanobind runtime statically into this single module.
 # (Add STABLE_ABI to also produce an abi3/limited-API wheel on Python >= 3.12.)
@@ -185,6 +186,9 @@ target_include_directories(_alm PRIVATE
 target_link_libraries(_alm PRIVATE
     ${boost_target} ${eigen_target} ${Boost_LIBRARIES} ${BACKEND_LIBS}
     ${spglib} OpenMP::OpenMP_CXX ${hdf5_target} ${hdf5library})
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/git_commit.cmake)
+alamode_git_commit(_alm)
 
 # Install the compiled module into the python package directory.
 install(TARGETS _alm LIBRARY DESTINATION alm)
