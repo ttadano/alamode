@@ -510,9 +510,19 @@ The lattice thermal conductivity tensor :math:`\kappa_{\mathrm{ph}}^{\mu\nu}(T)`
 where :math:`V` is the unit cell volume, :math:`c_{\boldsymbol{q}j} = \hbar\omega_{\boldsymbol{q}j}\partial n_{\boldsymbol{q}j}/\partial T`, :math:`\tau_{\boldsymbol{q}j}(T)` is the phonon lifetime,
 and :math:`\mathcal{B}(j)` is the set of branches degenerate with :math:`j` at :math:`\boldsymbol{q}` (see below).
 For a non-degenerate branch :math:`W_{\boldsymbol{q}j}^{\mu\nu} = v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\nu}` and the familiar expression is recovered.
-For a degenerate multiplet the sum of :math:`W` over its members is :math:`\mathrm{Tr}(P_{\mathcal{B}}V^{\mu}P_{\mathcal{B}}V^{\nu}P_{\mathcal{B}})`,
-which is invariant under the arbitrary unitary rotation of the eigenvectors inside the multiplet, whereas the individual products
-:math:`v_{\boldsymbol{q}jj}^{\mu}v_{\boldsymbol{q}jj}^{\nu}` are not. The pairs :math:`j\neq j'` inside one multiplet are counted here and are
+For a degenerate multiplet the sum of :math:`W` over its members is
+
+.. math::
+
+    \sum_{j\in\mathcal{B}} W_{\boldsymbol{q}j}^{\mu\nu}
+    = \sum_{j,j'\in\mathcal{B}} v_{\boldsymbol{q}jj'}^{\mu}v_{\boldsymbol{q}j'j}^{\nu}
+    = \mathrm{Tr}\left(P_{\mathcal{B}}V^{\mu}P_{\mathcal{B}}V^{\nu}\right),
+
+where :math:`V^{\mu}` is the matrix with elements :math:`v_{\boldsymbol{q}jj'}^{\mu}` over all branches and
+:math:`P_{\mathcal{B}}` is the projector onto the multiplet, i.e. in the band basis the diagonal matrix equal to 1 for
+:math:`j\in\mathcal{B}` and 0 otherwise. A unitary rotation :math:`\mathcal{W}` of the eigenvectors inside the multiplet maps
+:math:`V^{\mu}\to\mathcal{W}^{\dagger}V^{\mu}\mathcal{W}` and leaves :math:`P_{\mathcal{B}}` unchanged, so the trace is
+invariant, whereas the individual products :math:`v_{\boldsymbol{q}jj}^{\mu}v_{\boldsymbol{q}jj}^{\nu}` are not. The pairs :math:`j\neq j'` inside one multiplet are counted here and are
 excluded from the :ref:`coherent term <kappa_coherent>`, so nothing is double counted; the two together form the invariant.
 
 The multiplets are detected from the frequencies only. The frequency-degeneracy groups over which the self-energy is averaged
