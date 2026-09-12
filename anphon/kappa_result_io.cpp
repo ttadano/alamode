@@ -895,22 +895,36 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
 
     impl->compute_run_cols();
 
-    // A single /kappa formulation attribute cannot describe a file assembled from runs
-    // with different transport formulations, so mixing is refused BEFORE anything is
-    // written and the existing content is left intact. Freshly created or fully rebuilt
-    // files carry no old content and are exempt.
+    // Mixing formulations is refused only where an OLD KAPPA VALUE would survive this run
+    // unrecomputed. The stored 3-phonon linewidths do not depend on the velocity
+    // formulation (boundary and isotope terms are added at run time, adaptive widths use
+    // finite differences in both formulations), and a plain restart recomputes every
+    // kappa slice from them in store_kappa -- so restarting an older file under a new
+    // formulation is legitimate and yields the recomputed kappa with the new stamp. The
+    // one genuine mixing case is a temperature-resolved file in which valid kappa rows for
+    // temperatures NOT covered by this run are retained (in place on reopen, or copied by
+    // rebuild_tdep): those rows were assembled with the other formulation and would sit
+    // beside freshly assembled ones under a single stamp. That, and only that, is refused,
+    // before anything is written.
     {
-        const auto retains_old = !need_rebuild || (impl->tdep && !old_temps.empty());
-        if (have_existing_formulation && retains_old && existing_formulation != transport_formulation) {
-            // RESTART = 0 discards the retained content only for non-temperature-resolved
-            // files; a temperature-resolved rebuild carries old slices over regardless.
-            const std::string escape = impl->tdep
-                                           ? "Use a different PREFIX, or set ALAMODE_LEGACY_VELOCITY to match the file."
-                                           : "Use a different PREFIX, set RESTART = 0 to discard it, or set "
-                                             "ALAMODE_LEGACY_VELOCITY to match the file.";
+        auto retains_foreign_kappa = false;
+        if (impl->tdep) {
+            for (size_t j = 0; j < old_temps.size(); ++j) {
+                if (j < old_valid.size() && !old_valid[j]) continue; // never assembled: nothing to mix
+                auto covered = false;
+                for (const auto t: fmeta.temperatures) {
+                    if (std::abs(t - old_temps[j]) < eps6) { covered = true; break; }
+                }
+                if (!covered) { retains_foreign_kappa = true; break; }
+            }
+        }
+        if (have_existing_formulation && retains_foreign_kappa && existing_formulation != transport_formulation) {
             exit("KappaResultIOH5",
-                 ("The existing result file was written with transport formulation '" + existing_formulation +
-                  "' but this run uses '" + transport_formulation + "'. " + escape)
+                 ("The existing temperature-resolved result file holds kappa for temperatures this run does not "
+                  "recompute, assembled with transport formulation '" + existing_formulation +
+                  "', while this run uses '" + transport_formulation +
+                  "'. Use a different PREFIX, include those temperatures in this run, or set "
+                  "ALAMODE_LEGACY_VELOCITY to match the file.")
                      .c_str());
         }
     }
