@@ -91,27 +91,35 @@ inline void average_over_degenerate_modes(const int ns, const double *eval_at_k,
 //     the factor 1 + (dw/G)^2. Conductivity::compute_kappa reports the worst dw/G among
 //     merged blocks so that this approximation is visible rather than silent.
 //   * Constant lifetime within a block (the precondition for the trace form) is guaranteed
-//     by SUBDIVIDING the damping-averaging groups below, not by the size of TOL_CM.
+//     by SUBDIVIDING the frequency-degeneracy groups below (the same groups over which
+//     the damping is averaged), not by the size of TOL_CM. Damping values themselves are
+//     never consulted when forming blocks.
 inline double transport_block_tol_cm()
 {
     return 1.0e-6;
 }
 
-// Block bounds [lo, hi) for every branch at one k point. Damping groups from
-// find_degenerate_groups are subdivided; within a group a new block starts whenever a
-// branch lies further than tol_cm from the block's FIRST member (anchored, so a chain of
-// individually close branches cannot grow into a wide block).
+// Block bounds [lo, hi) for every branch at one k point.
+//
+// Detection is FREQUENCY based only. First the frequency-degeneracy groups of
+// find_degenerate_groups are formed (anchored, 1e-7 Ry = 1.097e-2 cm^-1); these are exactly
+// the groups over which average_self_energy_at_degenerate_point averages the damping, so
+// the lifetime is constant inside each of them by construction. Each group is then
+// subdivided: within a group a new block starts whenever a branch lies further than tol_cm
+// from the block's FIRST member (anchored, so a chain of individually close branches
+// cannot grow into a wide block). No damping value enters this partition -- it is used
+// only afterwards, in Conductivity::report_unresolved_degenerate_blocks, to warn.
 inline void transport_block_bounds(const unsigned int ns, const double *eval_at_k, const double tol_cm,
                                    std::vector<int> &lo_out, std::vector<int> &hi_out)
 {
     lo_out.assign(ns, 0);
     hi_out.assign(ns, 0);
 
-    std::vector<int> damping_groups;
-    find_degenerate_groups(ns, eval_at_k, damping_groups);
+    std::vector<int> freq_groups;
+    find_degenerate_groups(ns, eval_at_k, freq_groups);
 
     auto gbegin = 0u;
-    for (const auto ndeg: damping_groups) {
+    for (const auto ndeg: freq_groups) {
         const auto gend = gbegin + static_cast<unsigned int>(ndeg);
         auto is = gbegin;
         while (is < gend) {
