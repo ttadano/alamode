@@ -732,6 +732,19 @@ KappaChannelMetaH5 Conductivity::build_kappa_channel_meta(const int mode) const
         }
     }
 
+    if (mode == 1 && !velblock.empty()) {
+        meta.velocity_diad.reserve(nequiv_total * ns * 9);
+        for (auto i = 0; i < meta.nk_irred; ++i) {
+            for (const auto &kp: kmesh_in->kpoint_irred_all[i]) {
+                for (auto is = 0; is < ns; ++is) {
+                    for (auto a = 0; a < 3; ++a) {
+                        for (auto b = 0; b < 3; ++b) meta.velocity_diad.push_back(velblock[kp.knum][is][a][b]);
+                    }
+                }
+            }
+        }
+    }
+
     meta.velocities.reserve(nequiv_total * ns * 3);
     for (auto i = 0; i < meta.nk_irred; ++i) {
         for (const auto &kp: kmesh_in->kpoint_irred_all[i]) {

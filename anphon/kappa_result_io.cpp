@@ -267,6 +267,37 @@ struct KappaResultIOH5::Impl
 
     // Fill the frequency/velocity slices of this run's temperature columns
     // (tdep mode only). Pure raw-data writes into preallocated datasets.
+    // Velocity diad (see KappaChannelMetaH5::velocity_diad). One code path for every route:
+    // fresh files, restarts of files that predate the dataset (created on demand, so the
+    // file becomes self-consistent with the corrected kappa it now holds), and
+    // temperature-resolved files (one slice per temperature of this run).
+    auto write_velocity_diad(const KappaChannelMetaH5 &cmeta) const -> void
+    {
+        if (cmeta.velocity_diad.empty()) return;
+        const auto path = channel_path(cmeta.tag);
+        const auto name = path + "/velocity_diad";
+        const size_t nequiv_total = cmeta.velocity_diad.size() / (static_cast<size_t>(cmeta.ns) * 9);
+        const auto nt = nt_file();
+
+        if (!file->exist(name)) {
+            if (tdep) {
+                h5_create_dataset_prealloc<double>(*file, name, {nt, nequiv_total, cmeta.ns, 3, 3})
+                    .createAttribute("unit", std::string("(m/s)^2"));
+            } else {
+                file->createDataSet<double>(name, HighFive::DataSpace({nequiv_total, cmeta.ns, 3, 3}))
+                    .createAttribute("unit", std::string("(m/s)^2"));
+            }
+        }
+        auto dset = file->getDataSet(name);
+        if (tdep) {
+            for (const auto col: run_cols) {
+                dset.select({col, 0, 0, 0, 0}, {1, nequiv_total, cmeta.ns, 3, 3}).write_raw(cmeta.velocity_diad.data());
+            }
+        } else {
+            dset.write_raw(cmeta.velocity_diad.data());
+        }
+    }
+
     auto write_basis_slices(const KappaChannelMetaH5 &cmeta) const -> void
     {
         if (!tdep) return;
@@ -941,6 +972,7 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
         impl->file = std::make_unique<HighFive::File>(impl->filename, HighFive::File::ReadWrite);
     }
     impl->write_basis_slices(channel);
+    impl->write_velocity_diad(channel);
     impl->reset_kappa_valid();
 }
 
@@ -976,6 +1008,7 @@ void KappaResultIOH5::ensure_channel(const KappaChannelMetaH5 &channel, const bo
         }
     }
     impl->write_basis_slices(channel);
+    impl->write_velocity_diad(channel);
 }
 
 bool KappaResultIOH5::open_or_create_for_ibte(const KappaFileMetaH5 &fmeta, const IbteMetaH5 &imeta, const bool reset)

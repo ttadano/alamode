@@ -128,7 +128,12 @@ ANPHON: Output files
 
  Unified, crash-safe HDF5 result file of ``MODE = kappa`` (schema
  ``alamode:kappa_result``). It stores the run metadata, phonon frequencies,
- group velocities, the three-phonon (and, when ``QUARTIC = 1``, four-phonon)
+ group velocities (``/scattering/3ph/velocities``; with the default
+ velocity-matrix formulation also the degenerate-block velocity diad
+ :math:`W^{\mu\nu}_{\boldsymbol{q}j}` of :ref:`kappa_peierls` as
+ ``/scattering/3ph/velocity_diad``, which ``analyzer.py`` uses so that its
+ cumulative and boundary-limited kappa reproduce ``kappa_peierls``), the
+ three-phonon (and, when ``QUARTIC = 1``, four-phonon)
  linewidths with per-mode completion flags, the isotope-scattering linewidths
  and factors (``/scattering/isotope/gamma``, ``/metadata/isotope_factors``,
  when ``ISOTOPE > 0``), and the final thermal-conductivity

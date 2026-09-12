@@ -583,6 +583,11 @@ The accumulative lattice thermal conductivity :math:`\kappa_{\mathrm{ph,acc}}^{\
   \kappa_{\mathrm{ph,acc}}^{\mu\mu}(L) = \frac{1}{V N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\mu}\tau_{\boldsymbol{q}j}\Theta (L-|\boldsymbol{v}_{\boldsymbol{q}j}|\tau_{\boldsymbol{q}j}),
 
 where :math:`\Theta(x)` is the step function. This quantity can be calculated by using the script ``analyzer.py`` with ``--calc cumulative`` flag.
+With the default velocity-matrix formulation ``analyzer.py`` replaces :math:`v^{\mu}_{\boldsymbol{q}j}v^{\nu}_{\boldsymbol{q}j}`
+by the degenerate-block diad :math:`W^{\mu\nu}_{\boldsymbol{q}j}` stored in ``PREFIX.kappa.h5`` (and
+:math:`|\boldsymbol{v}_{\boldsymbol{q}j}|` by :math:`\sqrt{\mathrm{tr}\,W_{\boldsymbol{q}j}}`), so that the
+large-:math:`L` limit coincides with :math:`\kappa_{\mathrm{P}}` of the ``anphon`` run; files written by older
+versions fall back to the finite-difference velocities.
 One can also use another definition for the accumulative thermal conductivity:
 
 .. math::

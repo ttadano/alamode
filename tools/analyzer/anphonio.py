@@ -19,6 +19,9 @@ class ParseResult:
 
         self.read_result(filename)
 
+    vel_diad = None  # text files carry finite-difference velocities only
+    formulation = "legacy"
+
     def read_result(self, filename):
         total_irq = 0
         which_phonon = 0
@@ -389,6 +392,32 @@ class ParseKappaH5:
             for ik in range(nk):
                 lo, hi = offsets[ik], offsets[ik + 1]
                 self.vel[ik, :, : hi - lo, :] = np.transpose(vel[lo:hi], (1, 0, 2))
+
+            # Degenerate-block velocity diad W[k, s, a, b] = sum_{s' in D(s)} Re(V^a_{ss'} V^b_{s's}),
+            # (m/s)^2, written by anphon versions that assemble kappa from the velocity matrix.
+            # Summed over a degenerate block it is the basis-invariant Tr(P V^a P V^b P); at a
+            # degeneracy no per-mode velocity reproduces it, so kappa must be rebuilt from W
+            # rather than from v_a v_b. Absent in older files and under the legacy formulation.
+            self.vel_diad = None
+            if "velocity_diad" in g:
+                diad = np.array(g["velocity_diad"][...], dtype=float)
+                if self.temperature_resolved:
+                    if diad.ndim != 5:
+                        raise RuntimeError(
+                            "{}: unexpected velocity_diad layout for a temperature-resolved file".format(filename)
+                        )
+                    diad = diad[it]
+                diad = diad.reshape((knum.size, ns, 3, 3))
+                self.vel_diad = np.zeros((nk, ns, nmax, 3, 3), dtype=float)
+                for ik in range(nk):
+                    lo, hi = offsets[ik], offsets[ik + 1]
+                    self.vel_diad[ik, :, : hi - lo, :, :] = np.transpose(diad[lo:hi], (1, 0, 2, 3))
+
+            # Transport formulation that produced /kappa in this file ("legacy" when unstamped).
+            self.formulation = "legacy"
+            if "kappa" in f and "formulation" in f["kappa"].attrs:
+                a = f["kappa"].attrs["formulation"]
+                self.formulation = a.decode() if isinstance(a, bytes) else str(a)
 
             gamma = np.array(g["gamma"][...], dtype=float)
             if gamma.ndim == 1:

@@ -87,6 +87,12 @@ struct KappaChannelMetaH5
     std::vector<std::vector<int>> equiv_knum; // full-mesh k indices of each irreducible star
     Eigen::MatrixXd frequencies;              // [nk_irred, ns], cm^-1
     std::vector<double> velocities;           // [sum(multiplicity)*ns*3] flattened, m/s
+    // Per-branch degenerate-block velocity diad W[k][s][a][b] = sum_{s' in D(s)} Re(V^a_{ss'} V^b_{s's}),
+    // [sum(multiplicity)*ns*9] flattened, (m/s)^2. Summed over a block it is the basis-invariant
+    // Tr(P V^a P V^b P) that the Peierls term uses, which no per-mode velocity can reproduce at a
+    // degeneracy; post-processing (cumulative kappa) must use this instead of v_a v_b. Empty under
+    // the legacy formulation and for channels without a velocity matrix (4ph).
+    std::vector<double> velocity_diad;
 };
 
 // Crash-safe writer/reader of PREFIX.kappa.h5. All methods must be called
