@@ -163,31 +163,42 @@ The group velocity of phonon mode :math:`\boldsymbol{q}j` is given by
 Velocity matrix (default)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Let :math:`\tilde{D}(\boldsymbol{q})` denote the dynamical matrix whose phase factor carries the full interatomic
+separation rather than the lattice vector alone,
+
+.. math::
+    :label: dymat_tilde
+
+    \tilde{D}_{\mu\nu}(\kappa\kappa^{\prime};\boldsymbol{q}) = \frac{1}{\sqrt{M_{\kappa}M_{\kappa^{\prime}}}}
+    \sum_{\ell^{\prime}}\Phi_{\mu\nu}(\ell\kappa;\ell^{\prime}\kappa^{\prime})
+    \exp{\left[i\boldsymbol{q}\cdot(\boldsymbol{r}(\ell^{\prime}\kappa^{\prime})-\boldsymbol{r}(\ell\kappa))\right]}.
+
+It is related to :eq:`dymat` by the unitary transformation
+:math:`\tilde{D}(\boldsymbol{q}) = U^{\dagger}(\boldsymbol{q})D(\boldsymbol{q})U(\boldsymbol{q})` with
+:math:`U_{\kappa\kappa^{\prime}}(\boldsymbol{q})=\delta_{\kappa\kappa^{\prime}}\,e^{i\boldsymbol{q}\cdot\boldsymbol{r}(\kappa)}`,
+so it has the same eigenvalues :math:`\omega_{\boldsymbol{q}j}^{2}`, and its eigenvectors are
+:math:`\tilde{\boldsymbol{e}}_{\boldsymbol{q}j}=U^{\dagger}(\boldsymbol{q})\boldsymbol{e}_{\boldsymbol{q}j}`.
 The band off-diagonal generalization of the group velocity [9]_ [11]_ is
 
 .. math::
     :label: velmat
 
     v_{\boldsymbol{q}jj'}^{\mu} = \frac{1}{2\sqrt{\omega_{\boldsymbol{q}j}\omega_{\boldsymbol{q}j'}}}
-    (\boldsymbol{e}_{\boldsymbol{q}j}^{*})^{\mathrm{T}} \frac{\partial D(\boldsymbol{q})}{\partial q_{\mu}} \boldsymbol{e}_{\boldsymbol{q}j'},
+    (\tilde{\boldsymbol{e}}_{\boldsymbol{q}j}^{*})^{\mathrm{T}}
+    \frac{\partial \tilde{D}(\boldsymbol{q})}{\partial q_{\mu}} \tilde{\boldsymbol{e}}_{\boldsymbol{q}j'},
 
-whose diagonal :math:`v_{\boldsymbol{q}jj}^{\mu}` is the group velocity. Three points about its evaluation matter in practice.
+whose diagonal :math:`v_{\boldsymbol{q}jj}^{\mu}` is the group velocity. It is :math:`\tilde{D}`, not :math:`D`, that must
+be differentiated: the two derivatives differ by :math:`i\,[\,D,\,\mathrm{diag}(r_{\mu}(\kappa))\,]`, whose matrix elements
+between eigenvectors carry the factor :math:`\omega_{\boldsymbol{q}j}^{2}-\omega_{\boldsymbol{q}j'}^{2}`. The diagonal and any
+element inside a degenerate multiplet are therefore the same for both, but genuinely off-diagonal elements --- those entering the
+:ref:`coherent term <kappa_coherent>` --- are not (the *displacement-aware* convention of Ref. [11]_).
 
-* **Convention.** The dynamical matrix :eq:`dymat` carries only the lattice vector in its phase factor. The derivative in
-  :eq:`velmat` must nevertheless be taken with the full interatomic separation :math:`\boldsymbol{r}(\ell'\kappa')-\boldsymbol{r}(\ell\kappa)`
-  (the *displacement-aware* convention of Ref. [11]_); the two differ by a term proportional to :math:`\omega_{\boldsymbol{q}j}^{2}-\omega_{\boldsymbol{q}j'}^{2}`,
-  which vanishes for the diagonal and inside a degenerate multiplet but not for genuinely off-diagonal elements.
-  *anphon* assembles the derivative with the lattice-vector phase and the full separation, which is equivalent.
-* **Non-analytic part.** For polar systems the non-analytic correction (``NONANALYTIC = 1, 2, 3``) contributes to :math:`\partial D/\partial\boldsymbol{q}`.
-  It is obtained by a central difference of the assembled non-analytic matrix, plus the derivative of the sublattice phase that the
-  non-analytic routines fold into that matrix (the *connection term*); omitting the latter corrupts even the diagonal velocities.
-  At :math:`\Gamma` the non-analytic velocity is not defined without a directional convention and is set to zero.
-  On a band path the derivative uses the same direction vector as the eigenproblem for that segment.
-* **No element-wise symmetrization.** Earlier versions averaged each element of :math:`v_{\boldsymbol{q}jj'}^{\mu}` over the little group of :math:`\boldsymbol{q}`
-  as if it were a Cartesian vector. That is a no-op for the diagonal of a non-degenerate mode, but inside a degenerate multiplet it averages
-  over the multiplet (a doublet with velocities :math:`\pm\boldsymbol{v}` averages to zero), and an off-diagonal element is not a Cartesian
-  vector at all. The point symmetry of :math:`\kappa` follows from the sum over the star of each :math:`\boldsymbol{q}` and needs no such step.
-  The average is therefore no longer applied.
+For polar systems the non-analytic correction (``NONANALYTIC = 1, 2, 3``) contributes to
+:math:`\partial\tilde{D}/\partial\boldsymbol{q}`. It is obtained by a central difference of the assembled non-analytic
+matrix together with the derivative of the sublattice phase factor relating :math:`D` and :math:`\tilde{D}`; omitting the
+latter corrupts even the diagonal velocities. At :math:`\Gamma` the non-analytic velocity is not defined without a
+directional convention and is set to zero. On a band path the derivative uses the same direction vector as the eigenproblem
+for that segment.
 
 Inside a degenerate multiplet :math:`\mathcal{B}` the eigenvectors are fixed only up to a unitary rotation, so the individual
 :math:`v_{\boldsymbol{q}jj}^{\mu}` are not defined; only block traces such as
@@ -205,9 +216,9 @@ Historically the group velocity was obtained from a central difference,
 
 where :math:`j` is the index in the *sorted* eigenvalue list at each shifted point. Wherever branches cross or are degenerate the sorted
 index exchanges character between :math:`\boldsymbol{q}\pm\Delta\boldsymbol{q}` and the quotient connects two different branches.
-This path is retained for comparison (environment variable ``ALAMODE_LEGACY_VELOCITY=1``, which also restores the element-wise
-symmetrization and omits the non-analytic velocity term) and is still used by the adaptive smearing widths (``ISMEAR = 2``) and by
-the iterative Boltzmann solvers, which have not been reformulated.
+This path is retained for comparison (environment variable ``ALAMODE_LEGACY_VELOCITY=1``, which restores the previous
+velocity treatment throughout) and is still used by the adaptive smearing widths (``ISMEAR = 2``) and by the iterative
+Boltzmann solvers, which have not been reformulated.
 
 If one needs to save the group velocities, please turn on the ``PRINTVEL``-tag; the printed values follow the same formulation as the
 conductivity in that run. At a degeneracy they are one admissible basis choice, not a unique value.
@@ -576,8 +587,8 @@ The coherent components of lattice thermal conductivity (see Ref. [8]_), which a
 
 where :math:`c_{\boldsymbol{q}j} = \hbar\omega_{\boldsymbol{q}j}\partial n_{\boldsymbol{q}j}/\partial T` and :math:`\Gamma_{\boldsymbol{q}j}` is the total phonon linewidth (half width) of phonon mode :math:`\boldsymbol{q}j`. 
 
-:math:`\boldsymbol{v}_{\boldsymbol{q}jj'}` is the band off-diagonal velocity matrix :eq:`velmat` in the displacement-aware convention
-[9]_ [11]_, computed without element-wise symmetrization. The sum runs over pairs belonging to *different* degenerate multiplets;
+:math:`\boldsymbol{v}_{\boldsymbol{q}jj'}` is the band off-diagonal velocity matrix :eq:`velmat`, built from
+:math:`\tilde{D}` [9]_ [11]_. The sum runs over pairs belonging to *different* degenerate multiplets;
 pairs inside one multiplet are already contained in the :ref:`Peierls term <kappa_peierls>`, and for such a pair the Lorentzian factor
 above reduces to the band-like limit :math:`1/[2(\Gamma_{\boldsymbol{q}j}+\Gamma_{\boldsymbol{q}j'})]`, so the two terms together form
 the basis-invariant block trace. The particle-like/wave-like *split* is therefore basis dependent while their sum is not; only the total
