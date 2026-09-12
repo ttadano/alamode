@@ -607,9 +607,12 @@ where :math:`c_{\boldsymbol{q}j} = \hbar\omega_{\boldsymbol{q}j}\partial n_{\bol
 
 :math:`\boldsymbol{v}_{\boldsymbol{q}jj'}` is the band off-diagonal velocity matrix :eq:`velmat`, built from
 :math:`\tilde{D}` [9]_ [11]_. The sum runs over pairs belonging to *different* degenerate multiplets;
-pairs inside one multiplet are already contained in the :ref:`Peierls term <kappa_peierls>`, and for such a pair the Lorentzian factor
-above reduces to the band-like limit :math:`1/[2(\Gamma_{\boldsymbol{q}j}+\Gamma_{\boldsymbol{q}j'})]`, so the two terms together form
-the basis-invariant block trace. The particle-like/wave-like *split* is therefore basis dependent while their sum is not; only the total
+pairs inside one multiplet are already contained in the :ref:`Peierls term <kappa_peierls>`. For such a pair
+:math:`\omega_{\boldsymbol{q}j}=\omega_{\boldsymbol{q}j'}`, the prefactor reduces to :math:`c_{\boldsymbol{q}j}` and the Lorentzian
+factor to :math:`1/(\Gamma_{\boldsymbol{q}j}+\Gamma_{\boldsymbol{q}j'})`; since the lifetime is constant within a multiplet
+this equals :math:`1/(2\Gamma_{\boldsymbol{q}j})=\tau_{\boldsymbol{q}j}`, i.e. exactly the Peierls weight
+:math:`c_{\boldsymbol{q}j}v_{\boldsymbol{q}jj'}^{\mu}v_{\boldsymbol{q}j'j}^{\nu}\tau_{\boldsymbol{q}j}`, so the two terms together
+form the basis-invariant block trace. The particle-like/wave-like *split* is therefore basis dependent while their sum is not; only the total
 should be compared between calculations. When ``KAPPA_COHERENT = 1 | 2`` the coherent component is calculated and saved in ``PREFIX``.kl_coherent.
 When ``KAPPA_COHERENT = 2``, all components of the coherent term before summation are saved in ``PREFIX``.kc_elem. Requesting the coherent
 term stores the full velocity matrix, :math:`N_{q}(3N_{\kappa})^{2}\times3` complex numbers on the root process.
