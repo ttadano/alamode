@@ -525,6 +525,14 @@ where :math:`V^{\mu}` is the matrix with elements :math:`v_{\boldsymbol{q}jj'}^{
 invariant, whereas the individual products :math:`v_{\boldsymbol{q}jj}^{\mu}v_{\boldsymbol{q}jj}^{\nu}` are not. The pairs :math:`j\neq j'` inside one multiplet are counted here and are
 excluded from the :ref:`coherent term <kappa_coherent>`, so nothing is double counted; the two together form the invariant.
 
+This assignment is a convention, not a physical distinction. At exact degeneracy the coherent expression of Ref. [11]_ reduces
+to the Peierls form for such a pair, so the total conductivity is the same whichever term the pair is assigned to; the assignment
+only makes each part separately basis invariant. The *particle-like* part defined here therefore equals the *populations* of
+Ref. [11]_ plus the coherences between degenerate branches, and differs from their populations wherever multiplets occur. For
+symmetry-enforced degeneracies the multiplet is a well-defined object and the definition is exact; for accidental near-degeneracies
+it depends on the numerical tolerance below, whose effect on the total is the factor reported by the warning described there.
+Only the total should be compared between calculations or with Ref. [11]_.
+
 The multiplets are detected from the frequencies only. The frequency-degeneracy groups over which the self-energy is averaged
 (tolerance :math:`10^{-7}` Ry) are subdivided with an anchored tolerance of :math:`10^{-6}\ \mathrm{cm}^{-1}`, so that the lifetime is
 constant within every multiplet by construction. This is an empirical numerical criterion: a pair whose true splitting
