@@ -201,11 +201,13 @@ void Conductivity::setup_kappa()
     const auto corrected = !PhononVelocity::legacy_velocity();
     if (calc_coherent) {
         if (mympi->my_rank == 0) velmat.resize(nk_3ph, ns, ns, 3);
-        else velmat.resize(1, 1, 1, 3);
+        else
+            velmat.resize(1, 1, 1, 3);
     }
     if (corrected) {
         if (mympi->my_rank == 0) velblock.resize(nk_3ph, ns, 3, 3);
-        else velblock.resize(1, 1, 1, 1);
+        else
+            velblock.resize(1, 1, 1, 1);
     }
     if (calc_coherent || corrected) {
         phonon_velocity->calc_phonon_velmat_mesh(calc_coherent ? &velmat : nullptr, corrected ? &velblock : nullptr);
@@ -1151,8 +1153,7 @@ static std::string active_transport_formulation(const bool nonanalytic)
 // pair with true splitting dw and summed HWHM G has its band-like weight overestimated by
 // 1 + (dw/G)^2. The tolerance cannot tell such a pair from a degenerate one, so instead
 // of silently picking a limit the worst dw/G among merged blocks is reported.
-void Conductivity::report_unresolved_degenerate_blocks(const KpointMeshUniform *kmesh_in,
-                                                       const double *const *eval_in,
+void Conductivity::report_unresolved_degenerate_blocks(const KpointMeshUniform *kmesh_in, const double *const *eval_in,
                                                        const double *const *gamma_in) const
 {
     if (mympi->my_rank != 0 || PhononVelocity::legacy_velocity() || writes->getVerbosity() == 0) return;

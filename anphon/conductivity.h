@@ -154,8 +154,7 @@ private:
                                           double ***kappa_spec_out) const;
 
     void compute_kappa_intraband(const KpointMeshUniform *kmesh_in, const double *const *eval_in,
-                                 const double *const *lifetime, double ***kappa_intra,
-                                 double ***kappa_spec_out) const;
+                                 const double *const *lifetime, double ***kappa_intra, double ***kappa_spec_out) const;
 
     void compute_kappa_coherent(const KpointMeshUniform *kmesh_in, const double *const *eval_in,
                                 const double *const *gamma_total, double ***kappa_coherent_out) const;

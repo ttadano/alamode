@@ -50,8 +50,7 @@ public:
 
     // velmat_out (full matrix, coherent term only) and velblock_out (per-branch
     // block-summed diad for the Peierls term / boundary speed) may each be nullptr.
-    void calc_phonon_velmat_mesh(NDArray<std::complex<double>, 4> *velmat_out,
-                                 NDArray<double, 4> *velblock_out) const;
+    void calc_phonon_velmat_mesh(NDArray<std::complex<double>, 4> *velmat_out, NDArray<double, 4> *velblock_out) const;
 
     void get_phonon_group_velocity_bandstructure_velmat(const KpointBandStructure *kpoint_bs_in,
                                                         const Eigen::Matrix3d &lavec_p,
@@ -66,8 +65,7 @@ public:
 
     // kvec_fixed: hold the nonanalytic direction fixed (band paths, where the
     // eigenproblem uses the segment direction). nullptr = radial, as on a mesh.
-    void add_nonanalytic_velocity_matrix(const double *xk_in, const double *omega_in,
-                                         std::complex<double> **evec_in,
+    void add_nonanalytic_velocity_matrix(const double *xk_in, const double *omega_in, std::complex<double> **evec_in,
                                          std::complex<double> ***velmat_inout,
                                          const double *kvec_fixed = nullptr) const;
 

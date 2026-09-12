@@ -904,9 +904,10 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
         if (have_existing_formulation && retains_old && existing_formulation != transport_formulation) {
             // RESTART = 0 discards the retained content only for non-temperature-resolved
             // files; a temperature-resolved rebuild carries old slices over regardless.
-            const std::string escape = impl->tdep ? "Use a different PREFIX, or set ALAMODE_LEGACY_VELOCITY to match the file."
-                                                  : "Use a different PREFIX, set RESTART = 0 to discard it, or set "
-                                                    "ALAMODE_LEGACY_VELOCITY to match the file.";
+            const std::string escape = impl->tdep
+                                           ? "Use a different PREFIX, or set ALAMODE_LEGACY_VELOCITY to match the file."
+                                           : "Use a different PREFIX, set RESTART = 0 to discard it, or set "
+                                             "ALAMODE_LEGACY_VELOCITY to match the file.";
             exit("KappaResultIOH5",
                  ("The existing result file was written with transport formulation '" + existing_formulation +
                   "' but this run uses '" + transport_formulation + "'. " + escape)

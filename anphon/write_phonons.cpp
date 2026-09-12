@@ -756,7 +756,8 @@ void Writes::writePhononVelAll() const
 
     if (use_velmat_velocities()) {
         phonon_velocity->get_phonon_group_velocity_mesh_velmat(*dos->kmesh_dos.get(),
-                                                               system->get_primcell().lattice_vector, phvel_xyz);
+                                                               system->get_primcell().lattice_vector,
+                                                               phvel_xyz);
     } else {
         phonon_velocity->get_phonon_group_velocity_mesh(*dos->kmesh_dos.get(),
                                                         system->get_primcell().lattice_vector,

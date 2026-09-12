@@ -9,18 +9,18 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "phonon_velocity.h"
-#include <cstdlib>
+#include <algorithm>
 #include <complex>
+#include <cstdlib>
 #include <iomanip>
+#include <limits>
 #include "cell_shift_table.h"
 #include "constants.h"
+#include "degeneracy_utils.h"
 #include "dense_hermitian_eigen.h"
 #include "dynamical.h"
 #include "error.h"
 #include "ewald.h"
-#include "degeneracy_utils.h"
-#include <algorithm>
-#include <limits>
 #include "fcs_phonon.h"
 #include "kpoint.h"
 #include "mathfunctions.h"
@@ -97,16 +97,19 @@ void PhononVelocity::get_phonon_group_velocity_bandstructure_velmat(const Kpoint
 
     for (auto ik = 0u; ik < nk; ++ik) {
         if (dynamical->nonanalytic == 3) {
-            dynamical->eval_k_ewald(kpoint_bs_in->xk[ik], kpoint_bs_in->kvec_na[ik], ewald->fc2_without_dipole, eval_k,
-                                    evec_k, true);
+            dynamical->eval_k_ewald(kpoint_bs_in->xk[ik],
+                                    kpoint_bs_in->kvec_na[ik],
+                                    ewald->fc2_without_dipole,
+                                    eval_k,
+                                    evec_k,
+                                    true);
         } else {
             dynamical->eval_k(kpoint_bs_in->xk[ik], kpoint_bs_in->kvec_na[ik], fc2_in, eval_k, evec_k, true);
         }
         for (auto is = 0u; is < ns; ++is) eval_k[is] = dynamical->freq(eval_k[is]);
 
         velocity_matrix_analytic(kpoint_bs_in->xk[ik], fc2_vel, eval_k, evec_k, velmat_k);
-        add_nonanalytic_velocity_matrix(kpoint_bs_in->xk[ik], eval_k, evec_k, velmat_k,
-                                        kpoint_bs_in->kvec_na[ik]);
+        add_nonanalytic_velocity_matrix(kpoint_bs_in->xk[ik], eval_k, evec_k, velmat_k, kpoint_bs_in->kvec_na[ik]);
 
         for (auto is = 0u; is < ns; ++is) {
             double v[3];
@@ -385,8 +388,8 @@ void PhononVelocity::get_phonon_group_velocity_mesh_velmat(const KpointMeshUnifo
     evec_k.resize(ns, ns);
     eval_k.resize(ns);
 
-    const auto &fc2_vel = (dynamical->nonanalytic == 3) ? ewald->fc2_without_dipole
-                                                        : fcs_phonon->force_constant_with_cell[0];
+    const auto &fc2_vel =
+        (dynamical->nonanalytic == 3) ? ewald->fc2_without_dipole : fcs_phonon->force_constant_with_cell[0];
 
     for (auto ik = 0u; ik < nk; ++ik) {
         double kvec[3];
@@ -448,9 +451,15 @@ static void gather_k_records(const T *local, const std::vector<int> &nk_proc, co
         }
         const auto lo_me = std::max(k0, kbeg[my_rank]);
         const auto off_me = (lo_me > kbeg[my_rank] ? lo_me - kbeg[my_rank] : 0) * stride;
-        MPI_Gatherv(cnt[my_rank] > 0 ? local + off_me : nullptr, cnt[my_rank], type,
-                    my_rank == 0 ? out + k0 * stride : nullptr, my_rank == 0 ? cnt.data() : nullptr,
-                    my_rank == 0 ? dsp.data() : nullptr, type, 0, MPI_COMM_WORLD);
+        MPI_Gatherv(cnt[my_rank] > 0 ? local + off_me : nullptr,
+                    cnt[my_rank],
+                    type,
+                    my_rank == 0 ? out + k0 * stride : nullptr,
+                    my_rank == 0 ? cnt.data() : nullptr,
+                    my_rank == 0 ? dsp.data() : nullptr,
+                    type,
+                    0,
+                    MPI_COMM_WORLD);
     }
 }
 
@@ -489,15 +498,15 @@ void PhononVelocity::calc_phonon_velmat_mesh(NDArray<std::complex<double>, 4> *v
     for (auto i = 0; i < mympi->my_rank; ++i) ik_begin += nk_proc[i];
     nk_loc = nk_proc[mympi->my_rank];
 
-    NDArray<std::complex<double>, 3> vk;        // one k point, discarded after use
+    NDArray<std::complex<double>, 3> vk;         // one k point, discarded after use
     NDArray<std::complex<double>, 4> velmat_loc; // only if the full matrix is wanted
     NDArray<double, 4> velblock_loc;
     vk.resize(ns, ns, 3);
     if (velmat_out) velmat_loc.resize(std::max(nk_loc, 1), ns, ns, 3);
     if (velblock_out) velblock_loc.resize(std::max(nk_loc, 1), ns, 3, 3);
 
-    const auto &fc2_vel = (!legacy && dynamical->nonanalytic == 3) ? ewald->fc2_without_dipole
-                                                                    : fcs_phonon->force_constant_with_cell[0];
+    const auto &fc2_vel =
+        (!legacy && dynamical->nonanalytic == 3) ? ewald->fc2_without_dipole : fcs_phonon->force_constant_with_cell[0];
     const auto eval_all = dos->dymat_dos->get_eigenvalues();
     const auto evec_all = dos->dymat_dos->get_eigenvectors();
     const auto tol_cm = transport_block_tol_cm();
@@ -570,14 +579,22 @@ void PhononVelocity::calc_phonon_velmat_mesh(NDArray<std::complex<double>, 4> *v
 #endif
 
     if (velmat_out) {
-        gather_k_records<std::complex<double>>(nk_loc > 0 ? &velmat_loc[0][0][0][0] : nullptr, nk_proc, mympi->my_rank,
-                                               mympi->nprocs, static_cast<size_t>(ns) * ns * 3, mpi_complex_type,
+        gather_k_records<std::complex<double>>(nk_loc > 0 ? &velmat_loc[0][0][0][0] : nullptr,
+                                               nk_proc,
+                                               mympi->my_rank,
+                                               mympi->nprocs,
+                                               static_cast<size_t>(ns) * ns * 3,
+                                               mpi_complex_type,
                                                mympi->my_rank == 0 ? &(*velmat_out)[0][0][0][0] : nullptr);
         velmat_loc.clear();
     }
     if (velblock_out) {
-        gather_k_records<double>(nk_loc > 0 ? &velblock_loc[0][0][0][0] : nullptr, nk_proc, mympi->my_rank,
-                                 mympi->nprocs, static_cast<size_t>(ns) * 9, MPI_DOUBLE,
+        gather_k_records<double>(nk_loc > 0 ? &velblock_loc[0][0][0][0] : nullptr,
+                                 nk_proc,
+                                 mympi->my_rank,
+                                 mympi->nprocs,
+                                 static_cast<size_t>(ns) * 9,
+                                 MPI_DOUBLE,
                                  mympi->my_rank == 0 ? &(*velblock_out)[0][0][0][0] : nullptr);
         velblock_loc.clear();
     }
