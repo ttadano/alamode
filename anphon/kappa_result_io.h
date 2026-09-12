@@ -165,6 +165,9 @@ public:
     // gamma_isotope is the per-mode isotope linewidth [nk_irred][ns] on the
     // 3ph mesh (internal units), stored when the file was set up with
     // isotope scattering enabled.
+    // How the transport weights were built; stamped onto /kappa by store_kappa.
+    std::string transport_formulation{"standard"};
+
     void store_kappa(const double *const *const *kappa_peierls, const double *const *const *kappa_3ph_only,
                      const double *const *const *kappa_coherent, const double *const *const *kappa_spec,
                      const double *const *gamma_isotope);

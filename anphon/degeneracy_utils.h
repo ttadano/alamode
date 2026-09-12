@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <vector>
+#include "constants.h"
 
 namespace PHON_NS
 {
@@ -66,6 +67,64 @@ inline void average_over_degenerate_modes(const int ns, const double *eval_at_k,
             }
         }
         is += ideg_now;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Transport degeneracy blocks.
+//
+// A block replaces the Wigner pair weight by the band-like (Peierls) limit. That is
+// legitimate only where the eigenvectors are numerically ambiguous: there the
+// individual velocities are undefined and only the block trace Tr(P V^u P V^v P) is.
+//
+// TOL_CM is an EMPIRICAL numerical criterion, not a physical one, and no universal
+// correctness follows from it:
+//   * Branches closer than TOL_CM are TREATED as degenerate. A rough scale for the
+//     eigenvalue noise of the diagonalisation is d(omega) ~ ns * eps * omega_max^2 / (2 omega)
+//     (lambda = omega^2 with absolute error ~ ns * eps * lambda_max); for ns = 300,
+//     omega_max = 1000 cm^-1 that is ~3e-8 cm^-1 at omega = 1 cm^-1 but ~3e-6 cm^-1 at
+//     omega = 0.01 cm^-1, above TOL_CM. It is a scale estimate, not a bound, and the eps8
+//     frequency guard (~1.1e-3 cm^-1) does not remove every soft mode. So a genuine
+//     splitting below TOL_CM may well be numerically resolvable; the criterion merges it
+//     anyway.
+//   * Merging a pair with true splitting dw and summed HWHM G overestimates its weight by
+//     the factor 1 + (dw/G)^2. Conductivity::compute_kappa reports the worst dw/G among
+//     merged blocks so that this approximation is visible rather than silent.
+//   * Constant lifetime within a block (the precondition for the trace form) is guaranteed
+//     by SUBDIVIDING the damping-averaging groups below, not by the size of TOL_CM.
+inline double transport_block_tol_cm()
+{
+    return 1.0e-6;
+}
+
+// Block bounds [lo, hi) for every branch at one k point. Damping groups from
+// find_degenerate_groups are subdivided; within a group a new block starts whenever a
+// branch lies further than tol_cm from the block's FIRST member (anchored, so a chain of
+// individually close branches cannot grow into a wide block).
+inline void transport_block_bounds(const unsigned int ns, const double *eval_at_k, const double tol_cm,
+                                   std::vector<int> &lo_out, std::vector<int> &hi_out)
+{
+    lo_out.assign(ns, 0);
+    hi_out.assign(ns, 0);
+
+    std::vector<int> damping_groups;
+    find_degenerate_groups(ns, eval_at_k, damping_groups);
+
+    auto gbegin = 0u;
+    for (const auto ndeg: damping_groups) {
+        const auto gend = gbegin + static_cast<unsigned int>(ndeg);
+        auto is = gbegin;
+        while (is < gend) {
+            const auto anchor = in_kayser(eval_at_k[is]);
+            auto hi = is + 1;
+            while (hi < gend && std::abs(in_kayser(eval_at_k[hi]) - anchor) < tol_cm) ++hi;
+            for (auto k = is; k < hi; ++k) {
+                lo_out[k] = static_cast<int>(is);
+                hi_out[k] = static_cast<int>(hi);
+            }
+            is = hi;
+        }
+        gbegin = gend;
     }
 }
 } // namespace PHON_NS

@@ -98,6 +98,8 @@ private:
 
     NDArray<double, 3> vel, vel_4ph;
     NDArray<std::complex<double>, 4> velmat;
+    // Per-branch block-summed velocity diad [nk][ns][3][3]; see calc_phonon_velmat_mesh.
+    NDArray<double, 4> velblock;
     unsigned int nk_3ph, ns;
     int nshift_restart, nshift_restart4;
     std::vector<int> vks_l, vks_done, vks_done4;
@@ -152,13 +154,17 @@ private:
                                           double ***kappa_spec_out) const;
 
     void compute_kappa_intraband(const KpointMeshUniform *kmesh_in, const double *const *eval_in,
-                                 const double *const *lifetime, double ***kappa_intra, double ***kappa_spec_out) const;
+                                 const double *const *lifetime, double ***kappa_intra,
+                                 double ***kappa_spec_out) const;
 
     void compute_kappa_coherent(const KpointMeshUniform *kmesh_in, const double *const *eval_in,
                                 const double *const *gamma_total, double ***kappa_coherent_out) const;
 
 
     void check_velocity_matrix_consistency(const KpointMeshUniform *kmesh_in, const double *const *eval_in) const;
+
+    void report_unresolved_degenerate_blocks(const KpointMeshUniform *kmesh_in, const double *const *eval_in,
+                                             const double *const *gamma_in) const;
 
     void interpolate_data(const KpointMeshUniform *kmesh_coarse_in, const KpointMeshUniform *kmesh_dense_in,
                           const double *const *val_coarse_in, double **val_dense_out) const;

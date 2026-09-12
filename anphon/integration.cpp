@@ -423,6 +423,13 @@ void Integration::insertion_sort(double *a, int *ind, int n)
 void AdaptiveSmearingSigma::setup(const PhononVelocity *phvel_class, const KpointMeshUniform *kmesh_in,
                                   const Eigen::Matrix3d &lavec_p_in, const Eigen::Matrix3d &rlavec_p_in)
 {
+    // Adaptive widths are built from finite-difference velocities on purpose. Taking them
+    // from the velocity-matrix diagonal was measured to make cell dependence WORSE (Si
+    // 8^3/4^3: 0.43% -> 0.70%): the width uses per-mode velocity VECTORS, which are basis
+    // undefined inside a degenerate multiplet, and folding merges distinct primitive
+    // momenta whose process-resolved widths no single block moment reproduces. There is
+    // also a fixed floor of 2e-5 Ry (~2.2 cm^-1), so refinement does not remove it. Use
+    // ISMEAR = 1 or 0 when cell independence is required.
     phvel_class->get_phonon_group_velocity_mesh(*kmesh_in, lavec_p_in, false, vel);
 
     for (auto u = 0; u < 3; u++) {

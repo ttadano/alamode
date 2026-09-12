@@ -104,6 +104,15 @@ void Iterativebte::setup_iterative()
 
     // Full-grid velocities in atomic units on every rank (calc_kappa and
     // the boundary rate convert units at the point of use).
+    //
+    // NOTE: IBTE is strongly cell dependent (Si 8^3 vs a commensurate 2x supercell 4^3:
+    // 543.91 vs 335.48 W/m/K), far worse than RTA. Supplying velocity-matrix velocities
+    // here was measured to change nothing, but the reason is NOT established: the wedge
+    // projection averages the velocity vector over each degenerate multiplet, which keeps
+    // only the first moment and discards the velocity spread, yet that averaging feeds
+    // only the direct/variational path -- the ordinary iterative update, the boundary rate
+    // and the final contraction all use per-branch velocities directly. The cause of the
+    // gap has not been isolated, so no switch is offered here.
     phonon_velocity->gather_group_velocities_mesh(*dos->kmesh_dos.get(),
                                                   system->get_primcell().lattice_vector,
                                                   vel,

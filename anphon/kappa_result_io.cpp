@@ -193,6 +193,12 @@ struct KappaResultIOH5::Impl
     // gamma/flag (and, in tdep mode, frequency/velocity) datasets of a
     // channel. In tdep mode the frequency/velocity content is written later
     // (write_basis_slices); only the shapes are taken from cmeta here.
+    // Transport formulation of this run; stamped onto /kappa the moment the group is
+    // created (fresh file, rebuild, rebuild_tdep, channel-triggered rebuild), i.e. before
+    // the .part file is published. Stamping only in store_kappa left an interrupted run's
+    // checkpoint unstamped, and a restart then misread it as legacy and refused to resume.
+    std::string formulation{"legacy"};
+
     auto create_channel(HighFive::File &fh, const KappaChannelMetaH5 &cmeta) const -> void
     {
         using namespace H5Easy;
@@ -362,6 +368,7 @@ struct KappaResultIOH5::Impl
         // Validity marker as a raw-data dataset (not an attribute) so setting
         // it never touches file metadata. Per temperature in tdep mode.
         h5_create_dataset_prealloc<unsigned char>(fh, "/kappa/valid", {tdep ? nt : 1});
+        fh.getGroup("/kappa").createAttribute("formulation", formulation);
 
         // Machine-readable summary of the same information on the group.
         auto gk = fh.getGroup("/kappa");
@@ -806,6 +813,10 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
     impl->file_temps = fmeta.temperatures;
     impl->file_fc2temps.assign(impl->file_temps.size(), fmeta.fc2_temperature);
 
+    // Transport formulation recorded in the existing file (files from before the stamp
+    // used the legacy formulation).
+    std::string existing_formulation;
+    auto have_existing_formulation = false;
     if (std::filesystem::exists(impl->filename)) {
         const HighFive::File oldfile(impl->filename, HighFive::File::ReadOnly);
         check_h5_schema(oldfile, h5_schema_kappa_result, kappa_version_tdep);
@@ -863,6 +874,13 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
         } else {
             need_rebuild = true;
         }
+        if (oldfile.exist("/kappa")) {
+            have_existing_formulation = true;
+            existing_formulation = "legacy";
+            auto grp = oldfile.getGroup("/kappa");
+            if (grp.hasAttribute("formulation")) grp.getAttribute("formulation").read(existing_formulation);
+            if (existing_formulation == "standard") existing_formulation = "legacy";
+        }
         if (!impl->kappa_group_matches(oldfile)) need_rebuild = true;
         if (!impl->isotope_group_matches(oldfile)) need_rebuild = true;
     } else {
@@ -876,6 +894,27 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
     }
 
     impl->compute_run_cols();
+
+    // A single /kappa formulation attribute cannot describe a file assembled from runs
+    // with different transport formulations, so mixing is refused BEFORE anything is
+    // written and the existing content is left intact. Freshly created or fully rebuilt
+    // files carry no old content and are exempt.
+    {
+        const auto retains_old = !need_rebuild || (impl->tdep && !old_temps.empty());
+        if (have_existing_formulation && retains_old && existing_formulation != transport_formulation) {
+            // RESTART = 0 discards the retained content only for non-temperature-resolved
+            // files; a temperature-resolved rebuild carries old slices over regardless.
+            const std::string escape = impl->tdep ? "Use a different PREFIX, or set ALAMODE_LEGACY_VELOCITY to match the file."
+                                                  : "Use a different PREFIX, set RESTART = 0 to discard it, or set "
+                                                    "ALAMODE_LEGACY_VELOCITY to match the file.";
+            exit("KappaResultIOH5",
+                 ("The existing result file was written with transport formulation '" + existing_formulation +
+                  "' but this run uses '" + transport_formulation + "'. " + escape)
+                     .c_str());
+        }
+    }
+
+    impl->formulation = transport_formulation;
 
     if (need_rebuild) {
         if (impl->tdep) {
@@ -926,6 +965,8 @@ void KappaResultIOH5::ensure_channel(const KappaChannelMetaH5 &channel, const bo
 
 bool KappaResultIOH5::open_or_create_for_ibte(const KappaFileMetaH5 &fmeta, const IbteMetaH5 &imeta, const bool reset)
 {
+    impl->formulation = "legacy"; // IBTE uses finite-difference velocities throughout
+    transport_formulation = "legacy";
     impl->fmeta = fmeta;
     impl->ntemp = fmeta.temperatures.size();
     impl->tdep = fmeta.temperature_resolved;
@@ -1139,6 +1180,22 @@ void KappaResultIOH5::store_kappa(const double *const *const *kappa_peierls, con
                                   const double *const *const *kappa_coherent, const double *const *const *kappa_spec,
                                   const double *const *gamma_isotope)
 {
+    // Stamp how the transport weights were built. This belongs on the kappa result, not on
+    // the velocities dataset (which always holds finite-difference data), and it is written
+    // here because store_kappa is reached on every path, including restart and
+    // temperature-resolved output, so the stamp cannot go stale.
+    if (impl->file && !transport_formulation.empty()) {
+        auto &fh = *impl->file;
+        if (fh.exist("/kappa")) {
+            auto grp = fh.getGroup("/kappa");
+            if (grp.hasAttribute("formulation")) {
+                grp.getAttribute("formulation").write(transport_formulation);
+            } else {
+                grp.createAttribute("formulation", transport_formulation);
+            }
+        }
+    }
+
     impl->write_tensor_txx("/kappa/kappa_peierls", kappa_peierls);
 
     if (impl->fmeta.isotope > 0 && gamma_isotope) {
