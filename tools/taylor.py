@@ -85,10 +85,8 @@ class TaylorExpansionPotential:
             gamma_values = self.gamma(flatten_indices)
             gamma_scaled_fcs = gamma_values * self.fcs_values[fckey]
 
-            # Sort the entries by (first atom, first coordinate) so that the
-            # force contributions sharing the same target component become
-            # contiguous segments. The grouping is independent of the
-            # translation because each translation permutes the atoms.
+            # Group entries by (first atom, first coordinate) for contiguous force sums.
+            # Translations permute atoms but preserve this grouping.
             sort_keys = 3 * atom_indices_taylor[:, 0] + coord_indices_taylor[:, 0]
             sort_order = np.argsort(sort_keys, kind="stable")
             keys_sorted = sort_keys[sort_order]
@@ -156,9 +154,7 @@ class TaylorExpansionPotential:
                     "ij,ij->i", ff_tmp, displacements_flat[:, flat_indices[:, 0]]
                 )
 
-                # The entries are pre-sorted by (first atom, first coordinate),
-                # so the contributions to each force component form contiguous
-                # segments and the scatter-add stays buffered.
+                # Sum contiguous force-component segments with buffered scatter-add.
                 target_indices = (
                     3 * self.map_translation[group_atoms, itran] + group_coords
                 )

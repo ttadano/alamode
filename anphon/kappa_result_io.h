@@ -87,6 +87,11 @@ struct KappaChannelMetaH5
     std::vector<std::vector<int>> equiv_knum; // full-mesh k indices of each irreducible star
     Eigen::MatrixXd frequencies;              // [nk_irred, ns], cm^-1
     std::vector<double> velocities;           // [sum(multiplicity)*ns*3] flattened, m/s
+    // Velocity diad W[k][s][a][b] = sum_{s' in D(s)} Re(V^a_{ss'} V^b_{s's}),
+    // flattened [sum(multiplicity)*ns*9], in (m/s)^2. Block sums give
+    // Tr(P V^a P V^b P); cumulative kappa must use W at degeneracies.
+    // Empty for legacy transport and channels without a velocity matrix (4ph).
+    std::vector<double> velocity_diad;
 };
 
 // Crash-safe writer/reader of PREFIX.kappa.h5. All methods must be called
@@ -165,6 +170,9 @@ public:
     // gamma_isotope is the per-mode isotope linewidth [nk_irred][ns] on the
     // 3ph mesh (internal units), stored when the file was set up with
     // isotope scattering enabled.
+    // How the transport weights were built; stamped onto /kappa by store_kappa.
+    std::string transport_formulation{"standard"};
+
     void store_kappa(const double *const *const *kappa_peierls, const double *const *const *kappa_3ph_only,
                      const double *const *const *kappa_coherent, const double *const *const *kappa_spec,
                      const double *const *gamma_isotope);

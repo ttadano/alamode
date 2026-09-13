@@ -386,12 +386,8 @@ void CollisionOperator::setup_L_smear()
 
     anharmonic_core_.prepare_fc3_compressed();
 
-    // The loops run over the flattened triplet index (pairs_emitt/absorb,
-    // built in get_triplets). The factorized V3 kernel gives |V3|^2 of all
-    // ns^3 band combinations of a triplet at once; the static schedule mostly
-    // keeps the triplets of one k point on one thread so that its psi_K is
-    // reused (a group may straddle a chunk boundary, which only costs one
-    // extra fold).
+    // Process flattened triplets with all ns^3 band combinations at once.
+    // Static scheduling improves reuse of psi_K for triplets sharing k.
 
 #ifdef _OPENMP
 #pragma omp parallel

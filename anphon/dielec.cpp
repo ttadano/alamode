@@ -495,12 +495,9 @@ void Dielec::compute_mode_effective_charge(std::vector<std::vector<double>> &zst
 void Dielec::compute_mode_effective_charge(std::vector<std::vector<std::complex<double>>> &zstar_mode,
                                            const std::complex<double> *const *evec_in) const
 {
-    // Compute the mode effective charges defined by Eq. (53) or its numerator of
-    // Gonze & Lee, PRB 55, 10355 (1997), from mass-weighted Gamma-point
-    // eigenvectors supplied by the caller.  The mass division that converts to
-    // normal coordinates happens during accumulation; evec_in is not modified.
-    // The full complex amplitudes are kept so that downstream quantities can be
-    // made invariant under eigenvector phase choices.
+    // Compute mode effective charges from mass-weighted Gamma eigenvectors
+    // [Gonze & Lee, PRB 55, 10355 (1997), Eq. (53)]. Apply mass division during
+    // accumulation without modifying evec_in; retain complex phases.
 
     const auto ns = dynamical->neval;
     const auto &zstar_atom = borncharge;

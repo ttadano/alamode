@@ -371,11 +371,8 @@ def fit_elastic(data, volume, mode="stress", e_ref=None, weight_floor=1.0e-8):
     wrow = np.ones(len(b))
     block_rms = {}
     if mode == "both":
-        # One reweighting step: fit all rows unweighted first, take the residual
-        # RMS of every block from that common solution, and weight the rows by
-        # its inverse (floored).  This is symmetric in the two blocks and does
-        # not depend on the single-block fits being full rank (an energy-only
-        # block is rank deficient on the minimal direction set).
+        # Fit all rows unweighted, then reweight each block by its floored inverse
+        # residual RMS. This also works when individual blocks are rank deficient.
         x0, _, _, _ = _lstsq(A, b)
         res0 = A @ x0 - b
         for kind in ("energy", "stress"):

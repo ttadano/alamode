@@ -192,9 +192,8 @@ auto InputSetter::set_transformation_matrices(const Eigen::Matrix3d &transmat_su
                                               const Eigen::Matrix3d &transmat_prim_in, const int autoset_primcell_in,
                                               const bool transpose) -> void
 {
-    // if the input transformation matrices are defined by (a_s, b_s, c_s)^T = M (a_p, b_p, c_p)^T,
-    // which is more understandable for human, we need to transpose the matrices to make it consistent
-    // with the definition of the lattice vectors used in the code.
+    // Transpose the row-vector input convention (a_s, b_s, c_s)^T = M (a_p, b_p, c_p)^T
+    // to match the column-vector convention used internally.
     if (transpose) {
         transmat_super = transmat_super_in.transpose();
         transmat_prim = transmat_prim_in.transpose();

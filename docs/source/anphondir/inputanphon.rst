@@ -1979,6 +1979,14 @@ Please specify the initial atomic displacements :math:`u^{(0)}_{\alpha \mu}` [Bo
                ``&general`` field for backward compatibility (deprecated); the
                ``&kappa`` value wins when both are given.
 
+               The file records the velocity formulation used to assemble
+               :math:`\kappa` (HDF5 attribute ``/kappa/formulation``). A file
+               written by an older version can be restarted under the current
+               formulation: the stored three-phonon linewidths do not depend on it
+               and :math:`\kappa` is reassembled from them. Only a
+               temperature-resolved file holding :math:`\kappa` for temperatures the
+               new run does not recompute is refused, to avoid mixing formulations.
+
 ````
 
 .. _anphon_restart_4ph:
@@ -2014,6 +2022,9 @@ Please specify the initial atomic displacements :math:`u^{(0)}_{\alpha \mu}` [Bo
  :Default: 0
  :Type: Integer
  :Description: This flag is available when ``MODE = kappa``. For the theoretical details, please see :ref:`this page <kappa_coherent>`.
+               The Peierls term uses the velocity matrix regardless of this flag; setting it to 1 or 2 additionally
+               stores the full band off-diagonal matrix, which costs :math:`N_{q}(3N_{\kappa})^{2}\times 3` complex
+               numbers on the root process.
 
  .. caution::
 

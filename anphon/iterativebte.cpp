@@ -102,8 +102,9 @@ void Iterativebte::setup_iterative()
     ntemp = conductivity->ntemp;
     Temperature = conductivity->temperature;
 
-    // Full-grid velocities in atomic units on every rank (calc_kappa and
-    // the boundary rate convert units at the point of use).
+    // Full-grid velocities in atomic units on every rank; convert at use.
+    // IBTE results can depend strongly on cell choice; the cause remains
+    // unresolved, and replacing these velocities did not resolve it.
     phonon_velocity->gather_group_velocities_mesh(*dos->kmesh_dos.get(),
                                                   system->get_primcell().lattice_vector,
                                                   vel,
@@ -759,15 +760,10 @@ void Iterativebte::project_wedge_vector(std::vector<double> &v, const std::vecto
 bool Iterativebte::solve_direct_at_temperature(const int itemp, const double beta, double **sqrt_occ, double **Qfin_loc,
                                                int &iterations_out, double &residual_out)
 {
-    // SOLVER = DBTE: assemble the multiplicity-symmetrized dense operator
-    // from the stored L entries (one-application cost), transform it to the
-    // Omega normalization Omega = D^{-1/2} A D^{-1/2} with D = diag(n(n+1))
-    // - whose diagonal is 1/tau, so the eigenvalues are scattering rates -
-    // take its full eigendecomposition, and report the spectrum diagnostics
-    // that the matrix-free solvers cannot access: discretization asymmetry,
-    // positive-semidefiniteness, near-null modes with their overlap onto
-    // the momentum-drift directions, and the sensitivity of kappa to a
-    // low-eigenvalue cutoff. Intended for small meshes.
+    // DBTE diagonalizes Omega = D^{-1/2} A D^{-1/2}, D = diag(n(n+1)),
+    // using the multiplicity-symmetrized operator. Eigenvalues are scattering
+    // rates. Report asymmetry, negative/near-null modes, momentum-drift overlaps,
+    // and kappa sensitivity to the low-eigenvalue cutoff. Intended for small meshes.
     const auto nk_irred = dos->kmesh_dos->nk_irred;
     const size_t nrows = static_cast<size_t>(nk_irred) * ns;
     const size_t nrows3 = nrows * 3;
@@ -891,12 +887,9 @@ bool Iterativebte::solve_direct_at_temperature(const int itemp, const double bet
 
     if (mympi->my_rank == 0) {
 
-        // Degeneracy-reduced basis: one orthonormal (symmetric) combination
-        // per degenerate block, u_I = d^{-1/2} sum_{s in I} e_s. This
-        // performs the degeneracy averaging of the iterative solvers
-        // exactly, without the 3(d-1) artificial null modes a projector
-        // P S P would inject into the spectrum. Masked rows never share a
-        // block with active ones (degenerate partners have equal omega).
+        // Use one normalized combination u_I = d^{-1/2} sum_{s in I} e_s per
+        // degenerate block, avoiding the artificial null modes of P S P.
+        // Keep masked rows separate from active rows.
         const auto tol_omega = 1.0e-7;
         std::vector<std::pair<int, int>> blocks; // [first,last) active scalar rows within one ik
         for (unsigned int ik = 0; ik < nk_irred; ++ik) {
@@ -965,12 +958,9 @@ bool Iterativebte::solve_direct_at_temperature(const int itemp, const double bet
             }
         }
 
-        // Restrict to the little-group-invariant subspace. The collision
-        // operator is only defined on fields with dF(Rk) = R dF(k); the
-        // complementary vector components at high-symmetry k points carry an
-        // arbitrary (choice-of-operation dependent, non-symmetric) extension
-        // that must not enter the spectrum. Per block, an orthonormal basis
-        // of range(P_littlegroup) is taken from the projector eigenvectors.
+        // Restrict to little-group-invariant fields dF(Rk) = R dF(k). Use projector
+        // eigenvectors to span range(P_littlegroup), excluding arbitrary
+        // complementary components from the spectrum.
         std::vector<Eigen::Matrix3d> Ebasis(blocks.size());
         std::vector<int> mdim(blocks.size()), offs(blocks.size());
         int ndim = 0;
@@ -1244,18 +1234,11 @@ bool Iterativebte::solve_direct_at_temperature(const int itemp, const double bet
 bool Iterativebte::solve_variational_cg(const int itemp, const double beta, double **sqrt_occ, double **Qfin_loc,
                                         const double *x0_wedge, int &iterations_out, double &residual_out)
 {
-    // Solve (Q_diag + W) dF = b with preconditioned conjugate gradients.
-    // In the dF variables the off-diagonal couplings are the equilibrium
-    // rates n1 n2 (n3+1) |V3|^2 delta(...), which detailed balance makes
-    // symmetric under exchange of the coupled modes on the energy shell, so
-    // the operator is self-adjoint under the plain star-multiplicity-
-    // weighted inner product <u,v> = sum_{wedge k,s} mult_k u.v used by all
-    // dot products below; the preconditioner is the diagonal. (Smearing
-    // spreads slightly off shell, which the self-adjointness check below
-    // quantifies.)
-    // Because kappa is the value of the variational functional, its error is
-    // quadratic in the residual, so ITER_THRESHOLD acts on the relative
-    // residual here.
+    // Solve (Q_diag + W) dF = b with diagonal-preconditioned CG and the
+    // star-weighted inner product <u,v> = sum_{wedge k,s} mult_k u.v.
+    // Detailed balance gives on-shell self-adjointness; check discretization
+    // effects below. ITER_THRESHOLD applies to the relative residual;
+    // the variational kappa error is quadratic in that residual.
     const auto nk_irred = dos->kmesh_dos->nk_irred;
     const size_t nrows = static_cast<size_t>(nk_irred) * ns;
     const size_t nrows3 = nrows * 3;

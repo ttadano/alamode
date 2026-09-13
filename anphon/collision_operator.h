@@ -24,17 +24,11 @@ class Integration;
 class AnharmonicCore;
 class TetraNodes;
 class DymatEigenValue;
-// Distributed three-phonon collision operator on the irreducible wedge,
-// shared by the iterative-family BTE solvers (SOLVER = IBTE today; a
-// variational/CG solver can reuse it later). The irreducible k points are
-// distributed round-robin over the MPI ranks; L_emitt/L_absorb store the
-// transition probabilities of the local rows, and a symmetry expansion
-// table maps wedge values of Cartesian vector fields back onto the full
-// grid. Diagonal add-ons beyond 3ph (isotope, boundary, 4ph) remain the
-// solver's responsibility.
-// All dependencies are explicit constructor arguments (no Pointers base):
-// the operator is constructed by Iterativebte::setup, after setup_base(),
-// when every input already exists.
+// Three-phonon collision operator on the irreducible wedge. MPI ranks own
+// round-robin k points and store local transition probabilities in
+// L_emitt/L_absorb; symmetry expands vector fields to the full grid.
+// The solver handles diagonal add-ons (isotope, boundary, 4ph).
+// Constructed by Iterativebte::setup after setup_base().
 class CollisionOperator
 {
 public:
@@ -53,12 +47,9 @@ public:
     // following integration->ismear).
     void build_L();
 
-    // Include the elastic isotope-disorder channel (Tamura kernel) in the
-    // operator: its in-scattering enters calc_W_at and its diagonal is the
-    // row sum, so the channel conserves the constant mode exactly. Must be
-    // set before build_L(). isotope_factor_in points at the per-species
-    // mass-variance factors (Isotope::isotope_factor) and must stay alive
-    // for the lifetime of this object.
+    // Enable Tamura isotope in-scattering and its row-sum diagonal, preserving
+    // the constant mode. Call before build_L(); per-species isotope_factor_in
+    // must remain valid for this object's lifetime.
     void set_isotope_channel(const bool flag, const double *isotope_factor_in = nullptr)
     {
         with_isotope = flag;

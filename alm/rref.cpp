@@ -238,14 +238,9 @@ auto rref_sparse(const size_t ncols, ConstraintSparseForm &sp_constraint, const 
 
 auto rref_sparse_pivot(const size_t ncols, ConstraintSparseForm &sp_constraint, const double tolerance) -> void
 {
-    // Same Gauss-Jordan elimination as rref_sparse(), but with PARTIAL (maximum-magnitude) row
-    // pivoting. For each pivot column we move the row with the largest |entry| in that column to
-    // the pivot position before normalizing, instead of accepting the first entry above the
-    // tolerance. The set of pivot columns (the left-to-right linearly independent columns) is
-    // unchanged, so the reduced echelon form -- and therefore the const_fix / const_relate /
-    // index_bimap map derived from it -- is mathematically identical to rref_sparse() up to
-    // round-off, but never divides by a small accepted pivot. This is the coordinate-preserving,
-    // numerically stable replacement (Policy A) for rref_sparse() in the algebraic path.
+    // Gauss-Jordan elimination with maximum-magnitude row pivoting.
+    // Preserves the left-to-right pivot-column order used by the constraint map
+    // while reducing round-off compared with first-acceptable-pivot RREF.
 
     const auto nrows = sp_constraint.size();
     if (nrows == 0) return;

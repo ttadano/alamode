@@ -17,23 +17,15 @@
 #ifdef USE_MKL_BACKEND
 #include <Eigen/PardisoSupport>
 #elif defined(USE_ACCEL_BACKEND)
-// The Accelerate KKT solve lives in accelerate_solver.cpp; its <Eigen/AccelerateSupport> include
-// pulls <Accelerate/Accelerate.h>, whose Fortran BLAS/LAPACK prototypes would clash with the
-// hand-rolled ones in blas_wrapper.h / lapack_wrapper.h that this TU includes below. Keeping the
-// Accelerate header out of this TU is exactly why that solve is isolated.
+// Keep Accelerate headers in accelerate_solver.cpp to avoid conflicts
+// with the BLAS/LAPACK wrappers below.
 #include "accelerate_solver.h"
 #endif
 
 #ifdef USE_SUITESPARSE_BACKEND
-// SuiteSparse sparse solvers, orthogonal to the MKL/Accelerate KKT backend above and reachable as
-// SPARSESOLVER options:
-//   - CHOLMOD supernodal Cholesky on the PSD normal matrix A^T A, via Eigen's CholmodSupport wrapper.
-//   - SuiteSparseQR (rank-revealing multifrontal QR) on the rectangular A, via SuiteSparse's own C
-//     interface. We deliberately avoid Eigen 3.4's Eigen::SPQR wrapper: with SuiteSparse >= 6 it
-//     instantiates SuiteSparseQR<Scalar>(...) passing an Eigen::Index ('long') where the templated
-//     index type resolves to int64_t ('long long' on macOS arm64), and the two deduce to conflicting
-//     types -- a hard compile error. SuiteSparseQR_C_backslash_default() sidesteps it entirely.
-// Both headers live under <prefix>/include/suitesparse, on the include path via the linked targets.
+// SuiteSparse backends: CHOLMOD for A^T A, SuiteSparseQR for rectangular A.
+// Use the QR C interface to avoid Eigen 3.4 / SuiteSparse >= 6 index-type
+// conflicts on macOS arm64.
 #include <Eigen/CholmodSupport>
 #include <SuiteSparseQR_C.h>
 #include <cstring>
@@ -43,10 +35,8 @@
 #include "lapack_wrapper.h"
 
 #ifdef USE_SUITESPARSE_BACKEND
-// Solve min_x || A x - b ||_2 (least squares for rectangular A; exact solve for square full-rank A)
-// with SuiteSparseQR's C interface. The backslash convenience routine is 64-bit-index only, so the
-// matrix is shipped as a CHOLMOD_LONG cholmod_sparse: Eigen stores 32-bit CSC indices, widened here.
-// Returns 0 on success, 1 on failure. See the include block above for why Eigen::SPQR is bypassed.
+// Solve min_x ||A x - b||_2 with SuiteSparseQR. Widen Eigen CSC indices to
+// CHOLMOD_LONG for the 64-bit-only backslash interface. Returns 0 on success, 1 on failure.
 static auto solve_least_squares_spqr(const Eigen::SparseMatrix<double> &A, const Eigen::VectorXd &b,
                                      Eigen::VectorXd &x_out) -> int
 {
@@ -108,15 +98,10 @@ static auto solve_least_squares_spqr(const Eigen::SparseMatrix<double> &A, const
     return status;
 }
 
-// Rank-revealing reduction of a HOMOGENEOUS constraint matrix C (rows define C x = 0) via SuiteSparseQR
-// -- a sparse, multithreaded replacement for the densifying LAPACK dgeqp3 path. We factorize the TALL
-// matrix C^T (N x P) with rank detection and column pivoting: the rank-revealing pivot deflates the
-// dependent columns of C^T (= dependent rows of C) to the end of the permutation E, so E[0..rank-1] are
-// the independent rows of C. C_red is then those ORIGINAL (sparse) rows of C -- NOT the R factor, which
-// is densely filled for these constraints. R (only rank x P here) and Q are discarded.
-// Only the homogeneous case is handled (every invariance subset, and the merged matrix when no
-// FC2FIX/FC3FIX value is imposed); inhomogeneous d != 0 and any SuiteSparseQR failure fall back to
-// dgeqp3. Returns 0 on success, 1 on failure.
+// Select independent rows of homogeneous C x = 0 using pivoted QR of C^T.
+// Keep the original sparse rows indexed by E[0..rank-1], not the dense R factor.
+// Returns 0 on success, 1 on failure; callers use dgeqp3 for inhomogeneous
+// constraints or QR failure.
 static auto get_independent_rows_spqr(const Eigen::SparseMatrix<double> &C, const int verbosity, const double tolerance,
                                       Eigen::SparseMatrix<double> &C_red, int &r) -> int
 {
@@ -151,11 +136,9 @@ static auto get_independent_rows_spqr(const Eigen::SparseMatrix<double> &C, cons
     A.sorted = 1;
     A.packed = 1;
 
-    // Map the caller's auto sentinel (tol < 0, i.e. rank_tolerance_auto = -1) to SuiteSparseQR's default
-    // tolerance SPQR_DEFAULT_TOL (= -2). Passing -1 literally would be SPQR_NO_TOL (rank detection off).
-    // An explicit positive tolerance is passed through. NOTE: SuiteSparseQR thresholds column 2-norms
-    // whereas dgeqp3 thresholds R-diagonals, so the numerical rank may differ by a few rows on a
-    // borderline (badly-scaled) constraint set.
+    // Map the auto sentinel (-1) to SPQR_DEFAULT_TOL (-2); SPQR uses -1 to
+    // disable rank detection. SPQR thresholds column norms, while dgeqp3
+    // thresholds R diagonals, so borderline numerical ranks may differ.
     const double spqr_tol = (tolerance < 0.0) ? SPQR_DEFAULT_TOL : tolerance;
 
     cholmod_sparse *R = nullptr;
@@ -388,10 +371,8 @@ auto get_independent_rows_lapack_sparse(const Eigen::SparseMatrix<double> &C_spa
     LOG_IF(verbosity, 1, "P = ", P, ", N = ", N, ", nnz = ", C_sparse.nonZeros(), ".\n");
 
 #ifdef USE_SUITESPARSE_BACKEND
-    // SuiteSparseQR rank-revealing reduction for HOMOGENEOUS constraints (every invariance subset, and
-    // the merged matrix when no FC2FIX/FC3FIX value is imposed): sparse + multithreaded, avoiding the
-    // dense P x N densification and dgeqp3 below. Inhomogeneous d (d != 0, from FC2FIX/FC3FIX) and any
-    // SuiteSparseQR failure fall through to the dgeqp3 path.
+    // Use sparse QR for homogeneous constraints; fall back to dgeqp3 for
+    // inhomogeneous constraints (FC2FIX/FC3FIX) or QR failure.
     if (dvec.isZero(0)) {
         if (get_independent_rows_spqr(C_sparse, verbosity, tolerance, C_red, r) == 0) {
             d_red = Eigen::VectorXd::Zero(r);
@@ -742,15 +723,11 @@ auto least_squares_with_constraints_svd(const size_t N, const size_t M, const si
     return 0;
 }
 
-// 64-bit-index sparse matrix for the normal matrix A^T A. The default SparseMatrix uses a 32-bit
-// StorageIndex, whose cumulative outer index overflows once nnz(A^T A) exceeds ~2.1e9 -- which happens
-// for large full-range / no-cutoff fits (e.g. ICONST >= 10 with `*-* None`). The overflow corrupts the
-// allocation size and aborts with std::bad_alloc even when memory is free. 64-bit indices avoid it.
+// Use 64-bit indices for A^T A to avoid overflow above 2^31-1 nonzeros.
 using SpMat64 = Eigen::SparseMatrix<double, Eigen::ColMajor, std::int64_t>;
 
-// Form A^T A with 64-bit indices. If A^T A is genuinely too large to allocate (it is N x N and can be
-// near-dense for no-cutoff problems), abort with guidance to use SuiteSparseQR, which factorizes the
-// rectangular A directly and never forms A^T A. (A^T A is computed here, not the dense factor.)
+// Form A^T A with 64-bit indices. On allocation failure, recommend
+// SuiteSparseQR, which avoids forming the normal matrix.
 [[nodiscard]] static auto build_normal_matrix_int64(const Eigen::SparseMatrix<double> &A) -> SpMat64
 {
     try {
@@ -857,12 +834,8 @@ auto least_squares_eigen_sparse_solver(const Eigen::SparseMatrix<double> &sp_mat
 
     } else if (solver_type_lower == "cholmod") {
 #ifdef USE_SUITESPARSE_BACKEND
-        // CHOLMOD supernodal Cholesky on the normal matrix A^T A (symmetric positive (semi)definite).
-        // Fast for well-conditioned problems; for a rank-deficient A^T A the factorization fails and
-        // info() reports it, in which case SuiteSparseQR is the recommended fallback. Check the
-        // factorization BEFORE solving -- solving on a failed factor is undefined. A^T A uses 64-bit
-        // indices (and CHOLMOD's long interface) so large no-cutoff fits do not overflow the 32-bit
-        // sparse index; for genuinely huge A^T A, build_normal_matrix_int64 aborts pointing to SuiteSparseQR.
+        // Factor A^T A with CHOLMOD using 64-bit indices. Check factorization before
+        // solving; rank-deficient matrices may require SuiteSparseQR.
         SpMat64 AtA = build_normal_matrix_int64(sp_mat);
         Eigen::VectorXd AtB = sp_mat.transpose() * sp_bvec;
         Eigen::CholmodSupernodalLLT<SpMat64, Eigen::Lower> chol(AtA);
@@ -894,16 +867,10 @@ auto least_squares_eigen_sparse_solver(const Eigen::SparseMatrix<double> &sp_mat
 }
 
 
-// Block-diagonal SPD preconditioner for the symmetric-indefinite KKT system
-//     K = [ H   C^T ;  C   0 ],     H = A^T A  (N x N, rank-deficient by the gauge modes),
-// for use with MINRES. P = diag(G, S) with
-//     G = diag(H) + sigma          (a positive diagonal -- a Jacobi approximation of H)
-//     S = C G^{-1} C^T             (dense, SPD; the preconditioner's exact Schur complement for that G).
-// By Murphy-Golub-Wathen this clusters the spectrum of P^{-1}K, so preconditioned MINRES converges in
-// far fewer iterations than the (stalling) unpreconditioned run. A *diagonal* G is used deliberately:
-// G^{-1} is then trivial, so the setup needs only sparse products to form S -- no N x P solves, which
-// for P ~ 3000 dense rotational constraints would dominate the runtime. sigma keeps G strictly
-// positive; it affects only the preconditioner's quality (iteration count), never the final solution.
+// SPD preconditioner for MINRES on K = [H C^T; C 0], H = A^T A:
+//   P = diag(G, S), G = diag(H) + sigma, S = C G^{-1} C^T.
+// Diagonal G makes setup inexpensive; sigma keeps it positive and affects
+// convergence only, not the solution.
 class KKTBlockDiagPreconditioner
 {
 public:
@@ -943,13 +910,9 @@ public:
         const SpMat Cs = C * m_Dinv.asDiagonal();                // P x N (scaled columns)
         Eigen::MatrixXd S = Eigen::MatrixXd(Cs * C.transpose()); // P x P dense
 
-        // S can be extremely ill-conditioned -- even when C is full row rank -- because diag(A^T A)
-        // has near-zero entries (weakly-sampled parameters) that make Dinv, and hence S, span a huge
-        // dynamic range. (This is NOT evidence that C is rank-deficient: C is full row rank after the
-        // merge + rank-reduction in Constraint::update_constraint_matrix.) MINRES requires a positive-
-        // definite preconditioner, so add a relative ridge to S and grow it until the dense factor is
-        // SPD. The ridge perturbs only the preconditioner -- never the system matrix K, so it does not
-        // bias the solution; it only affects how fast MINRES converges.
+        // Near-zero entries of diag(A^T A) can make S ill-conditioned even for
+        // full-rank C. Increase a relative ridge until S is SPD, as MINRES requires.
+        // This changes only the preconditioner, not the solution.
         const double s_scale = S.diagonal().cwiseAbs().mean() + sigma;
         double ridge = 1.0e-8 * s_scale;
         m_ready = false;
@@ -1066,13 +1029,9 @@ void solveGQRSparse(const Eigen::SparseMatrix<double> &A, const Eigen::VectorXd 
     Eigen::VectorXd sol;
     bool solved = false;
 
-    // Iterative KKT solve (selected via SPARSESOLVER). The KKT matrix K is sparse (it never forms the
-    // dense factor that a direct method would), so this is the memory-feasible path when the constraint
-    // matrix C has dense rows -- e.g. the rotational-invariance constraints of ICONST = 2, 3 -- for
-    // which the direct factorizations below exhaust memory. K is symmetric *indefinite*, so MINRES is
-    // the appropriate Krylov method, accelerated by the block-diagonal SPD preconditioner
-    // diag(diag(A^T A) + sigma, C G^{-1} C^T) (KKTBlockDiagPreconditioner above). An unpreconditioned /
-    // identity-preconditioned MINRES stalls completely on this ill-conditioned saddle-point system.
+    // Use preconditioned MINRES for the symmetric-indefinite KKT system when
+    // direct factors are too large, especially with dense rotational constraints.
+    // KKTBlockDiagPreconditioner improves convergence on this ill-conditioned system.
     const auto solver_lower = boost::algorithm::to_lower_copy(solver_type);
     if (solver_lower == "minres") {
         LOG_IF(verbosity, 1, "Use MINRES (iterative) to solve the KKT problem.\n");
@@ -1093,13 +1052,8 @@ void solveGQRSparse(const Eigen::SparseMatrix<double> &A, const Eigen::VectorXd 
         }
         minres.compute(K); // sets the matrix; the preconditioner was already configured above
 
-        // MINRES monitors the *preconditioned* residual, which with this block-diagonal preconditioner
-        // can be far smaller than the TRUE residual -- so a single solve at the user's CONV_TOL may stop
-        // before the constraints (sum rules) are actually satisfied. Re-solve with a progressively
-        // tighter stopping tolerance until the TRUE relative KKT residual meets the acceptance bar; the
-        // preconditioner is cheap and each solve takes only a few iterations. Acceptance is judged on the
-        // true residual (and the explicit constraint residual ||C x - d||), never on minres.info() alone,
-        // so an under-converged x that would violate the sum rules is never returned.
+        // Tighten MINRES tolerance until the true KKT and constraint residuals pass.
+        // Its preconditioned residual alone can hide unsatisfied sum rules.
         const double rhs_norm = (rhs.norm() > 0.0) ? rhs.norm() : 1.0;
         const double accept_tol = std::max(tolerance_iteration, 1.0e-10);
         double kkt_rel_res = std::numeric_limits<double>::infinity();
@@ -1181,12 +1135,8 @@ void solveGQRSparse(const Eigen::SparseMatrix<double> &A, const Eigen::VectorXd 
 #endif
 
 #ifdef USE_SUITESPARSE_BACKEND
-    // Preferred direct solver when ALM is built with SuiteSparse: SuiteSparseQR is multithreaded and
-    // rank-revealing, so on a well-conditioned KKT it is far faster than Eigen's serial SparseLU /
-    // SparseQR. It is tried before SparseLU (after any symmetric-indefinite LDLT backend). (Earlier
-    // this was a post-SparseLU fallback to avoid QR fill-in blowing up memory when the constraint
-    // matrix was rank-deficient with dense rows; that pathology came from an unreduced constraint
-    // matrix and is prevented upstream by the rank-revealing reduction in Constraint.)
+    // Try multithreaded, rank-revealing SuiteSparseQR before Eigen SparseLU.
+    // Constraint rows have already been rank-reduced upstream.
     if (!solved) {
         LOG_IF(verbosity, 1, "Use SuiteSparseQR to solve the KKT problem.\n");
         if (solve_least_squares_spqr(K, rhs, sol) == 0) {

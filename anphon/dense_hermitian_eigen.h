@@ -15,18 +15,10 @@
 
 namespace PHON_NS
 {
-// Backend seam for dense Hermitian eigenproblems (used by dynamical-matrix
-// diagonalization).
-//
-// v1 backend: LAPACK zheev on the calling rank. Candidate later backends
-// behind the same call: ELPA and MAGMA.
-//
-// mat_in is row-pointer indexed [i][j] and is copied into column-major scratch
-// internally. LWORK is fixed at (2n-1)*10 with no workspace query because zheev
-// may take a different (blocked vs unblocked) path for different workspace
-// sizes and bit-identical results with the historical call are required.
-// compute_evec drives JOBZ ('V'/'N'); evec_out (nullable) independently gates
-// the eigenvector write-back.
+// Dense Hermitian eigensolver using LAPACK zheev on the calling rank.
+// Copy row-pointer mat_in[i][j] to column-major scratch. Keep
+// LWORK = (2n-1)*10 to preserve the historical LAPACK path and results.
+// compute_evec selects JOBZ; nullable evec_out controls write-back.
 void solve_dense_hermitian(int n, const std::complex<double> *const *mat_in, double *eval_out,
                            std::complex<double> **evec_out, bool compute_evec, char uplo = 'U');
 
@@ -36,12 +28,8 @@ void solve_dense_hermitian(int n, const std::complex<double> *const *mat_in, dou
 int solve_dense_hermitian_info(int n, const std::complex<double> *const *mat_in, double *eval_out,
                                std::complex<double> **evec_out, bool compute_evec, char uplo = 'U');
 
-// Divide-and-conquer variant (LAPACK zheevd, workspace queried) on Eigen
-// matrices, for the SCPH solver: eigenvalues ascending in eval_out; the
-// eigenvectors, when evec_out is given, in its columns (the convention of
-// Eigen::SelfAdjointEigenSolver::eigenvectors()). zheevd is several times
-// faster than Eigen's tridiagonal QR at n of a few hundred and uses the
-// threaded MKL/OpenBLAS kernels; results agree to roundoff (eigenvector phases
-// may differ, which the SCPH solver is invariant to).
+// LAPACK zheevd for SCPH Eigen matrices, with queried workspace.
+// Return ascending eigenvalues and, when requested, eigenvectors in columns.
+// Eigenvector phases may differ from Eigen's solver.
 void solve_dense_hermitian_dc(const Eigen::MatrixXcd &mat_in, Eigen::VectorXd &eval_out, Eigen::MatrixXcd *evec_out);
 } // namespace PHON_NS

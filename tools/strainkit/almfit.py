@@ -40,9 +40,8 @@ def model_kwargs(nbody, cutoff, nkd):
 
 def make_alm(atoms, verbosity=0):
     ALM = require_alm()
-    # The alm Python API takes the lattice vectors as rows (row i = i-th
-    # vector), i.e. the ase convention; the transposition to the column
-    # convention of the C++ core happens inside the wrapper.
+    # The Python API uses lattice-vector rows (ASE convention);
+    # the wrapper transposes them for the C++ core.
     return ALM(
         np.asarray(atoms.cell[:], dtype=float),
         np.asarray(atoms.get_scaled_positions(wrap=False), dtype=float),
@@ -125,9 +124,8 @@ def fit_harmonic(
         raise ValueError(f"training data must have shape (nsnap, {len(atoms)}, 3)")
     with make_alm(atoms, verbosity) as alm:
         if transmat_to_prim is not None:
-            # ``atoms`` is already the (strained) supercell, so the cell given
-            # to ALM is the supercell itself (SUPERCELL = identity) and only
-            # PRIMCELL has to be declared.  Must precede define().
+            # atoms is already the supercell: use SUPERCELL = identity and set
+            # PRIMCELL before define().
             alm.set_supercell(np.eye(3), transmat_to_prim)
         _define_harmonic(alm, atoms, nbody, cutoff)
         alm.set_constraint(translation=True)

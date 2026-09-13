@@ -9,6 +9,17 @@ or http://opensource.org/licenses/mit-license.php for information.
 */
 
 #include "write_phonons.h"
+#include "phonon_velocity.h"
+
+namespace
+{
+// PRINTVEL follows the transport velocity formulation: matrix diagonal by default,
+// finite differences under the legacy opt-out.
+bool use_velmat_velocities()
+{
+    return !PHON_NS::PhononVelocity::legacy_velocity();
+}
+} // namespace
 #include <iomanip>
 #include <sys/stat.h>
 #include "anharmonic_core.h"
@@ -674,12 +685,23 @@ void Writes::writePhononVel() const
     NDArray<double, 2> phvel_bs;
     phvel_bs.resize(nk, dynamical->neval);
 
-    phonon_velocity->get_phonon_group_velocity_bandstructure(kpoint->kpoint_bs.get(),
-                                                             system->get_primcell().lattice_vector,
-                                                             system->get_primcell().reciprocal_lattice_vector,
-                                                             fcs_phonon->force_constant_with_cell[0],
-                                                             ewald->fc2_without_dipole,
-                                                             phvel_bs);
+    // Same velocity machinery as the transport terms. This makes
+    // the printed velocities come from the same source; it does NOT make them reproduce
+    // the conductivity, which treats degenerate multiplets as blocks having no per-mode
+    // velocity. Printed values at a degeneracy remain one admissible basis choice.
+    if (use_velmat_velocities()) {
+        phonon_velocity->get_phonon_group_velocity_bandstructure_velmat(kpoint->kpoint_bs.get(),
+                                                                        system->get_primcell().lattice_vector,
+                                                                        fcs_phonon->force_constant_with_cell[0],
+                                                                        phvel_bs);
+    } else {
+        phonon_velocity->get_phonon_group_velocity_bandstructure(kpoint->kpoint_bs.get(),
+                                                                 system->get_primcell().lattice_vector,
+                                                                 system->get_primcell().reciprocal_lattice_vector,
+                                                                 fcs_phonon->force_constant_with_cell[0],
+                                                                 ewald->fc2_without_dipole,
+                                                                 phvel_bs);
+    }
 
     ofs_vel << "# k-axis, |Velocity| [m / sec]\n";
     ofs_vel.setf(std::ios::fixed);
@@ -732,10 +754,16 @@ void Writes::writePhononVelAll() const
     phvel.resize(nk, ns);
     phvel_xyz.resize(nk, ns, 3);
 
-    phonon_velocity->get_phonon_group_velocity_mesh(*dos->kmesh_dos.get(),
-                                                    system->get_primcell().lattice_vector,
-                                                    false,
-                                                    phvel_xyz);
+    if (use_velmat_velocities()) {
+        phonon_velocity->get_phonon_group_velocity_mesh_velmat(*dos->kmesh_dos.get(),
+                                                               system->get_primcell().lattice_vector,
+                                                               phvel_xyz);
+    } else {
+        phonon_velocity->get_phonon_group_velocity_mesh(*dos->kmesh_dos.get(),
+                                                        system->get_primcell().lattice_vector,
+                                                        false,
+                                                        phvel_xyz);
+    }
     unsigned int ik, is;
 #ifdef _OPENMP
 #pragma omp parallel for private(is)
@@ -2105,14 +2133,9 @@ void Writes::writeNewFcsXml(const std::string &filename_xml, const std::vector<F
 
     pt.put("Data.ForceConstants", "");
 
-    // Base force constants plus fc_scale times the strain-derivative corrections
-    // in one Cartesian block per order; entries with identical indices are summed
-    // by the loader.
-    //
-    // The loader regenerates the permutations of the trailing legs from each
-    // stored entry (next_permutation over the supercell-atom-based key
-    // 3*atom_super + coord), so only entries whose trailing legs are in
-    // ascending order of that key may be stored.
+    // Store base IFCs plus fc_scale times strain corrections; the loader sums
+    // identical entries and regenerates trailing-leg permutations. Store only
+    // entries sorted by the trailing-leg key 3*atom_super + coord.
     auto legs_ascending = [&](const FcsArrayWithCell &it, const int norder) {
         for (auto k = 1; k < norder - 1; ++k) {
             if (3 * it.atoms_s[k] + it.pairs[k].index % 3 > 3 * it.atoms_s[k + 1] + it.pairs[k + 1].index % 3) {

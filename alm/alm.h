@@ -73,10 +73,8 @@ public:
 
     auto set_periodicity(const int is_periodic[3]) const -> void;
 
-    // Declare the units of the data passed to the unit-sensitive setters
-    // (set_cell, set_u_train, set_f_train, set_validation_data, define).
-    // Must be called before any of them; the setters convert the input to the
-    // internal canonical units (bohr, Ry/bohr). LENGTH_UNIT / FORCE_UNIT.
+    // Set input units before set_cell, set_u_train, set_f_train,
+    // set_validation_data, or define. Setters convert to bohr and Ry/bohr.
     auto set_input_units(const std::string &length_unit, const std::string &force_unit) -> void;
 
     // Canonical names of the declared input units: {length, force}.

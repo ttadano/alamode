@@ -189,10 +189,11 @@ struct KappaResultIOH5::Impl
         }
     }
 
-    // Create the group, attributes, static datasets, and preallocated
-    // gamma/flag (and, in tdep mode, frequency/velocity) datasets of a
-    // channel. In tdep mode the frequency/velocity content is written later
-    // (write_basis_slices); only the shapes are taken from cmeta here.
+    // Preallocate channel datasets; tdep frequency/velocity values are filled
+    // later by write_basis_slices. Stamp the transport formulation before
+    // publishing the .part file so interrupted runs can restart correctly.
+    std::string formulation{"legacy"};
+
     auto create_channel(HighFive::File &fh, const KappaChannelMetaH5 &cmeta) const -> void
     {
         using namespace H5Easy;
@@ -259,8 +260,35 @@ struct KappaResultIOH5::Impl
         }
     }
 
-    // Fill the frequency/velocity slices of this run's temperature columns
-    // (tdep mode only). Pure raw-data writes into preallocated datasets.
+    // Write this run's temperature slices and velocity diads, creating the
+    // diad dataset on demand for older restart files.
+    auto write_velocity_diad(const KappaChannelMetaH5 &cmeta) const -> void
+    {
+        if (cmeta.velocity_diad.empty()) return;
+        const auto path = channel_path(cmeta.tag);
+        const auto name = path + "/velocity_diad";
+        const size_t nequiv_total = cmeta.velocity_diad.size() / (static_cast<size_t>(cmeta.ns) * 9);
+        const auto nt = nt_file();
+
+        if (!file->exist(name)) {
+            if (tdep) {
+                h5_create_dataset_prealloc<double>(*file, name, {nt, nequiv_total, cmeta.ns, 3, 3})
+                    .createAttribute("unit", std::string("(m/s)^2"));
+            } else {
+                file->createDataSet<double>(name, HighFive::DataSpace({nequiv_total, cmeta.ns, 3, 3}))
+                    .createAttribute("unit", std::string("(m/s)^2"));
+            }
+        }
+        auto dset = file->getDataSet(name);
+        if (tdep) {
+            for (const auto col: run_cols) {
+                dset.select({col, 0, 0, 0, 0}, {1, nequiv_total, cmeta.ns, 3, 3}).write_raw(cmeta.velocity_diad.data());
+            }
+        } else {
+            dset.write_raw(cmeta.velocity_diad.data());
+        }
+    }
+
     auto write_basis_slices(const KappaChannelMetaH5 &cmeta) const -> void
     {
         if (!tdep) return;
@@ -362,6 +390,7 @@ struct KappaResultIOH5::Impl
         // Validity marker as a raw-data dataset (not an attribute) so setting
         // it never touches file metadata. Per temperature in tdep mode.
         h5_create_dataset_prealloc<unsigned char>(fh, "/kappa/valid", {tdep ? nt : 1});
+        fh.getGroup("/kappa").createAttribute("formulation", formulation);
 
         // Machine-readable summary of the same information on the group.
         auto gk = fh.getGroup("/kappa");
@@ -806,6 +835,10 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
     impl->file_temps = fmeta.temperatures;
     impl->file_fc2temps.assign(impl->file_temps.size(), fmeta.fc2_temperature);
 
+    // Transport formulation recorded in the existing file (files from before the stamp
+    // used the legacy formulation).
+    std::string existing_formulation;
+    auto have_existing_formulation = false;
     if (std::filesystem::exists(impl->filename)) {
         const HighFive::File oldfile(impl->filename, HighFive::File::ReadOnly);
         check_h5_schema(oldfile, h5_schema_kappa_result, kappa_version_tdep);
@@ -863,6 +896,13 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
         } else {
             need_rebuild = true;
         }
+        if (oldfile.exist("/kappa")) {
+            have_existing_formulation = true;
+            existing_formulation = "legacy";
+            auto grp = oldfile.getGroup("/kappa");
+            if (grp.hasAttribute("formulation")) grp.getAttribute("formulation").read(existing_formulation);
+            if (existing_formulation == "standard") existing_formulation = "legacy";
+        }
         if (!impl->kappa_group_matches(oldfile)) need_rebuild = true;
         if (!impl->isotope_group_matches(oldfile)) need_rebuild = true;
     } else {
@@ -877,6 +917,40 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
 
     impl->compute_run_cols();
 
+    // Reject formulation changes only if old kappa rows would survive, as with
+    // tdep temperatures outside this run. Ordinary restarts recompute all kappa
+    // from formulation-independent 3ph linewidths and can update the stamp.
+    {
+        auto retains_foreign_kappa = false;
+        if (impl->tdep) {
+            for (size_t j = 0; j < old_temps.size(); ++j) {
+                if (j < old_valid.size() && !old_valid[j]) continue; // never assembled: nothing to mix
+                auto covered = false;
+                for (const auto t: fmeta.temperatures) {
+                    if (std::abs(t - old_temps[j]) < eps6) {
+                        covered = true;
+                        break;
+                    }
+                }
+                if (!covered) {
+                    retains_foreign_kappa = true;
+                    break;
+                }
+            }
+        }
+        if (have_existing_formulation && retains_foreign_kappa && existing_formulation != transport_formulation) {
+            exit("KappaResultIOH5",
+                 ("The existing temperature-resolved result file holds kappa for temperatures this run does not "
+                  "recompute, assembled with transport formulation '" +
+                  existing_formulation + "', while this run uses '" + transport_formulation +
+                  "'. Use a different PREFIX, include those temperatures in this run, or set "
+                  "ALAMODE_LEGACY_VELOCITY to match the file.")
+                     .c_str());
+        }
+    }
+
+    impl->formulation = transport_formulation;
+
     if (need_rebuild) {
         if (impl->tdep) {
             impl->rebuild_tdep({channel}, drops, old_temps, old_valid);
@@ -887,6 +961,7 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
         impl->file = std::make_unique<HighFive::File>(impl->filename, HighFive::File::ReadWrite);
     }
     impl->write_basis_slices(channel);
+    impl->write_velocity_diad(channel);
     impl->reset_kappa_valid();
 }
 
@@ -922,10 +997,13 @@ void KappaResultIOH5::ensure_channel(const KappaChannelMetaH5 &channel, const bo
         }
     }
     impl->write_basis_slices(channel);
+    impl->write_velocity_diad(channel);
 }
 
 bool KappaResultIOH5::open_or_create_for_ibte(const KappaFileMetaH5 &fmeta, const IbteMetaH5 &imeta, const bool reset)
 {
+    impl->formulation = "legacy"; // IBTE uses finite-difference velocities throughout
+    transport_formulation = "legacy";
     impl->fmeta = fmeta;
     impl->ntemp = fmeta.temperatures.size();
     impl->tdep = fmeta.temperature_resolved;
@@ -1139,6 +1217,22 @@ void KappaResultIOH5::store_kappa(const double *const *const *kappa_peierls, con
                                   const double *const *const *kappa_coherent, const double *const *const *kappa_spec,
                                   const double *const *gamma_isotope)
 {
+    // Stamp how the transport weights were built. This belongs on the kappa result, not on
+    // the velocities dataset (which always holds finite-difference data), and it is written
+    // here because store_kappa is reached on every path, including restart and
+    // temperature-resolved output, so the stamp cannot go stale.
+    if (impl->file && !transport_formulation.empty()) {
+        auto &fh = *impl->file;
+        if (fh.exist("/kappa")) {
+            auto grp = fh.getGroup("/kappa");
+            if (grp.hasAttribute("formulation")) {
+                grp.getAttribute("formulation").write(transport_formulation);
+            } else {
+                grp.createAttribute("formulation", transport_formulation);
+            }
+        }
+    }
+
     impl->write_tensor_txx("/kappa/kappa_peierls", kappa_peierls);
 
     if (impl->fmeta.isotope > 0 && gamma_isotope) {

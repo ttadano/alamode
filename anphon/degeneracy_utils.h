@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <vector>
+#include "constants.h"
 
 namespace PHON_NS
 {
@@ -66,6 +67,48 @@ inline void average_over_degenerate_modes(const int ns, const double *eval_at_k,
             }
         }
         is += ideg_now;
+    }
+}
+
+// Transport blocks use the Peierls limit Tr(P V^u P V^v P) for nearly
+// degenerate modes. TOL_CM is an empirical threshold and can merge
+// numerically resolvable splittings. For splitting dw and summed HWHM G,
+// this overestimates the pair weight by 1 + (dw/G)^2; compute_kappa
+// reports the worst dw/G. Blocks subdivide the damping-averaging groups
+// to keep lifetimes constant; damping values do not determine membership.
+inline double transport_block_tol_cm()
+{
+    return 1.0e-6;
+}
+
+// Return block bounds [lo, hi) for each branch. Subdivide the frequency
+// groups from find_degenerate_groups (1e-7 Ry) using distance from each
+// block's first frequency, preventing chains of close modes from merging.
+// Staying within damping-averaging groups ensures constant block lifetimes.
+inline void transport_block_bounds(const unsigned int ns, const double *eval_at_k, const double tol_cm,
+                                   std::vector<int> &lo_out, std::vector<int> &hi_out)
+{
+    lo_out.assign(ns, 0);
+    hi_out.assign(ns, 0);
+
+    std::vector<int> freq_groups;
+    find_degenerate_groups(ns, eval_at_k, freq_groups);
+
+    auto gbegin = 0u;
+    for (const auto ndeg: freq_groups) {
+        const auto gend = gbegin + static_cast<unsigned int>(ndeg);
+        auto is = gbegin;
+        while (is < gend) {
+            const auto anchor = in_kayser(eval_at_k[is]);
+            auto hi = is + 1;
+            while (hi < gend && std::abs(in_kayser(eval_at_k[hi]) - anchor) < tol_cm) ++hi;
+            for (auto k = is; k < hi; ++k) {
+                lo_out[k] = static_cast<int>(is);
+                hi_out[k] = static_cast<int>(hi);
+            }
+            is = hi;
+        }
+        gbegin = gend;
     }
 }
 } // namespace PHON_NS

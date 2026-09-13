@@ -158,14 +158,70 @@ The group velocity of phonon mode :math:`\boldsymbol{q}j` is given by
     
     \boldsymbol{v}_{\boldsymbol{q}j} = \frac{\partial \omega_{\boldsymbol{q}j}}{\partial \boldsymbol{q}}.
 
-To evaluate the group velocity numerically, we employ a central difference where
-:math:`\boldsymbol{v}` may approximately be given by
+*anphon* evaluates it from the **velocity matrix** (default) or by a **finite difference** (legacy).
+
+Velocity matrix (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Let :math:`\tilde{D}(\boldsymbol{q})` denote the dynamical matrix whose phase factor carries the full interatomic
+separation rather than the lattice vector alone,
+
+.. math::
+    :label: dymat_tilde
+
+    \tilde{D}_{\mu\nu}(\kappa\kappa^{\prime};\boldsymbol{q}) = \frac{1}{\sqrt{M_{\kappa}M_{\kappa^{\prime}}}}
+    \sum_{\ell^{\prime}}\Phi_{\mu\nu}(\ell\kappa;\ell^{\prime}\kappa^{\prime})
+    \exp{\left[i\boldsymbol{q}\cdot(\boldsymbol{r}(\ell^{\prime}\kappa^{\prime})-\boldsymbol{r}(\ell\kappa))\right]}.
+
+It is related to :eq:`dymat` by the unitary transformation
+:math:`\tilde{D}(\boldsymbol{q}) = U^{\dagger}(\boldsymbol{q})D(\boldsymbol{q})U(\boldsymbol{q})` with
+:math:`U_{\kappa\kappa^{\prime}}(\boldsymbol{q})=\delta_{\kappa\kappa^{\prime}}\,e^{i\boldsymbol{q}\cdot\boldsymbol{r}(\kappa)}`,
+so it has the same eigenvalues :math:`\omega_{\boldsymbol{q}j}^{2}`, and its eigenvectors are
+:math:`\tilde{\boldsymbol{e}}_{\boldsymbol{q}j}=U^{\dagger}(\boldsymbol{q})\boldsymbol{e}_{\boldsymbol{q}j}`.
+The band off-diagonal generalization of the group velocity [9]_ [11]_ is
+
+.. math::
+    :label: velmat
+
+    v_{\boldsymbol{q}jj'}^{\mu} = \frac{1}{2\sqrt{\omega_{\boldsymbol{q}j}\omega_{\boldsymbol{q}j'}}}
+    (\tilde{\boldsymbol{e}}_{\boldsymbol{q}j}^{*})^{\mathrm{T}}
+    \frac{\partial \tilde{D}(\boldsymbol{q})}{\partial q_{\mu}} \tilde{\boldsymbol{e}}_{\boldsymbol{q}j'},
+
+whose diagonal :math:`v_{\boldsymbol{q}jj}^{\mu}` is the group velocity. It is :math:`\tilde{D}`, not :math:`D`, that must
+be differentiated: the two derivatives differ by :math:`i\,[\,D,\,\mathrm{diag}(r_{\mu}(\kappa))\,]`, whose matrix elements
+between eigenvectors carry the factor :math:`\omega_{\boldsymbol{q}j}^{2}-\omega_{\boldsymbol{q}j'}^{2}`. The diagonal and any
+element inside a degenerate multiplet are therefore the same for both, but genuinely off-diagonal elements --- those entering the
+:ref:`coherent term <kappa_coherent>` --- are not (the *displacement-aware* convention of Ref. [11]_).
+
+For polar systems the non-analytic correction (``NONANALYTIC = 1, 2, 3``) contributes to
+:math:`\partial\tilde{D}/\partial\boldsymbol{q}`. It is obtained by a central difference of the assembled non-analytic
+matrix together with the derivative of the sublattice phase factor relating :math:`D` and :math:`\tilde{D}`; omitting the
+latter corrupts even the diagonal velocities. At :math:`\Gamma` the non-analytic velocity is not defined without a
+directional convention and is set to zero. On a band path the derivative uses the same direction vector as the eigenproblem
+for that segment.
+
+Inside a degenerate multiplet :math:`\mathcal{B}` the eigenvectors are fixed only up to a unitary rotation, so the individual
+:math:`v_{\boldsymbol{q}jj}^{\mu}` are not defined; only block traces such as
+:math:`\sum_{j,j'\in\mathcal{B}} v_{\boldsymbol{q}jj'}^{\mu}v_{\boldsymbol{q}j'j}^{\nu}` are. How the transport terms use this is described
+in :ref:`the Peierls-term section <kappa_peierls>`.
+
+Finite difference (legacy)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Historically the group velocity was obtained from a central difference,
 
 .. math::
 
-    \boldsymbol{v}_{\boldsymbol{q}j} \approx \frac{\omega_{\boldsymbol{q}+\Delta\boldsymbol{q}j} - \omega_{\boldsymbol{q}-\Delta\boldsymbol{q}j}}{2\Delta\boldsymbol{q}}.
+    \boldsymbol{v}_{\boldsymbol{q}j} \approx \frac{\omega_{\boldsymbol{q}+\Delta\boldsymbol{q}j} - \omega_{\boldsymbol{q}-\Delta\boldsymbol{q}j}}{2\Delta\boldsymbol{q}},
 
-If one needs to save the group velocities, please turn on the ``PRINTVEL``-tag.
+where :math:`j` is the index in the *sorted* eigenvalue list at each shifted point. Wherever branches cross or are degenerate the sorted
+index exchanges character between :math:`\boldsymbol{q}\pm\Delta\boldsymbol{q}` and the quotient connects two different branches.
+This path is retained for comparison (environment variable ``ALAMODE_LEGACY_VELOCITY=1``, which restores the previous
+velocity treatment throughout) and is still used by the adaptive smearing widths (``ISMEAR = 2``) and by the iterative
+Boltzmann solvers, which have not been reformulated.
+
+If one needs to save the group velocities, please turn on the ``PRINTVEL``-tag; the printed values follow the same formulation as the
+conductivity in that run. At a degeneracy they are one admissible basis choice, not a unique value.
 
 
 Mode effective charge
@@ -438,6 +494,8 @@ The average mass :math:`M_{\kappa}` is substituted by the value specified in the
 
 .. _kappa:
 
+.. _kappa_peierls:
+
 Lattice thermal conductivity (Peierls term)
 -------------------------------------------
 
@@ -445,14 +503,64 @@ The lattice thermal conductivity tensor :math:`\kappa_{\mathrm{ph}}^{\mu\nu}(T)`
 
 .. math::
   
-  \kappa_{\mathrm{ph}}^{\mu\nu}(T) = \frac{1}{V N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}(T)v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\nu}\tau_{\boldsymbol{q}j}(T),
+  \kappa_{\mathrm{ph}}^{\mu\nu}(T) = \frac{1}{V N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}(T)\,W_{\boldsymbol{q}j}^{\mu\nu}\,\tau_{\boldsymbol{q}j}(T),
+  \qquad
+  W_{\boldsymbol{q}j}^{\mu\nu} = \sum_{j'\in\mathcal{B}(j)} v_{\boldsymbol{q}jj'}^{\mu}v_{\boldsymbol{q}j'j}^{\nu},
 
-where :math:`V` is the unit cell volume, :math:`c_{\boldsymbol{q}j} = \hbar\omega_{\boldsymbol{q}j}\partial n_{\boldsymbol{q}j}/\partial T`, and :math:`\tau_{\boldsymbol{q}j}(T)` is the phonon lifetime.
+where :math:`V` is the unit cell volume, :math:`c_{\boldsymbol{q}j} = \hbar\omega_{\boldsymbol{q}j}\partial n_{\boldsymbol{q}j}/\partial T`, :math:`\tau_{\boldsymbol{q}j}(T)` is the phonon lifetime,
+and :math:`\mathcal{B}(j)` is the set of branches degenerate with :math:`j` at :math:`\boldsymbol{q}` (see below).
+For a non-degenerate branch :math:`W_{\boldsymbol{q}j}^{\mu\nu} = v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\nu}` and the familiar expression is recovered.
+For a degenerate multiplet the sum of :math:`W` over its members is
+
+.. math::
+
+    \sum_{j\in\mathcal{B}} W_{\boldsymbol{q}j}^{\mu\nu}
+    = \sum_{j,j'\in\mathcal{B}} v_{\boldsymbol{q}jj'}^{\mu}v_{\boldsymbol{q}j'j}^{\nu}
+    = \mathrm{Tr}\left(P_{\mathcal{B}}V^{\mu}P_{\mathcal{B}}V^{\nu}\right),
+
+where :math:`V^{\mu}` is the matrix with elements :math:`v_{\boldsymbol{q}jj'}^{\mu}` over all branches and
+:math:`P_{\mathcal{B}}` is the projector onto the multiplet, i.e. in the band basis the diagonal matrix equal to 1 for
+:math:`j\in\mathcal{B}` and 0 otherwise. A unitary rotation :math:`\mathcal{W}` of the eigenvectors inside the multiplet maps
+:math:`V^{\mu}\to\mathcal{W}^{\dagger}V^{\mu}\mathcal{W}` and leaves :math:`P_{\mathcal{B}}` unchanged, so the trace is
+invariant, whereas the individual products :math:`v_{\boldsymbol{q}jj}^{\mu}v_{\boldsymbol{q}jj}^{\nu}` are not. The pairs :math:`j\neq j'` inside one multiplet are counted here and are
+excluded from the :ref:`coherent term <kappa_coherent>`, so nothing is double counted; the two together form the invariant.
+
+This assignment is a convention, not a physical distinction. At exact degeneracy the coherent expression of Ref. [11]_ reduces
+to the Peierls form for such a pair, so the total conductivity is the same whichever term the pair is assigned to; the assignment
+only makes each part separately basis invariant. The *particle-like* part defined here therefore equals the *populations* of
+Ref. [11]_ plus the coherences between degenerate branches, and differs from their populations wherever multiplets occur. For
+symmetry-enforced degeneracies the multiplet is a well-defined object and the definition is exact; for accidental near-degeneracies
+it depends on the numerical tolerance below, whose effect on the total is the factor reported by the warning described there.
+Only the total should be compared between calculations or with Ref. [11]_.
+
+The multiplets are detected from the frequencies only. The frequency-degeneracy groups over which the self-energy is averaged
+(tolerance :math:`10^{-7}` Ry) are subdivided with an anchored tolerance of :math:`10^{-6}\ \mathrm{cm}^{-1}`, so that the lifetime is
+constant within every multiplet by construction. This is an empirical numerical criterion: a pair whose true splitting
+:math:`\Delta\omega` falls below it is treated as degenerate, which overestimates its weight by the factor
+:math:`1+[\Delta\omega/(\Gamma_{\boldsymbol{q}j}+\Gamma_{\boldsymbol{q}j'})]^{2}` relative to the coherent expression. *anphon* reports the
+largest such ratio among the merged multiplets and warns when it exceeds 0.1.
+
+Because :math:`W` is contracted for each :math:`\boldsymbol{q}` as soon as the velocity matrix at that point is formed, the full matrix
+(of size :math:`N_{q}(3N_{\kappa})^{2}\times3`) is never stored unless the coherent term is requested.
+
 The phonon lifetime is estimated using the Matthiessen's rule as
 
 .. math::
 
     \tau_{\boldsymbol{q}j}^{-1}(T) = 2 (\Gamma_{\boldsymbol{q}j}^{\mathrm{anh}}(T) + \Gamma_{\boldsymbol{q}j}^{\mathrm{iso}}).
+
+When boundary scattering is included (``LEN_BOUNDARY``), the additional rate :math:`|\boldsymbol{v}_{\boldsymbol{q}j}|/L` uses, for a
+degenerate multiplet, the block mean speed :math:`|\boldsymbol{v}|^{2}=d_{\mathcal{B}}^{-1}\sum_{j\in\mathcal{B}}\sum_{\mu}W_{\boldsymbol{q}j}^{\mu\mu}`,
+which is likewise basis invariant.
+
+.. note::
+
+   With this formulation the conductivity does not depend on the choice of unit cell: a primitive cell and a commensurate
+   supercell sampling the same :math:`\boldsymbol{q}` points give identical :math:`\kappa` (to :math:`10^{-15}` relative in a
+   silicon test) when a fixed-width smearing (``ISMEAR = 0`` or ``1``) is used. The tetrahedron method (``ISMEAR = -1``)
+   interpolates frequencies at fixed sorted branch indices and its linewidths remain cell dependent at the few-percent level; the
+   adaptive smearing (``ISMEAR = 2``) and the iterative solvers (``SOLVER = IBTE`` and variants) still use finite-difference
+   velocities and are cell dependent as well.
 
 The lattice thermal conductivity is saved in the file ``PREFIX``.kl.
 
@@ -475,6 +583,11 @@ The accumulative lattice thermal conductivity :math:`\kappa_{\mathrm{ph,acc}}^{\
   \kappa_{\mathrm{ph,acc}}^{\mu\mu}(L) = \frac{1}{V N_{q}} \sum_{\boldsymbol{q},j}c_{\boldsymbol{q}j}v_{\boldsymbol{q}j}^{\mu}v_{\boldsymbol{q}j}^{\mu}\tau_{\boldsymbol{q}j}\Theta (L-|\boldsymbol{v}_{\boldsymbol{q}j}|\tau_{\boldsymbol{q}j}),
 
 where :math:`\Theta(x)` is the step function. This quantity can be calculated by using the script ``analyzer.py`` with ``--calc cumulative`` flag.
+With the default velocity-matrix formulation ``analyzer.py`` replaces :math:`v^{\mu}_{\boldsymbol{q}j}v^{\nu}_{\boldsymbol{q}j}`
+by the degenerate-block diad :math:`W^{\mu\nu}_{\boldsymbol{q}j}` stored in ``PREFIX.kappa.h5`` (and
+:math:`|\boldsymbol{v}_{\boldsymbol{q}j}|` by :math:`\sqrt{\mathrm{tr}\,W_{\boldsymbol{q}j}}`), so that the
+large-:math:`L` limit coincides with :math:`\kappa_{\mathrm{P}}` of the ``anphon`` run; files written by older
+versions fall back to the finite-difference velocities.
 One can also use another definition for the accumulative thermal conductivity:
 
 .. math::
@@ -497,8 +610,17 @@ The coherent components of lattice thermal conductivity (see Ref. [8]_), which a
 
 where :math:`c_{\boldsymbol{q}j} = \hbar\omega_{\boldsymbol{q}j}\partial n_{\boldsymbol{q}j}/\partial T` and :math:`\Gamma_{\boldsymbol{q}j}` is the total phonon linewidth (half width) of phonon mode :math:`\boldsymbol{q}j`. 
 
-:math:`\boldsymbol{v}_{\boldsymbol{q}jj'}` is a band off-diagonal generalization of the group velocity [9]_. When ``KAPPA_COHERENT = 1 | 2`` the coherent component is calculated and saved in ``PREFIX``.kl_coherent. When ``KAPPA_COHERENT = 2``, all components of the coherent term before summation are saved in ``PREFIX``.kc_elem.
-
+:math:`\boldsymbol{v}_{\boldsymbol{q}jj'}` is the band off-diagonal velocity matrix :eq:`velmat`, built from
+:math:`\tilde{D}` [9]_ [11]_. The sum runs over pairs belonging to *different* degenerate multiplets;
+pairs inside one multiplet are already contained in the :ref:`Peierls term <kappa_peierls>`. For such a pair
+:math:`\omega_{\boldsymbol{q}j}=\omega_{\boldsymbol{q}j'}`, the prefactor reduces to :math:`c_{\boldsymbol{q}j}` and the Lorentzian
+factor to :math:`1/(\Gamma_{\boldsymbol{q}j}+\Gamma_{\boldsymbol{q}j'})`; since the lifetime is constant within a multiplet
+this equals :math:`1/(2\Gamma_{\boldsymbol{q}j})=\tau_{\boldsymbol{q}j}`, i.e. exactly the Peierls weight
+:math:`c_{\boldsymbol{q}j}v_{\boldsymbol{q}jj'}^{\mu}v_{\boldsymbol{q}j'j}^{\nu}\tau_{\boldsymbol{q}j}`, so the two terms together
+form the basis-invariant block trace. The particle-like/wave-like *split* is therefore basis dependent while their sum is not; only the total
+should be compared between calculations. When ``KAPPA_COHERENT = 1 | 2`` the coherent component is calculated and saved in ``PREFIX``.kl_coherent.
+When ``KAPPA_COHERENT = 2``, all components of the coherent term before summation are saved in ``PREFIX``.kc_elem. Requesting the coherent
+term stores the full velocity matrix, :math:`N_{q}(3N_{\kappa})^{2}\times3` complex numbers on the root process.
 
 Delta function
 --------------
@@ -608,5 +730,7 @@ When ``SELF_OFFDIAG = 1``, the off-diagonal elements are also calculated, and th
 .. [9] P\. B. Allen and J. L. Feldman, Phys. Rev. B **48**, 12581 (1993).
 
 .. [10] X\. Gonze and C. Lee, Phys. Rev. B **55**, 10355 (1997).
+
+.. [11] M\. Simoncelli, N. Marzari, and F. Mauri, Phys. Rev. X **12**, 041011 (2022).
   
 

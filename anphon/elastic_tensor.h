@@ -44,13 +44,9 @@ struct Tensor6
     }
 };
 
-// Elastic-constant utilities: readers of the user-provided elastic constants
-// used by the SCPH/QHA structural relaxation, and the clamped-ion (Born
-// long-wave) stress-energy and elastic tensors computed from the harmonic
-// IFCs. All dependencies are explicit constructor arguments (no Pointers
-// base). The token parsing of the input files lives in strain_file_parsers.h
-// so that it can be unit-tested without a System; the readers here add the
-// unit conversion, which needs the volume of the current primitive cell.
+// Read SCPH/QHA elastic constants and compute clamped-ion stress and
+// elastic tensors from harmonic IFCs. strain_file_parsers.h handles
+// parsing; this class converts units using the primitive-cell volume.
 class ElasticTensor
 {
 public:
@@ -163,18 +159,10 @@ public:
     void calc_longwave_brackets3(const std::vector<FcsArrayWithCell> &fcs_cubic, const Eigen::MatrixXd &X,
                                  Tensor6 &A_hat) const;
 
-    // Third-order (finite-strain) elastic tensor C3_{ij kl mn} in GPa via
-    // Wallace's Eq. (8.14), combining the restricted brackets with the
-    // second-order elastic tensor of the same (clamped or relaxed) path.
-    // symmetrize selects the final projection onto the exact elastic index
-    // symmetries (minor symmetry within each pair and permutations of the
-    // three pairs; 48 operations). With rotationally invariant IFCs the
-    // projection is a no-op; for fitted IFCs (which generally violate the
-    // cubic rotational invariance) it returns the nearest (least-squares)
-    // tensor with the exact symmetries. Note that the violated invariance
-    // relations are NOT index permutations of A_hat itself (A_hat comes out
-    // exactly symmetric in its own index space), so the projection can only
-    // be applied at the C3 level.
+    // Compute C3_{ij kl mn} in GPa using Wallace Eq. (8.14) and C2 from the
+    // same clamped/relaxed path. symmetrize projects C3 onto minor and pair
+    // permutation symmetries (48 operations). Apply this at C3, not A_hat:
+    // rotational-invariance violations are not index permutations of A_hat.
     void calc_elastic_tensor3(const std::vector<FcsArrayWithCell> &fcs_harmonic,
                               const std::vector<FcsArrayWithCell> &fcs_cubic, bool relax_ions, Tensor6 &C3_gpa,
                               bool symmetrize = true) const;

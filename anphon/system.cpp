@@ -1211,12 +1211,8 @@ void System::set_mass_elem_from_database(const unsigned int nkd, const std::vect
 void System::set_atomtype_group(const Cell &cell_in, const Spin &spin_in,
                                 std::vector<std::vector<unsigned int>> &atomtype_group_out)
 {
-    // In the case of collinear calculation, spin moments are considered as scalar
-    // variables. Therefore, the same elements with different magnetic moments are
-    // considered as different types. In noncollinear calculations,
-    // magnetic moments are not considered in this stage. They will be treated
-    // separately in symmetry.cpp where spin moments will be rotated and flipped
-    // using time-reversal symmetry.
+    // Collinear moments distinguish atom types. Noncollinear moments are
+    // handled in symmetry.cpp with spin rotations and time reversal.
 
     unsigned int i;
     AtomType type_tmp{};

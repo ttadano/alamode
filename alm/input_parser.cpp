@@ -178,10 +178,8 @@ auto InputParser::parse_displacement_and_force_files(std::vector<std::vector<dou
 
 auto InputParser::parse_energies(std::vector<double> &energies, const DispForceFile &datfile_in) const -> void
 {
-    // Parse total-supercell reference energies from the "E_pot (unit):" token in each snapshot's
-    // comment header of the DFSET, convert to Rydberg, and apply the SAME NSTART/NEND/SKIP filtering
-    // as parse_displacement_and_force_files so that `energies` aligns with u_train/f_train.
-    // Exactly one parseable E_pot per ORIGINAL snapshot is required (validated before filtering).
+    // Read one E_pot per DFSET snapshot and convert to Ry. Validate before
+    // applying the same NSTART/NEND/SKIP filter as displacements and forces.
     const auto nat = nat_in * static_cast<int>(transmat_to_super.determinant());
     const auto ntoken_per_snapshot = static_cast<size_t>(6 * nat);
 
@@ -260,14 +258,7 @@ auto InputParser::parse_energies(std::vector<double> &energies, const DispForceF
 
 auto InputParser::parse_input(ALM *alm) -> void
 {
-    // The order of calling methods in this method is important.
-    // Since following methods rely on variables those already
-    // parsed.
-    // Those below are set as the private class variables. See input_parser.h.
-    //  std::string mode;
-    //  int maxorder;
-    //  int nat_base;
-    //  int nkd;
+    // Parse in this order: later methods depend on values set by earlier ones.
 
     // Parse &general field
     if (!locate_tag("&general")) {
@@ -293,11 +284,8 @@ auto InputParser::parse_input(ALM *alm) -> void
         nat_in = atomic_types_input.size();
         nkd_in = kdname_vec.size();
     } else {
-        // If STRUCTURE_FILE is given, use the structure parameters defined in this file.
-        // In this case, the &cell and &position entries are ignored.
-        // A POSCAR is always in Angstrom (VASP convention), independent of LENGTH_UNIT.
-        // ALM::set_cell converts its input from LENGTH_UNIT to bohr, so re-express the
-        // POSCAR lattice in LENGTH_UNIT here to end up with a single net conversion.
+        // STRUCTURE_FILE overrides &cell and &position. Convert the POSCAR lattice
+        // from Angstrom to LENGTH_UNIT before set_cell converts it to bohr.
         if (length_unit_input == "bohr") {
             lavec_poscar /= Bohr_in_Angstrom;
         }
@@ -424,10 +412,7 @@ auto InputParser::parse_general_vars(ALM *alm) -> void
     }
     if (mode == "opt") mode = "optimize";
 
-    // We first check if STRUCTURE_FILE field is empty or not.
-    // If not, the structure data is read from the given file (in a POSCAR format)
-    // and copy the lattice vectors, element types, and coordinates to
-    // the corresponding private variables of this class.
+    // Read lattice vectors, species, and coordinates from STRUCTURE_FILE if set.
     if (!general_var_dict["STRUCTURE_FILE"].empty()) {
         structure_file = general_var_dict["STRUCTURE_FILE"];
         struct stat buffer;
@@ -576,11 +561,8 @@ auto InputParser::parse_general_vars(ALM *alm) -> void
         format_pattern = "yaml";
     }
 
-    // Units of the input data (&cell lattice, DFSET displacements and forces,
-    // &cutoff radii) and of the alamode_h5 output. Validated here; the actual
-    // conversion to the internal Rydberg atomic units happens in the ALM core
-    // setters. NOTE: STRUCTURE_FILE (POSCAR) is always in Angstrom and E_pot
-    // energies keep their own per-snapshot (eV/Ry/Ha) header mechanism.
+    // Validate input and HDF5 output units; core setters perform conversion.
+    // POSCAR always uses Angstrom; E_pot uses its per-snapshot unit header.
     std::string length_unit{"bohr"}, force_unit{"Ry/bohr"}, fcs_unit_output{"Ry/bohr"};
     if (!general_var_dict["LENGTH_UNIT"].empty()) {
         length_unit = general_var_dict["LENGTH_UNIT"];
@@ -920,9 +902,7 @@ auto InputParser::parse_structure_poscar(const std::string &fname_poscar, Eigen:
                                          Eigen::MatrixXd &coordinates_out, std::vector<std::string> &kdname_vec_out,
                                          std::vector<int> &atomic_types_out) -> void
 {
-    // Parse structure data from a file in the POSCAR format and
-    // copy the read data to the corresponding private variables of
-    // this class.
+    // Read POSCAR structure data into the parser fields.
 
     std::ifstream ifs;
     std::string dummy;
@@ -1422,9 +1402,8 @@ auto InputParser::parse_optimize_vars(ALM *alm) -> void
         exit("parse_optimize_vars", "NDATA, NSTART, NEND and SKIP tags are inconsistent.");
     }
 
-    // Energy-difference loss term: read reference energies from the DFSET headers, but only for a
-    // production (non-CV) fit. During CV the energy pass is skipped entirely so legacy headerless
-    // DFSETs are unaffected (alpha selection stays force-only).
+    // Read DFSET energies for production fits only; force-only CV also accepts
+    // headerless DFSETs.
     if (optcontrol.efit_weight > 0.0) {
         if (optcontrol.cross_validation == 0 || optcontrol.efit_cv) {
             // Production fit (CV=0), or CV with EFIT_CV=1: the training energies are needed.
@@ -1515,9 +1494,7 @@ auto InputParser::parse_optimize_vars(ALM *alm) -> void
 
     int ialgo_reduce;
     if (optimize_var_dict["ALGO_REDUCTION"].empty()) {
-        // Default: 3 = coord_factorization (partial-pivot RREF). Stable replacement for the
-        // legacy 1 = rref backend; produces identical maps but never divides by a small pivot.
-        // Set ALGO_REDUCTION = 1 to reproduce the legacy rref behavior.
+        // Default to partial-pivot RREF (3); ALGO_REDUCTION = 1 selects legacy RREF.
         ialgo_reduce = 3;
     } else {
         assign_val(ialgo_reduce, "ALGO_REDUCTION", optimize_var_dict);

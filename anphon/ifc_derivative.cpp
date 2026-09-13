@@ -185,16 +185,10 @@ void DerivativeIFC::compute_dV1_dumn(MatrixXcdRowMajor &del_v1_del_umn,
         }
     }
 
-    // Ad hoc remedy for IFCs that do not satisfy the rotational sum rules
-    // linking successive orders (symmetrization + offset removal):
-    // (1) retain only the response to symmetric strains by symmetrizing each
-    //     strain index pair, removing the spurious rigid-rotation response;
-    // (2) the strain-modulated first-order IFCs still violate the total-force
-    //     acoustic sum rule (the reference-IFC ASR is not sufficient), so
-    //     project out the component conjugate to rigid translations: in the
-    //     mode basis with the mass-weighted metric this is the removal of the
-    //     Gamma-point acoustic components (c_kappa = M_kappa / sum M), which
-    //     leaves every optical generalized force unchanged.
+    // Correct rotational-sum-rule violations by symmetrizing strain index pairs
+    // and removing Gamma acoustic components with the mass-weighted metric
+    // (c_kappa = M_kappa / sum M). This removes rigid-rotation and net-force
+    // responses while preserving optical generalized forces.
     for (unsigned int is = 0; is < static_cast<unsigned int>(ns); ++is) {
         for (auto mu = 0; mu < 3; ++mu) {
             for (auto nu = mu + 1; nu < 3; ++nu) {
@@ -265,16 +259,10 @@ void DerivativeIFC::compute_d2V1_dumn2(MatrixXcdRowMajor &del2_v1_del_umn2,
         }
     }
 
-    // Ad hoc remedy for IFCs that do not satisfy the rotational sum rules
-    // linking successive orders (symmetrization + offset removal):
-    // (1) retain only the response to symmetric strains by symmetrizing each
-    //     strain index pair, removing the spurious rigid-rotation response;
-    // (2) the strain-modulated first-order IFCs still violate the total-force
-    //     acoustic sum rule (the reference-IFC ASR is not sufficient), so
-    //     project out the component conjugate to rigid translations: in the
-    //     mode basis with the mass-weighted metric this is the removal of the
-    //     Gamma-point acoustic components (c_kappa = M_kappa / sum M), which
-    //     leaves every optical generalized force unchanged.
+    // Correct rotational-sum-rule violations by symmetrizing strain index pairs
+    // and removing Gamma acoustic components with the mass-weighted metric
+    // (c_kappa = M_kappa / sum M). This removes rigid-rotation and net-force
+    // responses while preserving optical generalized forces.
     for (unsigned int is = 0; is < static_cast<unsigned int>(ns); ++is) {
         std::array<std::complex<double>, 81> sym_tmp{};
         for (auto a1 = 0; a1 < 3; ++a1)
@@ -349,16 +337,10 @@ void DerivativeIFC::compute_d3V1_dumn3(MatrixXcdRowMajor &del3_v1_del_umn3,
         }
     }
 
-    // Ad hoc remedy for IFCs that do not satisfy the rotational sum rules
-    // linking successive orders (symmetrization + offset removal):
-    // (1) retain only the response to symmetric strains by symmetrizing each
-    //     strain index pair, removing the spurious rigid-rotation response;
-    // (2) the strain-modulated first-order IFCs still violate the total-force
-    //     acoustic sum rule (the reference-IFC ASR is not sufficient), so
-    //     project out the component conjugate to rigid translations: in the
-    //     mode basis with the mass-weighted metric this is the removal of the
-    //     Gamma-point acoustic components (c_kappa = M_kappa / sum M), which
-    //     leaves every optical generalized force unchanged.
+    // Correct rotational-sum-rule violations by symmetrizing strain index pairs
+    // and removing Gamma acoustic components with the mass-weighted metric
+    // (c_kappa = M_kappa / sum M). This removes rigid-rotation and net-force
+    // responses while preserving optical generalized forces.
     for (unsigned int is = 0; is < static_cast<unsigned int>(ns); ++is) {
         std::array<std::complex<double>, 729> sym_tmp{};
         for (auto a1 = 0; a1 < 3; ++a1)
@@ -657,12 +639,9 @@ void DerivativeIFC::compute_dV_dumn_all_real_space(const std::vector<FcsArrayWit
                                                    std::vector<DeltaFcsStrainComponents> &groups, const std::size_t m,
                                                    const Eigen::Matrix3d &convmat)
 {
-    // Computes the m-th derivative of the force constants with respect to strain in real space,
-    // for all 9^m strain-tensor components in a single scan over fcs_aligned. Each FC entry has
-    // its tail Cartesian indices mu_j fixed, so it contributes fcs_val * prod_j vec_j[nu_j] to
-    // the 3^m components sharing its mu-combination (one per nu-combination).
-    // The input array fcs_aligned is assumed to be sorted by the first (n-m) indices of the
-    // force constant pairs, where n is the order of the force constants.
+    // Compute all 9^m strain derivatives in one pass. Each IFC contributes
+    // fcs_val * prod_j vec_j[nu_j] to the 3^m components with its fixed mu indices.
+    // fcs_aligned must be sorted by its first n-m indices (n is the IFC order).
     groups.clear();
 
     if (fcs_aligned.empty()) return;
@@ -927,11 +906,9 @@ void DerivativeIFC::compute_dV_dstrain_real_space(const std::vector<FcsArrayWith
                                                   const std::vector<Eigen::Matrix3d> &strain_dirs,
                                                   const Eigen::Matrix3d &convmat, const double emit_threshold)
 {
-    // This is a helper function that computes the directional derivative of the force constants
-    // with respect to strain in real space, along the strain tensor strain_dirs[j] for the j-th derivative.
-    // The derivative order is determined by the size of the strain_dirs vector.
-    // The input array fcs_aligned is assumed to be sorted by the first (n-m) indices of the force constant pairs,
-    // where m is the derivative order and n is the order of the force constants (n=2: harmonic, n=3: cubic, etc.).
+    // Compute real-space directional strain derivatives along strain_dirs[j].
+    // With m = strain_dirs.size() and n the IFC order, fcs_aligned must be
+    // sorted by its first n-m indices.
     if (fcs_aligned.empty()) {
         delta_fcs.clear();
         return;
@@ -1803,14 +1780,9 @@ void DerivativeIFC::process_strain_harmonic_set(const std::vector<strain_couplin
     symmetry_.make_inverse_translation_mapping(inv_translation_mapping);
 
     if (renorm_3to2nd == 2) {
-        // Symmetrize dphi2/du over the reference-structure operations. For a fixed
-        // operation the first atom is mapped by a permutation of the primitive atoms,
-        // so different iat1 write disjoint rows of dphi2_dumn_realspace_symm and the
-        // iat1 loop is parallel; the operations stay sequential. Per output element
-        // the contributions arrive in the same order as in the serial loop
-        // (operation, then the input components), so the result is unchanged for
-        // finite inputs; terms with an exactly zero factor are skipped (most of the
-        // 81 x 81 products vanish for axis-aligned rotations).
+        // Symmetrize over reference operations sequentially, parallelizing iat1:
+        // each atom writes disjoint output rows. Preserve contribution order
+        // within each element and skip exactly zero factors.
         const auto nsymm = static_cast<int>(symmetry_.SymmListWithMap_ref.size());
         const auto &map_p2s = system_.get_map_p2s(0);
         const auto &map_s2p = system_.get_map_s2p(0);

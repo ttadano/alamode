@@ -218,16 +218,10 @@ ScphFc2RowsH5 ScphQhaCommon::build_fc2_rows_h5(const std::complex<double> *const
                                                const unsigned int NT, const KpointMeshUniform *kmesh_coarse_in,
                                                MinimumDistList ***mindist_list_in, const std::string &variant) const
 {
-    // Assemble the renormalized FC2 on the virtual supercell in the
-    // alamode force-constant schema. The row enumeration is identical to
-    // write_anharmonic_correction_fc2 above (one row per minimum-distance
-    // image, multiplicity-split); the base harmonic values come from the
-    // harmonic dynamical matrix sampled on the coarse mesh and transformed
-    // to real space through the same pathway as the anharmonic correction,
-    // so base and correction live on identical rows by construction.
-    // The folding is exact when KMESH_INTERPOLATE matches the supercell
-    // dimensions of the original FC2 (the standard setup); the imaginary
-    // part is dropped, as in the legacy .scph_dfc2 file.
+    // Build renormalized FC2 on the virtual supercell using the same
+    // minimum-distance, multiplicity-split rows for harmonic and correction IFCs.
+    // Folding is exact when KMESH_INTERPOLATE matches the original FC2 supercell;
+    // drop the imaginary part as in .scph_dfc2.
     const auto ns = dynamical->neval;
     const auto natmin = system->get_primcell().number_of_atoms;
     const auto nk1 = kmesh_coarse_in->nk_i[0];

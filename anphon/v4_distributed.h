@@ -42,13 +42,9 @@
 namespace PHON_NS::v4_distributed
 {
 
-// Contiguous partition of weighted units over nprocs ranks. Returns the
-// nprocs + 1 boundaries; rank r owns [bounds[r], bounds[r+1]). The boundary
-// after rank r is the prefix whose cumulative weight is nearest to
-// (r + 1) / nprocs of the total (ties go to the earlier prefix), so every
-// rank's share differs from the ideal one by at most half a unit's weight on
-// each side. Ranks may end up empty (anywhere in the sequence) when there are
-// fewer units than ranks.
+// Partition weighted units contiguously; rank r owns [bounds[r], bounds[r+1]).
+// Choose prefixes nearest each target cumulative share, breaking ties toward
+// earlier prefixes. Return nprocs+1 bounds; ranks may be empty.
 inline std::vector<std::size_t> partition_units(const std::vector<double> &weight, const int nprocs)
 {
     const std::size_t nunits = weight.size();

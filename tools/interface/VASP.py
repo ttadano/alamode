@@ -631,9 +631,7 @@ class VaspParser(object):
             except etree.ParseError as e:
                 print(f"Failed to parse XML file with ElementTree due to: {e}")
                 print("Consider installing lxml for better XML parsing support.")
-                # Handle the error or attempt a manual repair if necessary
-                # Note: ElementTree doesn't have a built-in 'recover' mode like lxml,
-                # so you may need to manually fix the XML or use a different strategy
+                # ElementTree cannot recover malformed XML.
 
     def _get_coordinates_and_forces(self, file_to_parse):
         hdf5_mode = file_to_parse.lower().split(".")[-1] in ["h5", "hdf5"]

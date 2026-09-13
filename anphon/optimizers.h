@@ -101,11 +101,9 @@ public:
     // angle acceptance criterion.
     Eigen::VectorXd update(const Eigen::VectorXd &point, const Eigen::VectorXd &gradient);
 
-    // Farkas-Schlegel "controlled GDIIS" (Phys. Chem. Chem. Phys. 2002, 4, 11): recomputes the
-    // error vectors with a per-step RFO level-shifted Hessian, grows the DIIS subspace from the
-    // most recent point keeping the last acceptable step, applies the four acceptance criteria
-    // (a) angle, (b) step length, (c) coefficient sum, (d) near-singularity, and permanently
-    // discards points when the angle exceeds 90 degrees. Enabled by default; disabled by GDIIS_PLAIN = 1.
+    // Controlled GDIIS (Farkas-Schlegel, PCCP 2002, 4, 11): use RFO-shifted
+    // errors and check angle, step length, coefficient sum, and singularity.
+    // Discard points with angles > 90 degrees. GDIIS_PLAIN = 1 disables it.
     Eigen::VectorXd update_controlled(const Eigen::VectorXd &point, const Eigen::VectorXd &gradient);
 
     void set_inverse_Hessian(const int dim, const std::vector<std::vector<double>> &hessian);

@@ -60,10 +60,7 @@ public:
 
     auto operator==(const IntList &a) const -> bool
     {
-        // Use vector's built-in equality operator for consistency
-        // This is required for std::unordered_set<IntList> in fcs.cpp
-        // and ensures consistent behavior across platforms
-        // std::cout << "== operator called\n";
+        // Vector equality supports std::unordered_set<IntList> in fcs.cpp.
         return iarray == a.iarray;
     }
 };

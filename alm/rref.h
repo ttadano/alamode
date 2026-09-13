@@ -9,10 +9,8 @@ auto rref(std::vector<std::vector<double>> &mat, const double tolerance = 1.0e-1
 
 auto rref_sparse(const size_t ncols, ConstraintSparseForm &sp_constraint, const double tolerance = 1.0e-12) -> void;
 
-// Reduced row echelon form with partial (maximum-magnitude) row pivoting.
-// Produces the same echelon structure as rref_sparse (identical pivot columns and reduced
-// coefficients up to round-off) but is numerically more stable, because it never divides by a
-// small accepted pivot. The output is consumed unchanged by Constraint::get_mapping_constraint.
+// Partial-pivot RREF preserving the pivot-column order used by
+// Constraint::get_mapping_constraint, with improved numerical stability.
 auto rref_sparse_pivot(const size_t ncols, ConstraintSparseForm &sp_constraint,
                        const double tolerance = 1.0e-12) -> void;
 

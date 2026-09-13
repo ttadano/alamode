@@ -1266,19 +1266,11 @@ double Dynamical::freq(const double x) const
 std::vector<bool> Dynamical::detect_acoustic_modes_at_gamma(const std::complex<double> *const *evec_gamma,
                                                             const double projection_threshold, const bool verbose) const
 {
-    // Identify the three acoustic (translational) modes at the Gamma point from the
-    // eigenvectors instead of the frequencies. A mode is acoustic if and only if it lies
-    // in the subspace spanned by the three rigid translations, whose mass-weighted,
-    // orthonormal basis vectors are t_alpha[3*j + beta] = delta_{alpha beta} sqrt(m_j / M).
-    // The projection P(is) = sum_alpha |<t_alpha|e_is>|^2 summed over the whole subspace is
-    // invariant under any rotation or mixing of the degenerate translational modes, so the
-    // detection works for arbitrary crystal systems and arbitrary orientations of the
-    // degenerate eigenvectors. The three modes with the largest P are returned; a frequency
-    // threshold is never consulted, so a soft optical mode collapsing to zero frequency can
-    // no longer be misclassified as acoustic.
-    //
-    // evec_gamma[is][3*j + alpha] : component (j, alpha) of the mass-weighted eigenvector of
-    //                               mode is at Gamma.
+    // Select the three Gamma modes with greatest overlap with rigid translations:
+    //   t_alpha[3*j + beta] = delta_{alpha beta} sqrt(m_j / M),
+    //   P(is) = sum_alpha |<t_alpha|e_is>|^2.
+    // This avoids classifying soft optical modes by frequency alone.
+    // evec_gamma[is][3*j + alpha] holds mass-weighted mode components.
 
     const auto ns = neval;
     const auto natmin = system->get_primcell().number_of_atoms;
@@ -1727,14 +1719,10 @@ void Dynamical::exec_interpolation(const unsigned int kmesh_orig[3], std::comple
     const auto nk = static_cast<int>(nk_dense);
     int nfail = 0;
 
-    // One k-point per thread with its own scratch and one single-threaded LAPACK
-    // call (MKL and the OpenMP build of OpenBLAS run one thread per call inside a
-    // parallel region; pthreads OpenBLAS / Accelerate must be pinned, see
-    // v4_index_transform.h). r2q and the Ewald routines have their own parallel
-    // regions, which run serially when nested. For a single k-point the region is
-    // inactive and LAPACK keeps its threads. A failed diagonalization is reported
-    // after the region (exit() aborts through MPI); the remaining fatal paths
-    // inside (allocation failure, the Ewald geometry check) abort from the worker.
+    // Parallelize k points with thread-local scratch and serial nested regions.
+    // Pin pthreads OpenBLAS / Accelerate threads (see v4_index_transform.h).
+    // A single k point keeps LAPACK threading. Report eigensolver failures after
+    // the region; allocation and Ewald geometry failures abort from the worker.
 #pragma omp parallel for schedule(dynamic) reduction(+ : nfail) if (nk > 1)
     for (int ik = 0; ik < nk; ++ik) {
         NDArray<std::complex<double>, 2> mat_tmp(ns, ns);

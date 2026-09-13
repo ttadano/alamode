@@ -161,13 +161,9 @@ void Fcs_phonon::replicate_force_constants(const int maxorder_in)
 
 void Fcs_phonon::replicate_force_constant(const System *system_in, std::vector<FcsArrayWithCell> &fcs_inout) const
 {
-    // This function does the following tasks:
-    // 1. Replicates the force constants originally computed for \Phi_{ij}, \Phi_{ijk}, ...,
-    //    where atom i belongs to the (true) primitive cell to all pairs where atom i belongs to
-    //    the user-defined unit cell.
-    // 2. Relative vector basis is transformed from the Cartesian to the lattice vector basis
-    //    of the user-defined unit cell.
-    // 3. Relative vector (relvec) member function is computed from relvec_velocity.
+    // Replicate IFCs from the true primitive cell to the user-defined cell,
+    // convert relative vectors to its lattice basis, and derive relvec
+    // from relvec_velocity.
 
     std::vector<FcsArrayWithCell> force_constant_replicate;
     std::vector<Eigen::Vector3d> relvecs, relvecs_vel;
@@ -640,12 +636,9 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
         }
     }
 
-    // The correction rows are indexed in the cell that the SCPH run used as its
-    // primitive cell. That cell may be the present primitive cell or an integer
-    // supercell of it (e.g. an SCPH run with &cell = conventional cell so that
-    // KMESH_INTERPOLATE matches the DFT supercell): every atom of the SCPH cell is
-    // folded onto a present primitive atom and translationally equivalent rows
-    // are added once.
+    // Fold SCPH correction atoms onto the current primitive cell and count
+    // translationally equivalent rows once. The SCPH cell may be an integer
+    // supercell of the current cell.
     std::vector<int> map_dfc2_to_prim;
     {
         Eigen::Matrix3d lavec_dfc2;
@@ -717,11 +710,9 @@ void Fcs_phonon::append_delta_fc2_from_scph(const std::string &fname_dfc2, std::
     const auto &map_alm = system->get_mapping_super_alm(0);
     const Eigen::Matrix3d lavec_super_inv = scell.lattice_vector.inverse();
 
-    // Like the rows read from the FCS file, the correction rows start at the reference
-    // atoms of the FCS file's primitive cell, because replicate_force_constant() spreads
-    // them with the translations of that cell. Starting at every atom of the present
-    // primitive cell instead would count the correction natmin(present) / natmin(FCS file)
-    // times when the present cell is the larger one.
+    // Start corrections at the FCS-file primitive atoms: replicate_force_constant
+    // applies that cell's translations. Using all current-cell atoms would
+    // overcount when the current cell is larger.
     std::vector<std::vector<unsigned int>> atoms1_s(map_p2s.size());
     for (const auto &images: map_alm.from_true_primitive) {
         atoms1_s[map_s2p[images[0]].atom_num].push_back(images[0]);

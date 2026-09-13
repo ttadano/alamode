@@ -61,6 +61,10 @@ class Calculator:
         self.gamma4_interpolated = None
         self.gamma_iso = None  # linediwth due to isotope scattering
         self.vel = None  # Velocity array
+        self.vel_diad = (
+            None  # Degenerate-block velocity diad (None for legacy/text files)
+        )
+        self.formulation = "legacy"
         self.vel4 = None
         self.qpoint_weight = None  # Weight array
         self.qpoint_weight4 = None
@@ -162,6 +166,15 @@ class Calculator:
         else:
             self.gamma3 = result.gamma
         self.vel = result.vel
+        self.vel_diad = getattr(result, "vel_diad", None)
+        self.formulation = getattr(result, "formulation", "legacy")
+        if self.vel_diad is None and self.formulation != "legacy":
+            warnings.warn(
+                "the file's kappa was assembled with the '{}' velocity formulation but it holds no "
+                "velocity_diad dataset, so kappa recomputed here (cumulative kappa etc.) follows the legacy "
+                "finite-difference formulation and will not match kappa_total; a restart with the current "
+                "anphon adds the dataset".format(self.formulation)
+            )
         self.volume = result.volume
         self.qpoint_weight = result.multiplicity
         self.qpoints = result.q_coord
@@ -197,10 +210,8 @@ class Calculator:
         if result.lattice_vector is not None:
             kinds = result.atomic_kinds
             if kinds is None:
-                # the text .result files store the fractional coordinates only; without the
-                # atomic kinds the symmetry is detected treating all atoms as one species,
-                # which can only over-count operations; the star-size check in the
-                # interpolator catches an inconsistent result.
+                # Without atomic kinds, .result symmetry treats all atoms as one species
+                # and may overcount operations. The interpolator checks star sizes.
                 warnings.warn(
                     "{} does not store the atomic kinds; detecting the symmetry with all "
                     "atoms treated as one species (use the kappa.h5 file for exact kinds)".format(
@@ -585,7 +596,7 @@ class Calculator:
         Returns:
             numpy.ndarray: Group velocity magnitudes with shape (nk, nmode).
         """
-        return np.linalg.norm(self.vel[:, :, 0, :], axis=2)
+        return self._speed()
 
     def print_lifetime(self, temperature, four_phonon=False, isotope=False):
         """
@@ -672,7 +683,7 @@ class Calculator:
 
         # Group velocity magnitude |v| (m/s) is temperature-independent; the mean
         # free path l = |v| * tau (nm) varies with temperature through tau.
-        vq = np.linalg.norm(self.vel[index_k, index_mode, 0, :])
+        vq = self._speed()[index_k, index_mode]
         omega_q = self.omega[index_k, index_mode]
 
         print(
@@ -730,6 +741,38 @@ class Calculator:
                 )
             print("")
 
+    def _vv_per_copy(self):
+        """Velocity diad per symmetry copy, shape (nk, ns, nmax, 3, 3).
+
+        From the stored degenerate-block diad when available (basis invariant once summed
+        over a block), otherwise the outer product of finite-difference velocities.
+        """
+        if self.vel_diad is not None:
+            return self.vel_diad
+        return self.vel[:, :, :, :, None] * self.vel[:, :, :, None, :]
+
+    def _vvprod(self):
+        """Diad summed over the symmetry copies of each irreducible k, shape (nk, ns, 3, 3)."""
+        return np.sum(self._vv_per_copy(), axis=2)
+
+    def _speed(self):
+        """Per-mode speed |v| used for mean-free-paths, shape (nk, ns).
+
+        sqrt(tr W) of the first copy when the diad is available; for a degenerate block this is
+        an effective speed whose block sum is invariant, whereas individual copies are not.
+        """
+        if self.vel_diad is not None:
+            return np.sqrt(
+                np.maximum(np.einsum("ksaa->ks", self.vel_diad[:, :, 0, :, :]), 0.0)
+            )
+        return np.linalg.norm(self.vel[:, :, 0, :], axis=2)
+
+    def _speed_dir(self):
+        """Per-copy, per-direction speed |v_d|, shape (nk, ns, nmax, 3)."""
+        if self.vel_diad is not None:
+            return np.sqrt(np.maximum(np.einsum("kscaa->ksca", self.vel_diad), 0.0))
+        return np.abs(self.vel)
+
     def get_thermal_conductivity(
         self, four_phonon=False, isotope=False, len_boundary=None, gb_shape="sphere"
     ):
@@ -750,14 +793,7 @@ class Calculator:
 
         nk, nmode = self.omega.shape
 
-        vvprod = np.zeros((nk, nmode, 3, 3), dtype=float)
-        for i in range(nk):
-            for j in range(nmode):
-                for k in range(3):
-                    for m in range(3):
-                        vvprod[i, j, k, m] = np.dot(
-                            self.vel[i, j, :, k], self.vel[i, j, :, m]
-                        )
+        vvprod = self._vvprod()
 
         if len_boundary is None:
             for it, temp in enumerate(self.temperatures):
@@ -774,7 +810,7 @@ class Calculator:
         else:
             if gb_shape == "sphere":
                 assert len_boundary > 0.0, "The boundary length must be positive"
-                velnorm = np.linalg.norm(self.vel[:, :, 0, :], axis=2)
+                velnorm = self._speed()
 
                 for it, temp in enumerate(self.temperatures):
                     tau = self.get_lifetime(
@@ -801,7 +837,8 @@ class Calculator:
                     "3 elements when using 'cube' shape"
                 )
 
-                velnorm = np.abs(self.vel)
+                velnorm = self._speed_dir()
+                vv_copy = self._vv_per_copy()
 
                 mfp = np.zeros_like(velnorm)
 
@@ -821,8 +858,7 @@ class Calculator:
                                 cv
                                 * tau
                                 * np.sum(
-                                    self.vel[:, :, :, i]
-                                    * self.vel[:, :, :, j]
+                                    vv_copy[:, :, :, i, j]
                                     * len_boundary[i]
                                     / (len_boundary[i] + 2.0 * mfp[:, :, :, i]),
                                     axis=(2),
@@ -909,15 +945,12 @@ class Calculator:
 
         nk, nmode = self.omega.shape
 
-        velnorm = np.linalg.norm(self.vel[:, :, 0, :], axis=2)
+        velnorm = self._speed()
 
         mfp = velnorm * tau * 0.001
 
-        # Ignore numerically-zero mean-free-paths (e.g. Gamma acoustic modes)
-        # when determining the sampling range; 1e-6 nm matches the eps6
-        # threshold used historically by the analyze_phonons C++ tool.
-        # modes whose linewidth was not computed (NaN) are excluded from the length grid
-        # and, through the comparisons below (False for NaN), from the sums
+        # Exclude near-zero MFPs from the grid (1e-6 nm matches analyze_phonons).
+        # NaN linewidths are excluded from both the grid and sums.
         if np.any(np.isnan(mfp)):
             warnings.warn(
                 "{} modes have no linewidth (incomplete run) and are excluded from the "
@@ -943,14 +976,7 @@ class Calculator:
         kappa = np.zeros((nsamples, 3, 3), dtype=float)
 
         if directions is None:
-            vvprod = np.zeros((nk, nmode, 3, 3), dtype=float)
-            for i in range(nk):
-                for j in range(nmode):
-                    for k in range(3):
-                        for m in range(3):
-                            vvprod[i, j, k, m] = np.dot(
-                                self.vel[i, j, :, k], self.vel[i, j, :, m]
-                            )
+            vvprod = self._vvprod()
 
             for ilen, len_boundary in enumerate(length_vec):
                 tau_mod = np.where(mfp <= len_boundary, tau, 0.0)
@@ -965,8 +991,9 @@ class Calculator:
             # The directional mean-free-path is evaluated per symmetry copy of each
             # irreducible k point (third axis of self.vel); zero-padded copies have
             # zero velocity and therefore never contribute.
-            mfp_dir = np.abs(self.vel) * tau[:, :, None, None] * 0.001
+            mfp_dir = self._speed_dir() * tau[:, :, None, None] * 0.001
             ctau = (cv * tau)[:, :, None]
+            vv_copy = self._vv_per_copy()
 
             for ilen, len_boundary in enumerate(length_vec):
                 mask = np.ones(self.vel.shape[:3], dtype=bool)
@@ -974,9 +1001,7 @@ class Calculator:
                     mask &= mfp_dir[:, :, :, d] <= len_boundary
                 for i in range(3):
                     for j in range(3):
-                        product = (
-                            ctau * self.vel[:, :, :, i] * self.vel[:, :, :, j] * mask
-                        )
+                        product = ctau * vv_copy[:, :, :, i, j] * mask
                         kappa[ilen, i, j] = np.sum(product)
 
         factor_toSI = (

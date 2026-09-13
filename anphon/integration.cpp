@@ -423,6 +423,9 @@ void Integration::insertion_sort(double *a, int *ind, int n)
 void AdaptiveSmearingSigma::setup(const PhononVelocity *phvel_class, const KpointMeshUniform *kmesh_in,
                                   const Eigen::Matrix3d &lavec_p_in, const Eigen::Matrix3d &rlavec_p_in)
 {
+    // Use finite-difference velocities for adaptive widths. Degenerate-mode
+    // velocities are basis dependent, and widths have a fixed 2e-5 Ry floor,
+    // so cell dependence can persist. Use ISMEAR = 1 or 0 for cell independence.
     phvel_class->get_phonon_group_velocity_mesh(*kmesh_in, lavec_p_in, false, vel);
 
     for (auto u = 0; u < 3; u++) {

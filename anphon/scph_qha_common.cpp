@@ -67,15 +67,9 @@ ScphQhaCommon::classify_acoustic_modes_from_cmat(const std::complex<double> *con
         }
     }
 
-    // Majority overlap with the harmonic acoustic subspace marks a mode as acoustic.
-    // A threshold is used instead of picking the three largest overlaps on purpose:
-    // when a soft optical mode becomes numerically degenerate with the acoustic modes
-    // during the SCPH iteration, the eigensolver may return arbitrarily mixed columns,
-    // and a fixed count could then assign a mostly-translational column as "optical"
-    // (whose then huge 1/omega occupation factor would destabilize the iteration).
-    // With a threshold, every mostly-translational column is excluded, transiently
-    // mixed columns resolve themselves once the degeneracy is lifted, and in the
-    // clean (non-degenerate) case exactly the three translational modes are flagged.
+    // Flag modes with majority overlap with the harmonic acoustic subspace.
+    // A threshold handles mixed soft/acoustic eigenvectors without forcing
+    // exactly three exclusions and leaving a large 1/omega acoustic contribution.
     std::vector<bool> is_acoustic(ns, false);
     for (auto js = 0; js < ns; ++js) {
         is_acoustic[js] = overlap[js] > 0.5;
@@ -1082,16 +1076,9 @@ void ScphQhaCommon::renormalize_ifcs_at_structure(StructuralOptWorkspace &ws)
                                         u_tensor);
     print_stage_time("strain renormalization v0..v3", time_stage);
 
-    // Renormalize the IFCs by the internal displacement q0 (exact Taylor
-    // recentering of the quartic PES). The strain-renormalized v1..v3
-    // (_with_umn) enter here; v4 enters unrenormalized (the row-distributed
-    // reference V4 of v4_service) because its
-    // strain renormalization would require d(v4)/du IFC data, which
-    // del_v_strain does not include (it stops at d(v3)/du) -- within this
-    // truncation the strain-renormalized v4 equals the reference v4.
-    //
-    // v4 is swept once: the sweep writes v3_renorm and the quartic contraction
-    // q4_q0 that the v1, v2 and v0 renormalizations consume (q0_contraction.h).
+    // Taylor-recenter the quartic PES at q0 using strain-renormalized v1..v3.
+    // Use reference v4: del_v_strain stops at d(v3)/du. One v4 sweep builds
+    // v3_renorm and q4_q0 for the v1, v2, and v0 updates (q0_contraction.h).
     const auto ik_gamma_irred = static_cast<std::size_t>(kmesh_coarse->kpoint_map_symmetry[0].knum_irred_orig);
     const auto time_sweep_start = timer->elapsed();
     v4_service->q0_sweep(q0.data(), ws.v3_with_umn, ws.v3_renorm, ws.q4_q0);
@@ -1194,14 +1181,10 @@ void ScphQhaCommon::build_v4_service(const bool full_tensor, const bool offdiag_
     const auto nk2_prod = nk_irred * nk;
     const auto nprocs = static_cast<std::size_t>(mympi->nprocs);
 
-    // The band-parallel builder computes every element in units of ns rows and
-    // distributes with the weighted unit partition; the k-point builder computes
-    // whole slices (two ns^2 x ns^2 scratch arrays) and distributes slices. The
-    // latter cannot distribute when there are fewer slices than ranks, and its
-    // scratch dwarfs the local rows when there are few slices per rank.
-    // With a single process the user's IALGO is kept as is (the k-point builder's
-    // 2 ns^4 scratch then costs up to 3x the V4 size for a Gamma-only mesh; IALGO = 1
-    // avoids it), so that single-process results stay bitwise reproducible.
+    // The band builder distributes ns-row units; the k-point builder distributes
+    // whole slices and needs 2 ns^4 scratch. Prefer band distribution when
+    // slices are too few for MPI. Keep the user's IALGO on one process
+    // for bitwise reproducibility.
     auto band = full_tensor && use_band_parallel_v4();
     if (full_tensor && !band && nprocs > 1) {
         const auto ns4 = static_cast<double>(ns) * ns * ns * ns;
@@ -1351,15 +1334,10 @@ void ScphQhaCommon::compute_and_print_step_gradients(const StructuralOptWorkspac
 {
     const auto ns = dynamical->neval;
 
-    // Residual gradient norms over the optimized degrees of freedom (the same
-    // gradients the optimizer acts on). A small step (du0/du_tensor) does not
-    // by itself imply a small gradient for the GDIIS optimizer
-    // (relax_algo == 3), so these are printed for diagnostics and, when the
-    // corresponding tolerance is > 0, also required for convergence (SCPH) to
-    // guard against false convergence at a non-stationary point. The
-    // coordinate force (gradient w.r.t. q0) and the cell gradient (stress
-    // conjugate to the strain tensor) have different units, so they are
-    // checked separately (cf. COORD_CONV_TOL vs CELL_CONV_TOL).
+    // Report residual norms and require them for SCPH convergence when the
+    // corresponding tolerance is positive. Coordinate and cell gradients
+    // have different units and use separate tolerances; small GDIIS steps
+    // alone do not establish stationarity.
     grad_norm = 0.0;
     for (auto is = 0; is < ns - 3; is++) {
         const double f = v1_eff[ws.harm_optical_modes[is]].real();

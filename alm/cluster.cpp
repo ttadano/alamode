@@ -1063,10 +1063,8 @@ void Cluster::set_interaction_cluster(const int order, const size_t natmin, cons
                         const auto rc_tmp = cutoff_radii[order][ikd][jkd];
                         cell_vector.clear();
 
-                        // Loop over the cell images of atom 'jat' and add to the list
-                        // as a candidate for the cluster.
-                        // The periodic images whose distance is larger than the minimum value
-                        // of the distance(iat, jat) can be added to the cell_vector list.
+                        // Collect candidate periodic images of jat, including images beyond
+                        // the minimum iat-jat distance.
                         for (auto k = 0; k < distance_table[iat][jat].distances.size(); ++k) {
                             if (rc_tmp < 0.0 || distance_table[iat][jat].distances[k] <= rc_tmp) {
                                 cell_vector.emplace_back(distance_table[iat][jat].cells[k]);
@@ -1123,11 +1121,8 @@ void Cluster::set_interaction_cluster(const int order, const size_t natmin, cons
                         // that satisfies the condition of the cluster.
 
                         if (periodic_image_conv == 0) {
-                            // assign IFCs to periodic images in which the center atom and each of the other atoms
-                            // are nearest.
-                            // The distance between non-center atoms are not considered.
-                            // The IFCs in this convention automatically satisfies the ASR without additional constraint,
-                            // but does not satisfy the permutation symmetry.
+                            // Assign IFCs to images nearest to the center atom, ignoring distances
+                            // between other atoms. This satisfies ASR but not permutation symmetry.
 
                             pairs_icell.clear();
                             for (const int jat: intpair_uniq) {
@@ -1164,11 +1159,8 @@ void Cluster::set_interaction_cluster(const int order, const size_t natmin, cons
 
                         } else /* if(mirror_image_conv == 1)*/ {
 
-                            // assign IFCs to periodic images in which the sum of the distances between the atom pairs
-                            // is the smallest.
-                            // The IFCs made in this convention satisfies the permutation symmetry.
-                            // Additional constraints are imposed in constraint.cpp to make the IFCs satisfy ASR
-                            // after assigning IFCs to the periodic images.
+                            // Assign IFCs to images minimizing the sum of pair distances. This preserves
+                            // permutation symmetry; constraint.cpp imposes the additional ASR constraints.
 
                             std::sort(distance_list.begin(), distance_list.end(), MinDistList::compare_sum_distance);
                             comb_cell_min.clear();

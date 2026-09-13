@@ -149,12 +149,8 @@ public:
                             const std::complex<double> *const *const *evec_in,
                             const PhaseFactorCache *phase_storage_in);
 
-    // Thread-safe serial variants: the per-triplet reciprocal-FC3 cache
-    // lives in caller-provided storage (phi3_work of size ngroup_v3 and
-    // kindex_work[2] initialized to -1) and no OpenMP region is entered.
-    // Parallelism belongs to the caller's triplet loop; entering a parallel
-    // region per V3 call is far too fine-grained (measured to give negative
-    // scaling in the SERTA and IBTE setups).
+    // Serial kernels with caller-owned caches: phi3_work[ngroup_v3] and
+    // kindex_work[2], initially -1. Parallelize the caller's triplet loop.
     std::complex<double> V3(const unsigned int ks[3], const double *const *xk_in, const double *const *eval_in,
                             const std::complex<double> *const *const *evec_in, std::complex<double> *phi3_work,
                             int *kindex_work);

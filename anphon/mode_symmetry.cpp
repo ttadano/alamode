@@ -212,13 +212,8 @@ void ModeSymmetry::analyze_irreps_at_gamma()
         }
     }
 
-    // ------------------------------------------------------------------
-    // Eigenvectors of the analytic dynamical matrix at Gamma.
-    // With kvec = 0 the directional nonanalytic term vanishes for
-    // NONANALYTIC = 1/2; NONANALYTIC = 3 must go through the Ewald path
-    // with the dipole-free force constants (plain eval_k would add an
-    // uninitialized nonanalytic matrix in that mode).
-    // ------------------------------------------------------------------
+    // Compute analytic Gamma eigenvectors. kvec = 0 removes the directional
+    // term for NONANALYTIC = 1/2; mode 3 requires Ewald with dipole-free IFCs.
     std::vector<double> eval_raw(ns), omega(ns);
     NDArray<std::complex<double>, 2> evec;
     evec.resize(ns, ns);
@@ -434,12 +429,8 @@ void ModeSymmetry::analyze_irreps_at_gamma()
         Eigen::Vector3d zhat = Eigen::Vector3d::Zero();
         Eigen::Vector3d xhat = Eigen::Vector3d::Zero();
         if (symmetry->has_spg_dataset) {
-            // Authoritative conventional frame from the spglib dataset:
-            // L_conv = L_input * P^-1 with P the dataset transformation
-            // matrix (basis change only, expressed directly in the Cartesian
-            // frame of the calculation).  Sanity-checked against the
-            // operations: when a unique principal axis (order >= 3) exists,
-            // the conventional c axis must be parallel to it.
+            // Conventional frame: L_conv = L_input * P^-1 using spglib's transformation.
+            // When a unique principal axis of order >= 3 exists, check that c is parallel to it.
             const Eigen::Matrix3d &lavec = system->get_primcell().lattice_vector;
             const Eigen::Matrix3d &pmat = symmetry->spg_transformation_matrix;
             if (std::abs(pmat.determinant()) > 1.0e-8) {
@@ -554,14 +545,10 @@ void ModeSymmetry::analyze_irreps_at_gamma()
         }
     }
 
-    // ------------------------------------------------------------------
-    // Representation-level validation of the class->column assignment (the
-    // hybrid scheme of the plan): among all bijections consistent with the
-    // (kind, nelem) buckets, keep those whose decompositions of Gamma_V,
-    // Gamma_total, and every symmetry-clean multiplet are non-negative
-    // integers with consistent dimensions and Gamma_optic >= 0; the
-    // geometrically chosen assignment must be a survivor.
-    // ------------------------------------------------------------------
+    // Validate class-column bijections within (kind, nelem) buckets using
+    // non-negative integer decompositions of Gamma_V, Gamma_total, and clean
+    // multiplets, consistent dimensions, and Gamma_optic >= 0.
+    // The geometric assignment must pass.
     if (labels_ok && pg) {
         auto assignment_ok = [&](const std::vector<int> &a2c) {
             const auto n_vec = pointgroup::decompose_representation(*pg, a2c, nelem_of_class, trace_class);

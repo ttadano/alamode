@@ -14,19 +14,9 @@
 
 namespace PHON_NS
 {
-// Backend seam for dense symmetric eigenproblems (used by SOLVER = DBTE;
-// candidate later consumer: batched dynamical-matrix diagonalization).
-//
-// v1 backend: LAPACK dsyev on the calling rank. Planned backends behind the
-// same call: ELPA/ScaLAPACK (memory-distributed; assembly is already
-// row-distributed, so only a block-cyclic redistribution is needed) and
-// MAGMA/cuSOLVER (single-node GPU). Distributed backends will take this
-// call collectively.
-//
-// A is n x n column-major and is overwritten by the eigenvectors (column j
-// = eigenvector of w[j]); eigenvalues are returned in ascending order.
-// num_lowest >= 0 asks for only the lowest eigenpairs - the v1 backend
-// computes the full spectrum and lets the caller truncate, but
-// range-capable backends (dsyevr, ELPA partial, ...) may exploit it.
+// Dense symmetric eigensolver using LAPACK dsyev on the calling rank.
+// Overwrite column-major A[n][n] with eigenvectors in columns; return
+// ascending eigenvalues in w. num_lowest requests a subset, but this
+// backend computes the full spectrum for the caller to truncate.
 void solve_dense_symmetric(int n, std::vector<double> &A, std::vector<double> &w, int num_lowest = -1);
 } // namespace PHON_NS

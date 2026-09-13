@@ -137,12 +137,10 @@ inline std::complex<double> phase_factor(const int *q, const int *R, const int *
     return e;
 }
 
-// Stage 2 of the Fourier sum for a block of NQ quartets sharing k1:
-//   A_q[b c d] = sum_{dR} chi_k1(b c d, dR) * E_q(dR),  dR = R2 - R3,  q = 0..NQ-1.
-// Each force-constant term is loaded once per block and the phase tables of
-// the block stay in cache. Complex products are written out in real
-// arithmetic to keep the loop free of the NaN-checking slow paths of
-// std::complex operator*.
+// Fourier sum for NQ quartets sharing k1:
+//   A_q[b c d] = sum_dR chi_k1(b c d, dR) * E_q(dR), dR = R2 - R3.
+// Load each IFC once per block; expand complex products into real arithmetic
+// to avoid std::complex NaN-checking overhead.
 template <int NQ>
 void fourier_stage2_block(const int nrow, const int *row_ptr, const long long *row_bcd, const int *q_diff,
                           const std::complex<double> *chi_k1, const std::complex<double> *const *exp_diff,

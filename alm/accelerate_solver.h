@@ -1,12 +1,6 @@
-// accelerate_solver.h
-//
-// Apple Accelerate sparse KKT solver, deliberately isolated in its own translation unit.
-//
-// Eigen's <Eigen/AccelerateSupport> pulls in <Accelerate/Accelerate.h>, whose Fortran BLAS/LAPACK
-// prototypes (dgemm_, dgesdd_, dgeqp3_, ...) collide with the hand-rolled prototypes in
-// include/blas_wrapper.h and include/lapack_wrapper.h. Keeping the Accelerate include out of every
-// TU that also includes those wrappers (least_squares.cpp in particular) avoids a hard redeclaration
-// conflict. Only this header/source pair includes the Accelerate Eigen module.
+// Apple Accelerate sparse KKT solver. Keep Eigen/AccelerateSupport in its own
+// translation unit to avoid conflicting BLAS/LAPACK declarations from
+// blas_wrapper.h and lapack_wrapper.h.
 #pragma once
 
 #ifdef USE_ACCEL_BACKEND

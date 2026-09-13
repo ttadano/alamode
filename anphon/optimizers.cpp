@@ -270,12 +270,9 @@ double FarkasIII_Optimizer::angle_threshold(const int n_vectors)
 
 Eigen::MatrixXd FarkasIII_Optimizer::effective_inverse_Hessian() const
 {
-    // H stores the inverse Hessian. Build the RFO level-shifted effective inverse Hessian, i.e.
-    // (H_direct + lambda*I)^{-1}, with lambda >= 0 chosen so the smallest direct-Hessian
-    // curvature becomes at least curvature_floor. This bounds the step along near-zero-curvature
-    // (soft) modes and turns negative-curvature directions into controlled descent steps
-    // (Farkas-Schlegel eqn 7, H_eff = H_direct + lambda*I). H need NOT be positive definite here
-    // (a strongly soft initial Hessian can be indefinite).
+    // Build (H_direct + lambda*I)^{-1} from the inverse Hessian H. Choose
+    // lambda >= 0 to raise the smallest curvature to curvature_floor, limiting
+    // soft-mode steps and allowing indefinite H (Farkas-Schlegel Eq. 7).
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(H);
     const Eigen::VectorXd &nu = es.eigenvalues(); // eigenvalues of the inverse Hessian
     const Eigen::MatrixXd &U = es.eigenvectors();
