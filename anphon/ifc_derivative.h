@@ -58,12 +58,9 @@ public:
         verbosity_ = verbosity;
     }
 
-    // Single-pass computation of the m-th strain derivative of the IFCs in real
-    // space for ALL 9^m strain-tensor components at once. One scan over
-    // fcs_aligned replaces the 9^m per-component scans; use
-    // extract_strain_component to materialize one component's delta IFCs.
-    // fcs_aligned must be sorted by the first (n-m) indices
-    // (sort_by_heading_indices(m)).
+    // Compute all 9^m real-space strain derivatives in one pass. Use
+    // extract_strain_component for one component. fcs_aligned must be sorted
+    // by its first n-m indices (sort_by_heading_indices(m)).
     static void compute_dV_dumn_all_real_space(const std::vector<FcsArrayWithCell> &fcs_aligned,
                                                std::vector<DeltaFcsStrainComponents> &groups, std::size_t m,
                                                const Eigen::Matrix3d &convmat);
@@ -103,21 +100,12 @@ public:
                                                   const Eigen::VectorXd &sublattice_displacement,
                                                   double emit_threshold);
 
-    // Displacement field of a homogeneous deformation u plus sublattice
-    // displacements S: atom (l kappa) moves by
-    // d_lambda = sum_nu u(lambda, nu) R_nu + S(3*kappa + lambda),
-    // with R the same relative vector used by the strain kernels (valid by
-    // the acoustic sum rule). S may be empty (purely affine deformation).
-    //
-    // Conventions: u is the dimensionless displacement-gradient tensor
-    // dX_mu/dx_nu - delta_{mu nu} (a homogeneous deformation of all space,
-    // independent of any cell choice); S is in Cartesian bohr and is indexed
-    // by the atoms of the USER-defined primitive cell of the run (the &cell
-    // input), i.e. the same numbering as pairs[].index/3 after
-    // replicate_force_constant. A non-primitive &cell is fully supported:
-    // S is then periodic with that larger cell, which is exactly what is
-    // needed for SCPH/QHA distortion patterns that break the true primitive
-    // periodicity.
+    // Homogeneous deformation plus sublattice displacements:
+    //   d_lambda = sum_nu u(lambda, nu) R_nu + S(3*kappa + lambda).
+    // R is the strain-kernel relative vector (valid by ASR); u is the
+    // dimensionless displacement gradient. S is in Cartesian bohr, indexed
+    // by user-cell atoms as in pairs[].index/3 after replicate_force_constant.
+    // S may be empty for affine deformation or periodic with a non-primitive cell.
     struct DeformationField
     {
         // Dimensionless displacement-gradient tensor (the u_tensor of the

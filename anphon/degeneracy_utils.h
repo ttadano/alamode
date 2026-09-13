@@ -70,45 +70,21 @@ inline void average_over_degenerate_modes(const int ns, const double *eval_at_k,
     }
 }
 
-// ---------------------------------------------------------------------------
-// Transport degeneracy blocks.
-//
-// A block replaces the Wigner pair weight by the band-like (Peierls) limit. That is
-// legitimate only where the eigenvectors are numerically ambiguous: there the
-// individual velocities are undefined and only the block trace Tr(P V^u P V^v P) is.
-//
-// TOL_CM is an EMPIRICAL numerical criterion, not a physical one, and no universal
-// correctness follows from it:
-//   * Branches closer than TOL_CM are TREATED as degenerate. A rough scale for the
-//     eigenvalue noise of the diagonalisation is d(omega) ~ ns * eps * omega_max^2 / (2 omega)
-//     (lambda = omega^2 with absolute error ~ ns * eps * lambda_max); for ns = 300,
-//     omega_max = 1000 cm^-1 that is ~3e-8 cm^-1 at omega = 1 cm^-1 but ~3e-6 cm^-1 at
-//     omega = 0.01 cm^-1, above TOL_CM. It is a scale estimate, not a bound, and the eps8
-//     frequency guard (~1.1e-3 cm^-1) does not remove every soft mode. So a genuine
-//     splitting below TOL_CM may well be numerically resolvable; the criterion merges it
-//     anyway.
-//   * Merging a pair with true splitting dw and summed HWHM G overestimates its weight by
-//     the factor 1 + (dw/G)^2. Conductivity::compute_kappa reports the worst dw/G among
-//     merged blocks so that this approximation is visible rather than silent.
-//   * Constant lifetime within a block (the precondition for the trace form) is guaranteed
-//     by SUBDIVIDING the frequency-degeneracy groups below (the same groups over which
-//     the damping is averaged), not by the size of TOL_CM. Damping values themselves are
-//     never consulted when forming blocks.
+// Transport blocks use the Peierls limit Tr(P V^u P V^v P) for nearly
+// degenerate modes. TOL_CM is an empirical threshold and can merge
+// numerically resolvable splittings. For splitting dw and summed HWHM G,
+// this overestimates the pair weight by 1 + (dw/G)^2; compute_kappa
+// reports the worst dw/G. Blocks subdivide the damping-averaging groups
+// to keep lifetimes constant; damping values do not determine membership.
 inline double transport_block_tol_cm()
 {
     return 1.0e-6;
 }
 
-// Block bounds [lo, hi) for every branch at one k point.
-//
-// Detection is FREQUENCY based only. First the frequency-degeneracy groups of
-// find_degenerate_groups are formed (anchored, 1e-7 Ry = 1.097e-2 cm^-1); these are exactly
-// the groups over which average_self_energy_at_degenerate_point averages the damping, so
-// the lifetime is constant inside each of them by construction. Each group is then
-// subdivided: within a group a new block starts whenever a branch lies further than tol_cm
-// from the block's FIRST member (anchored, so a chain of individually close branches
-// cannot grow into a wide block). No damping value enters this partition -- it is used
-// only afterwards, in Conductivity::report_unresolved_degenerate_blocks, to warn.
+// Return block bounds [lo, hi) for each branch. Subdivide the frequency
+// groups from find_degenerate_groups (1e-7 Ry) using distance from each
+// block's first frequency, preventing chains of close modes from merging.
+// Staying within damping-averaging groups ensures constant block lifetimes.
 inline void transport_block_bounds(const unsigned int ns, const double *eval_at_k, const double tol_cm,
                                    std::vector<int> &lo_out, std::vector<int> &hi_out)
 {

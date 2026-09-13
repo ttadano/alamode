@@ -479,10 +479,8 @@ auto System::set_default_variables() -> void
     spin_input.lspin = false;
     spin_input.noncollinear = 0;
     spin_input.time_reversal_symm = 1;
-    // Same default as Symmetry::set_default_variables and the CLI TOLERANCE tag.
-    // Without it, library users (e.g. the Python interface) that never call
-    // set_tolerance passed an uninitialized value to spglib, whose failure
-    // path then crashed (NULL free in det_determine_all).
+    // Default to the same tolerance as Symmetry and the CLI so library calls
+    // without set_tolerance still pass a valid value to spglib.
     symmetry_tolerance = 1.0e-3;
     autoset_primcell = 0;
     transmat_to_super = Eigen::Matrix3d::Identity();
@@ -543,12 +541,8 @@ auto System::get_atomtype_group(const std::string &cell) const -> const std::vec
 auto System::set_atomtype_group(const Cell &cell_in, const Spin &spin_in,
                                 std::vector<std::vector<unsigned int>> &atomtype_group_out) -> void
 {
-    // In the case of collinear calculation, spin moments are considered as scalar
-    // variables. Therefore, the same elements with different magnetic moments are
-    // considered as different types. In noncollinear calculations,
-    // magnetic moments are not considered in this stage. They will be treated
-    // separately in symmetry.cpp where spin moments will be rotated and flipped
-    // using time-reversal symmetry.
+    // Collinear moments distinguish atom types. Noncollinear moments are
+    // handled in symmetry.cpp with spin rotations and time reversal.
 
     unsigned int i;
     AtomType type_tmp{};

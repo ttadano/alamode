@@ -52,14 +52,11 @@ void PhononVelocity::set_default_variables()
 void PhononVelocity::deallocate_variables()
 {}
 
-// Single developer opt-out for the corrected velocity formulation.
-//
-// Default (unset): velocity matrix built without per-element symmetrization and with
-// the nonanalytic connection term; Peierls weights as degenerate-block traces with
-// cross-block-only coherent pairs; block speed for boundary scattering; PRINTVEL from
-// the velocity-matrix diagonal. Set ALAMODE_LEGACY_VELOCITY=1 to reproduce the
-// historical behaviour (finite differences of sorted eigenvalues, elementwise
-// symmetrized matrix, no nonanalytic velocity term) for comparison.
+// Default transport uses the unsymmetrized velocity matrix with nonanalytic
+// connection, block-trace Peierls weights, cross-block coherent pairs,
+// block boundary speeds, and matrix-diagonal PRINTVEL.
+// ALAMODE_LEGACY_VELOCITY=1 restores finite-difference velocities and
+// elementwise symmetrization without the nonanalytic velocity term.
 bool PhononVelocity::legacy_velocity()
 {
     return std::getenv("ALAMODE_LEGACY_VELOCITY") != nullptr;
@@ -70,14 +67,10 @@ void PhononVelocity::setup_velocity()
     MPI_Bcast(&print_velocity, 1, MPI_CXX_BOOL, 0, MPI_COMM_WORLD);
 }
 
-// Band-path group velocity from the velocity-matrix diagonal, projected on the path
-// direction. Along a band path branches cross constantly, and differencing SORTED
-// eigenvalues connects different branches across a crossing; the velocity matrix has no
-// such problem because it is evaluated at the point itself.
-//
-// Inside a degenerate multiplet the individual diagonal elements remain basis dependent,
-// as everywhere else -- only block traces are invariant -- so printed velocities at a
-// degeneracy should be read as one admissible choice, not as a unique value.
+// Project the velocity-matrix diagonal onto the band-path direction,
+// avoiding finite differences across sorted-band crossings. Diagonals
+// within degenerate multiplets remain basis dependent; only block traces
+// are invariant.
 void PhononVelocity::get_phonon_group_velocity_bandstructure_velmat(const KpointBandStructure *kpoint_bs_in,
                                                                     const Eigen::Matrix3d &lavec_p,
                                                                     const std::vector<FcsArrayWithCell> &fc2_in,
@@ -332,13 +325,10 @@ void PhononVelocity::gather_group_velocities_mesh(const KpointMeshUniform &kmesh
                                                   NDArray<double, 3> &vel_out, const double unit_factor,
                                                   const bool bcast_full) const
 {
-    // Allocate-and-fill wrapper around get_phonon_group_velocity_mesh_mpi
-    // shared by the RTA and IBTE setup paths. The gathered velocities live
-    // on rank 0 only unless bcast_full is set; other ranks get a dummy
-    // allocation. unit_factor is applied before the broadcast, so every
-    // caller states its unit convention in one place (1.0 keeps atomic
-    // units; Bohr_in_Angstrom * 1.0e-10 / time_ry converts to m/s). The
-    // caller owns and deallocates vel_out.
+    // Allocate and gather velocities on rank 0, or all ranks if bcast_full.
+    // Apply unit_factor before broadcasting: 1.0 keeps atomic units;
+    // Bohr_in_Angstrom * 1.0e-10 / time_ry gives m/s.
+    // Other ranks receive dummy storage; the caller deallocates vel_out.
     const auto nk = kmesh_in.nk;
     const auto neval = dynamical->neval;
 
@@ -365,14 +355,10 @@ void PhononVelocity::gather_group_velocities_mesh(const KpointMeshUniform &kmesh
     }
 }
 
-// Fill a mesh-shaped velocity array from the DIAGONAL of the analytic velocity matrix
-// instead of differencing sorted eigenvalues. Used by PRINTVEL on a mesh (adaptive
-// smearing deliberately keeps finite differences; see integration.cpp). Units match
-// get_phonon_group_velocity_mesh (rotated to Cartesian, divided by 2 pi, no SI factor);
-// no per-element symmetrization is applied.
-//
-// The full velocity matrix is formed and only its diagonal retained; this is not a
-// diagonal-only shortcut.
+// Fill PRINTVEL from the analytic velocity-matrix diagonal, without
+// elementwise symmetrization. Units match get_phonon_group_velocity_mesh
+// (Cartesian, divided by 2 pi, no SI factor). Compute the full matrix
+// but retain only its diagonal. Adaptive smearing keeps finite differences.
 void PhononVelocity::get_phonon_group_velocity_mesh_velmat(const KpointMeshUniform &kmesh_in,
                                                            const Eigen::Matrix3d &lavec_p, double ***phvel3_out) const
 {
@@ -522,11 +508,9 @@ void PhononVelocity::calc_phonon_velmat_mesh(NDArray<std::complex<double>, 4> *v
         if (!legacy) add_nonanalytic_velocity_matrix(dos->kmesh_dos->xk[knum], eval_all[knum], evec_all[knum], vk);
 
         if (legacy) {
-            // Historical behaviour: average every element over the little group of k as
-            // if it were a Cartesian vector. This is a no-op only for the diagonal of a
-            // non-degenerate mode; off-diagonal elements transform with the
-            // representations of both states, and inside a degenerate multiplet it
-            // suppresses the velocities. The corrected default applies nothing here.
+            // Legacy elementwise little-group averaging treats elements as Cartesian
+            // vectors, which is valid only for non-degenerate diagonals and can
+            // suppress degenerate velocities. The default skips this averaging.
             double symmetrizer_k[3][3];
             std::vector<int> smallgroup_k;
             kpoint->get_symmetrization_matrix_at_k(dos->kmesh_dos->xk[knum], smallgroup_k, symmetrizer_k);
@@ -901,36 +885,14 @@ void PhononVelocity::calc_derivative_dynmat_k(const double *xk_in, const std::ve
     }
 }
 
-// Central finite difference of the NON-ANALYTIC part of the dynamical matrix.
-//
-// D_na depends on q through the direction q_hat (and, per scheme, on radial damping,
-// phase factors and the Ewald long-range terms), so its analytic derivative is
-// singular at Gamma and takes a different closed form for each NONANALYTIC method.
-// Differencing the assembled matrix instead covers methods 1 (Parlinski), 2
-// (mixed-space) and 3 (Ewald) with one code path and no singular kernels.
-//
-// At Gamma the velocity is not defined without a convention: the assembled matrices
-// depend on radial damping, phases and (for Ewald) the full long-range expression,
-// and transverse derivatives of the macroscopic term scale as 1/r, so there is no
-// unique direction-independent gradient. This routine simply differences about
-// xk_in; a directional limit (fix n, diagonalize D(rn), differentiate along the ray
-// as r -> 0+) is NOT implemented.
-//
-// Gauge: anphon solves the eigenproblem in the convention WITHOUT sublattice
-// positions in the phase factor, and calc_nonanalytic_k_* already multiplies the
-// sublattice phase in so that D_na can be added to that matrix. Differencing the
-// assembled D_na therefore yields the derivative in the SAME convention, whereas
-// Allen's velocity matrix needs the displacement-aware one. The two are related by
-//
-//     (grad_a D_na)_ij = (d_a D_na)_ij + i 2pi (t_j - t_i)_a (D_na)_ij,
-//
-// t being the atomic positions in primitive fractional coordinates. This mirrors
-// the analytic term exactly: there ddymat carries the convention phase
-// exp(i 2pi q . relvecs) together with the displacement-aware relvecs_velocity, so
-// i * ddymat is already d_a D + i 2pi (t_j - t_i)_a D. Dropping the connection is
-// not a gauge-invariant choice -- the identity that kills diagonal and
-// same-block commutators applies to the FULL dynamical matrix, not to D_na alone,
-// so the omission corrupts even the diagonal velocities.
+// Central-difference D_na for NONANALYTIC methods 1/2/3. No unique
+// direction-independent gradient exists at Gamma; no directional limit
+// is implemented. Convert from the eigenproblem's cell-phase convention
+// to the displacement-aware velocity convention using
+//   (grad_a D_na)_ij = (d_a D_na)_ij + i 2pi (t_j - t_i)_a (D_na)_ij,
+// where t is the primitive fractional position. The connection term is
+// needed even for diagonal velocities: commutator cancellation applies
+// to the full dynamical matrix, not D_na alone.
 void PhononVelocity::add_nonanalytic_velocity_matrix(const double *xk_in, const double *omega_in,
                                                      std::complex<double> **evec_in,
                                                      std::complex<double> ***velmat_inout,
@@ -941,14 +903,9 @@ void PhononVelocity::add_nonanalytic_velocity_matrix(const double *xk_in, const 
     const auto nmode = dynamical->neval;
     const auto h = 1.0e-4;
 
-    // At Gamma the nonanalytic contribution to the velocity is not defined without an
-    // extra convention: the assembled matrices depend on radial damping, on phases and,
-    // for Ewald, on the whole long-range expression, and transverse derivatives of the
-    // macroscopic term scale as 1/|q|, so no direction-independent gradient exists. The
-    // central difference below does NOT vanish there (it is ~1e-3 in the internal units
-    // for a polar test case), so the contribution is dropped explicitly rather than
-    // left at whatever the difference happens to return. A directional limit -- fix n,
-    // diagonalize D(r n), differentiate along the ray as r -> 0+ -- is not implemented.
+    // Drop the nonanalytic velocity at Gamma, where no direction-independent
+    // gradient exists. A central difference can be nonzero there;
+    // a directional limit is not implemented.
     if (std::abs(xk_in[0]) < eps && std::abs(xk_in[1]) < eps && std::abs(xk_in[2]) < eps) {
         if (mympi->my_rank == 0 && writes->getVerbosity() > 0) {
             static auto warned_gamma = false;
@@ -986,11 +943,8 @@ void PhononVelocity::add_nonanalytic_velocity_matrix(const double *xk_in, const 
 
         for (auto ishift = 0; ishift < 2; ++ishift) {
             if (kvec_fixed) {
-                // Band paths: the eigenproblem is solved with the SEGMENT direction
-                // (kvec_na), which for an offset segment differs from the radial
-                // direction of q. Differentiating with the radial one would take the
-                // eigenvectors from one nonanalytic matrix and the derivative from
-                // another, so the caller's direction is held fixed here.
+                // Hold the band-segment direction kvec_na fixed so the derivative uses
+                // the same nonanalytic matrix as the eigenproblem.
                 for (auto j = 0; j < 3; ++j) kvec[ishift][j] = kvec_fixed[j];
                 continue;
             }

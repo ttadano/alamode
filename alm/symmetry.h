@@ -152,12 +152,8 @@ private:
     size_t nsym_super, ntran_super;
     size_t nsym_prim, ntran_prim;
     size_t nat_trueprim;
-    // nat_trueprim is the number of atoms included in a true primitive cell.
-    // This value can be different from primcell.number_of_atoms because
-    // the latter value is calculated from the PRIMCELL value given by users,
-    // which does not necessary reduces the inputcell to a true primitive cell.
-    // When nat_trueprim != primcell.number_of_atoms, ntran_prim will be larger
-    // than 1.
+    // nat_trueprim counts atoms in the true primitive cell. A user-defined
+    // PRIMCELL may contain more atoms, in which case ntran_prim > 1.
 
     std::vector<std::vector<int>> map_fullsymmetry_super; // [nat_base, nsym_super]
     std::vector<std::vector<int>> map_fullsymmetry_prim;  // [nat_base, nsym_super]

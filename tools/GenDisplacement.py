@@ -859,9 +859,8 @@ class AlamodeDisplace(object):
                 else:
                     sigma[iq, imode] = 0.0
 
-        # 5) Option 1: cap σ so typical displacement (σ*C) per mode
-        #    doesn't exceed nn-fraction. Note: truncation at ±k*σ may
-        #    occasionally allow slightly larger displacements.
+        # Cap typical per-mode displacement sigma*C at nn-fraction;
+        # truncation at +/-k*sigma can still allow larger displacements.
         if self._cap_sigma_by_nn:
             dnn = self._nearest_neighbor_distances()  # Å, per atom
             Cgain = self._per_mode_realspace_gain()  # Å per unit Q
@@ -1221,10 +1220,7 @@ class AlamodeDisplace(object):
         else:
             temperature_au = self._K_BOLTZMANN * temperature / self._RYDBERG_TO_JOULE
             x = omega / temperature_au
-            # Prevent overflow when x is too large
-            # (e.g., when omega=1e6 for acoustic mode suppression)
-            # For x > ~700, exp(x) would overflow.
-            # At large x, n_BE ≈ exp(-x) ≈ 0
+            # For large x, n_BE approaches zero; avoid exp(x) overflow above ~700.
             if x > 100.0:
                 return 0.0
             return 1.0 / (math.exp(x) - 1.0)
@@ -1462,9 +1458,7 @@ class AlamodeDisplace(object):
                         if np.linalg.norm(disp_real[jat]) > 1e-10:
                             max_rel_diff = 1.0  # Different from zero reference
 
-                # Uniformity score: 1 - max_relative_difference
-                # Perfect acoustic mode: max_rel_diff = 0 → score = 1.0
-                # Non-uniform mode: max_rel_diff → ∞ → score → 0
+                # Uniformity score: 1 for equal displacements, approaching 0 as they diverge.
                 uniformity_scores[imode] = 1.0 / (1.0 + max_rel_diff)
 
             # Mark modes with high uniformity score as acoustic

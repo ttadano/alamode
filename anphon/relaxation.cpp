@@ -820,16 +820,9 @@ void Relaxation::rescue_step_after_scp_failure(RelaxationStructureState &structu
                                                const std::vector<int> &harm_optical_modes, double **omega2_harmonic,
                                                std::complex<double> ***evec_harmonic) const
 {
-    // Called instead of update_cell_coordinate when the SCP equation did not
-    // converge at the current structure. The forces and stress evaluated from an
-    // unconverged SCP solution are unreliable, so they are not given to the
-    // optimizer: its history keeps only data from converged SCP solutions.
-    // The structure is moved back halfway along the last step, so repeated
-    // failures bisect toward the last structure where the SCP equation was
-    // solvable. If there is no previous step to undo (failure at the first
-    // structure iteration), a strongly damped steepest-descent step on the
-    // unreliable force is taken so that the optimization can leave the initial
-    // structure; the cell is kept fixed in that case.
+    // On SCP failure, keep unreliable forces/stress out of optimizer history
+    // and halve the last structure step. With no previous step, take a strongly
+    // damped force step at fixed cell to leave the initial structure.
 
     auto &q0 = structure_state.q0;
     auto &u0 = structure_state.u0;

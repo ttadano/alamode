@@ -313,10 +313,8 @@ auto Fcs::get_constraint_symmetry(const size_t nat, const std::unique_ptr<Symmet
                                   const size_t nparams, const double tolerance, ConstraintSparseForm &const_out,
                                   const ReductionAlgo algo_in) -> void
 {
-    // Create constraint matrices arising from the crystal symmetry.
-    // Necessary for hexagonal systems.
-    // The QR path intentionally preserves the current auto rank tolerance. `tolerance` is retained
-    // for API compatibility with callers and the non-integer symmetry helper.
+    // Build crystal-symmetry constraints (needed for hexagonal systems).
+    // QR uses automatic rank tolerance; retain tolerance for API compatibility.
     (void)tolerance;
 
     int i;
@@ -487,11 +485,7 @@ auto Fcs::get_constraint_symmetry_in_integer(const size_t nat, const std::unique
                                              const double tolerance, ConstraintSparseForm &const_out,
                                              const ReductionAlgo algo_in) -> void
 {
-    // Create constraint matrices arising from the crystal symmetry.
-    // Necessary for hexagonal systems.
-    // This does exactly the same thing as get_constraint_symmetry but assumes
-    // all elements of the constraint matrix are integer.
-    // This version is expected to be more stable (and fast?).
+    // Integer-matrix version of get_constraint_symmetry for improved stability.
 
     int i;
     unsigned int isym;

@@ -47,12 +47,9 @@ using namespace PHON_NS;
 
 namespace
 {
-// Hermitian eigensolver for the SCPH iteration. Eigen's tridiagonal QR is the
-// faster choice for small matrices; LAPACK zheevd (threaded MKL/OpenBLAS) wins
-// from a few hundred modes on (n = 432: 0.07 s against 0.10 s single-threaded
-// with OpenBLAS, and MKL threads over the 64 cores of a node). Eigenvectors in
-// columns, eigenvalues ascending in both cases; the SCPH solver is invariant to
-// the eigenvector phases.
+// Use Eigen QR for small Hermitian problems and LAPACK zheevd for larger
+// ones. Both return ascending eigenvalues and eigenvectors in columns;
+// SCPH is invariant to eigenvector phases.
 constexpr int lapack_eigen_threshold = 256;
 
 void hermitian_eigen(const Eigen::MatrixXcd &mat, Eigen::VectorXd &eval, Eigen::MatrixXcd *evec)
@@ -1337,12 +1334,9 @@ void Scph::compute_qmat_and_dmat(const Eigen::MatrixXd &omega_now, const double 
 #pragma omp for
         for (int ik = 0; ik < static_cast<int>(nk); ++ik) {
 
-            // At Gamma, the three translational (acoustic) modes must be excluded from Qmat.
-            // They are identified from the eigenvectors (via the overlap with the harmonic
-            // acoustic subspace encoded in cmat_convert), NOT from the frequency magnitude:
-            // a soft optical mode renormalized to nearly zero frequency would otherwise be
-            // silently treated as acoustic, which removes its own divergent (2n+1)/2omega
-            // self-interaction and thereby stabilizes a spurious omega = 0 solution.
+            // Exclude Gamma translations using overlap with the harmonic acoustic
+            // subspace in cmat_convert. A frequency cutoff would also exclude soft
+            // optical modes and spuriously stabilize a zero-frequency solution.
             std::vector<bool> is_acoustic_now;
             if (ik == ik_gamma_dense) {
                 is_acoustic_now = classify_acoustic_modes_from_cmat(cmat_convert[ik]);
@@ -1357,12 +1351,8 @@ void Scph::compute_qmat_and_dmat(const Eigen::MatrixXd &omega_now, const double 
                 // omega1 for any finite frequency.
                 auto omega_for_q = std::abs(omega_now(ik, is));
                 if (omega_for_q < eps8) {
-                    // A non-acoustic mode has (transiently) collapsed to zero frequency.
-                    // Evaluating the 1/omega factor there would give a violent restoring
-                    // kick that destabilizes the fixed-point iteration; instead evaluate it
-                    // at a harmonic frequency scale (the value a cold-started iteration
-                    // would use), which pushes the mode back to a finite frequency at a
-                    // physically reasonable rate.
+                    // Use a harmonic frequency scale for collapsed optical modes to avoid
+                    // a destabilizing 1/omega factor and restore a finite frequency.
                     if (ik == ik_gamma_dense) {
                         omega_for_q = omega_floor_gamma;
                     } else {
@@ -1459,13 +1449,9 @@ void Scph::diagonalize_and_symmetrize(const Eigen::MatrixXcd &Fmat, const std::v
                     std::cout << "  onsite V4 is positive\n\n";
                 }
 
-                // With a warm start, the previous temperature's converged omega2 at the
-                // same sorted index is used as the reset target -- but only when it is
-                // meaningfully positive. The sorted index is not a branch label: at Gamma
-                // an imaginary soft mode sorts below the acoustic zeros, so the stored
-                // value can be (exactly) zero, and resetting to it would pin the soft mode
-                // at zero frequency for the rest of the iteration. In that case, and on
-                // cold starts, flip the sign of the eigenvalue instead.
+                // Reuse the previous temperature's omega2 only if positive. Sorted indices
+                // can match acoustic zeros rather than the same branch; otherwise flip
+                // the eigenvalue sign, as on a cold start.
                 if (flag_converged && omega2_out[knum][is] > eps15) {
                     ++icount;
                     eval_tmp(is) = omega2_out[knum][is] * std::pow(0.99, icount);
@@ -1867,20 +1853,10 @@ void Scph::compute_anharmonic_frequency_diis(double **omega2_out, std::complex<d
 {
     const auto time_setup_start = timer->elapsed();
 
-    // SCPH iteration accelerated by Pulay/Anderson (DIIS) mixing.
-    //
-    // The fixed-point variable is the full set of D matrices on the dense k mesh,
-    //   x = {D_k},   g(x) = K(omega(x), C(x)),
-    // and the residual handed to DIIS is r_n = g(x_n) - x_n of the same iterate.
-    // The update x_{n+1} = sum_m c_m (x_m + beta * r_m) with beta = mixalpha
-    // reduces exactly to the simple mixing of compute_anharmonic_frequency when
-    // the history holds a single pair, so the early iterations are identical to
-    // the reference implementation.
-    //
-    // A single DIIS history is kept for the concatenated state of all k points
-    // because the SCP equation couples the k points through the inner sum
-    // over q1; mixing D (rather than the eigenvalues) makes the residual
-    // basis-free, so no mode tracking across iterations is required.
+    // Pulay/Anderson mixing of all dense-mesh D matrices:
+    //   r_n = g(x_n) - x_n, x_{n+1} = sum_m c_m (x_m + mixalpha * r_m).
+    // One history spans the coupled k points; mixing D avoids mode tracking.
+    // A single history pair reduces to simple mixing.
 
     using namespace Eigen;
 
@@ -2098,14 +2074,9 @@ void Scph::compute_anharmonic_frequency_diis(double **omega2_out, std::complex<d
         const double rnorm = rvec.norm();
         const double rnorm_rel = rnorm / std::max(xvec.norm(), 1.0e-100);
 
-        // The icount-dependent imaginary-mode repair in diagonalize_and_symmetrize
-        // makes g(x) history-dependent, which formally violates the DIIS
-        // assumptions. The pairs are pushed anyway: in soft-mode tests
-        // (SrTiO3, cold start at T = 0) the repair stays active for most of
-        // the run and DIIS still converges where simple mixing fails, with
-        // the residual-growth reset below absorbing the resulting noise.
-        // Excluding repaired iterations from the history would leave DIIS
-        // disabled exactly where it is needed most.
+        // Keep imaginary-mode-repaired iterates in DIIS history despite their
+        // history-dependent map; the residual-growth reset handles instability.
+        // Excluding them would disable DIIS throughout many soft-mode iterations.
         if (verbosity > 1) {
             std::cout << "  DIIS: |r|/|x| = " << std::scientific << rnorm_rel;
             if (eval_repaired) std::cout << "  (imaginary-mode repair active)";

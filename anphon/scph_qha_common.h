@@ -89,11 +89,8 @@ protected:
     std::vector<unsigned char> converged_scph_temp;
     std::vector<unsigned char> converged_str_temp;
 
-    // Zeroth-order (static) potential energy V0(T) of the relaxed structure,
-    // recorded per temperature by the structural-optimization drivers and
-    // stored in the state file. Owned here (not by Relaxation) because it is
-    // per-run result state of the SCPH/QHA drivers. The drivers size it on
-    // every rank (exec entry) before any restart loader broadcasts into it.
+    // Static relaxed-structure energy V0(T), stored in the SCPH/QHA state file.
+    // Size on every rank before restart broadcasts.
     std::vector<double> V0;
 
     // Legacy-text restart IO for V0 (PREFIX.V0). The text file also serves
@@ -261,12 +258,8 @@ protected:
     static void build_cmat_at_k(unsigned int ns, const Eigen::MatrixXcd &evec_ref_mat,
                                 const std::complex<double> *const *evec_new_at_k, std::complex<double> **cmat_out);
 
-    // Identify which modes of the CURRENT (renormalized) eigenbasis at Gamma are the three
-    // translational (acoustic) modes, given the unitary C(k=Gamma) connecting the harmonic
-    // basis to the current one: overlap(js) = sum_{is in acoustic_harm} |C[is][js]|^2, and the
-    // three modes with the largest overlap are flagged. Robust against the reshuffling of the
-    // sorted mode indices that occurs when a soft optical mode becomes nearly degenerate with
-    // the acoustic modes during the SCPH iteration.
+    // Identify Gamma acoustic modes by majority overlap with the harmonic
+    // acoustic subspace: overlap(js) = sum_{is in acoustic_harm} |C[is][js]|^2.
     std::vector<bool> classify_acoustic_modes_from_cmat(const std::complex<double> *const *cmat_at_gamma) const;
 
     // Occupation-weighted SCP mode matrix at dense k:

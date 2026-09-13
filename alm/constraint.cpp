@@ -344,16 +344,9 @@ auto Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
 {
     const auto maxorder = cluster->get_maxorder();
 
-    // For the non-algebraic path (ICONST = 1/2/3) the merged constraint matrix is rank-reduced
-    // and handed to the equality-constrained least-squares solver (GQR / Pardiso-KKT). Use the
-    // rank-revealing QR (qrd) there regardless of the configured backend: the rref /
-    // coord_factorization (Gauss-Jordan) backends use a fixed absolute pivot tolerance that
-    // mis-detects the numerical rank of large constraint systems -- they accept round-off
-    // residuals as independent pivots and, after normalising by the tiny pivot, inject
-    // amplified-noise constraint rows that corrupt the fit (broken ASR / rotational invariance,
-    // imaginary phonons). The configured backend is honoured for the algebraic path
-    // (ICONST >= 10), where it builds the per-order elimination map consumed by the
-    // elastic-net / adaptive-lasso solvers.
+    // Use rank-revealing QR for ICONST = 1/2/3: fixed absolute pivot tolerances
+    // can mistake round-off for independent constraints and corrupt the fit.
+    // For ICONST >= 10, use the configured backend for the elimination map.
     const auto algo = constraint_algebraic ? algo_in : ReductionAlgo::qrd;
 
     // const_symmetry is updated.
@@ -433,16 +426,9 @@ auto Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
         }
     }
 
-    // The merged (full) constraint matrix const_mat_sparse and its rank reduction are only
-    // consumed by the non-algebraic solvers (build_constraint_matrix_dense and the dense
-    // least_squares_with_constraints_gqr / sparse solveGQRSparse paths). In the algebraic
-    // path (ICONST >= 10, used by elastic-net / adaptive-lasso) the solve instead uses the
-    // per-order elimination map (const_fix / const_relate / index_bimap) built below, and
-    // get_exist_constraint() inspects const_self / const_fix / const_relate directly without
-    // reading number_of_constraints. Building/reducing the merged matrix here is therefore
-    // wasted work in the algebraic path -- and for large maxorder it dominates the reduction
-    // time, because get_independent_rows_lapack_sparse densifies to a P x N buffer and runs a
-    // dense LAPACK QR. Skip it entirely; number_of_constraints is set from the mapping below.
+    // Only non-algebraic solvers need the merged constraint matrix.
+    // For ICONST >= 10, use the per-order elimination map below and avoid
+    // the costly merged-matrix rank reduction.
     if (!constraint_algebraic) {
         size_t nparams = 0;
         for (auto order = 0; order < maxorder; ++order) {
@@ -467,9 +453,7 @@ auto Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
     }
 
     if (constraint_algebraic) {
-        // The mapping requires const_self in reduced row echelon form. rref and
-        // coord_factorization already produced it in the per-order loop above; only the qrd /
-        // none paths still need an explicit echelon reduction here.
+        // The mapping needs reduced row echelon form; only qrd / none still need reduction.
         if (algo != ReductionAlgo::rref && algo != ReductionAlgo::coord_factorization) {
             for (auto order = 0; order < maxorder; ++order) {
                 const auto nparam = fcs->get_nequiv()[order].size();
@@ -484,9 +468,7 @@ auto Constraint::update_constraint_matrix(const std::unique_ptr<System> &system,
                                const_relate.data(),
                                index_bimap);
 
-        // number_of_constraints is not consumed by the algebraic solve, but keep it
-        // meaningful for reporting and get_exist_constraint(): each fixed or related
-        // parameter corresponds to one independent constraint that eliminates a parameter.
+        // Count one constraint per fixed or related parameter for reporting.
         number_of_constraints = 0;
         for (auto order = 0; order < maxorder; ++order) {
             number_of_constraints += const_fix[order].size() + const_relate[order].size();
@@ -1880,10 +1862,8 @@ auto Constraint::generate_rotational_constraint(const std::unique_ptr<System> &s
                                                                 rank);
             }
         } else if (algo_in == ReductionAlgo::coord_factorization) {
-            // Mirror the rref branch with the stable partial-pivot kernel. const_rotation_cross
-            // is inter-order and is NOT merged into const_self, so (unlike the other subsets) it
-            // must be reduced here; otherwise it would reach build_constraint_matrix_sparse raw
-            // in the non-algebraic path (ICONST = 2/3).
+            // Reduce inter-order const_rotation_cross here: it is not merged into
+            // const_self before the non-algebraic solve (ICONST = 2/3).
             rref_sparse_pivot(nparams[order], const_rotation_self[order], eps6);
             if (order > 0) {
                 rref_sparse_pivot(nparams[order - 1] + nparams[order], const_rotation_cross[order], eps6);

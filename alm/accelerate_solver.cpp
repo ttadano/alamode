@@ -1,8 +1,4 @@
-// accelerate_solver.cpp
-//
-// Translation unit isolating <Eigen/AccelerateSupport> (and thus <Accelerate/Accelerate.h>) from the
-// hand-rolled Fortran BLAS/LAPACK prototypes in include/blas_wrapper.h / include/lapack_wrapper.h.
-// See accelerate_solver.h for the rationale. This file intentionally includes NEITHER wrapper.
+// Isolate Accelerate headers from the BLAS/LAPACK wrappers; see accelerate_solver.h.
 #include "accelerate_solver.h"
 
 #ifdef USE_ACCEL_BACKEND

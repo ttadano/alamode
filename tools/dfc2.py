@@ -210,12 +210,9 @@ class FC2Updater:
         prim_kind = fc2_data.atomic_kinds
         inv_prim = np.linalg.inv(prim_lat)  # cart @ inv_prim -> fractional
 
-        # --- 1. The dfc2 cell should be the same cell as the HDF5 PrimitiveCell
-        #        (ANPHON prints its own primitive cell as the dfc2 header).  If
-        #        they differ only in size/shape -- e.g. corrections fitted at a
-        #        different volume -- the atomic correspondence can still be
-        #        established from fractional coordinates, but the transferred
-        #        force constants are only an approximation.
+        # The dfc2 cell should match HDF5 PrimitiveCell. Fractional coordinates
+        # can map atoms between different cell shapes/volumes, but transferring
+        # those force constants is approximate.
         lattice_match = np.allclose(dfc2_correction.lattice, prim_lat, atol=1.0e-3)
         if not lattice_match:
             report = cls._cell_mismatch_report(dfc2_correction.lattice, prim_lat)
@@ -231,10 +228,8 @@ class FC2Updater:
             print("WARNING: applying corrections across mismatched primitive cells.")
             print(report)
 
-        # Map each dfc2 atom onto a PrimitiveCell atom index by nearest position
-        # modulo a lattice translation (an identity map when the cells agree).
-        # Require a one-to-one correspondence so a deformed/mismatched cell that
-        # cannot be aligned is rejected rather than silently mis-mapped.
+        # Map dfc2 atoms one-to-one to PrimitiveCell atoms by nearest position
+        # modulo lattice translations; reject cells that cannot be aligned.
         dfc2_to_prim = np.full(len(dfc2_correction.positions), -1, dtype=np.int64)
         used = {}
         max_frac_res = 0.0
@@ -350,15 +345,9 @@ class FC2Updater:
                 if abs(val) > tol:
                     n_nonzero_applied += 1
 
-        # --- 5. Diagnostics.
-        #        A physical correction may be listed several times in the dfc2
-        #        file (once per translational copy of an atom in the conventional
-        #        cell).  An unconsumed nonzero row is an expected duplicate only
-        #        if an *equivalent* correction was actually consumed.  Equivalence
-        #        is tested with a translation-invariant signature -- the Cartesian
-        #        bond vector together with the two coordinate directions uniquely
-        #        identifies the force-constant component -- so a genuine miss can
-        #        never be silently reclassified as a duplicate.
+        # Treat an unused nonzero row as a duplicate only if an equivalent row
+        # was consumed. Match by Cartesian bond vector and coordinate directions
+        # to distinguish translational copies from missing corrections.
         def signature(n):
             a0 = int(dfc2_to_prim[dfc2_correction.atoms[n, 0]])
             a1 = int(dfc2_to_prim[dfc2_correction.atoms[n, 1]])

@@ -32,13 +32,9 @@ using PHON_NS::v4_index_transform::transform_index_gemm;
 
 namespace
 {
-// CSC-like skeleton of the quartic-IFC scatter pattern phi4[(a1,a2)][(a3,a4)].
-// The row/column indices depend only on evec_index_v4, which is fixed once in
-// AnharmonicCore::setup_quartic(), so the skeleton is built once per kernel call
-// and only the values are refilled for each (k1,k2) pair. Duplicate (row,col)
-// pairs are merged into one slot; refilling in increasing group order keeps the
-// last group's value, reproducing the dense scatter's overwrite semantics (the
-// quadruplets are in fact unique after grouping, so this is a safe no-op).
+// Cache the CSC-like scatter pattern phi4[(a1,a2)][(a3,a4)] from
+// evec_index_v4 and refill values per (k1,k2). Merge duplicate slots,
+// keeping the last group's value to match dense-scatter semantics.
 struct SparsePhi4Skeleton
 {
     std::vector<size_t> row;               // size nnz: row index a1*ns+a2
@@ -608,11 +604,9 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_kpoint(v4_distributed::V4RowBlo
                 }
             }
 
-            // The remaining transforms are matrix products: each one contracts the
-            // outermost mode index of the (ns x ns^3) view of the current buffer and
-            // appends the new index innermost, so the layout rotates as
-            // [a2 a3 a4 i] -> [a3 a4 i j] -> [a4 i j k] -> [i j k m], and after the
-            // fourth transform the flat layout coincides with the owned slice of v4.
+            // Contract outermost indices with GEMMs on ns x ns^3 views:
+            // [a2 a3 a4 i] -> [a3 a4 i j] -> [a4 i j k] -> [i j k m].
+            // The final layout matches the owned v4 slice.
             constexpr auto complex_one = std::complex<double>(1.0, 0.0);
 
             // transform the second index (v4_tmp1 -> v4_tmp2)
@@ -828,11 +822,8 @@ void ScphQhaCommon::compute_V4_elements_mpi_over_band(v4_distributed::V4RowBlock
             }
         }
 
-        // The remaining transforms are matrix products on the (ns x ns^2) view of
-        // the buffer: each contracts the outermost mode index and appends the new
-        // index innermost, so the layout rotates [a2 a3 a4] -> [a3 a4 j] -> [a4 j k]
-        // -> [j k l]. The last one writes, with the prefactor, straight into the ns
-        // contiguous rows (is_now, j) of the owned unit, columns k*ns + l.
+        // Contract ns x ns^2 views: [a2 a3 a4] -> [a3 a4 j] -> [a4 j k] -> [j k l].
+        // Write the scaled result to owned rows (is_now, j), columns k*ns + l.
         constexpr auto complex_one = std::complex<double>(1.0, 0.0);
         transform_index_gemm(&evec_in[knum][0][0], &v4_tmp1[0][0], &v4_tmp2[0][0], ns, ns2, complex_one);
         transform_index_gemm(&evec_in[jk_now][0][0], &v4_tmp2[0][0], &v4_tmp1[0][0], ns, ns2, complex_one);

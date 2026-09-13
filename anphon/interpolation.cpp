@@ -196,20 +196,10 @@ void PHON_NS::fourier_dymat_k_to_r(const unsigned int nk1, const unsigned int nk
                                    const unsigned int ns, const std::complex<double> *const *const *dymat_k,
                                    std::complex<double> ***dymat_r)
 {
-    // Forward DFT (k -> r), including the 1/N normalization, of all (is, js)
-    // components of a coarse-mesh dynamical-matrix array at once:
+    // Forward DFT of all dynamical-matrix components:
     //   dymat_r[is][js][r] = (1/N) sum_k dymat_k[is][js][k] e^{-2 pi i k.r}.
-    //
-    // This used to be done with one FFTW plan per (is, js) pair, re-created at
-    // every call: fftw_execute() always transforms the arrays its plan was
-    // created with, and fftw_execute_dft() on different arrays carries strict
-    // alignment requirements, so the plan could not be hoisted safely. The
-    // coarse mesh is tiny, so plan creation dominated the transform itself.
-    // The explicit DFT matrix below reproduces the FFTW_FORWARD convention
-    // (row-major multi-index, negative exponent) exactly, is alignment-free,
-    // and applies to all ns^2 components as a single matrix product; the arrays
-    // from allocate() are contiguous, with (is, js) blocks of length
-    // nk1*nk2*nk3 each.
+    // A single matrix product avoids repeated FFTW plan creation on small meshes.
+    // Arrays are contiguous, with nk1*nk2*nk3 entries per (is, js) block.
 
     using namespace Eigen;
 

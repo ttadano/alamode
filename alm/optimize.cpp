@@ -46,13 +46,9 @@ using namespace ALM_NS;
 
 namespace
 {
-// Coordinate descent builds the Gram matrix Prod = A^T A column by column, lazily: each column is a
-// separate OpenMP-parallel GEMV inside the sweep. When the full Gram is affordable -- N (columns)
-// not much larger than M (rows) -- building it up front with one BLAS-3 GEMM is markedly faster than
-// that per-column build, even if the elastic-net solution does not use every column (the GEMM's
-// efficiency beats the lazy build's per-column overhead). For strongly underdetermined problems
-// (N >> M) only a few columns are ever needed, so the lazy build wins. The active set is bounded by
-// min(N, M), so N <= factor * M is the affordability test. Set ALM_GRAM_LAZY to force the lazy path.
+// Build the Gram matrix with one GEMM when N <= factor * M; use lazy
+// column-wise GEMVs for strongly underdetermined problems (N >> M).
+// ALM_GRAM_LAZY forces the lazy path.
 constexpr Eigen::Index gram_dense_factor = 2;
 
 inline auto use_full_gram(const Eigen::MatrixXd &A) -> bool
@@ -71,11 +67,9 @@ inline auto matvec_nthreads(const Eigen::Index ncols) -> int
     return static_cast<int>(n);
 }
 
-// res = A * x, parallelized over the columns of the (column-major) A with per-thread partial sums,
-// because Eigen/Accelerate run dgemv single-threaded here. `scratch` is (A.rows() x nthreads) and is
-// reused across calls. Columns with x(j)==0 are skipped (exploits a sparse iterate). The team is
-// pinned with num_threads(nthreads) so omp_get_thread_num() < nthreads == scratch.cols() always --
-// no out-of-bounds even if the runtime would otherwise pick a different team size.
+// Compute A*x over column-major A with per-thread sums in reusable
+// scratch[A.rows()][nthreads], skipping zero x entries. Fix the team size
+// to match scratch.cols().
 inline void parallel_Ax(const Eigen::MatrixXd &A, const Eigen::VectorXd &x, const int nthreads,
                         Eigen::MatrixXd &scratch, Eigen::VectorXd &res)
 {
@@ -101,15 +95,9 @@ inline void parallel_Atr(const Eigen::MatrixXd &A, const Eigen::VectorXd &r, con
     }
 }
 
-// OLS solve  min_x ||A x - b||_2  for the adaptive-LASSO penalty weights, returning the coefficients
-// and the effective column rank in `rank_out`.
-//
-// Fast path: normal equations  (A^T A) x = A^T b  solved by Cholesky. A^T A is a threaded BLAS-3
-// product (the same kernel coordinate descent uses to build its Gram), whereas Eigen's
-// rank-revealing ColPivHouseholderQR is single-threaded and dominated the adaptive-LASSO runtime.
-// If A^T A is not numerically positive-definite (A rank-deficient or severely ill-conditioned),
-// fall back to the robust QR. The weights are |x_OLS|, used only to scale the L1 penalty, so the
-// squared condition number of the normal-equations path is harmless whenever Cholesky succeeds.
+// Compute OLS coefficients and rank_out for adaptive-LASSO weights.
+// Use threaded normal equations with Cholesky, falling back to
+// rank-revealing QR for rank-deficient or ill-conditioned matrices.
 inline auto solve_ols_for_adalasso(const Eigen::MatrixXd &A, const Eigen::VectorXd &b,
                                    Eigen::Index &rank_out) -> Eigen::VectorXd
 {
@@ -119,10 +107,8 @@ inline auto solve_ols_for_adalasso(const Eigen::MatrixXd &A, const Eigen::Vector
 
     Eigen::LLT<Eigen::MatrixXd> llt(gram);
     if (llt.info() == Eigen::Success) {
-        // Guard against the cond(A)^2 amplification of the normal-equations path: if the Cholesky
-        // factor has a tiny pivot relative to the largest (near rank deficiency), the OLS weights from
-        // the squared system can be inaccurate. Fall back to the rank-revealing QR in that case. The
-        // diagonal of the Cholesky factor is a cheap proxy for conditioning.
+        // Small relative Cholesky pivots indicate inaccurate normal-equation
+        // weights; fall back to rank-revealing QR.
         const auto ldiag = llt.matrixLLT().diagonal().cwiseAbs();
         const double dmin = ldiag.minCoeff();
         const double dmax = ldiag.maxCoeff();
@@ -265,10 +251,8 @@ auto Optimize::optimize_main(const std::unique_ptr<Symmetry> &symmetry, std::uni
         }
 
         if (optcontrol.linear_model == 3) {
-            // Adaptive LASSO standardizes the (reweighted) design matrix for conditioning, just like
-            // elastic net. A per-column L1 penalty (= factor_std, set in the solver dispatch) keeps the
-            // standardized solve equivalent to penalizing the un-standardized reweighted coefficients,
-            // so STANDARDIZE = 1 is no longer "meaningless" -- it is the default and is much faster.
+            // Per-column L1 penalties (factor_std) preserve the adaptive-LASSO
+            // objective when standardizing the reweighted design matrix.
 
             if (std::abs(optcontrol.displacement_normalization_factor - 1.0) > eps) {
                 if (verbosity > 0) {
@@ -755,11 +739,9 @@ auto Optimize::run_manual_cv(const std::string &job_prefix, const int maxorder, 
     }
     fnorm_validation = std::sqrt(fnorm_validation);
 
-    // Energy term inside CV (EFIT_CV): append the centered/weighted/w-scaled energy rows to both
-    // the training and validation systems, so each fold's fit AND its held-out error include the
-    // energy; alpha is then selected by the combined (force + w·energy) relative residual. The
-    // combined norm sqrt(fnorm^2 + enorm^2) keeps the reported error dimensionless. The pre-augment
-    // force-row counts/norms are kept so solution_path can also report the separate force/energy errors.
+    // EFIT_CV adds centered, weighted energy rows to training and validation.
+    // Select alpha by the combined residual normalized by sqrt(fnorm^2 + enorm^2);
+    // retain force-row counts and norms for separate component errors.
     const bool efit_in_cv = (optcontrol.efit_weight > 0.0 && optcontrol.efit_cv);
     size_t nrow_force_train = 0, nrow_force_val = 0;
     double fnorm_force_train = 0.0, fnorm_force_val = 0.0, enorm_train_cv = 0.0, enorm_val_cv = 0.0;
@@ -1733,10 +1715,8 @@ auto Optimize::solution_path(const int maxorder, Eigen::MatrixXd &A, Eigen::Vect
         validation_error.push_back(std::sqrt(res2));
         nonzeros.push_back(nzero_lasso);
 
-        // Optional split of the (combined) residual into force-only and energy-only relative errors.
-        // All four outputs are filled together (require all pointers). A zero reference norm (no force
-        // data, or a degenerate all-equal energy set) yields 0.0 — the relative error is then undefined
-        // but trivially satisfied; this does not occur for a normal energy-in-CV run.
+        // Fill separate force and energy relative errors when all four outputs
+        // are provided. Report zero for a zero reference norm.
         if (terr_force != nullptr && terr_energy != nullptr && verr_force != nullptr && verr_energy != nullptr) {
             const double fres_t = fdiff.head(nrow_force_train).squaredNorm();
             const double eres_t = fdiff.tail(M - nrow_force_train).squaredNorm();
@@ -2212,11 +2192,8 @@ auto Optimize::get_estimated_max_alpha(const Eigen::MatrixXd &Amat, const Eigen:
     C = C.transpose() * bvec;
     auto max_alpha = 0.0;
 
-    // Adaptive LASSO solves the standardized system with a per-column penalty p_j = factor_std_j =
-    // 1/dev_j, so the KKT zero-solution threshold for column j is |Z_j^T b| / (p_j * M * l1_ratio),
-    // i.e. the standardized gradient must be divided by p_j (equivalently multiplied by dev_j).
-    // Omitting this made the alpha grid start one step too high (a CV-selected-alpha shift). For
-    // STANDARDIZE = 0, dev == 1 so this reduces to the previous behavior.
+    // Adaptive-LASSO zero-solution threshold: |Z_j^T b| / (p_j * M * l1_ratio),
+    // where p_j = factor_std_j = 1/dev_j. With STANDARDIZE = 0, dev_j = 1.
     const bool adalasso = (optcontrol.linear_model == 3);
     for (auto i = 0; i < ncols; ++i) {
         const auto grad_abs = adalasso ? std::abs(C(i)) * dev(i) : std::abs(C(i));
@@ -2877,9 +2854,7 @@ auto Optimize::get_matrix_elements2(const int maxorder, const size_t ncycle, con
         double **amat_mod_tmp = nullptr;
         std::vector<T> nonzero_omp;
 
-        // Parameter-major (amat[param][component]): the data block is the same size as the old
-        // [component][param] layout, only the row-pointer array grows to O(ncols) entries per
-        // thread (a few MB at most) — negligible next to the ncols*natmin3 doubles it indexes.
+        // Parameter-major layout: amat[param][component].
         allocate(amat_orig_tmp, ncols, natmin3);
 
         if (constraint->get_constraint_algebraic()) {
@@ -3211,10 +3186,8 @@ auto Optimize::fill_amat(const int maxorder, const size_t natmin, const size_t n
                          const std::unique_ptr<Symmetry> &symmetry, const std::unique_ptr<Fcs> &fcs,
                          double **&amat_orig) -> void
 {
-    // amat_orig is stored parameter-major: amat_orig[iparam][k], i.e. the natmin3 force
-    // components of a given free parameter are contiguous in memory. This layout lets the
-    // constraint projection (project_constraints) and the matrix scans operate on contiguous
-    // length-natmin3 vectors instead of striding column-wise across a row-major buffer.
+    // Store amat_orig[param][component] so projection and matrix scans
+    // access contiguous force-component vectors.
     const auto natmin3 = natmin * 3;
 
     for (size_t i = 0; i < ncols; ++i) {
@@ -3260,10 +3233,7 @@ auto Optimize::project_constraints(const int maxorder, const size_t natmin, cons
     const auto natmin3 = 3 * natmin;
     const auto idata = natmin3 * irow;
 
-    // amat_orig / amat_mod are parameter-major (amat[param][component]); the natmin3 force
-    // components of each parameter are contiguous, so the copies and AXPYs below stream over
-    // memory instead of striding column-wise across a row-major buffer (the dominant cost of
-    // this routine for large algebraic-constraint fits).
+    // Parameter-major buffers keep copies and AXPYs contiguous.
     for (int order = 0; order < maxorder; ++order) {
 
         for (const auto fix: constraint->get_const_fix(order)) {
@@ -3274,10 +3244,8 @@ auto Optimize::project_constraints(const int maxorder, const size_t natmin, cons
             }
         }
 
-        // index_bimap(order).left ranges over [0, index_bimap(order).size()); added to the running
-        // iparam offset, inew covers [0, ncols_compact) exactly once across all orders. So this loop
-        // overwrites every row of amat_mod on every training row, and the per-thread amat_mod buffer
-        // (reused across rows) never carries stale data into the const_relate -= update below.
+        // The mapping overwrites every amat_mod row before const_relate updates,
+        // so the reused per-thread buffer needs no clearing.
         for (const auto &it: constraint->get_index_bimap(order)) {
             inew = it.left + iparam;
             iold = it.right + ishift;
@@ -3322,10 +3290,8 @@ auto Optimize::project_energy_row(const int maxorder, const std::unique_ptr<Fcs>
                                   const std::unique_ptr<Constraint> &constraint, const std::vector<double> &e_full,
                                   std::vector<double> &e_compact, double &e_rhs) -> void
 {
-    // Single-row analogue of project_constraints for the energy row. e_full is indexed by the full
-    // symmetry-irreducible parameter index (one per nequiv group); e_compact by the constraint-
-    // compacted free parameter index. The FC2FIX-fixed-coefficient energy is moved onto e_rhs,
-    // exactly mirroring the const_fix RHS handling for forces (project_constraints, optimize.cpp).
+    // Project e_full to the constraint-compacted e_compact, moving fixed
+    // coefficient energy to e_rhs as project_constraints does for forces.
     std::fill(e_compact.begin(), e_compact.end(), 0.0);
     e_rhs = 0.0;
 
@@ -3499,12 +3465,9 @@ auto Optimize::gamma(const int n, const int *arr) const -> double
 
 auto Optimize::gamma_energy(const int n, const int *arr) const -> double
 {
-    // Per-entry energy multiplicity factor = gamma(n,arr) / n, matching the ALAMODE energy
-    // convention (cf. tools/taylor.py: E_order = (1/order) * sum gamma * Phi * prod_u).
-    // The fc_table enumerates all index orderings (so the force builder fill_amat, which writes
-    // only the lead atom, is complete); the energy therefore needs the extra 1/n to avoid
-    // overcounting. With this factor the per-order Euler identity
-    //   E_order = -(1/n) * sum_a u_a F_a   holds exactly against the force matrix.
+    // Energy multiplicity is gamma(n, arr) / n (see tools/taylor.py).
+    // The 1/n corrects for fc_table index orderings and gives
+    // E_order = -(1/n) * sum_a u_a F_a.
     return gamma(n, arr) / static_cast<double>(n);
 }
 
@@ -3541,10 +3504,9 @@ auto Optimize::run_energy_selftest(const std::unique_ptr<Symmetry> &symmetry, co
                                    const std::unique_ptr<Constraint> &constraint, const int maxorder,
                                    const int verbosity) const -> bool
 {
-    // Phase-1 verification: the energy-row builder must satisfy the per-order Euler identity
-    //   A_E[c][p] == -(1/n_p) * sum_{supercell atoms a} u_a * A_F[a][p],   n_p = order(p) + 2,
-    // where A_F is the existing (trusted) force matrix. The supercell sum is realized by summing
-    // the natmin primitive force rows over the ntran translation images (cf. fill_bvec mapping).
+    // Check the per-order Euler identity against the force matrix:
+    //   A_E[c][p] == -(1/n_p) * sum_a u_a * A_F[a][p], n_p = order(p) + 2.
+    // Sum over all supercell atoms using the ntran translation images.
     std::cout << "\n  [ALM_ENERGY_SELFTEST] Verifying energy-row builder vs force builder (Euler's theorem)\n";
 
     if (!e_train.empty()) {
@@ -3606,19 +3568,14 @@ auto Optimize::run_energy_selftest(const std::unique_ptr<Symmetry> &symmetry, co
         }
     }
 
-    // Arbitrary, varied, deterministic parameter vector. We contract A_E and A_F with theta:
-    // the assembled force A_F * theta is the COMPLETE physical force on each atom (it sums every
-    // FC entry leading on that atom), so the per-order Euler identity
-    //   E_order(theta) == -(1/n) * sum_a u_a * F_a^order(theta)
-    // holds. (A single A_F column carries only the lead atom's share, so a column-wise check
-    // would spuriously fail by (n-1)/n; the theta contraction is the correct test.)
+    // Contract with deterministic theta to check the complete per-order force:
+    //   E_order(theta) == -(1/n) * sum_a u_a * F_a^order(theta).
+    // Individual force columns contain only the lead atom contribution.
     std::vector<double> theta(ncols);
     for (size_t p = 0; p < ncols; ++p) theta[p] = 1.5 + std::sin(0.3 * static_cast<double>(p) + 1.0);
 
-    // Phase 2: compact-projection validation of project_energy_row. We verify, per config,
-    //   A_E_full . theta_full == A_E_compact . theta_c - e_rhs,   theta_full = recover(theta_c),
-    // which ties the projected energy row to the Phase-1-validated full builder through ALM's own
-    // parameter-recovery map and exercises the FC2FIX fixed-coefficient energy subtraction (e_rhs).
+    // Check projection and fixed-coefficient subtraction for each configuration:
+    //   A_E_full . recover(theta_c) == A_E_compact . theta_c - e_rhs.
     const bool algebraic = constraint->get_constraint_algebraic();
     size_t ncols_c = 0;
     for (int o = 0; o < maxorder; ++o) ncols_c += constraint->get_index_bimap(o).size();
@@ -3726,10 +3683,9 @@ auto Optimize::build_energy_block(const std::unique_ptr<Symmetry> &symmetry, con
                                   const std::vector<double> &e_in, const double emin, std::vector<double> &amat_out,
                                   std::vector<double> &evec_out, double &enorm_out) const -> void
 {
-    // Build the constraint-compacted, weighted-Frisch-Waugh-centered, w-scaled energy block for the
-    // configuration set (u_in, e_in). Used by the production fit (full training set) and by each CV
-    // fold (train and held-out subsets). `emin` is the per-config-weight reference (pass the global
-    // training E_min so the weighting is identical across folds). Requires an algebraic constraint.
+    // Build the constraint-compacted, weighted-centered, w-scaled energy block.
+    // Requires algebraic constraints; use global training E_min as emin
+    // to keep weights consistent across CV folds.
     const size_t n_ene = u_in.size();
     amat_out.clear();
     evec_out.clear();
@@ -4020,10 +3976,8 @@ auto Optimize::coordinate_descent(const int M, const int N, const double alpha, 
             }
         }
         ++iloop;
-        // Eigen SIMD reduction instead of an every-sweep OpenMP parallel-for: the work is a
-        // tiny O(N) memory-bound sum, so fork/join dominated it. Also deterministic, whereas
-        // the OpenMP reduction's sum order (and thus the converged iteration) depended on the
-        // thread count.
+        // Use Eigen SIMD for this small sum to avoid OpenMP overhead and
+        // thread-count-dependent reduction order.
         diff = std::sqrt(delta.squaredNorm() / static_cast<double>(N));
 
         if (diff < optcontrol.tolerance_iteration) break;
@@ -4085,10 +4039,9 @@ auto Optimize::estimate_lipschitz_l2(const Eigen::MatrixXd &A) -> double
     v.normalize();
     Eigen::VectorXd Av(nrows), w(ncols);
 
-    // Guaranteed-positive lower bound on lambda_max(A^T A): the largest column norm squared
-    // (= max diagonal of A^T A <= lambda_max). Used as a floor so the estimate is never zero -- e.g.
-    // when the all-ones start lies in the null space of A and power iteration would otherwise return
-    // 0. The starting L only needs to be reasonable; fista()'s backtracking guarantees correctness.
+    // Floor the power estimate at the largest squared column norm, a lower
+    // bound on lambda_max(A^T A), in case the start lies in A's null space.
+    // FISTA backtracking handles underestimation.
     double col_floor = 0.0;
     for (Eigen::Index j = 0; j < ncols; ++j) col_floor = std::max(col_floor, A.col(j).squaredNorm());
 
@@ -4150,14 +4103,9 @@ auto Optimize::fista(const int M, const int N, const double alpha, const int war
     const auto lambda1 = alpha * optcontrol.l1_ratio;
     const auto lambda2 = alpha * (1.0 - optcontrol.l1_ratio);
 
-    // FISTA with backtracking line search (Beck & Teboulle 2009). L starts from the power-iteration
-    // estimate and is grown by bt_eta until the proximal step from y satisfies the sufficient-decrease
-    // (descent) condition  f(x_new) <= Q_L(x_new, y). This makes convergence robust to an
-    // under-estimated Lipschitz constant -- power iteration only ever gives a lower bound -- without
-    // having to construct a guaranteed upper bound. Caching A*x keeps the cost at two matvecs per
-    // iteration: the A*x_new built for the descent test also yields the next A*y via
-    //   A*y = A*x_new + momentum*(A*x_new - A*x_cur),
-    // so no separate A*y matvec is needed.
+    // FISTA with backtracking (Beck & Teboulle 2009): grow L by bt_eta until
+    // f(x_new) <= Q_L(x_new, y). Reuse A*x_new for the next extrapolation,
+    // A*y = A*x_new + momentum*(A*x_new - A*x_cur), keeping two matvecs per iteration.
     auto L = std::max(lipschitz_l2 + lambda2, eps);
     constexpr auto bt_eta = 2.0; // L growth factor when a step is rejected
     constexpr auto bt_max = 60;  // hard cap on backtracks per iteration
@@ -4293,9 +4241,7 @@ auto Optimize::admm(const int M, const int N, const double alpha, const int warm
     const auto tol = optcontrol.tolerance_iteration;
     const auto sqrtN = std::sqrt(static_cast<double>(N));
 
-    // Scaled-ADMM state. The primal z is warm-started from x; the scaled dual u is reset to zero on
-    // every call (a per-alpha dual warm start gave only a marginal speedup and is not worth the
-    // extra bookkeeping, so each alpha starts the dual cold).
+    // Warm-start the primal z from x and reset the scaled dual u for each alpha.
     Eigen::VectorXd z(N), xa(N), xhat(N), z_old(N), rhs(N);
     Eigen::VectorXd u = Eigen::VectorXd::Zero(N);
     Eigen::VectorXd res(M); // only used for the verbosity>1 diagnostic A*z - b

@@ -1267,16 +1267,10 @@ void Conductivity::compute_kappa()
 
         double vel_norm;
         if (len_boundary > eps) {
-            // Boundary scattering needs a scalar speed per mode. The
-            // finite-difference velocity leaves it basis dependent at degeneracies, so
-            // the block average
-            //     |v|^2 = (1/d) sum_{j,j' in B} sum_mu V^mu_{jj'} V^mu_{j'j}
-            // is used instead: it is invariant given the partition, is constant inside
-            // the block (which the block-trace weights require of tau), and reduces to
-            // the ordinary |v|^2 for a non-degenerate branch.
-            //
-            // With the full trace this is cell independent on the silicon 8^3/4^3 test
-            // (both cells 211.79 W/m/K at LEN_BOUNDARY = 1e-6 m).
+            // Use the basis-invariant block speed for boundary scattering:
+            //   |v|^2 = (1/d) sum_{j,j' in B} sum_mu V^mu_{jj'} V^mu_{j'j}.
+            // It is constant within each block, as required by the block-trace weights,
+            // and reduces to the ordinary speed for non-degenerate branches.
             std::vector<std::vector<int>> bnd_lo, bnd_hi;
             const auto use_block_speed = !PhononVelocity::legacy_velocity();
             if (use_block_speed) {
@@ -1723,18 +1717,10 @@ void Conductivity::check_velocity_matrix_consistency(const KpointMeshUniform *km
         << velmat[max_herm_k][max_herm_j][max_herm_i][max_herm_mu].imag() << '\n';
     ofs.close();
 
-    // Optional per-mode dump: ALAMODE_CHECK_VELMAT=full
-    //
-    // The two velocity paths are not the same calculation:
-    //   vel[ik][is][mu]         central difference of SORTED eigenvalues at +-h,
-    //                           rotated to Cartesian, NOT symmetrized at k.
-    //   velmat[ik][is][is][mu]  diagonal of the analytic velocity matrix (Allen's
-    //                           definition); unsymmetrized by default, little-group
-    //                           symmetrized under the legacy opt-out.
-    // They therefore disagree wherever band sorting swaps character (crossings) and
-    // wherever the little group of k constrains the velocity. dw_min is the gap to the
-    // nearest other branch at the same k so those modes can be selected directly;
-    // ALAMODE_VELMAT_GAPMAX restricts the dump to dw_min below a cutoff.
+    // ALAMODE_CHECK_VELMAT=full compares finite differences of sorted
+    // eigenvalues with analytic velocity-matrix diagonals. Band crossings and
+    // little-group symmetrization can cause differences. dw_min is the nearest
+    // branch gap; ALAMODE_VELMAT_GAPMAX filters the dump by that gap.
     const auto *const dump_mode = std::getenv("ALAMODE_CHECK_VELMAT");
 
     if (dump_mode && std::string(dump_mode) == "full") {

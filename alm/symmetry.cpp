@@ -209,10 +209,8 @@ auto Symmetry::setup_symmetry_operation(const Cell &pcell, const Spin &spin_prim
     symmetry_data_super.clear();
     symmetry_data_prim.clear();
 
-    // First, generate space group operations using the primitive cell.
-    // Please be noted that the input pcell might not be a true primitive cell
-    // because one can give PRIMCELL value which does not necessary transform the
-    // input cell into a true primitive cell.
+    // Generate space-group operations from pcell, which may be non-primitive
+    // if the user-supplied PRIMCELL does not fully reduce the input cell.
     if (spin_prim.lspin && spin_prim.noncollinear) {
         //        if (spg_get_major_version() < 2) {
         //            std::cout << "  Please update spglib to version 2 or above to .\n";

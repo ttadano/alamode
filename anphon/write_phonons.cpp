@@ -2133,14 +2133,9 @@ void Writes::writeNewFcsXml(const std::string &filename_xml, const std::vector<F
 
     pt.put("Data.ForceConstants", "");
 
-    // Base force constants plus fc_scale times the strain-derivative corrections
-    // in one Cartesian block per order; entries with identical indices are summed
-    // by the loader.
-    //
-    // The loader regenerates the permutations of the trailing legs from each
-    // stored entry (next_permutation over the supercell-atom-based key
-    // 3*atom_super + coord), so only entries whose trailing legs are in
-    // ascending order of that key may be stored.
+    // Store base IFCs plus fc_scale times strain corrections; the loader sums
+    // identical entries and regenerates trailing-leg permutations. Store only
+    // entries sorted by the trailing-leg key 3*atom_super + coord.
     auto legs_ascending = [&](const FcsArrayWithCell &it, const int norder) {
         for (auto k = 1; k < norder - 1; ++k) {
             if (3 * it.atoms_s[k] + it.pairs[k].index % 3 > 3 * it.atoms_s[k + 1] + it.pairs[k + 1].index % 3) {

@@ -189,14 +189,9 @@ struct KappaResultIOH5::Impl
         }
     }
 
-    // Create the group, attributes, static datasets, and preallocated
-    // gamma/flag (and, in tdep mode, frequency/velocity) datasets of a
-    // channel. In tdep mode the frequency/velocity content is written later
-    // (write_basis_slices); only the shapes are taken from cmeta here.
-    // Transport formulation of this run; stamped onto /kappa the moment the group is
-    // created (fresh file, rebuild, rebuild_tdep, channel-triggered rebuild), i.e. before
-    // the .part file is published. Stamping only in store_kappa left an interrupted run's
-    // checkpoint unstamped, and a restart then misread it as legacy and refused to resume.
+    // Preallocate channel datasets; tdep frequency/velocity values are filled
+    // later by write_basis_slices. Stamp the transport formulation before
+    // publishing the .part file so interrupted runs can restart correctly.
     std::string formulation{"legacy"};
 
     auto create_channel(HighFive::File &fh, const KappaChannelMetaH5 &cmeta) const -> void
@@ -265,12 +260,8 @@ struct KappaResultIOH5::Impl
         }
     }
 
-    // Fill the frequency/velocity slices of this run's temperature columns
-    // (tdep mode only). Pure raw-data writes into preallocated datasets.
-    // Velocity diad (see KappaChannelMetaH5::velocity_diad). One code path for every route:
-    // fresh files, restarts of files that predate the dataset (created on demand, so the
-    // file becomes self-consistent with the corrected kappa it now holds), and
-    // temperature-resolved files (one slice per temperature of this run).
+    // Write this run's temperature slices and velocity diads, creating the
+    // diad dataset on demand for older restart files.
     auto write_velocity_diad(const KappaChannelMetaH5 &cmeta) const -> void
     {
         if (cmeta.velocity_diad.empty()) return;
@@ -926,17 +917,9 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
 
     impl->compute_run_cols();
 
-    // Mixing formulations is refused only where an OLD KAPPA VALUE would survive this run
-    // unrecomputed. The stored 3-phonon linewidths do not depend on the velocity
-    // formulation (boundary and isotope terms are added at run time, adaptive widths use
-    // finite differences in both formulations), and a plain restart recomputes every
-    // kappa slice from them in store_kappa -- so restarting an older file under a new
-    // formulation is legitimate and yields the recomputed kappa with the new stamp. The
-    // one genuine mixing case is a temperature-resolved file in which valid kappa rows for
-    // temperatures NOT covered by this run are retained (in place on reopen, or copied by
-    // rebuild_tdep): those rows were assembled with the other formulation and would sit
-    // beside freshly assembled ones under a single stamp. That, and only that, is refused,
-    // before anything is written.
+    // Reject formulation changes only if old kappa rows would survive, as with
+    // tdep temperatures outside this run. Ordinary restarts recompute all kappa
+    // from formulation-independent 3ph linewidths and can update the stamp.
     {
         auto retains_foreign_kappa = false;
         if (impl->tdep) {
@@ -944,16 +927,22 @@ void KappaResultIOH5::open_or_create(const KappaFileMetaH5 &fmeta, const KappaCh
                 if (j < old_valid.size() && !old_valid[j]) continue; // never assembled: nothing to mix
                 auto covered = false;
                 for (const auto t: fmeta.temperatures) {
-                    if (std::abs(t - old_temps[j]) < eps6) { covered = true; break; }
+                    if (std::abs(t - old_temps[j]) < eps6) {
+                        covered = true;
+                        break;
+                    }
                 }
-                if (!covered) { retains_foreign_kappa = true; break; }
+                if (!covered) {
+                    retains_foreign_kappa = true;
+                    break;
+                }
             }
         }
         if (have_existing_formulation && retains_foreign_kappa && existing_formulation != transport_formulation) {
             exit("KappaResultIOH5",
                  ("The existing temperature-resolved result file holds kappa for temperatures this run does not "
-                  "recompute, assembled with transport formulation '" + existing_formulation +
-                  "', while this run uses '" + transport_formulation +
+                  "recompute, assembled with transport formulation '" +
+                  existing_formulation + "', while this run uses '" + transport_formulation +
                   "'. Use a different PREFIX, include those temperatures in this run, or set "
                   "ALAMODE_LEGACY_VELOCITY to match the file.")
                      .c_str());

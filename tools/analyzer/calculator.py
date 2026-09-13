@@ -61,7 +61,9 @@ class Calculator:
         self.gamma4_interpolated = None
         self.gamma_iso = None  # linediwth due to isotope scattering
         self.vel = None  # Velocity array
-        self.vel_diad = None  # Degenerate-block velocity diad (None for legacy/text files)
+        self.vel_diad = (
+            None  # Degenerate-block velocity diad (None for legacy/text files)
+        )
         self.formulation = "legacy"
         self.vel4 = None
         self.qpoint_weight = None  # Weight array
@@ -208,10 +210,8 @@ class Calculator:
         if result.lattice_vector is not None:
             kinds = result.atomic_kinds
             if kinds is None:
-                # the text .result files store the fractional coordinates only; without the
-                # atomic kinds the symmetry is detected treating all atoms as one species,
-                # which can only over-count operations; the star-size check in the
-                # interpolator catches an inconsistent result.
+                # Without atomic kinds, .result symmetry treats all atoms as one species
+                # and may overcount operations. The interpolator checks star sizes.
                 warnings.warn(
                     "{} does not store the atomic kinds; detecting the symmetry with all "
                     "atoms treated as one species (use the kappa.h5 file for exact kinds)".format(
@@ -762,7 +762,9 @@ class Calculator:
         an effective speed whose block sum is invariant, whereas individual copies are not.
         """
         if self.vel_diad is not None:
-            return np.sqrt(np.maximum(np.einsum("ksaa->ks", self.vel_diad[:, :, 0, :, :]), 0.0))
+            return np.sqrt(
+                np.maximum(np.einsum("ksaa->ks", self.vel_diad[:, :, 0, :, :]), 0.0)
+            )
         return np.linalg.norm(self.vel[:, :, 0, :], axis=2)
 
     def _speed_dir(self):
@@ -947,11 +949,8 @@ class Calculator:
 
         mfp = velnorm * tau * 0.001
 
-        # Ignore numerically-zero mean-free-paths (e.g. Gamma acoustic modes)
-        # when determining the sampling range; 1e-6 nm matches the eps6
-        # threshold used historically by the analyze_phonons C++ tool.
-        # modes whose linewidth was not computed (NaN) are excluded from the length grid
-        # and, through the comparisons below (False for NaN), from the sums
+        # Exclude near-zero MFPs from the grid (1e-6 nm matches analyze_phonons).
+        # NaN linewidths are excluded from both the grid and sums.
         if np.any(np.isnan(mfp)):
             warnings.warn(
                 "{} modes have no linewidth (incomplete run) and are excluded from the "

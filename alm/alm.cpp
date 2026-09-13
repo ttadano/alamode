@@ -474,10 +474,8 @@ auto ALM::get_number_of_fc_elements(const int fc_order) const -> size_t
 
 auto ALM::get_number_of_irred_fc_elements(const int fc_order) -> size_t // harmonic=1, ...
 {
-    // Returns the number of irreducible force constants for the given order.
-    // The irreducible force constant means a set of independent force constants
-    // reduced by using all available symmetry operations and
-    // constraints for translational invariance. Rotational invariance is not considered.
+    // Count independent force constants after crystal-symmetry and translational
+    // constraints, excluding rotational invariance.
 
     const auto order = fc_order - 1;
     if (!initialized_constraint_class) {
@@ -867,9 +865,7 @@ auto ALM::init_fc_table() -> void
     cluster->init(system, symmetry, get_optimizer_control().periodic_image_conv, verbosity, timer);
     fcs->init(cluster, symmetry, system->get_supercell(), verbosity, timer);
 
-    // Switch off the initialized_constraint_class flag
-    // because the force constants are updated
-    // but corresponding constranits are not.
+    // Invalidate constraints after updating the force constants.
     initialized_constraint_class = false;
 }
 
